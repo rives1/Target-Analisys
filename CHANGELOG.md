@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0] - 2026-11-13
+### Cambiato
+- **Revisione 2 della specifica**: l'applicazione è il solo file `src/index.html`, multipiattaforma.
+  Eliminati il requisito `.exe` Windows x64, il wrapper Python/pywebview (ex Fase 4) e la build PyInstaller (ex Fase 5).
+- `specifiche_target_analyzer.md` aggiornato di conseguenza (incluse la correzione della formula MOA e la rimozione della nota per l'AI).
+- Salvataggio file: dialog nativo «Salva con nome» tramite File System Access API (Edge/Chrome), con ripiego sul download
+  (Firefox/Safari). Se l'utente annulla, nessun messaggio di conferma.
+- Result Card generata con `canvas.toBlob` invece di un data URL.
+- Nome dei file salvati con data/ora locale (prima UTC).
+### Rimosso
+- Codice di aggancio a `window.pywebview`.
+
 ## [0.2.0] - 2026-11-13
 ### Aggiunto
 - Lente di ingrandimento (×4 rispetto alla vista, mirino ciano con centro libero): visibile al passaggio del mouse

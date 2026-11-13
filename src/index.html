@@ -355,7 +355,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.2.0";
+const APP_VERSION = "0.3.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -871,21 +871,36 @@ function readAs(file, how) {
 }
 
 /* --------------------------- SESSIONE JSON --------------------------- */
-/* Livello di astrazione per il file system: in Fase 4 verrà usato window.pywebview.api
-   se disponibile; nel browser si ripiega su download / input file. */
+/* Scrittura su file system, solo browser:
+   - File System Access API (Edge/Chrome/Opera): dialog nativo «Salva con nome»;
+   - altrimenti (Firefox, Safari): download nella cartella del browser.
+   Restituisce true se salvato, false se l'utente ha annullato. */
+const FILE_TYPES = {
+  "application/json": { description: "Sessione Shoot Analyzer", ext: ".json" },
+  "image/png": { description: "Immagine PNG", ext: ".png" },
+  "text/plain": { description: "Testo", ext: ".txt" },
+};
 const Storage = {
-  async saveText(filename, text, mime = "application/json") {
-    if (window.pywebview && window.pywebview.api && window.pywebview.api.save_file)
-      return window.pywebview.api.save_file(filename, text);
-    downloadBlob(new Blob([text], { type: mime }), filename);
+  async saveBlob(filename, blob) {
+    if (typeof window.showSaveFilePicker === "function") {
+      const t = FILE_TYPES[blob.type];
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename,
+          types: t ? [{ description: t.description, accept: { [blob.type]: [t.ext] } }] : undefined,
+        });
+        const w = await handle.createWritable();
+        await w.write(blob); await w.close();
+        return true;
+      } catch (err) {
+        if (err && err.name === "AbortError") return false;     // annullato dall'utente
+        console.warn("showSaveFilePicker non utilizzabile, uso il download:", err);
+      }
+    }
+    downloadBlob(blob, filename);
     return true;
   },
-  async saveDataUrl(filename, dataUrl) {
-    if (window.pywebview && window.pywebview.api && window.pywebview.api.save_binary)
-      return window.pywebview.api.save_binary(filename, dataUrl);
-    const a = document.createElement("a"); a.href = dataUrl; a.download = filename; a.click();
-    return true;
-  },
+  saveText(filename, text, mime = "application/json") { return Storage.saveBlob(filename, new Blob([text], { type: mime })); },
 };
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -908,8 +923,7 @@ function buildSession() {
 async function saveSession() {
   if (!state.image) { toast("Niente da salvare: carica prima un'immagine."); return; }
   const base = (state.image.name || "sessione").replace(/\.[^.]+$/, "");
-  await Storage.saveText(`${base}_${stamp()}.json`, JSON.stringify(buildSession(), null, 1));
-  toast("Sessione salvata");
+  if (await Storage.saveText(`${base}_${stamp()}.json`, JSON.stringify(buildSession(), null, 1))) toast("Sessione salvata");
 }
 async function loadSessionText(text) {
   let s;
@@ -931,7 +945,10 @@ async function loadSessionText(text) {
   resetHistory(); setMode("shot");
   toast("Sessione caricata");
 }
-const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "").replace(/^(\d{8})/, "$1_");
+const stamp = (d = new Date()) => {   // AAAAMMGG_hhmm in ora locale
+  const z = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
+};
 
 /* --------------------------- FORMATTAZIONE --------------------------- */
 function fmt(v, d = 2) { return v == null || !isFinite(v) ? "–" : v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
@@ -1070,7 +1087,7 @@ function resultText() {
 async function copyText() {
   const t = resultText();
   try { await navigator.clipboard.writeText(t); toast("Risultati copiati negli appunti"); }
-  catch { await Storage.saveText(`risultati_${stamp()}.txt`, t, "text/plain"); }
+  catch { if (await Storage.saveText(`risultati_${stamp()}.txt`, t, "text/plain")) toast("Risultati salvati in un file di testo"); }
 }
 /**
  * Esporta la Result Card in PNG.
@@ -1155,8 +1172,8 @@ async function exportCard(scope = "active") {
   }
   const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
   const suffix = groups.length === 1 ? groups[0].name.replace(/\W+/g, "_") : "tutti_i_gruppi";
-  await Storage.saveDataUrl(`${base}_${suffix}_card.png`, c.toDataURL("image/png"));
-  toast("Result Card esportata");
+  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  if (await Storage.saveBlob(`${base}_${suffix}_card.png`, blob)) toast("Result Card esportata");
 }
 
 /* ------------------------------ VARIE ------------------------------ */

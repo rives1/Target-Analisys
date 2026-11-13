@@ -1,9 +1,13 @@
 # 📄 Specifiche di Progetto e di Sviluppo: Target Analyzer Portatile
 
+> **Revisione 2 (2026-11-13)**: l'applicazione è un **singolo file HTML** che gira in qualsiasi browser moderno su qualsiasi sistema operativo.
+> Eliminati il requisito dell'eseguibile `.exe` per Windows, il wrapper Python/pywebview (ex Fase 4) e la build PyInstaller (ex Fase 5).
+> Corretta la formula MOA (sez. 5.6).
+
 ## 1. Panoramica del Progetto
-**Obiettivo**: Realizzare un software desktop portatile per Windows 11 x64 che replichi esattamente le funzionalità di [https://www.holdover.ca/target-analyzer/](https://www.holdover.ca/target-analyzer/).  
+**Obiettivo**: Realizzare un'applicazione portatile e multipiattaforma, costituita da un unico file HTML, che replichi esattamente le funzionalità di [https://www.holdover.ca/target-analyzer/](https://www.holdover.ca/target-analyzer/).  
 **Scopo**: Consentire ai tiratori di caricare una foto di un bersaglio, calibrarla su una scala nota, marcare i fori dei proiettili e ottenere misurazioni precise (dimensione del gruppo, raggio medio, MOA/MIL, correzione in click) senza inviare alcun dato a server esterni.  
-**Vincolo Principale**: Il software deve essere **100% portatile**, eseguito come singolo file `.exe` (o cartella autocontenuta) su Windows 11 x64, **senza alcuna procedura di installazione** e senza dipendenze di sistema pregresse (a eccezione di WebView2, già nativo in Windows 11).
+**Vincolo Principale**: Il software deve essere **100% portatile**: un singolo file `index.html` autocontenuto (HTML, CSS e JavaScript inline, nessuna libreria esterna) che si apre con doppio clic in un browser moderno (Edge, Chrome, Firefox, Safari) su Windows, macOS, Linux, **senza alcuna installazione** e senza dipendenze.
 
 ---
 
@@ -25,7 +29,7 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
    - **Misura Angolare**: Conversione della dimensione del gruppo in MOA (Minute of Angle) e MIL (Milliradian), basata sulla distanza di tiro inserita dall'utente.
    - **Correzione in Click**: Calcolo del numero di click necessari per correggere l'offset, basato sul valore di click del mirino inserito dall'utente (es. 1/4 MOA per click, 0.1 MIL per click).
 5. **Gestione Dati Locali**:
-   - Salvataggio della sessione di lavoro in un file JSON locale (superando i limiti del `localStorage` del browser per garantire vera portabilità).
+   - Salvataggio della sessione di lavoro in un file JSON locale (non nel `localStorage`, per garantire vera portabilità): dialog «Salva con nome» del browser dove disponibile (File System Access API: Edge/Chrome), altrimenti download del file.
    - Funzionalità di "Importa JSON" per riprendere sessioni precedenti.
 6. **Esportazione Risultati**: Generazione di una "Result Card" (scheda risultato) in formato testo o immagine sintetica da affiancare al quaderno di tiro.
 7. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
@@ -33,23 +37,21 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
 ---
 
 ## 3. Requisiti Non Funzionali e Vincoli
-- **Sistema Operativo**: Windows 11 x64.
-- **Portabilità**: Il rilascio finale deve essere un singolo file `.exe` (o una cartella con eseguibile e risorse, senza installer MSI/NSIS).
+- **Piattaforma**: qualsiasi sistema operativo con un browser moderno (Chromium ≥ 100, Firefox ≥ 100, Safari ≥ 16). Riferimento principale: Edge/Chrome su Windows 11.
+- **Portabilità**: Il rilascio è il singolo file `index.html` (distribuibile anche da chiavetta USB o come allegato). Nessun eseguibile, nessun installer.
 - **Privacy**: I dati dell'immagine e delle sessioni devono risiedere esclusivamente nella memoria locale o su file system locale gestito dall'utente.
 - **Prestazioni**: Rendering del canvas fluido anche con immagini ad alta risoluzione (fino a 20MP). Zoom e pan dell'immagine devono essere reattivi.
 - **Interfaccia**: Layout pulito, moderno, a due colonne (area di lavoro a sinistra, pannello di controllo e risultati a destra), responsive all'interno della finestra desktop.
 
 ---
 
-## 4. Stack Tecnologico Raccomandato (Ottimizzato per Generazione AI)
-Per massimizzare la probabilità che un'AI generi codice funzionante al primo tentativo, si raccomanda il seguente stack:
+## 4. Stack Tecnologico
+- **Unico file `index.html`**: HTML5, CSS3 vanilla, JavaScript vanilla. `<canvas>` per il disegno e l'interazione sull'immagine.
+- **Nessuna dipendenza esterna** (niente CDN): requisito offline. Una Content-Security-Policy nel file blocca qualsiasi connessione di rete.
+- **File system**: lettura con `<input type=file>` / drag & drop; scrittura con File System Access API (`showSaveFilePicker`) dove disponibile, altrimenti download.
+- **Test**: test automatici del motore di calcolo con Node.js (`node tests/calc.test.js`), che estraggono il blocco di calcolo dal file HTML.
 
-- **Frontend (UI e Logica di Calcolo)**: HTML5, CSS3 (Tailwind CSS o CSS vanilla per semplicità), JavaScript (Vanilla JS o Alpine.js per la reattività). L'uso di `<canvas>` è obbligatorio per il disegno e l'interazione sull'immagine.
-- **Wrapper Desktop**: **Python + `pywebview`**.  
-  *Motivazione*: `pywebview` utilizza il motore Edge WebView2 già presente in Windows 11, offrendo un'esperienza nativa e leggera. Python gestisce facilmente le operazioni di file system (salvataggio/caricamento JSON) che il browser sandboxato non può fare in modo portabile.
-- **Strumento di Build**: **PyInstaller** con il flag `--onefile` e `--noconsole`. Questo compila l'interprete Python, le librerie e i file HTML/JS in un unico eseguibile `.exe` portatile.
-
-*(Alternativa valida: Tauri (Rust + JS), ma richiede un toolchain Rust che può essere più complesso da far generare e configurare correttamente all'AI in un unico flusso).*
+*(Rimossi: wrapper Python + `pywebview` e build PyInstaller. Motivo: tutto il programma gira già nel solo file HTML; il wrapper aggiungeva solo il vincolo Windows.)*
 
 ---
 
@@ -67,8 +69,10 @@ L'AI deve implementare le seguenti formule matematiche nel modulo JavaScript:
 5. **Raggio Medio**:  
    $MR = \frac{\sum d(P_i, C)}{n}$, dove $C$ è il centroide.
 6. **Conversione Angolare** (approssimazione standard per piccole angolazioni):
-   - **MOA**: $\text{Group Size (inch)} / \text{Distance (yards)} \times 100$ *(o formula esatta: $\arctan(\text{size}/\text{distance}) \times (180/\pi) \times 60$)*
-   - **MIL**: $\text{Group Size (mm)} / \text{Distance (m)}$
+   - **Angolo esatto** di una dimensione $s$ a distanza $D$: $\theta = 2\arctan\left(\frac{s}{2D}\right)$; di uno scostamento $o$: $\theta = \arctan\left(\frac{o}{D}\right)$
+   - **MOA**: $\theta \times (180/\pi) \times 60$ (1 MOA ≈ 1,047" a 100 yd)
+   - *Nota: $\text{size (in)} / \text{distance (yd)} \times 100$ dà i pollici a 100 yarde (IPHY/SMOA), non i MOA: differenza ≈ 4,7%. Il programma mostra IPHY solo come unità di click opzionale.*
+   - **MIL**: $\theta \times 1000$ (≈ $\text{size (mm)} / \text{distance (m)}$ per piccoli angoli)
 7. **Correzione in Click**:  
    $\text{Click} = \text{Round}\left(\frac{\text{Offset (MOA o MIL)}}{\text{Valore per click (es. 0.25 MOA)}}\right)$
 
@@ -97,23 +101,16 @@ Se si utilizza un'AI per scrivere il codice, fornire queste istruzioni in sequen
    "Aggiungi la logica JavaScript per gestire gli eventi del mouse sul canvas: zoom con la rotella, pan con trascinamento, e clic per aggiungere punti (oggetti con proprietà x, y, tipo). Implementa Undo/Redo con uno stack di stati."
 3. **Fase 3: Motore di Calcolo**  
    "Implementa le funzioni matematiche per calcolare: fattore di scala, centroide, dimensione massima del gruppo, raggio medio, MOA/MIL e correzione in click. Aggiorna il DOM del pannello destro in tempo reale quando i punti cambiano."
-4. **Fase 4: Wrapper Python e File System**  
-   "Crea uno script Python `main.py` che usa `webview.create_window` per caricare `index.html`. Aggiungi API JavaScript-to-Python (tramite `window.pywebview.api`) per permettere al frontend di salvare e caricare file JSON dal file system locale."
-5. **Fase 5: Build e Packaging**  
-   "Fornisci lo script di configurazione e il comando PyInstaller esatto (`pyinstaller --onefile --noconsole --add-data "index.html;." main.py`) per generare l'eseguibile portatile Windows x64."
+*(Fasi 4 e 5, wrapper Python e build PyInstaller, eliminate nella revisione 2.)*
 
 ---
 
 ## 8. Criteri di Collaudo e Accettazione
 Prima di considerare il progetto completato, verificare i seguenti punti:
-- [ ] L'eseguibile `.exe` si avvia su Windows 11 x64 senza richiedere privilegi di amministratore o installazione.
+- [ ] Il file `index.html` si apre con doppio clic e funziona in Edge/Chrome su Windows 11 e in almeno un altro browser/OS (es. Firefox, Safari su macOS), senza installazione.
 - [ ] Caricando un'immagine di test e marcando 3 punti a distanza nota, i calcoli di MOA e correzione in click corrispondono a quelli ottenuti manualmente o sul sito originale.
 - [ ] Le funzionalità di Salvataggio e Caricamento JSON funzionano correttamente, preservando tutti i punti e i parametri.
 - [ ] Monitorando il traffico di rete (es. con Resource Monitor o Wireshark), non viene effettuata alcuna chiamata in uscita durante l'utilizzo.
 - [ ] Il ridimensionamento della finestra non rompe il layout e il canvas si adatta correttamente.
 
 ---
-
-### 💡 Nota per l'Utilizzo con l'AI
-Per ottenere il miglior risultato, copia e incolla questo documento intero nel tuo prompt iniziale all'AI, aggiungendo alla fine:  
-*"Agisci come un Senior Software Engineer. Inizia generando la Fase 1 e la Fase 2 in un unico file HTML/JS autocontenuto per permettermi di testare subito la logica del canvas. Attendi la mia conferma prima di procedere con la Fase 4 (wrapper Python)."*

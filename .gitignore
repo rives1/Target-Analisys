@@ -1,12 +1,3 @@
-# Python / build (Fasi 4-5)
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-build/
-dist/
-*.spec.bak
-
 # Node (solo test)
 node_modules/
 

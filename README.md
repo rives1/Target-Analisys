@@ -1,14 +1,20 @@
 # Shoot Analyzer
 
-Applicazione desktop **portatile** per Windows 11 x64 che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
+Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.2.0**, frontend completo (Fasi 1, 2 e 3), testabile in qualsiasi browser.
-> Il wrapper desktop (Python + pywebview) e la build `.exe` (PyInstaller via GitHub Actions) sono le prossime fasi.
+> Stato: **v0.3.0**, applicazione completa in `src/index.html`.
+> Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
-## Provare subito
+## Uso
 
-Apri `src/index.html` con Edge o Chrome (doppio clic sul file). Non serve installare nulla.
+Apri `src/index.html` con un browser (doppio clic sul file). Non serve installare nulla e non serve connessione.
+Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è l'intera applicazione.
+
+| Browser | Stato |
+|---|---|
+| Edge / Chrome (Windows, macOS, Linux) | riferimento, testato · salvataggio con dialog «Salva con nome» |
+| Firefox, Safari | supportati, non ancora collaudati · i file salvati finiscono nella cartella Download |
 
 1. **Carica foto**: pulsante o trascinamento. La foto va scattata perpendicolare al bersaglio.
 2. **Scala**: clicca due punti a distanza nota e inserisci il valore.
@@ -56,8 +62,8 @@ LICENSE
 - [x] Fase 1: layout, canvas, caricamento immagine
 - [x] Fase 2: zoom/pan, punti, drag, undo/redo
 - [x] Fase 3: motore di calcolo e risultati in tempo reale
-- [ ] Fase 4: wrapper Python `pywebview` + API file system
-- [ ] Fase 5: build PyInstaller su runner Windows (GitHub Actions)
+- [x] ~~Fase 4: wrapper Python~~ e ~~Fase 5: build `.exe`~~: eliminate (rev. 2 della specifica, v0.3.0)
+- [ ] Collaudo su Firefox e Safari
 
 ## Licenza
 
