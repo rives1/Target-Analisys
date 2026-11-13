@@ -40,7 +40,8 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
 8. **Griglia angolare** opzionale (MOA o MIL) sovrapposta all'immagine, centrata sul punto di mira, per una verifica visiva immediata.
 9. **Tema scuro** opzionale per la pagina.
 10. **Grafici del gruppo attivo**: dispersione dei soli punti (senza immagine), istogramma delle distanze dal centro gruppo, diagramma a orologio delle direzioni (dal punto di mira o dal centro gruppo).
-11. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
+11. **Statistiche comparate**: con più gruppi (nella sessione o importati da altre sessioni come storico in sola lettura) confronto affiancato delle metriche principali, differenza della metrica scelta rispetto al gruppo precedente, grafico dell'andamento nel tempo e media mobile sugli ultimi N gruppi. Metrica selezionabile (ES di default, raggio medio, FOM, CEP), in MOA o MIL.
+12. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
 
 ---
 

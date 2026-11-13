@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.11.0] - 2026-11-13
+### Aggiunto
+- Sezione **Confronto tra gruppi** (da 2 gruppi con fori):
+  - **Tabella affiancata** di tutti i gruppi in ordine di data (data dei dati di ricarica): n, ES, raggio medio, FOM, CEP
+    in MIL o MOA; valore migliore di ogni colonna evidenziato; gruppo attivo in grassetto;
+  - **Δ rispetto al gruppo precedente** (valore e %) sulla metrica scelta, più una frase di sintesi per il gruppo attivo;
+  - **Andamento nel tempo**: grafico della metrica scelta per gruppo con la **media mobile** sugli ultimi N gruppi (N regolabile, default 3);
+  - **Metrica** selezionabile (Group size di default, Raggio medio, FOM, CEP) e unità MIL/MOA.
+- **Storico**: «Importa sessioni nello storico» aggiunge i gruppi di altre sessioni salvate (.json, anche più file insieme)
+  come riepiloghi in sola lettura, ciascuno calcolato con la propria scala e distanza; duplicati ignorati; rimozione singola
+  o «Svuota storico». Lo storico viene salvato nella sessione (solo riepiloghi, non immagini).
+- Il testo copiato include la tabella di confronto.
+
 ## [0.10.0] - 2026-11-13
 ### Aggiunto
 - **Forma e orientamento del gruppo** (pannello Risultati, Result Card, testo; da 3 fori, avviso sotto i 5):
