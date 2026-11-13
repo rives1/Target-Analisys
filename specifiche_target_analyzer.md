@@ -28,6 +28,9 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
    - **Offset del Punto di Mira**: Distanza e direzione (es. "3 click in alto, 1 a destra") tra il punto di mira e il centroide del gruppo.
    - **Misura Angolare**: Conversione della dimensione del gruppo in MOA (Minute of Angle) e MIL (Milliradian), basata sulla distanza di tiro inserita dall'utente.
    - **Correzione in Click**: Calcolo del numero di click necessari per correggere l'offset, basato sul valore di click del mirino inserito dall'utente (es. 1/4 MOA per click, 0.1 MIL per click).
+   - **H-spread / V-spread**, **FOM** (media tra H e V), **SD delle distanze dal centro**, **SD radiale √(σx²+σy²)**, **CEP / R95 / R99** previsti (modello circolare normale, σ corretto per pochi colpi).
+   - **Flyer**: segnalati automaticamente (leave-one-out, soglia k·SD, default 2, da 5 colpi); ogni colpo può essere escluso dal gruppo e dalle statistiche.
+   - **Tabella punti**: per ogni foro distanza dal punto di mira e dal centro gruppo, direzione dal centro gruppo in gradi (0° = alto, senso orario) con sigla cardinale.
 5. **Gestione Dati Locali**:
    - Salvataggio della sessione di lavoro in un file JSON locale (non nel `localStorage`, per garantire vera portabilità): dialog «Salva con nome» del browser dove disponibile (File System Access API: Edge/Chrome), altrimenti download del file.
    - Funzionalità di "Importa JSON" per riprendere sessioni precedenti.

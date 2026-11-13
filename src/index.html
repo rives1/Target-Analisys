@@ -109,6 +109,13 @@
   table.pts td { border-bottom: 1px solid var(--row-line); padding: 3px 4px; }
   table.pts tr.sel td { background: var(--sel); }
   table.pts tr.centroid td { background: var(--hl); font-weight: 600; color: var(--hl-ink); }
+  table.pts tr.excl td { opacity: .55; }
+  table.pts tr.excl td:first-child { text-decoration: line-through; }
+  table.pts th, table.pts td { white-space: nowrap; }
+  table.pts input[type=checkbox] { margin: 0; vertical-align: middle; }
+  .flyer { color: #ea580c; font-weight: 700; text-decoration: none; display: inline-block; }
+  .tscroll { overflow-x: auto; }
+  .res .sub2 { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; padding-top: 6px; }
   table.pts td.x, table.pts th.x { text-align: right; }
   table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
   table.pts button:hover { color: var(--danger); }
@@ -217,6 +224,10 @@
         </select>
       </div>
       <div class="row">
+        <label for="flyerK" title="Un colpo è segnalato come flyer se la sua distanza dal centro degli altri colpi supera la loro distanza media di più di k deviazioni standard (servono almeno 5 colpi)">Soglia flyer (k · SD)</label>
+        <input id="flyerK" type="number" min="0.5" step="0.1" value="2">
+      </div>
+      <div class="row">
         <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
         <input id="gridStep" type="number" min="0" step="any" value="0.1" title="Distanza tra due linee della griglia">
         <select id="gridUnit"><option value="MIL">MIL</option><option value="MOA">MOA</option></select>
@@ -290,7 +301,7 @@
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>T</kbd> tema · <kbd>Ctrl+S</kbd> salva.</p>
+          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.</p>
         </div>
       </details>
@@ -391,6 +402,71 @@ const Calc = (() => {
     return dpx / (realValue * LEN[realUnit]);
   }
 
+  /* ---------- Statistiche di dispersione (modello circolare normale / Rayleigh) ---------- */
+  /** log Γ(z) (approssimazione di Lanczos, g=7). */
+  function lgamma(z) {
+    const g = 7, C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+      -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.log(Math.PI / Math.sin(Math.PI * z)) - lgamma(1 - z);
+    z -= 1;
+    let x = C[0];
+    for (let i = 1; i < g + 2; i++) x += C[i] / (z + i);
+    const t = z + g + 0.5;
+    return 0.5 * Math.log(2 * Math.PI) + (z + 0.5) * Math.log(t) - t + Math.log(x);
+  }
+  /** Fattore c tale che E[σ̂²^½] = c·σ con ν = 2(n−1) gradi di libertà (correzione per campioni piccoli). */
+  function sigmaCorrection(n) {
+    const nu = 2 * (n - 1);
+    return Math.sqrt(2 / nu) * Math.exp(lgamma((nu + 1) / 2) - lgamma(nu / 2));
+  }
+  function sampleSD(a) {
+    if (a.length < 2) return 0;
+    const m = a.reduce((x, y) => x + y, 0) / a.length;
+    return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / (a.length - 1));
+  }
+  // Raggi che contengono il 50/95/99% dei colpi in una distribuzione circolare normale: r = σ·√(−2·ln(1−p)).
+  const K_CEP = Math.sqrt(2 * Math.LN2), K_R95 = Math.sqrt(-2 * Math.log(0.05)), K_R99 = Math.sqrt(-2 * Math.log(0.01));
+  /**
+   * Dispersione di un gruppo (n ≥ 2), nelle stesse unità delle coordinate.
+   * sx, sy: deviazioni standard campionarie per asse · sdRadii: SD delle distanze dal centroide ·
+   * rsd: √(sx²+sy²) · sigma: σ stimato (non distorto) del modello circolare · cep/r95/r99: raggi previsti.
+   */
+  function dispersion(pts) {
+    const n = pts.length;
+    if (n < 2) return null;
+    const c = centroid(pts);
+    const sx = Math.sqrt(pts.reduce((a, p) => a + (p.x - c.x) ** 2, 0) / (n - 1));
+    const sy = Math.sqrt(pts.reduce((a, p) => a + (p.y - c.y) ** 2, 0) / (n - 1));
+    const sigma = Math.sqrt((sx * sx + sy * sy) / 2) / sigmaCorrection(n);
+    return {
+      sx, sy, sdRadii: sampleSD(pts.map(p => dist(p, c))), rsd: Math.hypot(sx, sy), sigma,
+      cep: sigma * K_CEP, r95: sigma * K_R95, r99: sigma * K_R99,
+    };
+  }
+  /**
+   * Flyer con criterio leave-one-out: ogni colpo è confrontato con centroide e distanze dal centroide degli ALTRI colpi.
+   * z = (d − media) / SD; flyer se z > k. Richiede almeno 5 colpi (altrimenti null).
+   */
+  function flyers(pts, k = 2) {
+    if (pts.length < 5) return null;
+    return pts.map((p, i) => {
+      const others = pts.filter((_, j) => j !== i);
+      const c = centroid(others);
+      const radii = others.map(q => dist(q, c));
+      const m = radii.reduce((a, b) => a + b, 0) / radii.length, s = sampleSD(radii);
+      const d = dist(p, c);
+      const z = s > 0 ? (d - m) / s : (d > m ? Infinity : 0);
+      return { z, flagged: z > k };
+    });
+  }
+  /** Direzione bussola: 0° = in alto, senso orario. dx + = destra, dy + = alto. Sigla a 16 settori (italiana). */
+  const COMPASS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSO", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+  function compass(dx, dy) {
+    if (dx === 0 && dy === 0) return null;
+    const deg = (Math.atan2(dx, dy) * 180 / Math.PI + 360) % 360;
+    return { deg, label: COMPASS[Math.round(deg / 22.5) % 16] };
+  }
+
   /**
    * Analisi completa di un gruppo.
    * @param shots  [{x,y}] in pixel immagine (y verso il basso)
@@ -407,17 +483,21 @@ const Calc = (() => {
     const ext = extent(shots);
     r.centroid = c;
     r.esIdx = [es.i, es.j];
-    r.px = { es: es.d, mr: meanRadius(shots, c), w: ext.w, h: ext.h };
+    r.px = { es: es.d, mr: meanRadius(shots, c), w: ext.w, h: ext.h, fom: (ext.w + ext.h) / 2 };
+    const disp = dispersion(shots);
+    if (disp) Object.assign(r.px, disp);
     if (!k) return r;
 
-    const mm = { es: r.px.es * k, mr: r.px.mr * k, w: r.px.w * k, h: r.px.h * k };
+    const mm = {};
+    for (const [key, v] of Object.entries(r.px)) mm[key] = v * k;
     mm.esEdge = n >= 2 ? mm.es + (ctx.caliberMm || 0) : null;   // bordo-bordo esterno
     r.mm = mm;
 
     const D = ctx.distMm;
     if (D > 0) {
       const ang = v => ({ MOA: fromRad(angleOfSize(v, D), "MOA"), MIL: fromRad(angleOfSize(v, D), "MIL"), IPHY: fromRad(angleOfSize(v, D), "IPHY") });
-      r.ang = { es: ang(mm.es), mr: ang(mm.mr), w: ang(mm.w), h: ang(mm.h) };
+      r.ang = {};
+      for (const key of ["es", "mr", "w", "h", "fom", "sdRadii", "rsd", "cep", "r95", "r99"]) if (mm[key] !== undefined) r.ang[key] = ang(mm[key]);
     }
 
     if (poa) {
@@ -431,7 +511,8 @@ const Calc = (() => {
     return r;
   }
 
-  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze };
+  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
+    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -441,7 +522,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.7.0";
+const APP_VERSION = "0.8.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -485,6 +566,22 @@ const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "primer", "weat
 const LOAD_INHERIT = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "wind", "windUnit", "windDir"];
 function todayISO() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
 function defaultLoad() { const o = Object.fromEntries(LOAD_KEYS.map(k => [k, ""])); o.date = todayISO(); o.windUnit = "m/s"; return o; }
+/** Colpi che entrano nelle statistiche (esclusi i colpi marcati «escludi dal gruppo»). */
+/** «1 escluso» / «3 esclusi» */
+const esclusi = n => `${n} esclus${n === 1 ? "o" : "i"}`;
+const inc = g => g.shots.filter(s => !s.excluded);
+/** Flyer segnalati automaticamente, calcolati su TUTTI i colpi del gruppo (anche quelli già esclusi). Map id → {z, flagged}. */
+function flyerMap(g) {
+  const f = Calc.flyers(g.shots, params().flyerK);
+  return new Map(f ? g.shots.map((s, i) => [s.id, f[i]]) : []);
+}
+function toggleExclude(gid, id) {
+  const g = state.groups.find(x => x.id === gid); if (!g) return;
+  const s = g.shots.find(x => x.id === id); if (!s) return;
+  s.excluded = !s.excluded;
+  if (!s.excluded) delete s.excluded;
+  commit();
+}
 const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) || null;
 
 /* ------------------------- STORIA (UNDO/REDO) ------------------------- */
@@ -558,12 +655,13 @@ function params() {
     shotDist: num("shotDist"), shotDistUnit: $("shotDistUnit").value,
     caliber: num("caliber"), caliberUnit: $("caliberUnit").value, caliberPreset: $("caliberPreset").value,
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
+    flyerK: num("flyerK") || 2,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   syncGridButton();
@@ -647,7 +745,7 @@ function gridSpec(cc) {
   const p = params();
   if (!p.gridOn || !state.image || !cc.pxPerMm || !(cc.distMm > 0) || !(p.gridStep > 0)) return null;
   const g = activeGroup();
-  const center = g && g.poa ? g.poa : g && g.shots.length ? Calc.centroid(g.shots) : { x: state.image.w / 2, y: state.image.h / 2 };
+  const center = g && g.poa ? g.poa : g && inc(g).length ? Calc.centroid(inc(g)) : { x: state.image.w / 2, y: state.image.h / 2 };
   const rad = p.gridStep * (p.gridUnit === "MOA" ? Math.PI / 10800 : 0.001);
   // linea marcata ogni unità intera (passo < 1) oppure ogni 5 linee
   const major = p.gridStep < 1 ? Math.max(1, Math.round(1 / p.gridStep)) : 5;
@@ -822,12 +920,13 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
   for (const grp of state.groups) {
     if (opts.onlyGroupIds && !opts.onlyGroupIds.includes(grp.id)) continue;
     const isActive = grp.id === state.activeGroupId;
-    const r = Calc.analyze(grp.shots, grp.poa, cc);
+    const shotsIn = inc(grp), fl = flyerMap(grp);
+    const r = Calc.analyze(shotsIn, grp.poa, cc);
     const holeR = cc.pxPerMm && cc.caliberMm > 0 ? (cc.caliberMm / 2) * cc.pxPerMm * scl : 0;
 
     // linea dell'extreme spread
     if (r.n >= 2) {
-      const a = T(grp.shots[r.esIdx[0]]), b = T(grp.shots[r.esIdx[1]]);
+      const a = T(shotsIn[r.esIdx[0]]), b = T(shotsIn[r.esIdx[1]]);
       g.save(); g.strokeStyle = grp.color; g.globalAlpha = 0.85; g.lineWidth = 1.5; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
     }
@@ -851,8 +950,15 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
     grp.shots.forEach((s, i) => {
       const p = T(s);
       const isSel = sel && sel.kind === "shot" && sel.id === s.id;
+      const f = fl.get(s.id), R = Math.max(holeR, 5);
       g.save();
-      if (holeR >= 3) {
+      if (s.excluded) {
+        // colpo escluso: solo contorno tratteggiato, nessun riempimento
+        g.strokeStyle = grp.color; g.globalAlpha = 0.8; g.lineWidth = isSel ? 2.5 : 1.4; g.setLineDash([3, 3]);
+        g.beginPath(); g.arc(p.x, p.y, R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+        g.beginPath(); g.moveTo(p.x - R * 0.6, p.y - R * 0.6); g.lineTo(p.x + R * 0.6, p.y + R * 0.6);
+        g.moveTo(p.x + R * 0.6, p.y - R * 0.6); g.lineTo(p.x - R * 0.6, p.y + R * 0.6); g.stroke();
+      } else if (holeR >= 3) {
         // In modalità "light" (lente) solo il contorno sottile: il bordo reale del foro deve restare visibile.
         g.fillStyle = hexA(grp.color, opts.light ? 0 : isActive ? 0.22 : 0.12);
         g.strokeStyle = grp.color; g.lineWidth = opts.light ? 1 : isSel ? 3 : 1.6;
@@ -864,9 +970,14 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       // puntino centrale per la precisione
       g.fillStyle = "#fff"; g.beginPath(); g.arc(p.x, p.y, 1.6, 0, Math.PI * 2); g.fill();
       g.fillStyle = grp.color; g.beginPath(); g.arc(p.x, p.y, 0.9, 0, Math.PI * 2); g.fill();
+      if (f && f.flagged && !opts.light) {   // flyer segnalato automaticamente
+        g.strokeStyle = "#f97316"; g.lineWidth = 2.2; g.setLineDash([4, 3]); g.globalAlpha = 1;
+        g.beginPath(); g.arc(p.x, p.y, R + 7, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+      }
       if (isSel && !opts.light) { g.strokeStyle = "#facc15"; g.lineWidth = 2; g.beginPath(); g.arc(p.x, p.y, Math.max(holeR, 5) + 4, 0, Math.PI * 2); g.stroke(); }
       g.restore();
-      label(g, p.x + Math.max(holeR, 6) + 3, p.y - Math.max(holeR, 6) - 1, String(i + 1), grp.color, 11);
+      label(g, p.x + Math.max(holeR, 6) + 3, p.y - Math.max(holeR, 6) - 1,
+        `${i + 1}${s.excluded ? " escl." : ""}${f && f.flagged ? " ⚠" : ""}`, f && f.flagged ? "#c2410c" : grp.color, 11);
     });
     // punto di mira
     if (grp.poa) {
@@ -1055,6 +1166,7 @@ document.addEventListener("keydown", e => {
   else if (k === "f") fitView();
   else if (k === "l") setLoupe(!state.loupe);
   else if (k === "g") toggleGrid();
+  else if (k === "x") { if (state.selected && state.selected.kind === "shot") toggleExclude(state.selected.gid, state.selected.id); }
   else if (k === "t") toggleTheme();
   else if (k === "1") setMode("pan");
   else if (k === "2") setMode("calib");
@@ -1189,10 +1301,12 @@ const stamp = (d = new Date()) => {   // AAAA-MM-GG--hh-mm in ora locale (es. 20
 /* --------------------------- FORMATTAZIONE --------------------------- */
 function fmt(v, d = 2) { return v == null || !isFinite(v) ? "–" : v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
 const fmtLen = mm => `${fmt(mm, 1)} mm · ${fmt(mm / 25.4, 3)}"`;
+/** "12,3 mm · 0,42 MOA · 0,12 MIL" su una riga. */
+const fmtLA = (mm, a) => `${fmt(mm, 1)} mm${a ? ` · ${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : ""}`;
 const fmtAng = a => a ? `${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : "—";
 
 function summarize(g) {
-  const r = Calc.analyze(g.shots, g.poa, calcContext());
+  const r = Calc.analyze(inc(g), g.poa, calcContext());
   return { n: r.n, mm: r.mm || null, ang: r.ang || null, offset: r.offset || null, correction: r.correction || null };
 }
 function correctionText(c) {
@@ -1227,8 +1341,8 @@ function refreshLoadForm() {
   document.querySelectorAll("#ldForm [data-k]").forEach(el => {
     if (el !== document.activeElement && el.value !== (L[el.dataset.k] ?? "")) el.value = L[el.dataset.k] ?? "";
   });
-  const tot = parseInt(L.shotsTotal, 10), n = g ? g.shots.length : 0;
-  $("ldShotsInfo").textContent = tot > 0 ? `${n} nel gruppo${tot > n ? ` · ${tot - n} esclusi` : tot < n ? " · ⚠ meno dei fori marcati" : ""}` : `${n} nel gruppo`;
+  const tot = parseInt(L.shotsTotal, 10), n = g ? inc(g).length : 0, all = g ? g.shots.length : 0;
+  $("ldShotsInfo").textContent = tot > 0 ? `${n} nel gruppo${tot > n ? ` · ${esclusi(tot - n)}` : ""}${tot < all ? " · ⚠ meno dei fori marcati" : ""}` : `${n} nel gruppo${all > n ? ` · ${esclusi(all - n)} dal calcolo` : ""}`;
 }
 function refreshLists() {
   refreshLoadForm();
@@ -1238,7 +1352,7 @@ function refreshLists() {
     const el = document.createElement("div");
     el.className = "g" + (g.id === state.activeGroupId ? " active" : "");
     el.innerHTML = `<span class="dot" style="background:${g.color}"></span><input value="${esc(g.name)}" aria-label="Nome gruppo">
-      <span class="n">${g.shots.length} colpi</span><button title="Elimina gruppo">✕</button>`;
+      <span class="n">${inc(g).length}${g.shots.length !== inc(g).length ? "/" + g.shots.length : ""} colpi</span><button title="Elimina gruppo">✕</button>`;
     el.addEventListener("click", ev => { if (ev.target.tagName === "BUTTON") return; if (state.activeGroupId !== g.id) { state.activeGroupId = g.id; commit(); } });
     const inp = el.querySelector("input");
     inp.addEventListener("change", () => { g.name = inp.value.trim() || g.name; commit(); });
@@ -1253,47 +1367,70 @@ function refreshLists() {
   }
   // punti del gruppo attivo
   const g = activeGroup(), cc = calcContext(), pts = $("points");
-  $("pointsGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)}<span class="muted" style="font-weight:400">· ${g.shots.length} colpi</span>` : "";
+  $("pointsGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)}<span class="muted" style="font-weight:400">· ${inc(g).length} colpi${g.shots.length > inc(g).length ? ` (${esclusi(g.shots.length - inc(g).length)})` : ""}</span>` : "";
   if (!g || (!g.poa && !g.shots.length && !state.calib.p1)) { pts.innerHTML = `<div class="muted">Nessun punto.</div>`; return; }
-  const ref = g.poa || null;
-  const k = cc.pxPerMm ? 1 / cc.pxPerMm : null;
-  const coord = p => {
-    if (k && ref) return [fmt((p.x - ref.x) * k, 1), fmt((ref.y - p.y) * k, 1)];
-    return [fmt(p.x, 0), fmt(p.y, 0)];
-  };
-  const unitLbl = k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine";
-  // Click per portare il punto sul punto di mira (solo con mira, scala, distanza e valore click).
-  const clicks = p => {
-    if (!k || !ref) return ["", ""];
-    const c = Calc.correction((p.x - ref.x) * k, (ref.y - p.y) * k, cc);
-    if (!c) return ["–", "–"];
-    const one = (n, dir, ang) => n === 0 ? `<span class="muted">0</span>` : `<span title="${fmt(ang, 2)} ${c.unit}">${clickTxt(n, dir)}</span>`;
-    return [one(c.vClicks, c.vDir, c.vAng), one(c.hClicks, c.hDir, c.hAng)];
-  };
-  let rows = "";
+  const T = pointTable(g, cc);
   const selKey = JSON.stringify(state.selected);
-  const row = (ref2, tipo, p, withClicks = false) => {
-    const [x, y] = coord(p);
-    const [cv, ch] = withClicks ? clicks(p) : ["", ""];
-    rows += `<tr class="${JSON.stringify(ref2) === selKey ? "sel" : ""}" data-ref='${JSON.stringify(ref2)}'><td>${tipo}</td><td class="x">${x}</td><td class="x">${y}</td><td class="x">${cv}</td><td class="x">${ch}</td><td><button data-del='${JSON.stringify(ref2)}' title="Elimina">✕</button></td></tr>`;
-  };
-  if (state.calib.p1) row({ kind: "calib", which: "p1" }, "Scala A", state.calib.p1);
-  if (state.calib.p2) row({ kind: "calib", which: "p2" }, "Scala B", state.calib.p2);
-  if (g.poa) row({ kind: "poa", gid: g.id }, "Mira", g.poa);
-  // Centro del gruppo: è la correzione da applicare (riga evidenziata, non selezionabile né eliminabile).
-  if (g.shots.length) {
-    const c = Calc.centroid(g.shots);
-    const [x, y] = coord(c), [cv, ch] = clicks(c);
-    rows += `<tr class="centroid" title="Correzione da applicare alle torrette"><td>⊕ Centro gruppo</td><td class="x">${x}</td><td class="x">${y}</td><td class="x">${cv}</td><td class="x">${ch}</td><td></td></tr>`;
-  }
-  g.shots.forEach((s, i) => row({ kind: "shot", gid: g.id, id: s.id }, `Foro ${i + 1}`, s, true));
-  const showClicks = k && ref;
-  pts.innerHTML = `<table class="pts"><thead><tr><th>Tipo</th><th class="x">X</th><th class="x">Y</th><th class="x" title="Click verticali per portare il punto sulla mira">Click ↕</th><th class="x" title="Click orizzontali per portare il punto sulla mira">Click ↔</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">Coordinate in ${unitLbl}.${showClicks
-      ? ` Click (${fmt(cc.clickValue, 3)} ${cc.clickUnit}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>; i valori del singolo foro includono la dispersione casuale.`
-      : " Per i click servono punto di mira e scala calibrata."}</div>`;
+  const head = `<tr><th>Tipo</th><th title="Escludi dal gruppo (tasto X sul foro selezionato)">Escl.</th><th class="x">X</th><th class="x">Y</th>
+    <th class="x" title="Distanza dal punto di mira (mm)">Da mira</th><th class="x" title="Distanza dal centro gruppo (mm)">Da centro</th>
+    <th class="x" title="Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale">Direz.</th>
+    <th class="x" title="Click verticali per portare il punto sulla mira">Click ↕</th><th class="x" title="Click orizzontali per portare il punto sulla mira">Click ↔</th><th></th></tr>`;
+  const rows = T.rows.map(rw => {
+    const cls = [rw.kind === "centroid" ? "centroid" : "", rw.excluded ? "excl" : "", rw.ref && JSON.stringify(rw.ref) === selKey ? "sel" : ""].join(" ");
+    const tipo = esc(rw.label) + (rw.flag ? ` <span class="flyer" title="Possibile flyer: ${fmt(rw.flag.z, 1)} SD oltre la distanza media degli altri colpi">⚠</span>` : "");
+    const chk = rw.kind === "shot" ? `<input type="checkbox" data-ex='${JSON.stringify(rw.ref)}' ${rw.excluded ? "checked" : ""} title="Escludi dal gruppo">` : "";
+    const clk = (n, dir, ang) => n == null ? "" : n === 0 ? `<span class="muted">0</span>` : `<span title="${fmt(ang, 2)} ${T.unit}">${clickTxt(n, dir)}</span>`;
+    const del = rw.ref ? `<button data-del='${JSON.stringify(rw.ref)}' title="Elimina">✕</button>` : "";
+    return `<tr class="${cls}" ${rw.ref ? `data-ref='${JSON.stringify(rw.ref)}'` : `title="Correzione da applicare alle torrette"`}><td>${tipo}</td><td>${chk}</td>
+      <td class="x">${rw.x}</td><td class="x">${rw.y}</td><td class="x">${rw.dPoa}</td><td class="x">${rw.dC}</td><td class="x">${rw.dir}</td>
+      <td class="x">${clk(rw.cv, rw.cvDir, rw.cvAng)}</td><td class="x">${clk(rw.ch, rw.chDir, rw.chAng)}</td><td>${del}</td></tr>`;
+  }).join("");
+  const nFly = T.rows.filter(r => r.flag).length;
+  pts.innerHTML = `<div class="tscroll"><table class="pts"><thead>${head}</thead><tbody>${rows}</tbody></table></div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">X, Y in ${T.coordUnit}. Distanze in ${T.k ? "mm" : "pixel"}; direzione dal centro gruppo (0° = alto, senso orario).
+    ${T.k && T.ref ? ` Click (${fmt(cc.clickValue, 3)} ${cc.clickUnit}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>.` : " Per i click servono punto di mira e scala calibrata."}
+    ${T.flyerNote}${nFly ? ` <b>${nFly} possibil${nFly > 1 ? "i flyer" : "e flyer"}</b> (⚠): spunta «Escl.» per toglierl${nFly > 1 ? "i" : "o"} dalle statistiche.` : ""}</div>`;
   pts.querySelectorAll("button[data-del]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); deleteRef(JSON.parse(b.dataset.del)); }));
+  pts.querySelectorAll("input[data-ex]").forEach(cb => {
+    cb.addEventListener("click", ev => ev.stopPropagation());
+    cb.addEventListener("change", () => { const r = JSON.parse(cb.dataset.ex); toggleExclude(r.gid, r.id); });
+  });
   pts.querySelectorAll("tr[data-ref]").forEach(tr => tr.addEventListener("click", () => { state.selected = JSON.parse(tr.dataset.ref); refreshLists(); requestDraw(); }));
+}
+/**
+ * Dati della tabella punti del gruppo (usati dal pannello e dalla Result Card).
+ * Coordinate X/Y in mm dal punto di mira (Y verso l'alto) se calibrato e con mira, altrimenti pixel immagine.
+ */
+function pointTable(g, cc) {
+  const k = cc.pxPerMm ? 1 / cc.pxPerMm : null, ref = g.poa || null;
+  const shotsIn = inc(g), c = shotsIn.length ? Calc.centroid(shotsIn) : null, fl = flyerMap(g);
+  const L = v => k ? fmt(v * k, 1) : fmt(v, 0);
+  const row = (kind, label, p, extra = {}) => {
+    const out = { kind, label, ...extra };
+    out.x = k && ref ? fmt((p.x - ref.x) * k, 1) : fmt(p.x, 0);
+    out.y = k && ref ? fmt((ref.y - p.y) * k, 1) : fmt(p.y, 0);
+    out.dPoa = ref && (kind === "shot" || kind === "centroid") ? L(Calc.dist(p, ref)) : "";
+    out.dC = c && kind === "shot" ? L(Calc.dist(p, c)) : "";
+    const cp = c && kind === "shot" ? Calc.compass(p.x - c.x, c.y - p.y) : null;
+    out.dir = cp ? `${fmt(cp.deg, 0)}° ${cp.label}` : "";
+    if (k && ref && (kind === "shot" || kind === "centroid")) {
+      const cr = Calc.correction((p.x - ref.x) * k, (ref.y - p.y) * k, cc);
+      if (cr) Object.assign(out, { cv: cr.vClicks, cvDir: cr.vDir, cvAng: cr.vAng, ch: cr.hClicks, chDir: cr.hDir, chAng: cr.hAng });
+    }
+    return out;
+  };
+  const rows = [];
+  if (state.calib.p1) rows.push(row("calib", "Scala A", state.calib.p1, { ref: { kind: "calib", which: "p1" } }));
+  if (state.calib.p2) rows.push(row("calib", "Scala B", state.calib.p2, { ref: { kind: "calib", which: "p2" } }));
+  if (g.poa) rows.push(row("poa", "Mira", g.poa, { ref: { kind: "poa", gid: g.id } }));
+  if (c) rows.push(row("centroid", "⊕ Centro gruppo", c));
+  g.shots.forEach((s, i) => {
+    const f = fl.get(s.id);
+    rows.push(row("shot", `Foro ${i + 1}`, s, { ref: { kind: "shot", gid: g.id, id: s.id }, excluded: !!s.excluded, flag: f && f.flagged ? f : null }));
+  });
+  const flyerNote = g.shots.length >= 5 ? `Flyer: confronto di ogni foro con gli altri, soglia ${fmt(params().flyerK, 1)} SD.`
+    : g.shots.length ? "Riconoscimento flyer da 5 fori in su." : "";
+  return { rows, k, ref, unit: cc.clickUnit, coordUnit: k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine", flyerNote };
 }
 function refreshResults() {
   const cc = calcContext();
@@ -1305,9 +1442,10 @@ function refreshResults() {
 
   const out = $("results"); out.innerHTML = "";
   for (const g of state.groups) {
-    const r = Calc.analyze(g.shots, g.poa, cc);
+    const r = Calc.analyze(inc(g), g.poa, cc);
     const box = document.createElement("div"); box.className = "res";
-    let html = `<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi</span></h3>`;
+    const nEx = g.shots.length - r.n;
+    let html = `<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi${nEx ? ` (${esclusi(nEx)})` : ""}</span></h3>`;
     if (r.n < 2) html += `<div class="muted">Servono almeno 2 fori.</div>`;
     else if (!r.mm) html += `<div class="muted">Calibra la scala per ottenere le misure. (ES = ${fmt(r.px.es, 0)} px)</div>`;
     else {
@@ -1315,8 +1453,17 @@ function refreshResults() {
         <tr><td>Group size (c-c)</td><td class="v"><b>${fmtLen(r.mm.es)}</b><br>${fmtAng(r.ang?.es)}</td></tr>
         <tr><td>Bordo-bordo esterno</td><td class="v">${fmtLen(r.mm.esEdge)}</td></tr>
         <tr><td>Raggio medio</td><td class="v">${fmtLen(r.mm.mr)}<br>${fmtAng(r.ang?.mr)}</td></tr>
-        <tr><td>Larghezza × altezza</td><td class="v">${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm</td></tr>
-      </table>`;
+        <tr><td title="Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)">H-spread (orizz.)</td><td class="v">${fmtLA(r.mm.w, r.ang?.w)}</td></tr>
+        <tr><td title="Dispersione verticale: dal colpo più basso al più alto (c-c)">V-spread (vert.)</td><td class="v">${fmtLA(r.mm.h, r.ang?.h)}</td></tr>
+        <tr><td title="Figure of Merit: media tra H-spread e V-spread">FOM</td><td class="v">${fmtLA(r.mm.fom, r.ang?.fom)}</td></tr>
+        <tr><td colspan="2" class="sub2">Statistiche${r.n < 5 ? " · ⚠ poco affidabili con meno di 5 colpi" : ""}</td></tr>
+        <tr><td title="Deviazione standard delle distanze dei fori dal centro gruppo">SD distanze dal centro</td><td class="v">${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}</td></tr>
+        <tr><td title="Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale">SD radiale √(σx²+σy²)</td><td class="v">${fmtLA(r.mm.rsd, r.ang?.rsd)}</td></tr>
+        <tr><td title="Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)">CEP (50%)</td><td class="v">${fmtLA(r.mm.cep, r.ang?.cep)}</td></tr>
+        <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}</td></tr>
+        <tr><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}</td></tr>
+      </table>
+      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi).</div>`;
     }
     if (r.mm && r.n >= 1) {
       if (!g.poa) html += `<div class="muted" style="margin-top:6px">Aggiungi il punto di mira per la correzione.</div>`;
@@ -1354,9 +1501,10 @@ function loadLines(g) {
   if (met) out.push(["Meteo", met]);
   const wind = [v("wind") ? `${num("wind", 1)} ${v("windUnit") || "m/s"}` : "", v("windDir") ? `da ore ${v("windDir")}` : ""].filter(Boolean).join(" ");
   if (wind) out.push(["Vento", wind]);
-  const n = g.shots.length, tot = parseInt(v("shotsTotal"), 10), fo = parseInt(v("foulers"), 10);
+  const n = inc(g).length, ex = g.shots.length - n, tot = parseInt(v("shotsTotal"), 10), fo = parseInt(v("foulers"), 10);
   const cl = [];
-  if (tot > 0) cl.push(`${n} nel gruppo su ${tot} sparati${tot > n ? ` (${tot - n} esclusi)` : ""}`);
+  if (tot > 0) cl.push(`${n} nel gruppo su ${tot} sparati${tot > n ? ` (${esclusi(tot - n)})` : ""}`);
+  else if (ex > 0) cl.push(`${n} nel gruppo (${esclusi(ex)} dal calcolo)`);
   if (fo > 0) cl.push(`${fo} scaldacanna`);
   if (cl.length) out.push(["Colpi", cl.join(" · ")]);
   if (v("notes")) out.push(["Note", v("notes")]);
@@ -1385,14 +1533,19 @@ function resultText() {
     `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${caliberLabel(p)} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
   if (!cc.pxPerMm) L.push("ATTENZIONE: scala non calibrata");
   for (const g of state.groups) {
-    const r = Calc.analyze(g.shots, g.poa, cc);
-    L.push("", `[${g.name}] ${r.n} colpi`);
+    const r = Calc.analyze(inc(g), g.poa, cc);
+    L.push("", `[${g.name}] ${r.n} colpi${g.shots.length > r.n ? ` (${esclusi(g.shots.length - r.n)} dal calcolo)` : ""}`);
     for (const [k, v] of loadLines(g)) L.push(`  ${(k + ":").padEnd(16)}${v.replace(/\n/g, "\n" + " ".repeat(18))}`);
     if (r.mm && r.n >= 2) {
       L.push(`  Group size c-c: ${fmtLen(r.mm.es)} = ${fmtAng(r.ang?.es)}`);
       L.push(`  Bordo-bordo:    ${fmtLen(r.mm.esEdge)}`);
       L.push(`  Raggio medio:   ${fmtLen(r.mm.mr)} = ${fmtAng(r.ang?.mr)}`);
-      L.push(`  Larg. x alt.:   ${fmt(r.mm.w, 1)} x ${fmt(r.mm.h, 1)} mm`);
+      L.push(`  H-spread:       ${fmtLA(r.mm.w, r.ang?.w)}`);
+      L.push(`  V-spread:       ${fmtLA(r.mm.h, r.ang?.h)}`);
+      L.push(`  FOM:            ${fmtLA(r.mm.fom, r.ang?.fom)}`);
+      L.push(`  SD dist.centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`);
+      L.push(`  SD radiale:     ${fmtLA(r.mm.rsd, r.ang?.rsd)}  [√(σx²+σy²)]`);
+      L.push(`  CEP / R95 / R99: ${fmt(r.mm.cep, 1)} / ${fmt(r.mm.r95, 1)} / ${fmt(r.mm.r99, 1)} mm  [previsti, modello circolare normale]`);
     }
     if (r.offset) L.push(`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? "destra" : "sinistra"}`);
     if (r.correction) L.push(`  Correzione:     ${correctionText(r.correction)}`);
@@ -1429,8 +1582,8 @@ async function exportCard(scope = "active") {
   const L = [];
   const add = (t, size = 15, color = "#1d2330", weight = 400, gap = 8) => L.push([t, size, color, weight, gap]);
   add("SHOOT ANALYZER", 13, "#6b7280", 700);
-  if (groups.length === 1) add(`${groups[0].name} · ${groups[0].shots.length} colpi`, 24, groups[0].color, 700, 4);
-  else add(`${groups.length} gruppi · ${groups.reduce((a, g) => a + g.shots.length, 0)} colpi`, 24, "#1d2330", 700, 4);
+  if (groups.length === 1) add(`${groups[0].name} · ${inc(groups[0]).length} colpi`, 24, groups[0].color, 700, 4);
+  else add(`${groups.length} gruppi · ${groups.reduce((a, g) => a + inc(g).length, 0)} colpi`, 24, "#1d2330", 700, 4);
   add(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
   add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${caliberLabel(p)}`, 14, "#374151", 400, 18);
   if (!cc.pxPerMm) add("Scala non calibrata", 16, "#9a3412", 600, 16);
@@ -1439,12 +1592,12 @@ async function exportCard(scope = "active") {
     const lines = loadLines(g);
     for (const [k, v] of lines) {
       const font = `400 ${size}px "Segoe UI", system-ui, sans-serif`;
-      wrapText(`${k}: ${v}`, font, 380).forEach((t, i, arr) => add(t, size, i === 0 ? "#1d2330" : "#374151", 400, i === arr.length - 1 ? 4 : 2));
+      wrapText(`${k}: ${v}`, font, groups.length === 1 ? 540 : 380).forEach((t, i, arr) => add(t, size, i === 0 ? "#1d2330" : "#374151", 400, i === arr.length - 1 ? 4 : 2));
     }
     return lines.length;
   };
   for (const g of groups) {
-    const r = Calc.analyze(g.shots, g.poa, cc);
+    const r = Calc.analyze(inc(g), g.poa, cc);
     if (groups.length === 1) {
       if (loadLines(g).length) {
         add("RICARICA E CONDIZIONI", 12, "#6b7280", 700, 5);
@@ -1459,7 +1612,13 @@ async function exportCard(scope = "active") {
         add(fmtLen(r.mm.mr), 17, "#1d2330", 600, 4);
         add(fmtAng(r.ang?.mr), 15, "#1d2330", 400, 16);
         add(`Bordo-bordo: ${fmtLen(r.mm.esEdge)}`, 14, "#374151", 400, 6);
-        add(`Larg. × alt.: ${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm`, 14, "#374151", 400, 18);
+        add(`H-spread: ${fmtLA(r.mm.w, r.ang?.w)}`, 14, "#374151", 400, 4);
+        add(`V-spread: ${fmtLA(r.mm.h, r.ang?.h)}`, 14, "#374151", 400, 4);
+        add(`FOM: ${fmtLA(r.mm.fom, r.ang?.fom)}`, 14, "#374151", 400, 12);
+        add(`STATISTICHE${r.n < 5 ? " (poco affidabili con meno di 5 colpi)" : ""}`, 12, "#6b7280", 700, 4);
+        add(`SD distanze dal centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`, 13, "#374151", 400, 3);
+        add(`SD radiale √(σx²+σy²): ${fmtLA(r.mm.rsd, r.ang?.rsd)}`, 13, "#374151", 400, 3);
+        add(`CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} · R99 ${fmt(r.mm.r99, 1)} mm (previsti)`, 13, "#374151", 400, 18);
       } else if (cc.pxPerMm) add("Servono almeno 2 fori", 16, "#9a3412");
       if (r.correction) {
         add("CORREZIONE", 12, "#6b7280", 700, 4);
@@ -1468,24 +1627,24 @@ async function exportCard(scope = "active") {
       }
       // Tabella punti (dal centro gruppo in giù): solo con scala e punto di mira.
       if (cc.pxPerMm && g.poa) {
-        const kk = 1 / cc.pxPerMm, ref = g.poa;
-        const cells = (label, q) => {
-          const c = Calc.correction((q.x - ref.x) * kk, (ref.y - q.y) * kk, cc);
-          return [label, fmt((q.x - ref.x) * kk, 1), fmt((ref.y - q.y) * kk, 1),
-            c ? clickTxt(c.vClicks, c.vDir) : "–", c ? clickTxt(c.hClicks, c.hDir) : "–"];
-        };
-        add("PUNTI (mm dal punto di mira, Y↑)", 12, "#6b7280", 700, 6);
-        L.push({ row: ["", "X", "Y", "Click ↕", "Click ↔"], size: 12, color: "#6b7280", weight: 600, line: true });
-        L.push({ row: cells("⊕ Centro gruppo", r.centroid), size: 13, color: "#1d4ed8", weight: 700, bg: "#eff5ff" });
-        g.shots.forEach((q, i) => L.push({ row: cells(`Foro ${i + 1}`, q), size: 13, color: "#1d2330", weight: 400 }));
+        const PT = pointTable(g, cc);
+        const ck = (n, d) => n == null ? "–" : clickTxt(n, d);
+        const cells = rw => [rw.label + (rw.excluded ? " (escl.)" : "") + (rw.flag ? " ⚠" : ""), rw.x, rw.y, rw.dPoa, rw.dC, rw.dir, ck(rw.cv, rw.cvDir), ck(rw.ch, rw.chDir)];
+        add("PUNTI (mm; X, Y dal punto di mira, Y↑; direzione dal centro gruppo)", 12, "#6b7280", 700, 6);
+        L.push({ row: ["", "X", "Y", "Da mira", "Da centro", "Direz.", "Click ↕", "Click ↔"], size: 12, color: "#6b7280", weight: 600, line: true });
+        for (const rw of PT.rows) {
+          if (rw.kind === "centroid") L.push({ row: cells(rw), size: 13, color: "#1d4ed8", weight: 700, bg: "#eff5ff" });
+          else if (rw.kind === "shot") L.push({ row: cells(rw), size: 13, color: rw.excluded ? "#9ca3af" : rw.flag ? "#c2410c" : "#1d2330", weight: 400 });
+        }
       }
     } else {
       // versione compatta per gruppo
-      add(`● ${g.name} · ${r.n} colpi`, 17, g.color, 700, 5);
+      add(`● ${g.name} · ${r.n} colpi${g.shots.length > r.n ? ` (${esclusi(g.shots.length - r.n)})` : ""}`, 17, g.color, 700, 5);
       if (r.mm && r.n >= 2) {
         add(`c-c ${fmtLen(r.mm.es)}`, 14, "#1d2330", 600, 3);
         add(`     ${fmtAng(r.ang?.es)}`, 13, "#374151", 400, 3);
         add(`R. medio ${fmt(r.mm.mr, 1)} mm · ${fmtAng(r.ang?.mr)}`, 13, "#374151", 400, 3);
+        add(`FOM ${fmt(r.mm.fom, 1)} · CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} mm`, 13, "#374151", 400, 3);
       } else if (cc.pxPerMm) add("Servono almeno 2 fori", 13, "#9a3412", 400, 3);
       if (r.correction) add(`↻ ${correctionText(r.correction)}`, 14, "#1d4ed8", 700, 3);
       addLoad(g, 12);
@@ -1496,7 +1655,7 @@ async function exportCard(scope = "active") {
   const ROW_H = 21;
   const textH = 24 + L.reduce((a, l) => a + (l.row ? ROW_H : l[1] + l[4]), 0) + 20;
 
-  const Wpanel = 400, W = Math.round(iw + Wpanel + 60), H = Math.round(Math.max(ih + 40, textH, 560));
+  const Wpanel = groups.length === 1 ? 560 : 400, W = Math.round(iw + Wpanel + 60), H = Math.round(Math.max(ih + 40, textH, 560));
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const k = c.getContext("2d");
   k.fillStyle = "#fff"; k.fillRect(0, 0, W, H);
@@ -1511,12 +1670,12 @@ async function exportCard(scope = "active") {
 
   let tx = iw + 40, ty = 24;
   k.textBaseline = "top";
-  const COLS = [[0, "left"], [205, "right"], [260, "right"], [325, "right"], [390, "right"]];   // x di ancoraggio
+  const COLS = [[0, "left"], [185, "right"], [235, "right"], [295, "right"], [360, "right"], [430, "right"], [490, "right"], [550, "right"]];   // x di ancoraggio
   for (const item of L) {
     if (item.row) {
       if (item.bg) { k.fillStyle = item.bg; k.fillRect(tx - 4, ty - 3, Wpanel - 2, ROW_H); }
       k.font = `${item.weight} ${item.size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = item.color;
-      item.row.forEach((t, i) => { k.textAlign = COLS[i][1]; k.fillText(t, tx + COLS[i][0], ty, i ? 70 : 150); });
+      item.row.forEach((t, i) => { k.textAlign = COLS[i][1]; k.fillText(t, tx + COLS[i][0], ty, i ? 64 : 135); });
       k.textAlign = "left";
       if (item.line) { k.fillStyle = "#e3e6eb"; k.fillRect(tx - 4, ty + ROW_H - 5, Wpanel - 2, 1); }
       ty += ROW_H;

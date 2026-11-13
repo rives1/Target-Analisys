@@ -15,6 +15,7 @@ const Calc = mod.exports;
 let passed = 0;
 const near = (a, b, tol, msg) => { assert.ok(Math.abs(a - b) <= tol, `${msg}: atteso ${b}, ottenuto ${a}`); passed++; };
 const eq = (a, b, msg) => { assert.deepStrictEqual(a, b, msg); passed++; };
+const ok = (c, msg) => { assert.ok(c, msg); passed++; };
 
 // --- geometria di base
 near(Calc.dist({ x: 0, y: 0 }, { x: 3, y: 4 }), 5, 1e-12, "distanza euclidea");
@@ -78,5 +79,39 @@ eq(Calc.correction(1, 1, { ...ctx, clickValue: 0 }), null, "correzione senza val
 // coerenza: la correzione del gruppo coincide con quella calcolata sul centroide
 const cg = Calc.correction(r.offset.dx, r.offset.dy, ctx);
 eq(cg, r.correction, "correzione gruppo = correzione del centroide");
+
+// ---------- v0.8.0: statistiche di dispersione, flyer, direzione ----------
+near(Math.exp(Calc.lgamma(5)), 24, 1e-9, "Γ(5) = 24");
+near(Math.exp(Calc.lgamma(4.5)), 11.631728396567448, 1e-9, "Γ(4,5)");
+near(Calc.sigmaCorrection(5), 0.5 * 11.631728396567448 / 6, 1e-12, "fattore di correzione n=5");
+near(Calc.sigmaCorrection(2000), 1, 2e-4, "fattore di correzione → 1 per n grande");
+const sq = [{ x: -10, y: -10 }, { x: 10, y: -10 }, { x: 10, y: 10 }, { x: -10, y: 10 }];
+const d4 = Calc.dispersion(sq);
+near(d4.sx, Math.sqrt(400 / 3), 1e-12, "σx campionaria");
+near(d4.rsd, Math.sqrt(800 / 3), 1e-12, "SD radiale √(σx²+σy²)");
+near(d4.sdRadii, 0, 1e-12, "SD delle distanze (tutte uguali) = 0");
+near(d4.sigma, Math.sqrt(400 / 3) / Calc.sigmaCorrection(4), 1e-12, "σ stimato corretto");
+near(d4.cep / d4.sigma, 1.1774100225154747, 1e-12, "CEP = 1,1774 σ");
+near(d4.r95 / d4.sigma, 2.4477468306808166, 1e-12, "R95 = 2,4477 σ");
+near(d4.r99 / d4.sigma, 3.0348542587702925, 1e-12, "R99 = 3,0349 σ");
+eq(Calc.dispersion([{ x: 0, y: 0 }]), null, "dispersione con 1 colpo");
+const ra = Calc.analyze(shots, poa, ctx);
+near(ra.mm.fom, 20, 1e-9, "FOM = (H + V) / 2");
+near(ra.mm.cep, Calc.dispersion(shots).cep / 10, 1e-12, "CEP in mm");
+// flyer: 5 colpi raccolti + 1 lontano
+const grp = [{ x: 0, y: 0 }, { x: 3, y: 1 }, { x: 1, y: 4 }, { x: -2, y: 2 }, { x: 2, y: -2 }, { x: 25, y: 20 }];
+const fl = Calc.flyers(grp, 2);
+eq(fl.map(f => f.flagged), [false, false, false, false, false, true], "solo il colpo lontano è flyer");
+eq(Calc.flyers(grp.slice(0, 4), 2), null, "flyer: servono almeno 5 colpi");
+// con la regola «2 SD su tutti i colpi» lo stesso flyer non scatterebbe se i colpi fossero 5: verifica del limite (n−1)/√n
+const five = [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 100, y: 100 }];
+const cc5 = Calc.centroid(five), r5 = five.map(p => Calc.dist(p, cc5)), m5 = r5.reduce((a, b) => a + b) / 5;
+ok((r5[4] - m5) / Calc.sampleSD(r5) < 2, "regola 2 SD non leave-one-out: non scatta con 5 colpi");
+eq(Calc.flyers(five, 2)[4].flagged, true, "leave-one-out: scatta con 5 colpi");
+// direzione bussola
+eq(Calc.compass(0, 1).deg, 0, "N = 0°"); eq(Calc.compass(1, 0).label, "E", "E = 90°");
+near(Calc.compass(-1, -1).deg, 225, 1e-9, "SO = 225°"); eq(Calc.compass(-1, -1).label, "SO", "sigla SO");
+eq(Calc.compass(Math.sin(76 * Math.PI / 180), Math.cos(76 * Math.PI / 180)).label, "ENE", "76° = ENE");
+eq(Calc.compass(0, 0), null, "nessuna direzione per distanza nulla");
 
 console.log(`OK — ${passed} verifiche superate`);

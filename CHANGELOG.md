@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.8.0] - 2026-11-13
+### Aggiunto
+- Nuove metriche per gruppo (pannello Risultati, Result Card, testo copiato), in mm, MOA e MIL:
+  - **H-spread / V-spread**: dispersione orizzontale e verticale (c-c);
+  - **FOM** (Figure of Merit) = (H-spread + V-spread) / 2;
+  - **SD delle distanze dal centro** (deviazione standard campionaria delle distanze dei fori dal centroide);
+  - **SD radiale √(σx²+σy²)** (radial standard deviation dei software balistici);
+  - **CEP, R95, R99**: raggi *previsti* che contengono il 50/95/99% dei colpi, modello circolare normale (Rayleigh):
+    σ = √((σx²+σy²)/2) corretto per pochi colpi (fattore c con ν = 2(n−1)), CEP = 1,1774σ, R95 = 2,4477σ, R99 = 3,0349σ.
+  Avviso di scarsa affidabilità sotto i 5 colpi.
+- **Flyer**: riconoscimento automatico con criterio *leave-one-out* (ogni foro confrontato con centro e distanze degli
+  altri fori; flyer se supera la distanza media di più di k SD, k = 2 regolabile in «Soglia flyer»; da 5 fori in su).
+  Evidenziati con ⚠ e anello arancione. Ogni foro si può **escludere dal gruppo** (casella «Escl.» nella tabella o tasto `X`):
+  i fori esclusi restano visibili (tratteggiati) ma non entrano in statistiche, centro gruppo e correzione. Undo/redo e sessione inclusi.
+- Tabella punti: colonne **Da mira** e **Da centro** (distanza in mm) e **Direzione** dal centro gruppo
+  (gradi in senso orario da «in alto» + sigla cardinale a 16 settori, es. «76° ENE»). Le stesse colonne nella Result Card
+  del gruppo attivo (pannello di testo allargato).
+- 24 nuovi test (57 in totale): Γ, fattore di correzione, σx, SD radiale, CEP/R95/R99, FOM, flyer, direzioni.
+### Nota tecnica
+- La regola «> 2 SD dalla media» calcolata su tutti i colpi non può scattare con 5 colpi o meno: lo scarto massimo
+  possibile è (n−1)/√n (1,79 con n = 5). Per questo si usa il confronto leave-one-out.
+
 ## [0.7.0] - 2026-11-13
 ### Aggiunto
 - **Ricarica e condizioni** (per gruppo): data, bossolo, polvere + carica in grani, palla (il calibro resta nei parametri),
