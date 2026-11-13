@@ -11,7 +11,7 @@
 - **Novità 0.2.0**: lente di ingrandimento; Result Card anche con tutti i gruppi; licenza MIT.
 - **Collaudo**: Chrome (automatico), Firefox (utente, OK). Safari non collaudato.
 - **In attesa**: feedback dell'utente; pubblicazione su GitHub.
-- **Repo git**: `C:\Users\ammin\Documents\Claude_target_analyzer`, branch `main`, tag `v0.1.0` … `v0.4.0`. Autore commit: `rives <rivesone@outlook.com>`. Non ancora pubblicato su GitHub (nessun remote configurato).
+- **Repo git**: `C:\Users\ammin\Documents\Claude_target_analyzer`, branch `main`, tag `v0.1.0` … `v0.4.0`. Autore commit: `rives <rivesone@outlook.com>`. Remote `origin` = https://github.com/rives1/Target-Analisys (l'«Initial commit» di GitHub con la LICENSE è stato unito con un merge; LICENSE con copyright "Rives"). Il push lo esegue l'utente dal proprio PC (Claude non ha credenziali GitHub).
 
 ## 2. Decisioni prese (con motivazione)
 | # | Decisione | Motivo |
@@ -65,5 +65,5 @@
 ## 6. Prossimi passi
 1. Feedback dell'utente sulla 0.4.0.
 2. Collaudo su Safari (facoltativo: il criterio della rev. 2 è già soddisfatto con Firefox).
-3. Pubblicazione: creare il repo vuoto su GitHub, poi `git remote add origin https://github.com/<utente>/shoot-analyzer.git` e `git push -u origin main --tags`. Opzionale: GitHub Pages per avere anche un link web (l'app resta senza chiamate di rete).
+3. Pubblicazione: `git push -u origin main --tags` dalla cartella del repo. Opzionale: GitHub Pages per avere anche un link web (l'app resta senza chiamate di rete).
 4. Idee aperte (non richieste): zoom regolabile della lente, rotazione immagine, correzione prospettica a 4 punti, test UI Playwright nel repo.
