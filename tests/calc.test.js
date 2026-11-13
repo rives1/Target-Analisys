@@ -114,4 +114,19 @@ near(Calc.compass(-1, -1).deg, 225, 1e-9, "SO = 225°"); eq(Calc.compass(-1, -1)
 eq(Calc.compass(Math.sin(76 * Math.PI / 180), Math.cos(76 * Math.PI / 180)).label, "ENE", "76° = ENE");
 eq(Calc.compass(0, 0), null, "nessuna direzione per distanza nulla");
 
+// ---------- v0.9.0: orologio e asse principale ----------
+eq([0, 30, 90, 180, 270, 345, 359, 14].map(Calc.clockHour), [12, 1, 3, 6, 9, 12, 12, 12], "ore dell'orologio");
+eq(Calc.clockHour(60), 2, "60° = ore 2");
+// gruppo allungato in verticale (Y verso l'alto) → asse 0° (ore 12–6)
+const vert = [{ x: 0, y: -10 }, { x: 1, y: -5 }, { x: -1, y: 0 }, { x: 1, y: 5 }, { x: 0, y: 10 }];
+const pa = Calc.principalAxis(vert);
+ok(pa.bearing < 10 || pa.bearing > 170, "asse verticale ≈ 0°");
+ok(pa.ratio > 5, "allungamento marcato");
+// allungato lungo la diagonale verso ore 1–2 (45°: alto a destra)
+const diag = [-10, -5, 0, 5, 10].map((t, i) => ({ x: t + [0.5, -0.5, 0, 0.5, -0.5][i], y: t }));
+near(Calc.principalAxis(diag).bearing, 45, 4, "asse diagonale ≈ 45°");
+// orizzontale → 90° (ore 3–9)
+near(Calc.principalAxis([-10, -4, 0, 4, 10].map((t, i) => ({ x: t, y: [0.5, -0.5, 0, 0.5, -0.5][i] }))).bearing, 90, 2, "asse orizzontale ≈ 90°");
+near(Calc.principalAxis(sq).ratio, 1, 1e-12, "quadrato: rapporto 1");
+
 console.log(`OK — ${passed} verifiche superate`);

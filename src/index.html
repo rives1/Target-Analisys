@@ -32,7 +32,11 @@
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
-  #app { display: grid; grid-template-columns: minmax(0, 65fr) minmax(320px, 35fr); height: 100vh; }
+  #app { display: grid; grid-template-columns: minmax(0, 1fr) 6px var(--side-w, clamp(320px, 35vw, 75vw)); height: 100vh; }
+  /* separatore trascinabile tra immagine e pannello destro */
+  #splitter { cursor: col-resize; background: var(--line); position: relative; z-index: 3; touch-action: none; }
+  #splitter::after { content: ""; position: absolute; top: 50%; left: 1px; width: 4px; height: 36px; margin-top: -18px; border-radius: 2px; background: var(--muted); opacity: .5; }
+  #splitter:hover, #splitter.drag, #splitter:focus-visible { background: var(--accent); outline: none; }
 
   /* ---------- area di lavoro ---------- */
   #work { position: relative; overflow: hidden; background: var(--work-bg); }
@@ -61,7 +65,7 @@
     color: #fff; font-size: 18px; background: rgba(37,99,235,.18); z-index: 5; }
 
   /* ---------- pannello destro ---------- */
-  #side { overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 14px 16px 30px; }
+  #side { overflow-y: auto; background: var(--panel); padding: 14px 16px 30px; min-width: 0; }
   h1 { font-size: 17px; margin: 0 0 2px; }
   .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
   section { border-top: 1px solid var(--line); padding: 12px 0 4px; }
@@ -115,6 +119,14 @@
   table.pts input[type=checkbox] { margin: 0; vertical-align: middle; }
   .flyer { color: #ea580c; font-weight: 700; text-decoration: none; display: inline-block; }
   .tscroll { overflow-x: auto; }
+  .chart { margin-bottom: 14px; }
+  .chart .ctitle { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+  .chart canvas { display: block; }
+  .chart .cnote { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  .chart .key { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+  .chart .key.dash { border-top-style: dashed; }
+  #chTip { position: fixed; display: none; pointer-events: none; z-index: 20; background: #111827; color: #fff; font-size: 12px;
+    padding: 5px 8px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.3); max-width: 320px; }
   .res .sub2 { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; padding-top: 6px; }
   table.pts td.x, table.pts th.x { text-align: right; }
   table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
@@ -171,6 +183,9 @@
     <div id="hint"></div>
     <div id="zoomlbl"></div>
   </div>
+
+  <div id="splitter" role="separator" aria-orientation="vertical" aria-label="Ridimensiona il pannello" tabindex="0"
+    title="Trascina per ridimensionare il pannello · doppio clic: larghezza predefinita · frecce ←/→"></div>
 
   <!-- ======================= PANNELLO DESTRO ======================= -->
   <aside id="side">
@@ -276,6 +291,22 @@
     </section>
 
     <section>
+      <details class="box" open id="chartsBox">
+        <summary>Grafici · gruppo attivo</summary>
+        <div id="charts">
+          <div id="chMsg" class="muted"></div>
+          <div class="chart"><div class="ctitle">Dispersione (senza immagine, rispetto al centro gruppo)</div>
+            <canvas id="chScatter" aria-label="Grafico a dispersione dei fori"></canvas><div class="cnote" id="chScatterNote"></div></div>
+          <div class="chart"><div class="ctitle">Istogramma delle distanze dal centro gruppo</div>
+            <canvas id="chHist" aria-label="Istogramma delle distanze dal centro gruppo"></canvas><div class="cnote" id="chHistNote"></div></div>
+          <div class="chart"><div class="ctitle">Orologio
+              <select id="clockRef" title="Riferimento delle direzioni"><option value="poa">dal punto di mira</option><option value="center">dal centro gruppo</option></select></div>
+            <canvas id="chClock" aria-label="Diagramma a orologio delle direzioni dei colpi"></canvas><div class="cnote" id="clockInfo"></div></div>
+        </div>
+      </details>
+    </section>
+
+    <section>
       <h2>Punti del gruppo attivo</h2>
       <div id="pointsGroup" class="pgroup"></div>
       <div id="points"></div>
@@ -311,6 +342,7 @@
 <input type="file" id="fImg" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
 <input type="file" id="fJson" accept=".json,application/json" hidden>
 <div id="toast"></div>
+<div id="chTip" role="tooltip"></div>
 
 <!-- ==================================================================
      MOTORE DI CALCOLO (puro, senza DOM: testabile in isolamento)
@@ -467,6 +499,25 @@ const Calc = (() => {
     return { deg, label: COMPASS[Math.round(deg / 22.5) % 16] };
   }
 
+  /** Ora dell'orologio (1–12) per una direzione bussola in gradi (0° = ore 12, 90° = ore 3). */
+  function clockHour(deg) { const h = Math.round((((deg % 360) + 360) % 360) / 30) % 12; return h === 0 ? 12 : h; }
+  /**
+   * Asse principale della dispersione (punti con Y verso l'alto): direzione bussola dell'asse maggiore in [0°, 180°)
+   * e rapporto tra le deviazioni standard lungo l'asse maggiore e minore (√(λ1/λ2) della matrice di covarianza).
+   */
+  function principalAxis(pts) {
+    if (pts.length < 2) return null;
+    const c = centroid(pts), n = pts.length - 1;
+    let sxx = 0, syy = 0, sxy = 0;
+    for (const p of pts) { const dx = p.x - c.x, dy = p.y - c.y; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+    sxx /= n; syy /= n; sxy /= n;
+    const m = (sxx + syy) / 2, d = Math.sqrt(((sxx - syy) / 2) ** 2 + sxy * sxy);
+    const l1 = m + d, l2 = Math.max(m - d, 0);
+    const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy);            // angolo matematico dall'asse x
+    const bearing = ((90 - theta * 180 / Math.PI) % 180 + 180) % 180;
+    return { bearing, ratio: l2 > 0 ? Math.sqrt(l1 / l2) : Infinity };
+  }
+
   /**
    * Analisi completa di un gruppo.
    * @param shots  [{x,y}] in pixel immagine (y verso il basso)
@@ -512,7 +563,7 @@ const Calc = (() => {
   }
 
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
-    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass };
+    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -522,7 +573,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.8.0";
+const APP_VERSION = "0.9.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -830,6 +881,7 @@ function initTheme() {
 function toggleTheme() {
   const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
   applyTheme(t);
+  drawCharts();
   try { localStorage.setItem("shootAnalyzer.theme", t); } catch { /* ignora */ }
 }
 
@@ -1482,6 +1534,7 @@ function refreshResults() {
     box.innerHTML = html; out.appendChild(box);
   }
   updateButtons();
+  drawCharts();
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
@@ -1691,6 +1744,271 @@ async function exportCard(scope = "active") {
   if (await Storage.saveBlob(`${base}_${suffix}_card_${stamp()}.png`, blob)) toast("Result Card esportata");
 }
 
+/* ------------------------------ GRAFICI ------------------------------ */
+/* Tre grafici del gruppo attivo, disegnati su <canvas> (nessuna libreria):
+   dispersione senza immagine, istogramma delle distanze dal centro, diagramma a orologio. */
+const CH = { hits: { scatter: [], hist: [], clock: [] } };
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+function setupCanvas(cv, w, h) {
+  const d = window.devicePixelRatio || 1;
+  cv.width = Math.round(w * d); cv.height = Math.round(h * d);
+  cv.style.width = w + "px"; cv.style.height = h + "px";
+  const g = cv.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, h);
+  return g;
+}
+/** Passo «tondo» (1, 2, 2,5, 5 × 10^k) vicino a raw. */
+function niceStep(raw) {
+  if (!(raw > 0)) return 1;
+  const e = Math.pow(10, Math.floor(Math.log10(raw)));
+  // il candidato più vicino (in scala logaritmica) tra 1, 2, 2,5, 5, 10 × 10^k
+  return [1, 2, 2.5, 5, 10].map(m => m * e).reduce((a, b) => Math.abs(Math.log(b / raw)) < Math.abs(Math.log(a / raw)) ? b : a);
+}
+const nfmt = (v, d = 1) => v.toLocaleString("it-IT", { maximumFractionDigits: d });
+/** Dati comuni dei grafici: coordinate rispetto al centro gruppo, Y verso l'alto, in mm (o px senza scala). */
+function chartData() {
+  const g = activeGroup(); if (!g) return null;
+  const cc = calcContext(), k = cc.pxPerMm ? 1 / cc.pxPerMm : 1, unit = cc.pxPerMm ? "mm" : "px";
+  const shotsIn = inc(g); if (shotsIn.length < 2) return { g, few: true };
+  const c = Calc.centroid(shotsIn), fl = flyerMap(g);
+  const P = q => ({ x: (q.x - c.x) * k, y: (c.y - q.y) * k });
+  const pts = g.shots.map((s, i) => ({ ...P(s), n: i + 1, excluded: !!s.excluded, flag: !!(fl.get(s.id) && fl.get(s.id).flagged) }));
+  const r = Calc.analyze(shotsIn, g.poa, cc), u = k;
+  return { g, cc, unit, pts, inPts: pts.filter(p => !p.excluded), poa: g.poa ? P(g.poa) : null,
+    mr: r.px.mr * u, cep: r.px.cep * u };
+}
+function drawCharts() {
+  const box = $("charts"); if (!box || box.closest("details:not([open])")) return;
+  const W = Math.max(220, Math.floor($("chScatter").parentElement.clientWidth));
+  const D = chartData();
+  const msg = D ? (D.few ? "Servono almeno 2 fori inclusi nel gruppo attivo." : "") : "Nessun gruppo.";
+  $("chMsg").textContent = msg;
+  for (const id of ["chScatter", "chHist", "chClock"]) $(id).parentElement.style.display = msg ? "none" : "";
+  if (msg) return;
+  drawScatter($("chScatter"), W, Math.min(W, 360), D);
+  drawHistogram($("chHist"), W, 170, D);
+  drawClock($("chClock"), W, Math.min(W, 300), D);
+}
+
+/* ---- 1. Dispersione senza immagine ---- */
+function drawScatter(cv, W, H, D) {
+  const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), grid = cssVar("--line"), surf = cssVar("--panel");
+  const col = D.g.color, hits = CH.hits.scatter = [];
+  // scala: tutti i fori e i cerchi; la mira solo se non schiaccia il gruppo (altrimenti freccia al bordo)
+  let ext = Math.max(...D.pts.map(p => Math.max(Math.abs(p.x), Math.abs(p.y))), D.cep || 0, D.mr || 0, 1e-9);
+  const poaIn = D.poa && Math.max(Math.abs(D.poa.x), Math.abs(D.poa.y)) <= ext * 2.5;
+  if (poaIn) ext = Math.max(ext, Math.abs(D.poa.x), Math.abs(D.poa.y));
+  const step = niceStep(ext * 2 / 6), lim = Math.ceil(ext * 1.12 / step) * step;
+  const padL = 36, padB = 24, padT = 8, padR = 8, side = Math.min(W - padL - padR, H - padT - padB);
+  const ox = padL + (W - padL - padR - side) / 2 + side / 2, oy = padT + side / 2, s = side / (2 * lim);
+  const X = x => ox + x * s, Y = y => oy - y * s;
+  // griglia e assi (sottili, recessivi)
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.fillStyle = muted; g.lineWidth = 1;
+  for (let v = -lim; v <= lim + 1e-9; v += step) {
+    g.strokeStyle = Math.abs(v) < 1e-9 ? muted : grid; g.globalAlpha = Math.abs(v) < 1e-9 ? 0.6 : 1;
+    g.beginPath(); g.moveTo(X(v), Y(-lim)); g.lineTo(X(v), Y(lim)); g.moveTo(X(-lim), Y(v)); g.lineTo(X(lim), Y(v)); g.stroke();
+    g.globalAlpha = 1;
+    g.textAlign = "center"; g.textBaseline = "top"; g.fillText(nfmt(v), X(v), Y(-lim) + 4);
+    g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(v), X(-lim) - 4, Y(v));
+  }
+  g.textAlign = "left"; g.textBaseline = "top"; g.fillText(D.unit, X(-lim) + 3, Y(lim) + 2);
+  // cerchi raggio medio (continuo) e CEP (tratteggiato)
+  g.strokeStyle = col; g.lineWidth = 1.5; g.globalAlpha = 0.55;
+  g.beginPath(); g.arc(ox, oy, D.mr * s, 0, Math.PI * 2); g.stroke();
+  if (D.cep) { g.setLineDash([5, 4]); g.beginPath(); g.arc(ox, oy, D.cep * s, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
+  g.globalAlpha = 1;
+  // centro gruppo
+  g.strokeStyle = ink; g.lineWidth = 2; g.beginPath();
+  g.moveTo(ox - 6, oy - 6); g.lineTo(ox + 6, oy + 6); g.moveTo(ox + 6, oy - 6); g.lineTo(ox - 6, oy + 6); g.stroke();
+  // punto di mira (o freccia verso di esso)
+  if (D.poa) {
+    const d = Math.hypot(D.poa.x, D.poa.y), cp = Calc.compass(D.poa.x, D.poa.y);
+    g.strokeStyle = COL_POA; g.lineWidth = 2;
+    if (poaIn) {
+      const px = X(D.poa.x), py = Y(D.poa.y);
+      g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.moveTo(px - 10, py); g.lineTo(px + 10, py); g.moveTo(px, py - 10); g.lineTo(px, py + 10); g.stroke();
+      hits.push({ x: px, y: py, r: 10, tip: `Punto di mira · ${nfmt(d)} ${D.unit} dal centro` });
+    } else if (cp) {
+      const a = cp.deg * Math.PI / 180, R = lim * s * 0.92, ex = ox + Math.sin(a) * R, ey = oy - Math.cos(a) * R;
+      g.beginPath(); g.moveTo(ox + Math.sin(a) * R * 0.7, oy - Math.cos(a) * R * 0.7); g.lineTo(ex, ey); g.stroke();
+      g.beginPath(); g.moveTo(ex, ey);
+      g.lineTo(ex - 8 * Math.sin(a - 0.4), ey + 8 * Math.cos(a - 0.4)); g.lineTo(ex - 8 * Math.sin(a + 0.4), ey + 8 * Math.cos(a + 0.4));
+      g.closePath(); g.fillStyle = COL_POA; g.fill();
+      g.fillStyle = ink; g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+      g.fillText(`mira ${nfmt(d)} ${D.unit}`, ox + Math.sin(a) * R * 0.55, oy - Math.cos(a) * R * 0.55 + 12);
+      hits.push({ x: ex, y: ey, r: 12, tip: `Punto di mira fuori scala · ${nfmt(d)} ${D.unit} a ${fmt(cp.deg, 0)}° ${cp.label}` });
+    }
+  }
+  // fori (marker r = 5 con anello del colore di sfondo; esclusi vuoti tratteggiati; flyer con anello arancione)
+  for (const p of D.pts) {
+    const px = X(p.x), py = Y(p.y);
+    if (p.excluded) {
+      g.strokeStyle = col; g.lineWidth = 1.5; g.setLineDash([3, 2]); g.beginPath(); g.arc(px, py, 5, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+    } else {
+      g.fillStyle = col; g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(px, py, 5, 0, Math.PI * 2); g.fill(); g.stroke();
+    }
+    if (p.flag) { g.strokeStyle = "#f97316"; g.lineWidth = 2; g.beginPath(); g.arc(px, py, 9, 0, Math.PI * 2); g.stroke(); }
+    g.fillStyle = muted; g.font = "10px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "bottom";
+    g.fillText(String(p.n), px + 6, py - 4);
+    const cp = Calc.compass(p.x, p.y), d = Math.hypot(p.x, p.y);
+    hits.push({ x: px, y: py, r: 10, tip: `Foro ${p.n}${p.excluded ? " (escluso)" : ""}${p.flag ? " · ⚠ flyer" : ""} · ${nfmt(d)} ${D.unit} dal centro${cp ? ` · ${fmt(cp.deg, 0)}° ${cp.label}` : ""}` });
+  }
+  $("chScatterNote").innerHTML = `<span class="key" style="border-color:${col}"></span>raggio medio ${nfmt(D.mr)} ${D.unit} · <span class="key dash" style="border-color:${col}"></span>CEP ${nfmt(D.cep)} ${D.unit} · ✕ centro gruppo${D.poa ? " · <span style='color:" + COL_POA + "'>⊕</span> mira" : ""}`;
+}
+
+/* ---- 2. Istogramma delle distanze dal centro gruppo (solo fori inclusi) ---- */
+function drawHistogram(cv, W, H, D) {
+  const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), grid = cssVar("--line");
+  const col = D.g.color, hits = CH.hits.hist = [];
+  const rs = D.inPts.map(p => Math.hypot(p.x, p.y)), n = rs.length, maxR = Math.max(...rs, 1e-9);
+  // larghezza delle fasce: numero di fasce ≈ √n + 1 (tra 3 e 8), arrotondata a un passo «tondo»
+  const bw = niceStep(maxR / Math.min(8, Math.max(3, Math.ceil(Math.sqrt(n)) + 1)));
+  const nb = Math.max(1, Math.ceil((maxR + 1e-9) / bw)), counts = new Array(nb).fill(0);
+  for (const r of rs) counts[Math.min(nb - 1, Math.floor(r / bw))]++;
+  const maxC = Math.max(...counts), padL = 28, padB = 30, padT = 32, padR = 10;
+  const pw = W - padL - padR, ph = H - padT - padB, slot = pw / nb, barW = slot - 2;   // fasce contigue, 2 px di stacco
+  const yStep = maxC <= 5 ? 1 : niceStep(maxC / 5), yMax = Math.ceil(maxC / yStep) * yStep;
+  const Y = v => padT + ph - v / yMax * ph, X = r => padL + r / (nb * bw) * pw;
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  for (let v = 0; v <= yMax + 1e-9; v += yStep) {
+    g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(W - padR, Y(v)); g.stroke();
+    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(v, 0), padL - 5, Y(v));
+  }
+  counts.forEach((c, i) => {
+    const x = padL + i * slot + (slot - barW) / 2, y = Y(c), h = Y(0) - y;
+    if (c > 0) {
+      const rr = Math.min(4, barW / 2, h);
+      g.fillStyle = col; g.beginPath();
+      g.moveTo(x, Y(0)); g.lineTo(x, y + rr); g.arcTo(x, y, x + rr, y, rr); g.lineTo(x + barW - rr, y); g.arcTo(x + barW, y, x + barW, y + rr, rr); g.lineTo(x + barW, Y(0));
+      g.closePath(); g.fill();
+      g.fillStyle = ink; g.textAlign = "center"; g.textBaseline = "bottom"; g.fillText(String(c), x + barW / 2, y - 2);
+    }
+    hits.push({ x0: padL + i * slot, x1: padL + (i + 1) * slot, y0: padT, y1: Y(0),
+      tip: `${nfmt(i * bw)}–${nfmt((i + 1) * bw)} ${D.unit}: ${c} ${c === 1 ? "colpo" : "colpi"}` });
+  });
+  // asse x: limiti delle fasce
+  g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "top";
+  const every = Math.ceil(nb / Math.max(1, Math.floor(pw / 40)));
+  for (let i = 0; i <= nb; i += every) g.fillText(nfmt(i * bw), X(i * bw), Y(0) + 4);
+  g.textAlign = "right"; g.fillText(`${D.unit} dal centro gruppo`, W - padR, Y(0) + 16);
+  // linee di riferimento: raggio medio e CEP
+  // etichette ai lati opposti delle due linee, così non si sovrappongono quando sono vicine
+  const refs = [[D.mr, "R. medio", []], [D.cep, "CEP", [4, 3]]].filter(([v]) => v > 0 && v <= nb * bw).sort((a, b) => a[0] - b[0]);
+  refs.forEach(([v, lbl, dash], i) => {
+    g.strokeStyle = ink; g.lineWidth = 1.5; g.setLineDash(dash); g.globalAlpha = 0.75;
+    g.beginPath(); g.moveTo(X(v), 2); g.lineTo(X(v), Y(0)); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    const left = refs.length === 2 && i === 0;
+    g.fillStyle = ink; g.textAlign = left ? "right" : "left"; g.textBaseline = "top"; g.fillText(lbl, X(v) + (left ? -3 : 3), 2);
+  });
+  $("chHistNote").textContent = `${n} colpi inclusi, fasce di ${nfmt(bw)} ${D.unit}. Linea continua: raggio medio; tratteggiata: CEP.`;
+}
+
+/* ---- 3. Diagramma a orologio ---- */
+function drawClock(cv, W, H, D) {
+  const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), grid = cssVar("--line");
+  const col = D.g.color, hits = CH.hits.clock = [];
+  let ref = $("clockRef").value;
+  if (ref === "poa" && !D.poa) ref = "center";
+  // vettori dei fori inclusi dal riferimento scelto (Y verso l'alto)
+  const vec = D.inPts.map(p => ref === "poa" ? { x: p.x - D.poa.x, y: p.y - D.poa.y } : { x: p.x, y: p.y });
+  const counts = new Array(12).fill(0);
+  for (const v of vec) { const cp = Calc.compass(v.x, v.y); if (cp) counts[Calc.clockHour(cp.deg) % 12]++; }
+  const maxC = Math.max(1, ...counts);
+  const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 22;
+  // anelli e raggi delle ore (recessivi)
+  g.strokeStyle = grid; g.lineWidth = 1;
+  for (let i = 1; i <= maxC; i++) { g.beginPath(); g.arc(cx, cy, R * i / maxC, 0, Math.PI * 2); g.stroke(); }
+  g.font = "600 12px 'Segoe UI', system-ui, sans-serif"; g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "middle";
+  for (let h = 1; h <= 12; h++) {
+    const a = h * 30 * Math.PI / 180;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(a) * R, cy - Math.cos(a) * R); g.stroke();
+    g.fillText(String(h), cx + Math.sin(a) * (R + 12), cy - Math.cos(a) * (R + 12));
+  }
+  // spicchi: lunghezza ∝ numero di colpi in quella direzione (±15° attorno all'ora)
+  counts.forEach((c, i) => {
+    const h = i === 0 ? 12 : i, a0 = (h * 30 - 15 + 1.5) * Math.PI / 180, a1 = (h * 30 + 15 - 1.5) * Math.PI / 180;
+    if (c > 0) {
+      g.fillStyle = col; g.globalAlpha = 0.75; g.beginPath(); g.moveTo(cx, cy);
+      g.arc(cx, cy, R * c / maxC, a0 - Math.PI / 2, a1 - Math.PI / 2); g.closePath(); g.fill(); g.globalAlpha = 1;
+    }
+    hits.push({ a0: (h * 30 - 15 + 360) % 360, a1: (h * 30 + 15) % 360, cx, cy, R, tip: `ore ${h}: ${c} ${c === 1 ? "colpo" : "colpi"}` });
+  });
+  g.fillStyle = muted; g.font = "10px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "top";
+  g.fillText(`anelli: ${maxC === 1 ? "1 colpo" : "1 colpo ciascuno"}`, 4, 4);
+  // sintesi: tendenza (dalla mira) o asse di allungamento (dal centro gruppo)
+  let info;
+  if (ref === "poa") {
+    const v = { x: -D.poa.x, y: -D.poa.y }, cp = Calc.compass(v.x, v.y), d = Math.hypot(v.x, v.y);
+    if (cp) {
+      const a = cp.deg * Math.PI / 180, L = R * 0.85;
+      g.strokeStyle = ink; g.fillStyle = ink; g.lineWidth = 2; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.sin(a) * L, cy - Math.cos(a) * L); g.stroke();
+      const ex = cx + Math.sin(a) * L, ey = cy - Math.cos(a) * L;
+      g.beginPath(); g.moveTo(ex, ey); g.lineTo(ex - 9 * Math.sin(a - 0.4), ey + 9 * Math.cos(a - 0.4)); g.lineTo(ex - 9 * Math.sin(a + 0.4), ey + 9 * Math.cos(a + 0.4)); g.closePath(); g.fill();
+      info = `I colpi tendono a <b>ore ${Calc.clockHour(cp.deg)}</b> rispetto alla mira: centro gruppo a ${nfmt(d)} ${D.unit}, ${fmt(cp.deg, 0)}° ${cp.label}. Spicchi = direzione di ogni colpo dalla mira.`;
+    } else info = "Il centro gruppo coincide con il punto di mira.";
+  } else {
+    const ax = Calc.principalAxis(D.inPts);
+    if (ax && D.inPts.length >= 3) {
+      let h1 = Calc.clockHour(ax.bearing); if (h1 === 6) h1 = 12;   // asse in [0°,180°): ore 12…5 e opposta
+      const h2 = h1 === 12 ? 6 : h1 + 6;
+      const a = ax.bearing * Math.PI / 180;
+      g.strokeStyle = ink; g.lineWidth = 2; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(cx - Math.sin(a) * R, cy + Math.cos(a) * R); g.lineTo(cx + Math.sin(a) * R, cy - Math.cos(a) * R); g.stroke(); g.setLineDash([]);
+      info = ax.ratio < 1.3
+        ? `Dispersione circa uniforme in tutte le direzioni (rapporto tra gli assi ${nfmt(ax.ratio, 2)}:1).`
+        : `Il gruppo è allungato lungo l'asse <b>ore ${h1}–${h2}</b> (rapporto tra gli assi ${nfmt(ax.ratio, 2)}:1). Spicchi = direzione di ogni colpo dal centro gruppo.`;
+    } else info = "Servono almeno 3 colpi per l'asse di dispersione.";
+  }
+  if ($("clockRef").value === "poa" && !D.poa) info = "Manca il punto di mira: direzioni dal centro gruppo. " + info;
+  $("clockInfo").innerHTML = info;
+}
+
+/* ---- tooltip comune ---- */
+function chartHover(kind, cv) {
+  cv.addEventListener("pointermove", e => {
+    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+    let tip = null;
+    for (const h of CH.hits[kind]) {
+      if (h.r !== undefined && Math.hypot(x - h.x, y - h.y) <= h.r) { tip = h.tip; break; }
+      if (h.x0 !== undefined && x >= h.x0 && x < h.x1 && y >= h.y0 && y <= h.y1) { tip = h.tip; break; }
+      if (h.a0 !== undefined) {
+        const d = Math.hypot(x - h.cx, y - h.cy); if (d > h.R || d < 4) continue;
+        const deg = (Math.atan2(x - h.cx, h.cy - y) * 180 / Math.PI + 360) % 360;
+        if (h.a0 < h.a1 ? deg >= h.a0 && deg < h.a1 : deg >= h.a0 || deg < h.a1) { tip = h.tip; break; }
+      }
+    }
+    const t = $("chTip");
+    if (!tip) { t.style.display = "none"; return; }
+    t.textContent = tip; t.style.display = "block";
+    const tw = t.offsetWidth;
+    t.style.left = Math.min(window.innerWidth - tw - 8, e.clientX + 12) + "px"; t.style.top = (e.clientY + 14) + "px";
+  });
+  cv.addEventListener("pointerleave", () => { $("chTip").style.display = "none"; });
+}
+
+/* ------------------------- PANNELLO RIDIMENSIONABILE ------------------------- */
+const SIDE_KEY = "shootAnalyzer.sideWidth";
+function setSideWidth(px, save) {
+  const w = Math.round(Math.min(window.innerWidth - 320, Math.max(300, px)));
+  document.documentElement.style.setProperty("--side-w", w + "px");
+  if (save) try { localStorage.setItem(SIDE_KEY, String(w)); } catch { /* ignora */ }
+}
+function initSplitter() {
+  const sp = $("splitter");
+  try { const w = parseInt(localStorage.getItem(SIDE_KEY), 10); if (w > 0) setSideWidth(w, false); } catch { /* ignora */ }
+  let drag = false;
+  sp.addEventListener("pointerdown", e => { drag = true; sp.setPointerCapture(e.pointerId); sp.classList.add("drag"); document.body.style.userSelect = "none"; e.preventDefault(); });
+  sp.addEventListener("pointermove", e => { if (drag) setSideWidth(window.innerWidth - e.clientX - sp.offsetWidth / 2, false); });
+  const end = () => { if (!drag) return; drag = false; sp.classList.remove("drag"); document.body.style.userSelect = "";
+    setSideWidth($("side").getBoundingClientRect().width, true); };
+  sp.addEventListener("pointerup", end); sp.addEventListener("pointercancel", end);
+  sp.addEventListener("dblclick", () => { document.documentElement.style.removeProperty("--side-w"); try { localStorage.removeItem(SIDE_KEY); } catch { /* ignora */ } });
+  sp.addEventListener("keydown", e => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    setSideWidth($("side").getBoundingClientRect().width + (e.key === "ArrowLeft" ? 20 : -20), true);
+  });
+}
+
 /* ------------------------------ VARIE ------------------------------ */
 let toastT;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
@@ -1754,6 +2072,12 @@ window.addEventListener("dragover", e => e.preventDefault());
 window.addEventListener("drop", e => e.preventDefault());
 
 new ResizeObserver(() => resizeCanvas()).observe(work);
+new ResizeObserver(() => drawCharts()).observe($("charts"));
+$("chartsBox").addEventListener("toggle", drawCharts);
+$("clockRef").addEventListener("change", drawCharts);
+chartHover("scatter", $("chScatter")); chartHover("hist", $("chHist")); chartHover("clock", $("chClock"));
+initSplitter();
+window.addEventListener("resize", () => { const w = $("side").getBoundingClientRect().width; if (w > window.innerWidth - 320) setSideWidth(w, false); });
 window.addEventListener("resize", resizeCanvas);
 
 // avvio

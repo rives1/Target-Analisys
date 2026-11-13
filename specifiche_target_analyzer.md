@@ -38,7 +38,8 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
 7. **Dati di ricarica e condizioni** (per gruppo): data, bossolo, polvere e carica in grani, palla, innesco, condizioni atmosferiche, temperatura, velocità e direzione del vento, colpi sparati totali (flyer esclusi compresi), colpi scaldacanna, note. Devono comparire nella Result Card.
 8. **Griglia angolare** opzionale (MOA o MIL) sovrapposta all'immagine, centrata sul punto di mira, per una verifica visiva immediata.
 9. **Tema scuro** opzionale per la pagina.
-10. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
+10. **Grafici del gruppo attivo**: dispersione dei soli punti (senza immagine), istogramma delle distanze dal centro gruppo, diagramma a orologio delle direzioni (dal punto di mira o dal centro gruppo).
+11. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
 
 ---
 
@@ -92,7 +93,7 @@ L'interfaccia deve essere suddivisa in due pannelli principali:
   - Area Canvas con supporto a Zoom (rotella mouse) e Pan (trascinamento).
   - Toolbar flottante in alto: `[Carica Foto]` `[Undo]` `[Redo]` `[Elimina Ultimo]` `[Adatta allo Schermo]`.
   - Overlay visivo: i punti devono essere chiaramente distinguibili per colore (es. Rosso = Punto di mira, Blu = Foro, Verde = Punti di calibrazione scala).
-- **Pannello Destro (Controlli e Risultati - 35% larghezza)**:
+- **Pannello Destro (Controlli e Risultati - 35% larghezza di default, ridimensionabile trascinando la linea di separazione)**:
   - **Intestazione**: titolo, versione e, subito sotto, `[Esporta Result Card]` con la scelta «Gruppo attivo / Tutti i gruppi».
   - **Sezione Parametri**: Input per "Distanza di calibrazione nota", "Distanza di tiro", "Valore click mirino (MOA/MIL)", "Calibro" (combo con i calibri più diffusi e diametro nominale della palla in mm, sempre modificabile a mano per calibri non convenzionali).
   - **Sezione Risultati**: Visualizzazione in tempo reale di: Dimensione Gruppo, Raggio Medio, MOA/MIL, Correzione suggerita (es. "3 click SU, 1 click DESTRA").

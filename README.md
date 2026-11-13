@@ -3,7 +3,7 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.8.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
+> Stato: **v0.9.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
@@ -29,6 +29,7 @@ La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando 
 La tabella dei punti mostra per ogni foro, e per il **centro gruppo** (la correzione da applicare), i click verticali e orizzontali per portarlo sul punto di mira.
 La **Result Card** PNG può contenere il gruppo attivo (default, con la tabella punti dal centro gruppo in giù) o tutti i gruppi.
 Statistiche: group size, raggio medio, H/V-spread, FOM, SD, CEP/R95/R99 (modello circolare normale). I **flyer** sono segnalati automaticamente (⚠) e si possono escludere dal calcolo.
+Tre **grafici** del gruppo attivo: dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni. Il **pannello destro si ridimensiona** trascinando la linea di separazione.
 Per ogni gruppo si registrano i **dati di ricarica e le condizioni** (polvere, palla, innesco, meteo, vento, colpi sparati, note…), riportati nella Result Card.
 La **griglia angolare** MIL/MOA (`G`) si sovrappone all'immagine centrata sul punto di mira. **Tema scuro** con 🌙 (`T`).
 Il **calibro** si sceglie da un elenco dei calibri più diffusi oppure si scrive a mano il diametro della palla.
@@ -55,6 +56,8 @@ Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `A
 | CEP / R95 / R99 | σ̂·√(−2 ln(1−p)) con σ̂ = √((σx²+σy²)/2) / c(ν=2(n−1)): 1,1774 / 2,4477 / 3,0349 σ̂ |
 | Flyer | leave-one-out: (d − media) / SD delle distanze degli altri fori dal loro centro > k (default 2), n ≥ 5 |
 | Direzione | atan2(dx, dy) in gradi, 0° = alto, senso orario, 16 settori (N, NNE, … NNO) |
+| Ore dell'orologio | round(direzione / 30°), 0 → 12 |
+| Asse di allungamento | autovettore maggiore della matrice di covarianza dei fori; rapporto = √(λ1/λ2) |
 
 Riferimenti: 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.
 La correzione indica dove spostare il punto d'impatto (gruppo basso → click SU).
@@ -87,6 +90,7 @@ LICENSE
 - [x] Pubblicazione su GitHub Pages (v0.6.1)
 - [x] Dati di ricarica e condizioni, griglia MIL/MOA, tema scuro (v0.7.0)
 - [x] Metriche FOM/CEP/R95/R99/SD/H-V spread, flyer ed esclusione, distanze e direzione nella tabella punti (v0.8.0)
+- [x] Grafici (dispersione, istogramma, orologio) e pannello ridimensionabile (v0.9.0)
 - [ ] Collaudo su Safari
 
 ## Licenza

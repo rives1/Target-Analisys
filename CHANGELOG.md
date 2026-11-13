@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.0] - 2026-11-13
+### Aggiunto
+- Sezione **Grafici · gruppo attivo** nel pannello destro (canvas, nessuna libreria, si aggiornano in tempo reale, anche durante
+  il trascinamento dei fori; tooltip al passaggio del mouse; tema chiaro e scuro):
+  - **Dispersione** senza immagine: fori in mm rispetto al centro gruppo (assi con la stessa scala), cerchio del raggio medio,
+    cerchio CEP tratteggiato, centro gruppo, punto di mira (o freccia verso di esso se fuori scala), esclusi tratteggiati, flyer ⚠;
+  - **Istogramma delle distanze dal centro gruppo** (fori inclusi): fasce contigue di larghezza «tonda» (circa √n + 1 fasce),
+    linee del raggio medio e del CEP;
+  - **Orologio**: direzione di ogni colpo a ore (spicchi proporzionali al numero di colpi). Riferimento selezionabile:
+    *dal punto di mira* (freccia e frase «i colpi tendono a ore N») o *dal centro gruppo* (asse di allungamento del gruppo,
+    es. «ore 12–6», con il rapporto tra gli assi).
+- **Pannello destro ridimensionabile**: trascinando la linea verticale di separazione (o frecce ←/→ quando è selezionata);
+  doppio clic per tornare alla larghezza predefinita; la larghezza è ricordata dal browser.
+- `Calc.clockHour`, `Calc.principalAxis` + 7 test (64 in totale).
+
 ## [0.8.0] - 2026-11-13
 ### Aggiunto
 - Nuove metriche per gruppo (pannello Risultati, Result Card, testo copiato), in mm, MOA e MIL:

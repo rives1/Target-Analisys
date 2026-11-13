@@ -1,0 +1,95 @@
+# Contesto di sviluppo: Shoot Analyzer v0.9.0
+
+> Incolla questo file all'inizio di una nuova chat per riprendere lo sviluppo da questo punto.
+> Specifica di riferimento: `specifiche_target_analyzer.md` (nella root del repo), **revisione 2**.
+
+## 1. Stato
+- **Versione**: 0.9.0 (2026-11-13). Precedenti: 0.8.0 (metriche, flyer, direzioni), 0.7.0 (ricarica, griglia, tema scuro), 0.6.1 (GitHub Pages), 0.6.0 (nomi file con data/ora, export in alto), 0.5.0 (combo calibri, tabella nella card), 0.4.0 (click per foro/centro gruppo), 0.3.0 (spec rev. 2, solo HTML), 0.2.0 (lente, card multi-gruppo), 0.1.0 (Fasi 1-3).
+- **Fasi completate**: 1 (layout + canvas), 2 (interazione + undo/redo), 3 (motore di calcolo). **Le Fasi 4 (wrapper Python) e 5 (build .exe) non esistono più**: cambio di specifica dell'utente, l'app è il solo `src/index.html` e gira su qualsiasi OS.
+- **Novità 0.9.0** (richiesta utente): grafici del gruppo attivo (dispersione senza immagine, istogramma distanze dal centro, orologio) e pannello destro ridimensionabile.
+- **Novità 0.8.0** (richiesta utente + scelte concordate): metriche H/V-spread, FOM, SD distanze dal centro, SD radiale √(σx²+σy²), CEP/R95/R99 (Rayleigh); flyer leave-one-out con esclusione dei fori; tabella punti con distanze da mira e da centro e direzione bussola.
+- **Novità 0.7.0** (richiesta utente): dati di ricarica e condizioni per gruppo (anche nella Result Card e nel testo), griglia angolare MIL/MOA, tema scuro.
+- **Novità 0.6.1** (richiesta utente): pubblicazione su GitHub Pages (https://rives1.github.io/Target-Analisys/) da branch `main` / root, con `index.html` di reindirizzamento e `.nojekyll`. Nessuna modifica funzionale all'app.
+- **Novità 0.6.0** (richiesta utente): data/ora `AAAA-MM-GG--hh-mm` in coda ai nomi dei file salvati; esportazione Result Card spostata in cima al pannello destro; gruppo attivo indicato nella sezione «Punti del gruppo attivo».
+- **Novità 0.5.0** (da richiesta utente e `feature-request.md`): combo calibri con inserimento manuale; intestazioni numeriche della tabella punti allineate a destra; tabella punti (dal centro gruppo in giù) nella Result Card del gruppo attivo; calibro di default 7,82 mm (.308").
+- **Novità 0.4.0** (da `feature-request.md` dell'utente, interpretazione concordata: entrambe le varianti): colonne Click ↕ / Click ↔ nella tabella punti per ogni foro + riga evidenziata «Centro gruppo».
+- **Novità 0.3.0**: specifica rev. 2 (niente .exe/Python); salvataggio con File System Access API (`showSaveFilePicker`) e ripiego su download; rimosso il codice pywebview; timestamp dei file in ora locale.
+- **Novità 0.2.0**: lente di ingrandimento; Result Card anche con tutti i gruppi; licenza MIT.
+- **Collaudo**: Chrome (automatico), Firefox (utente, OK). Safari non collaudato.
+- **GitHub Pages attivo** (confermato dall'utente): https://rives1.github.io/Target-Analisys/
+- **In attesa**: push della 0.9.0; feedback.
+- **`feature-request.md`**: per istruzione dell'utente il suo contenuto NON va mai considerato (né implementato né proposto). Il file resta nel repo ma va ignorato e non va incluso nei commit.
+- **Repo git**: `C:\Users\ammin\Documents\Claude_target_analyzer`, branch `main`, tag `v0.1.0` … `v0.9.0`. Autore commit: `rives <rivesone@outlook.com>`. Remote `origin` = https://github.com/rives1/Target-Analisys (l'«Initial commit» di GitHub con la LICENSE è stato unito con un merge; LICENSE con copyright "Rives"). Push fino a v0.6.1 verificato su GitHub; il push lo esegue sempre l'utente dal proprio PC (`git push origin main --tags`): dall'ambiente di Claude GitHub è in sola lettura.
+
+## 2. Decisioni prese (con motivazione)
+| # | Decisione | Motivo |
+|---|---|---|
+| D1 | Angoli calcolati in modo **esatto** (`2·atan(s/2D)` per le dimensioni, `atan(o/D)` per gli scostamenti), poi convertiti in MOA/MIL/IPHY | La formula della specifica `in/yd×100` dà IPHY e non MOA (errore ~4,7%) |
+| D2 | Unità interne: **millimetri**; coordinate punti in **pixel immagine** (y verso il basso) | Un'unica conversione al bordo, nessuna perdita di precisione con lo zoom |
+| D3 | **Più gruppi per immagine** (scelta dell'utente) | Rosate multiple su visuel diversi |
+| D4 | Fori marcati al **centro** + **calibro**: si mostrano c-c (primario) e bordo-bordo (= c-c + calibro). Il calibro disegna anche il cerchio del foro | Scelta dell'utente; c-c è lo standard |
+| D5 | Correzione **per asse**, arrotondata con `Math.round`, direzione opposta allo scostamento (gruppo basso → SU, a destra → SINISTRA) | Convenzione standard delle torrette |
+| D6 | Unità click: MIL, MOA, IPHY (SMOA, "1/4 in @100yd") | Alcune ottiche usano click in pollici a 100 yd |
+| D7 | Frontend in **un unico file** HTML (CSS e JS inline), **nessuna libreria esterna**, CSP `connect-src 'none'` | Requisito offline; niente Tailwind CDN |
+| D8 | Undo/redo a **snapshot JSON** di `{calib, groups, activeGroupId}`; i parametri (distanza, calibro, click) NON sono nella storia | Semplice e robusto; i parametri si correggono a mano |
+| D9 | Sessione JSON `format: 1` con immagine incorporata come dataURL (opzionale, checkbox) | Portabilità del singolo file di sessione |
+| D10 | Livello `Storage` in JS: `saveBlob(filename, blob)` usa `window.showSaveFilePicker` (Edge/Chrome, funziona anche da `file://`) e ripiega su download (`<a download>`) se assente o in errore; restituisce `false` se l'utente annulla (`AbortError`). Lettura file sempre con `<input type=file>` / drag & drop | Unico file HTML, nessun wrapper |
+| D11 | ~~Build .exe con GitHub Actions~~ → **nessuna build**: il rilascio è `src/index.html` (rev. 2 della specifica) | Cambio di specifica dell'utente: multipiattaforma |
+| D12 | UI in italiano, unità metriche di default (100 m, click 0,1 MIL). Calibro di default **7,82 mm (.308")** dalla 0.5.0 (prima 7,62 = diametro dell'anima, errato per il foro) | Utente italiano |
+| D13 | **Lente**: ×4 rispetto alla vista (min 1:1, max 6000%), raggio 85 px, in alto a destra del cursore (si ribalta ai bordi). In hover solo nelle modalità di inserimento (toggle 🔍 / `L`, default ON); sempre ON durante il drag di un punto e centrata sul punto. Overlay in stile `light` (solo contorno sottile dei fori) | Precisione nel trovare il centro del foro |
+| D14 | **Result Card**: selettore `cardScope` = `active` (default) / `all`. `exportCard(scope)`; in `all` include solo i gruppi con fori, ritaglio sull'insieme dei punti, riepilogo compatto per gruppo | Richiesta utente |
+| D15 | Licenza **MIT**, copyright "rives" | Richiesta utente |
+| D17 | **Click nella tabella punti**: per ogni foro e per il centroide, `Calc.correction((p.x−mira.x)·k, (mira.y−p.y)·k, ctx)`; abbreviazioni SU/GIÙ/DX/SX, 0 in grigio, angolo esatto nel tooltip. Riga «⊕ Centro gruppo» (classe `centroid`) evidenziata, non selezionabile/eliminabile; nota che la correzione da applicare è quella del centro gruppo. Colonne vuote senza mira/scala, «–» senza distanza o valore click. La tabella si aggiorna al rilascio del drag (non durante) | Richiesta utente; un singolo foro contiene la dispersione casuale |
+| D18 | **Calibri**: tabella `CALIBERS` (gruppi Carabina / Pistola / Aria compressa) con diametro nominale della PALLA in pollici (SAAMI/C.I.P.), mm = ×25,4 arrotondato al centesimo (`CALIBER_MM`). Combo `#caliberPreset` sotto il campo: scelta → scrive il valore in mm; modifica manuale → `syncCaliberPreset()` seleziona il calibro corrispondente (tolleranza 0,005 mm) o «Personalizzato». `params.caliberPreset` salvato in sessione; `caliberLabel(p)` nei testi esportati | Richiesta utente |
+| D19 | **Tabella punti**: intestazioni delle colonne numeriche allineate a destra come i valori («Tipo» resta a sinistra come il suo contenuto) | Richiesta utente, interpretata come allineamento alle colonne |
+| D20 | **Result Card gruppo attivo**: sotto la correzione, tabella «PUNTI» (Centro gruppo evidenziato + fori) con X, Y in mm dal punto di mira e Click ↕/↔; solo se calibrato e con punto di mira. Righe di tabella come oggetti `{row, size, color, weight, bg, line}` nella lista `L`, colonne ancorate in `COLS` | Richiesta utente |
+| D16 | Nomi dei file salvati (dalla 0.6.0): data/ora locale in coda, formato `AAAA-MM-GG--hh-mm` (funzione `stamp()`): `<immagine>_AAAA-MM-GG--hh-mm.json`, `<immagine>_<gruppo|tutti_i_gruppi>_card_AAAA-MM-GG--hh-mm.png`, `risultati_AAAA-MM-GG--hh-mm.txt`. Stesso formato per tutti i file per coerenza | Richiesta utente (esempio `2026-10-01--22-33`; è l'ordine ISO anno-mese-giorno, non quello americano mese-giorno-anno) |
+| D21 | Barra `#exportBar` (pulsante Result Card + `#cardScope`) in cima al pannello destro, sotto titolo e versione; «Copia risultati (testo)» resta nella sezione Dati | Richiesta utente |
+| D23 | **GitHub Pages «Deploy from a branch»** (`main`, `/ (root)`), non via GitHub Actions: `index.html` alla radice con `<meta http-equiv=refresh>` verso `src/index.html` (percorso esplicito, funziona anche da `file://`), `.nojekyll` per pubblicare i file tali e quali. URL: https://rives1.github.io/Target-Analisys/ (l'app è a `.../src/index.html`). Repo pubblico (requisito di Pages gratuito). Conseguenza: vengono pubblicati anche docs/test (innocuo, il repo è già pubblico) e non c'è un gate sui test | Lo strumento di scrittura remota di Claude blocca i file in `.github/workflows/` (percorso protetto): un workflow Actions andrebbe creato dall'utente. La modalità da branch non richiede file protetti |
+| D24 | **Dati di ricarica per gruppo** in `group.load` (`LOAD_KEYS`: date, case, powder, charge, bullet, primer, weather, temp, wind, windUnit, windDir, shotsTotal, foulers, notes; tutte stringhe come scritte). Form `#ldForm` con campi `data-k`, scritti sul gruppo attivo all'evento `change` con `commit()` (undo/redo inclusi). `refreshLoadForm()` non sovrascrive il campo con il focus. I campi `data-k` sono esclusi dal listener generale dei parametri (altrimenti l'evento `input` ripristinava il valore prima del `change`). Nuovo gruppo: eredita solo `LOAD_INHERIT` (munizione e condizioni), non shotsTotal/foulers/notes. Direzione vento a ore 1–12 (12 = contro, 3 = da dx, 6 = a favore, 9 = da sx). Sessioni vecchie: load vuoto (data vuota) | Una sessione spesso confronta cariche diverse (un gruppo per carica); i dati che cambiano gruppo per gruppo non vanno ereditati |
+| D25 | **Esportazione dati di ricarica**: `loadLines(g)` → coppie [etichetta, valore] solo dei campi compilati; nella card a capo automatico con `wrapText(text, font, maxW)` (380 px); nel testo copiato rientro allineato. Card gruppo attivo: sezione «RICARICA E CONDIZIONI» tra intestazione e group size; card tutti i gruppi: righe per gruppo | Richiesta utente |
+| D26 | **Griglia angolare**: parametri `gridOn`, `gridStep` (default 0,1), `gridUnit` (MIL/MOA) in `params()` e nella sessione; `gridSpec(cc)` → null senza scala o distanza; centro = mira del gruppo attivo → centroide → centro immagine; linee a `D·tan(i·passo)` (esatte), marcate ogni unità intera (passo < 1) o ogni 5; minori nascoste se < 5 px, tutto nascosto se le marcate < 5 px; limitata all'area dell'immagine; etichette su ogni linea se ≥ 40 px; legenda in basso a sinistra. `drawGrid()` nella vista e nella card, non nella lente. Cambiando unità il passo 0,1 MIL ↔ 0,25 MOA si adegua | Richiesta utente; verificata: 0,1 MIL a 100 m coincide con la griglia di 10 mm del bersaglio di prova |
+| D27 | **Tema scuro**: variabili CSS in `:root` e `:root[data-theme="dark"]` (anche `color-scheme` per i controlli nativi); `initTheme()` usa la scelta salvata in `localStorage["shootAnalyzer.theme"]` (try/catch) o `prefers-color-scheme`; pulsante `#bTheme`, tasto `T`. La Result Card resta su sfondo bianco | Richiesta utente; card stampabile |
+| D28 | **Metriche 0.8.0** in `Calc`: `dispersion(pts)` → `{sx, sy, sdRadii, rsd, sigma, cep, r95, r99}`; `analyze` aggiunge `px/mm.fom` = (w+h)/2 e tutte le chiavi di `dispersion`, `ang` per es, mr, w, h, fom, sdRadii, rsd, cep, r95, r99. σ = √((sx²+sy²)/2)/c, c = √(2/ν)·Γ((ν+1)/2)/Γ(ν/2), ν = 2(n−1) (`sigmaCorrection`, `lgamma` Lanczos). CEP/R95/R99 = σ·√(−2 ln(1−p)) attorno al centro gruppo | Scelta dell'utente: modello Rayleigh (R95/R99 non stimabili empiricamente con pochi colpi); entrambe le «SD radiali» mostrate ed etichettate |
+| D29 | **Flyer**: `Calc.flyers(pts, k)` leave-one-out (n ≥ 5): per il foro i, centro e distanze degli altri; z = (d_i − media)/SD (SD campionaria); flyer se z > k. Calcolato su TUTTI i fori (anche esclusi) → l'evidenziazione resta dopo l'esclusione. `params.flyerK` (default 2) | La regola su tutti i colpi non può scattare con n ≤ 5 (max z = (n−1)/√n). Scelta dell'utente |
+| D30 | **Esclusione fori**: `shot.excluded = true` (assente se incluso); `inc(g)` = fori inclusi, usato da `analyze`, centro gruppo, correzione, griglia, conteggi; esclusi disegnati tratteggiati con croce e «escl.»; toggle con casella «Escl.» o tasto `X` (`toggleExclude`, con `commit`) | Richiesta utente |
+| D31 | **Tabella punti** generata da `pointTable(g, cc)` (riusata dalla Result Card): colonne Tipo, Escl., X, Y, Da mira, Da centro, Direz., Click ↕, Click ↔. Direzione `Calc.compass(dx, dy)` dal centro gruppo: 0° = alto, senso orario, 16 sigle italiane (N … NNO). Distanze in mm se calibrato, altrimenti px. Tabella in un contenitore scorrevole orizzontalmente. Card del gruppo attivo: pannello di testo 560 px | Scelta dell'utente: bussola dal centro gruppo |
+| D32 | **Grafici** (sezione `#chartsBox`, `<details>` aperto): `drawCharts()` chiamata da `refreshResults()` (quindi anche durante il drag), da un `ResizeObserver` su `#charts`, dal cambio tema e dal selettore `#clockRef`. Canvas con DPR, colori dalle variabili CSS (tema), tooltip unico `#chTip` con zone di aggancio in `CH.hits`. Dati da `chartData()`: coordinate rispetto al centro gruppo dei fori inclusi, Y verso l'alto, mm (px senza scala). **Dispersione**: assi di uguale scala con passo `niceStep`, cerchi raggio medio (continuo) e CEP (tratteggiato); la mira è inclusa nella scala solo se entro 2,5× l'estensione del gruppo, altrimenti freccia al bordo. **Istogramma**: solo fori inclusi; numero di fasce ≈ √n + 1 (3–8), larghezza = valore «tondo» più vicino (1/2/2,5/5×10^k, scala log); fasce contigue con 2 px di stacco; linee raggio medio e CEP. **Orologio**: spicchi ±15° per ora, lunghezza ∝ conteggio; riferimento `poa` (default; freccia verso il centro gruppo + «i colpi tendono a ore N») o `center` (asse maggiore di `Calc.principalAxis`, «ore h–h+6», rapporto √(λ1/λ2); < 1,3 = uniforme) | Richiesta utente. L'esempio «i colpi tendono a ore 2» è uno spostamento rispetto alla mira; dal centro gruppo le direzioni si bilanciano per costruzione e l'informazione utile è l'asse di allungamento: per questo due riferimenti |
+| D33 | **Pannello ridimensionabile**: `#splitter` (6 px, `role=separator`) tra `#work` e `#side`; colonne `minmax(0,1fr) 6px var(--side-w, clamp(320px,35vw,75vw))`; drag con pointer capture, limiti 300 px – (finestra − 320 px), frecce ←/→ ±20 px, doppio clic = predefinito; larghezza salvata in `localStorage["shootAnalyzer.sideWidth"]` | Richiesta utente |
+| D22 | `#pointsGroup` sopra la tabella punti: pallino colore, nome e numero colpi del gruppo attivo, aggiornato in `refreshLists()` | Richiesta utente |
+
+## 3. Architettura di `src/index.html`
+- `<script id="calc-engine">`: modulo puro `Calc` (nessun DOM), esportato anche come `module.exports` per i test Node.
+  Funzioni: `dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze`.
+  `correction(dx, dy, ctx)` (dx + = destra, dy + = alto, mm) → `{unit, clickValue, hAng, vAng, hClicks, vClicks, hDir, vDir}` o `null`.
+  `analyze(shots, poa, ctx)` con `ctx = {pxPerMm, distMm, caliberMm, clickValue, clickUnit}` restituisce
+  `{n, calibrated, centroid, esIdx, px{es,mr,w,h}, mm{es,esEdge,mr,w,h}, ang{es,mr,w,h → {MOA,MIL,IPHY}}, offset{dx,dy,d}, correction{...}}`.
+  `offset.dx > 0` = gruppo a destra; `offset.dy > 0` = gruppo in alto.
+- `<script id="app-main">`:
+  - `state = {image{name,w,h,dataUrl,bitmap}, calib{p1,p2}, groups[{id,name,color,poa,shots[{id,x,y}]}], activeGroupId, mode, selected, view{scale,ox,oy}}`
+  - modalità: `pan | calib | poa | shot` (tasti 1–4).
+  - rendering: immagine con trasformazione vista; overlay in pixel CSS (marcatori a dimensione costante). `drawOverlay()` è riusata dalla Result Card.
+  - puntatore: clic vs trascinamento con soglia 4 px; hit-test 11 px, il gruppo attivo ha priorità; `Alt`+clic ignora i punti esistenti.
+  - lente: `loupeActive()`, `drawLoupe(cc)`, `setLoupe(on)`; `state.loupe`, `state.hover`.
+  - `drawOverlay(g, T, scl, cc, opts)` con `opts = {onlyGroupIds, noCalib, showNames, light}`; `drawGrid(g, T, scl, cc, bounds)`.
+  - `state.groups[].load`: dati di ricarica (D24). `shots[].excluded` (D30). `inc(g)`, `flyerMap(g)`, `pointTable(g, cc)`, `fmtLA(mm, ang)`.
+  - grafici: `drawCharts`, `chartData`, `drawScatter`, `drawHistogram`, `drawClock`, `chartHover`, `niceStep`; pannello: `initSplitter`, `setSideWidth`.
+  - `window.__SA`: hook per i test automatici.
+
+## 4. Test
+- `node tests/calc.test.js`: 64 verifiche (dalla 0.9.0 anche ore e asse principale; dalla 0.8.0 Γ, correzione σ, SD, CEP/R95/R99, FOM, flyer, bussola) (i calibri sono dati, verificati con test UI: scelta, inserimento manuale, unità in pollici, round-trip sessione) (valori di riferimento: 1 MOA = 1,0472" @100yd, 1 MIL = 100 mm @100 m, 1 mrad = 3,43775 MOA, direzioni di correzione, c-c/bordo-bordo).
+- Testato anche end-to-end in Chrome headless (Playwright): lente (hover e drag), card attiva e multi-gruppo, calibrazione, mira, fori, drag, undo/redo, tasto destro, zoom, multi-gruppo, round-trip della sessione, export della card. Nessuna richiesta di rete.
+  Lo script Playwright non è nel repo (era temporaneo): da aggiungere se si vuole la CI dei test UI.
+
+## 5. Limiti noti / da valutare
+- Nessuna correzione prospettica: la foto deve essere perpendicolare al bersaglio.
+- Nessuna rotazione dell'immagine: si assume che l'alto della foto sia l'alto del bersaglio.
+- Lo zoom della lente è fisso (×4): eventuale regolazione da valutare.
+- Safari non collaudato. Su Firefox/Safari i salvataggi vanno in Download (nessun dialog).
+- Firefox/Safari: `navigator.clipboard` da `file://` può essere negato → ripiego automatico su file .txt.
+
+## 6. Prossimi passi
+1. Push della 0.9.0; feedback.
+2. Collaudo su Safari (facoltativo: il criterio della rev. 2 è già soddisfatto con Firefox).
+3. Pubblicazione: `git push origin main --tags` dalla cartella del repo; il sito Pages si aggiorna da solo in 1-2 minuti (stato nel tab Actions, «pages build and deployment»).
+4. Idee aperte (non richieste): umidità/pressione, zoom regolabile della lente, rotazione immagine, correzione prospettica a 4 punti, test UI Playwright nel repo.
