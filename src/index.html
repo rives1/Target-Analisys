@@ -11,26 +11,41 @@
     --bg: #f4f5f7; --panel: #ffffff; --ink: #1d2330; --muted: #6b7280; --line: #e3e6eb;
     --accent: #2563eb; --accent-ink: #ffffff; --danger: #dc2626;
     --poa: #e11d48; --calib: #16a34a;
+    --input-bg: #ffffff; --input-border: #cdd2da; --hover: #f3f5f8; --hl: #eff5ff; --hl-ink: #1d4ed8; --sel: #fff7d6;
+    --ok-bg: #ecfdf3; --ok-ink: #166534; --warn-bg: #fff7ed; --warn-ink: #9a3412;
+    --tb-bg: rgba(255,255,255,.95); --tb-hover: #eef1f5; --row-line: #f0f2f5; --help-ink: #374151;
+    --kbd-bg: #eef1f5; --kbd-border: #d6dbe2; --work-bg: #2b2f36;
+    color-scheme: light;
     --radius: 8px;
     font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
     font-size: 14px; color: var(--ink);
+  }
+  /* Tema scuro: attivato da data-theme="dark" su <html> (pulsante 🌙/☀️ nell'intestazione). */
+  :root[data-theme="dark"] {
+    --bg: #111318; --panel: #1a1d23; --ink: #e5e7eb; --muted: #9aa3af; --line: #2c313a;
+    --accent: #3b82f6; --danger: #f87171;
+    --input-bg: #22262d; --input-border: #3a404a; --hover: #262b33; --hl: #1e2a40; --hl-ink: #93c5fd; --sel: #3a3216;
+    --ok-bg: #0f2a1c; --ok-ink: #86efac; --warn-bg: #33210f; --warn-ink: #fdba74;
+    --tb-bg: rgba(30,33,39,.95); --tb-hover: #2c313a; --row-line: #262b33; --help-ink: #cbd5e1;
+    --kbd-bg: #262b33; --kbd-border: #3a404a; --work-bg: #0d0f12;
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
   #app { display: grid; grid-template-columns: minmax(0, 65fr) minmax(320px, 35fr); height: 100vh; }
 
   /* ---------- area di lavoro ---------- */
-  #work { position: relative; overflow: hidden; background: #2b2f36; }
+  #work { position: relative; overflow: hidden; background: var(--work-bg); }
   #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
   #toolbar {
     position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px;
     align-items: center; pointer-events: none; z-index: 2;
   }
-  #toolbar .grp { display: flex; gap: 2px; background: rgba(255,255,255,.95); border-radius: var(--radius);
+  #toolbar .grp { display: flex; gap: 2px; background: var(--tb-bg); border-radius: var(--radius);
     padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,.25); pointer-events: auto; }
   #toolbar button { border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; cursor: pointer;
     font: inherit; color: var(--ink); white-space: nowrap; }
-  #toolbar button:hover:not(:disabled) { background: #eef1f5; }
+  #toolbar button:hover:not(:disabled) { background: var(--tb-hover); }
   #toolbar button:disabled { opacity: .35; cursor: default; }
   #toolbar button.on { background: var(--accent); color: var(--accent-ink); }
   #toolbar .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
@@ -58,23 +73,24 @@
   #exportBar { margin: 0 0 12px; }
   .pgroup { display: flex; align-items: center; gap: 6px; font-weight: 600; margin: -2px 0 6px; }
   .pgroup .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
-  input, select { font: inherit; padding: 5px 7px; border: 1px solid #cdd2da; border-radius: 6px; background: #fff; color: var(--ink); }
-  input:focus, select:focus { outline: 2px solid #93c5fd; outline-offset: 0; border-color: var(--accent); }
-  .btn { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid #cdd2da; background: #fff; cursor: pointer; }
-  .btn:hover { background: #f3f5f8; }
+  input, select, textarea { font: inherit; padding: 5px 7px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--ink); }
+  input:focus, select:focus, textarea:focus { outline: 2px solid #93c5fd; outline-offset: 0; border-color: var(--accent); }
+  .btn { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--ink); cursor: pointer; }
+  .btn:hover { background: var(--hover); }
+  .btn.primary:hover { filter: brightness(1.08); }
   .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn.danger { color: var(--danger); }
   .btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
-  .status { font-size: 12.5px; padding: 6px 8px; border-radius: 6px; background: #f3f5f8; margin-bottom: 8px; }
-  .status.ok { background: #ecfdf3; color: #166534; }
-  .status.warn { background: #fff7ed; color: #9a3412; }
+  .status { font-size: 12.5px; padding: 6px 8px; border-radius: 6px; background: var(--hover); margin-bottom: 8px; }
+  .status.ok { background: var(--ok-bg); color: var(--ok-ink); }
+  .status.warn { background: var(--warn-bg); color: var(--warn-ink); }
 
   .groups { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
   .g { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
-  .g.active { border-color: var(--accent); background: #eff5ff; }
+  .g.active { border-color: var(--accent); background: var(--hl); }
   .g .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
   .g input { flex: 1; padding: 3px 6px; border-color: transparent; background: transparent; }
-  .g.active input { border-color: #cdd2da; background: #fff; }
+  .g.active input { border-color: var(--input-border); background: var(--input-bg); }
   .g .n { color: var(--muted); font-size: 12px; min-width: 52px; text-align: right; }
   .g button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
   .g button:hover { color: var(--danger); }
@@ -85,23 +101,33 @@
   .res td { padding: 2px 0; vertical-align: top; }
   .res td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
   .res td.v { font-variant-numeric: tabular-nums; text-align: right; }
-  .res .corr { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: #eff5ff; font-weight: 600; font-size: 13.5px; }
+  .res .corr { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: var(--hl); color: var(--hl-ink); font-weight: 600; font-size: 13.5px; }
   .muted { color: var(--muted); }
 
   table.pts { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
   table.pts th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 3px 4px; }
-  table.pts td { border-bottom: 1px solid #f0f2f5; padding: 3px 4px; }
-  table.pts tr.sel td { background: #fff7d6; }
-  table.pts tr.centroid td { background: #eff5ff; font-weight: 600; color: #1d4ed8; }
+  table.pts td { border-bottom: 1px solid var(--row-line); padding: 3px 4px; }
+  table.pts tr.sel td { background: var(--sel); }
+  table.pts tr.centroid td { background: var(--hl); font-weight: 600; color: var(--hl-ink); }
   table.pts td.x, table.pts th.x { text-align: right; }
   table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
   table.pts button:hover { color: var(--danger); }
   details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
-  .help { font-size: 12.5px; color: #374151; line-height: 1.45; }
-  .help kbd { background: #eef1f5; border: 1px solid #d6dbe2; border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  .help { font-size: 12.5px; color: var(--help-ink); line-height: 1.45; }
+  .help kbd { background: var(--kbd-bg); border: 1px solid var(--kbd-border); border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
     padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
   #toast.show { opacity: .95; }
+  .titlebar { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  #bTheme { border: 1px solid var(--input-border); background: var(--input-bg); border-radius: 6px; cursor: pointer; padding: 3px 8px; font-size: 15px; }
+  /* dati di ricarica */
+  .ld-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 8px; align-items: center; font-size: 13px; }
+  .ld-grid label { color: var(--muted); white-space: nowrap; }
+  .ld-grid .pair { display: flex; gap: 6px; min-width: 0; }
+  .ld-grid .pair > * { min-width: 0; }
+  .ld-grid input, .ld-grid select, .ld-grid textarea { width: 100%; padding: 4px 6px; }
+  .ld-grid textarea { grid-column: 1 / -1; resize: vertical; min-height: 54px; }
+  details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
 </style>
 </head>
 <body>
@@ -132,6 +158,7 @@
       <div class="grp">
         <button id="bFit" title="Adatta allo schermo (F)">⤢ Adatta</button>
         <button id="bLoupe" title="Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.">🔍 Lente</button>
+        <button id="bGrid" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)">▦ Griglia</button>
       </div>
     </div>
     <div id="hint"></div>
@@ -140,8 +167,13 @@
 
   <!-- ======================= PANNELLO DESTRO ======================= -->
   <aside id="side">
-    <h1>Shoot Analyzer</h1>
-    <div class="sub">Analisi rosata · 100% offline · <span id="ver"></span></div>
+    <div class="titlebar">
+      <div>
+        <h1>Shoot Analyzer</h1>
+        <div class="sub">Analisi rosata · 100% offline · <span id="ver"></span></div>
+      </div>
+      <button id="bTheme" title="Tema chiaro / scuro (T)">🌙</button>
+    </div>
     <div class="btns" id="exportBar">
       <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
       <select id="cardScope" title="Contenuto della Result Card">
@@ -184,12 +216,47 @@
           <option value="IPHY">in @100 yd (SMOA)</option>
         </select>
       </div>
+      <div class="row">
+        <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
+        <input id="gridStep" type="number" min="0" step="any" value="0.1" title="Distanza tra due linee della griglia">
+        <select id="gridUnit"><option value="MIL">MIL</option><option value="MOA">MOA</option></select>
+      </div>
     </section>
 
     <section>
       <h2>Gruppi</h2>
       <div class="groups" id="groups"></div>
       <div class="btns"><button class="btn" id="bAddGroup">＋ Nuovo gruppo</button></div>
+    </section>
+
+    <section>
+      <details class="box" open>
+        <summary>Ricarica e condizioni · gruppo attivo</summary>
+        <div id="ldGroup" class="pgroup"></div>
+        <div class="ld-grid" id="ldForm">
+          <label for="ld-date">Data</label><input id="ld-date" data-k="date" type="date">
+          <label for="ld-case">Bossolo</label><input id="ld-case" data-k="case" placeholder="marca, n° ricariche…">
+          <label for="ld-powder">Polvere</label>
+          <div class="pair"><input id="ld-powder" data-k="powder" placeholder="tipo" style="flex:2"><input id="ld-charge" data-k="charge" type="number" min="0" step="any" placeholder="grani" title="Carica in grani (gr)" style="flex:1"></div>
+          <label for="ld-bullet">Palla</label><input id="ld-bullet" data-k="bullet" placeholder="marca, peso gr, tipo (il calibro è nei parametri)">
+          <label for="ld-primer">Innesco</label><input id="ld-primer" data-k="primer">
+          <label for="ld-weather">Meteo</label><input id="ld-weather" data-k="weather" list="weatherList" placeholder="condizioni atmosferiche">
+          <label for="ld-temp">Temperatura</label>
+          <div class="pair"><input id="ld-temp" data-k="temp" type="number" step="any" placeholder="°C"><span class="muted" style="align-self:center">°C</span></div>
+          <label for="ld-wind">Vento</label>
+          <div class="pair"><input id="ld-wind" data-k="wind" type="number" min="0" step="any" placeholder="velocità">
+            <select id="ld-windUnit" data-k="windUnit"><option>m/s</option><option>km/h</option><option>mph</option></select>
+            <select id="ld-windDir" data-k="windDir" title="Da dove soffia il vento, a ore (ore 12 = dal bersaglio verso il tiratore)"></select></div>
+          <label for="ld-shotsTotal">Colpi sparati</label>
+          <input id="ld-shotsTotal" data-k="shotsTotal" type="number" min="0" step="1" placeholder="totali, flyer inclusi">
+          <span></span><span class="muted" id="ldShotsInfo" style="font-size:12px;margin-top:-3px"></span>
+          <label for="ld-foulers">Scaldacanna</label><input id="ld-foulers" data-k="foulers" type="number" min="0" step="1" placeholder="colpi prima del gruppo">
+          <label for="ld-notes" style="grid-column:1/-1">Note</label>
+          <textarea id="ld-notes" data-k="notes" rows="3"></textarea>
+        </div>
+        <datalist id="weatherList"><option value="Sereno"><option value="Poco nuvoloso"><option value="Nuvoloso"><option value="Coperto"><option value="Pioggia"><option value="Nebbia"><option value="Neve"></datalist>
+        <div class="muted" style="font-size:11.5px;margin-top:6px">Ogni gruppo ha i suoi dati. Un nuovo gruppo eredita munizione e condizioni dal gruppo attivo (non colpi, scaldacanna e note). Tutto compare nella Result Card.</div>
+      </details>
     </section>
 
     <section>
@@ -223,7 +290,7 @@
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>Ctrl+S</kbd> salva.</p>
+          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>T</kbd> tema · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.</p>
         </div>
       </details>
@@ -374,7 +441,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.6.1";
+const APP_VERSION = "0.7.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -406,8 +473,18 @@ function makeGroup() {
   const used = new Set(state.groups.map(g => g.color));
   const color = GROUP_COLORS.find(c => !used.has(c)) || GROUP_COLORS[idx % GROUP_COLORS.length];
   const nums = state.groups.map(g => +((g.name.match(/^Gruppo (\d+)$/) || [])[1] || 0));
-  return { id: newId(), name: "Gruppo " + (Math.max(0, ...nums) + 1), color, poa: null, shots: [] };
+  // I dati di ricarica/condizioni partono da quelli del gruppo attivo (stessa sessione = spesso stessi dati).
+  const src = activeGroup();
+  // Si ereditano solo munizione e condizioni; colpi sparati, scaldacanna e note sono propri di ogni gruppo.
+  const load = defaultLoad();
+  if (src && src.load) for (const k of LOAD_INHERIT) if (src.load[k]) load[k] = src.load[k];
+  return { id: newId(), name: "Gruppo " + (Math.max(0, ...nums) + 1), color, poa: null, shots: [], load };
 }
+/* Dati di ricarica e condizioni (per gruppo). Tutti stringhe: come scritti dall'utente. */
+const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
+const LOAD_INHERIT = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "wind", "windUnit", "windDir"];
+function todayISO() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
+function defaultLoad() { const o = Object.fromEntries(LOAD_KEYS.map(k => [k, ""])); o.date = todayISO(); o.windUnit = "m/s"; return o; }
 const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) || null;
 
 /* ------------------------- STORIA (UNDO/REDO) ------------------------- */
@@ -481,12 +558,15 @@ function params() {
     shotDist: num("shotDist"), shotDistUnit: $("shotDistUnit").value,
     caliber: num("caliber"), caliberUnit: $("caliberUnit").value, caliberPreset: $("caliberPreset").value,
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
+    gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit" }))
     if (p[k] !== undefined) $(id).value = p[k];
+  if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
+  syncGridButton();
   if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
   syncCaliberPreset();
 }
@@ -555,8 +635,104 @@ function draw() {
   // Overlay disegnato in pixel CSS dello schermo: marcatori di dimensione costante.
   ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cc = calcContext();
+  const tl = toImage(0, 0), br = toImage(canvas.width / dpr, canvas.height / dpr);
+  drawGrid(ctx2d, toScreen, v.scale, cc, { x0: tl.x, y0: tl.y, x1: br.x, y1: br.y });
   drawOverlay(ctx2d, toScreen, v.scale, cc);
   if (loupeActive()) drawLoupe(cc);
+}
+
+/* ------------------------- GRIGLIA ANGOLARE ------------------------- */
+/** Parametri della griglia, o null se non attiva / non calcolabile (serve scala e distanza). */
+function gridSpec(cc) {
+  const p = params();
+  if (!p.gridOn || !state.image || !cc.pxPerMm || !(cc.distMm > 0) || !(p.gridStep > 0)) return null;
+  const g = activeGroup();
+  const center = g && g.poa ? g.poa : g && g.shots.length ? Calc.centroid(g.shots) : { x: state.image.w / 2, y: state.image.h / 2 };
+  const rad = p.gridStep * (p.gridUnit === "MOA" ? Math.PI / 10800 : 0.001);
+  // linea marcata ogni unità intera (passo < 1) oppure ogni 5 linee
+  const major = p.gridStep < 1 ? Math.max(1, Math.round(1 / p.gridStep)) : 5;
+  return { center, rad, step: p.gridStep, unit: p.gridUnit, major, kPx: cc.distMm * cc.pxPerMm, onPoa: !!(g && g.poa) };
+}
+/**
+ * Disegna la griglia angolare (posizioni esatte: D·tan(i·passo)), centrata sul punto di mira del gruppo attivo.
+ * @param bounds area visibile in coordinate immagine {x0,y0,x1,y1}
+ */
+function drawGrid(g, T, scl, cc, bounds) {
+  const G = gridSpec(cc); if (!G) return;
+  bounds = { x0: Math.max(0, bounds.x0), y0: Math.max(0, bounds.y0), x1: Math.min(state.image.w, bounds.x1), y1: Math.min(state.image.h, bounds.y1) };
+  if (bounds.x1 <= bounds.x0 || bounds.y1 <= bounds.y0) return;
+  const off = i => Math.tan(i * G.rad) * G.kPx;               // scostamento in px immagine della linea i
+  const spPx = off(1) * scl;                                    // spaziatura sullo schermo
+  const showMinor = spPx >= 5, majorPx = spPx * G.major;
+  if (majorPx < 5) return;                                      // troppo fitta: non disegna nulla
+  const lim = Math.PI / 2 / G.rad * 0.9;                        // evita tan → ∞
+  const range = (a, b) => [Math.max(-lim, Math.floor((a) / off(1)) - 1), Math.min(lim, Math.ceil((b) / off(1)) + 1)];
+  const [ix0, ix1] = range(bounds.x0 - G.center.x, bounds.x1 - G.center.x);
+  const [iy0, iy1] = range(bounds.y0 - G.center.y, bounds.y1 - G.center.y);
+  if (ix1 - ix0 > 2000 || iy1 - iy0 > 2000) return;
+  const a = T({ x: bounds.x0, y: bounds.y0 }), b = T({ x: bounds.x1, y: bounds.y1 });
+  g.save();
+  for (const axis of ["x", "y"]) {
+    const [i0, i1] = axis === "x" ? [ix0, ix1] : [iy0, iy1];
+    for (let i = i0; i <= i1; i++) {
+      const isMajor = i % G.major === 0;
+      if (!isMajor && !showMinor) continue;
+      const pos = axis === "x" ? G.center.x + off(i) : G.center.y + off(i);
+      if (axis === "x" ? pos < bounds.x0 || pos > bounds.x1 : pos < bounds.y0 || pos > bounds.y1) continue;   // fuori immagine
+      const c = T({ x: axis === "x" ? pos : G.center.x, y: axis === "y" ? pos : G.center.y });
+      g.strokeStyle = i === 0 ? "rgba(0,180,216,.95)" : isMajor ? "rgba(0,180,216,.75)" : "rgba(0,180,216,.35)";
+      g.lineWidth = i === 0 ? 1.8 : isMajor ? 1.2 : 0.8;
+      g.beginPath();
+      if (axis === "x") { g.moveTo(c.x, a.y); g.lineTo(c.x, b.y); } else { g.moveTo(a.x, c.y); g.lineTo(b.x, c.y); }
+      g.stroke();
+    }
+  }
+  // etichette sulle linee marcate, lungo gli assi
+  const c0 = T(G.center);
+  const every = showMinor && spPx >= 40 ? 1 : G.major;          // etichetta ogni linea se c'è spazio
+  const val = i => { const x = Math.abs(i) * G.step; return x.toLocaleString("it-IT", { maximumFractionDigits: 2 }); };
+  for (let i = Math.ceil(ix0 / every) * every; i <= ix1; i += every) if (i) {
+    const px = G.center.x + off(i);
+    if (px < bounds.x0 || px > bounds.x1 || G.center.y < bounds.y0 || G.center.y > bounds.y1) continue;
+    const c = T({ x: px, y: G.center.y });
+    label(g, c.x + 3, c0.y + 10, val(i), "#0e7490", 10);
+  }
+  for (let i = Math.ceil(iy0 / every) * every; i <= iy1; i += every) if (i) {
+    const py = G.center.y + off(i);
+    if (py < bounds.y0 || py > bounds.y1 || G.center.x < bounds.x0 || G.center.x > bounds.x1) continue;
+    const c = T({ x: G.center.x, y: py });
+    label(g, c0.x + 4, c.y - 8, val(i), "#0e7490", 10);
+  }
+  // legenda nell'angolo in basso a sinistra dell'area disegnata
+  const onScreen = g === ctx2d;                                  // vista principale: sopra il riquadro dei suggerimenti
+  const vh = onScreen ? canvas.height / dpr - 44 : g.canvas.height;
+  label(g, Math.max(a.x, 0) + 8, Math.min(b.y, vh) - 14,
+    `Griglia ${val(1)} ${G.unit}/linea${showMinor ? "" : ` (mostrate ogni ${val(G.major)})`} · centro: ${G.onPoa ? "punto di mira" : "centro gruppo"}`, "#0e7490", 11);
+  g.restore();
+}
+function syncGridButton() { $("bGrid").classList.toggle("on", $("gridOn").checked); }
+function toggleGrid() {
+  $("gridOn").checked = !$("gridOn").checked; syncGridButton();
+  const cc = calcContext();
+  if ($("gridOn").checked && !gridSpec(cc)) toast("Griglia: servono scala calibrata e distanza di tiro.");
+  requestDraw();
+}
+
+/* ------------------------- TEMA ------------------------- */
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $("bTheme").textContent = t === "dark" ? "☀️" : "🌙";
+}
+function initTheme() {
+  let t = null;
+  try { t = localStorage.getItem("shootAnalyzer.theme"); } catch { /* storage non disponibile */ }
+  if (t !== "dark" && t !== "light") t = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  applyTheme(t);
+}
+function toggleTheme() {
+  const t = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+  applyTheme(t);
+  try { localStorage.setItem("shootAnalyzer.theme", t); } catch { /* ignora */ }
 }
 
 /* ------------------------- LENTE DI INGRANDIMENTO ------------------------- */
@@ -878,6 +1054,8 @@ document.addEventListener("keydown", e => {
   else if (k === "backspace") { e.preventDefault(); deleteLast(); }
   else if (k === "f") fitView();
   else if (k === "l") setLoupe(!state.loupe);
+  else if (k === "g") toggleGrid();
+  else if (k === "t") toggleTheme();
   else if (k === "1") setMode("pan");
   else if (k === "2") setMode("calib");
   else if (k === "3") setMode("poa");
@@ -972,7 +1150,7 @@ function buildSession() {
     image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, dataUrl: embed ? state.image.dataUrl : null } : null,
     params: params(),
     calib: state.calib,
-    groups: state.groups.map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa, shots: g.shots })),
+    groups: state.groups.map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa, shots: g.shots, load: g.load })),
     activeGroupId: state.activeGroupId,
     results: state.groups.map(g => ({ group: g.name, ...summarize(g) })),   // informativo, ricalcolato al caricamento
   };
@@ -994,7 +1172,8 @@ async function loadSessionText(text) {
   }
   setParams(s.params || {});
   state.calib = s.calib || { p1: null, p2: null };
-  state.groups = (s.groups || []).map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa || null, shots: g.shots || [] }));
+  state.groups = (s.groups || []).map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa || null, shots: g.shots || [],
+    load: { ...defaultLoad(), date: "", ...(g.load || {}) } }));   // sessioni < 0.7.0: nessun dato di ricarica
   if (!state.groups.length) state.groups.push(makeGroup());
   state.activeGroupId = state.groups.some(g => g.id === s.activeGroupId) ? s.activeGroupId : state.groups[0].id;
   uid = Math.max(...allIds()) + 1;
@@ -1041,7 +1220,18 @@ function updateButtons() {
   $("bDelLast").disabled = !g || (!g.shots.length && !g.poa);
   $("shotSw").style.background = g ? g.color : GROUP_COLORS[0];
 }
+function refreshLoadForm() {
+  const g = activeGroup();
+  $("ldGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)}` : "";
+  const L = g && g.load ? g.load : defaultLoad();
+  document.querySelectorAll("#ldForm [data-k]").forEach(el => {
+    if (el !== document.activeElement && el.value !== (L[el.dataset.k] ?? "")) el.value = L[el.dataset.k] ?? "";
+  });
+  const tot = parseInt(L.shotsTotal, 10), n = g ? g.shots.length : 0;
+  $("ldShotsInfo").textContent = tot > 0 ? `${n} nel gruppo${tot > n ? ` · ${tot - n} esclusi` : tot < n ? " · ⚠ meno dei fori marcati" : ""}` : `${n} nel gruppo`;
+}
 function refreshLists() {
+  refreshLoadForm();
   // gruppi
   const gl = $("groups"); gl.innerHTML = "";
   for (const g of state.groups) {
@@ -1148,6 +1338,45 @@ function refreshResults() {
 }
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+/* -------------------- DATI DI RICARICA: testi per le esportazioni -------------------- */
+/** Righe descrittive dei dati di ricarica/condizioni di un gruppo (solo i campi compilati). */
+function loadLines(g) {
+  const L = g.load || {}, out = [], v = k => (L[k] ?? "").toString().trim();
+  const num = (k, d) => { const x = parseFloat(v(k)); return isFinite(x) ? x.toLocaleString("it-IT", { maximumFractionDigits: d }) : ""; };
+  if (v("date")) { const [y, m, d] = v("date").split("-"); out.push(["Data", d && m && y ? `${d}/${m}/${y}` : v("date")]); }
+  if (v("case")) out.push(["Bossolo", v("case")]);
+  const pw = [v("powder"), v("charge") ? `${num("charge", 2)} gr` : ""].filter(Boolean).join(" · ");
+  if (pw) out.push(["Polvere", pw]);
+  const p = params();
+  if (v("bullet")) out.push(["Palla", `${v("bullet")} · cal. ${caliberLabel(p)}`]);
+  if (v("primer")) out.push(["Innesco", v("primer")]);
+  const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : ""].filter(Boolean).join(" · ");
+  if (met) out.push(["Meteo", met]);
+  const wind = [v("wind") ? `${num("wind", 1)} ${v("windUnit") || "m/s"}` : "", v("windDir") ? `da ore ${v("windDir")}` : ""].filter(Boolean).join(" ");
+  if (wind) out.push(["Vento", wind]);
+  const n = g.shots.length, tot = parseInt(v("shotsTotal"), 10), fo = parseInt(v("foulers"), 10);
+  const cl = [];
+  if (tot > 0) cl.push(`${n} nel gruppo su ${tot} sparati${tot > n ? ` (${tot - n} esclusi)` : ""}`);
+  if (fo > 0) cl.push(`${fo} scaldacanna`);
+  if (cl.length) out.push(["Colpi", cl.join(" · ")]);
+  if (v("notes")) out.push(["Note", v("notes")]);
+  return out;
+}
+/** Spezza un testo in righe che stanno in maxW pixel con il font indicato (rispetta gli a capo). */
+function wrapText(text, font, maxW) {
+  const m = document.createElement("canvas").getContext("2d"); m.font = font;
+  const lines = [];
+  for (const para of String(text).split(/\r?\n/)) {
+    let line = "";
+    for (const w of para.split(/\s+/)) {
+      const t = line ? line + " " + w : w;
+      if (m.measureText(t).width <= maxW || !line) line = t; else { lines.push(line); line = w; }
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
 /* ----------------------------- RESULT CARD ----------------------------- */
 function resultText() {
   const p = params(), cc = calcContext();
@@ -1158,6 +1387,7 @@ function resultText() {
   for (const g of state.groups) {
     const r = Calc.analyze(g.shots, g.poa, cc);
     L.push("", `[${g.name}] ${r.n} colpi`);
+    for (const [k, v] of loadLines(g)) L.push(`  ${(k + ":").padEnd(16)}${v.replace(/\n/g, "\n" + " ".repeat(18))}`);
     if (r.mm && r.n >= 2) {
       L.push(`  Group size c-c: ${fmtLen(r.mm.es)} = ${fmtAng(r.ang?.es)}`);
       L.push(`  Bordo-bordo:    ${fmtLen(r.mm.esEdge)}`);
@@ -1204,9 +1434,23 @@ async function exportCard(scope = "active") {
   add(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
   add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${caliberLabel(p)}`, 14, "#374151", 400, 18);
   if (!cc.pxPerMm) add("Scala non calibrata", 16, "#9a3412", 600, 16);
+  // Righe "Etichetta: valore" con a capo automatico entro il pannello di testo.
+  const addLoad = (g, size) => {
+    const lines = loadLines(g);
+    for (const [k, v] of lines) {
+      const font = `400 ${size}px "Segoe UI", system-ui, sans-serif`;
+      wrapText(`${k}: ${v}`, font, 380).forEach((t, i, arr) => add(t, size, i === 0 ? "#1d2330" : "#374151", 400, i === arr.length - 1 ? 4 : 2));
+    }
+    return lines.length;
+  };
   for (const g of groups) {
     const r = Calc.analyze(g.shots, g.poa, cc);
     if (groups.length === 1) {
+      if (loadLines(g).length) {
+        add("RICARICA E CONDIZIONI", 12, "#6b7280", 700, 5);
+        addLoad(g, 13);
+        L[L.length - 1][4] = 16;
+      }
       if (r.mm && r.n >= 2) {
         add("GROUP SIZE (centro-centro)", 12, "#6b7280", 700, 4);
         add(fmtLen(r.mm.es), 22, "#1d2330", 700, 4);
@@ -1244,7 +1488,8 @@ async function exportCard(scope = "active") {
         add(`R. medio ${fmt(r.mm.mr, 1)} mm · ${fmtAng(r.ang?.mr)}`, 13, "#374151", 400, 3);
       } else if (cc.pxPerMm) add("Servono almeno 2 fori", 13, "#9a3412", 400, 3);
       if (r.correction) add(`↻ ${correctionText(r.correction)}`, 14, "#1d4ed8", 700, 3);
-      L[L.length - 1][4] = 16;   // spazio dopo il gruppo
+      addLoad(g, 12);
+      if (Array.isArray(L[L.length - 1])) L[L.length - 1][4] = 16;   // spazio dopo il gruppo
     }
   }
   if (groups.length > 1 && cc.clickValue > 0) add(`Click: ${fmt(cc.clickValue, 3)} ${cc.clickUnit}`, 13, "#6b7280");
@@ -1258,6 +1503,7 @@ async function exportCard(scope = "active") {
   const ox = 20, oy = (H - ih) / 2;
   k.save(); k.beginPath(); k.rect(ox, oy, iw, ih); k.clip();
   k.drawImage(state.image.bitmap, x0, y0, cw, ch, ox, oy, iw, ih);
+  drawGrid(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { x0, y0, x1, y1 });
   drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc,
     { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
   k.restore();
@@ -1303,6 +1549,27 @@ $("bFit").onclick = fitView;
 $("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; setMode(state.image ? "poa" : state.mode); commit(); };
 $("bCardPng").onclick = () => exportCard($("cardScope").value);
 $("bLoupe").onclick = () => setLoupe(!state.loupe);
+$("bGrid").onclick = toggleGrid;
+// passo tipico quando si cambia unità: 0,1 MIL ↔ 0,25 MOA
+$("gridUnit").addEventListener("change", () => {
+  const st = parseFloat($("gridStep").value);
+  if ($("gridUnit").value === "MOA" && st === 0.1) $("gridStep").value = 0.25;
+  if ($("gridUnit").value === "MIL" && st === 0.25) $("gridStep").value = 0.1;
+  requestDraw();
+});
+$("gridOn").addEventListener("change", () => { syncGridButton(); requestDraw(); if ($("gridOn").checked && !gridSpec(calcContext())) toast("Griglia: servono scala calibrata e distanza di tiro."); });
+$("bTheme").onclick = toggleTheme;
+// dati di ricarica: scrittura nel gruppo attivo (con undo) al termine della modifica del campo
+$("ld-windDir").innerHTML = `<option value="">direzione</option>` + Array.from({ length: 12 }, (_, i) => {
+  const h = i + 1, hint = { 12: " (contro)", 3: " (da dx)", 6: " (a favore)", 9: " (da sx)" }[h] || "";
+  return `<option value="${h}">ore ${h}${hint}</option>`;
+}).join("");
+document.querySelectorAll("#ldForm [data-k]").forEach(el => el.addEventListener("change", () => {
+  const g = activeGroup(); if (!g) return;
+  g.load = g.load || defaultLoad();
+  if (g.load[el.dataset.k] === el.value) return;
+  g.load[el.dataset.k] = el.value; commit();
+}));
 $("bCardTxt").onclick = copyText;
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("caliberPreset").addEventListener("change", () => {
@@ -1312,7 +1579,7 @@ $("caliberPreset").addEventListener("change", () => {
 });
 $("caliber").addEventListener("input", syncCaliberPreset);
 $("caliberUnit").addEventListener("change", syncCaliberPreset);
-document.querySelectorAll("#side input[type=number], #side select").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
+document.querySelectorAll("#side input[type=number]:not([data-k]), #side select:not([data-k])").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
 
 // drag & drop
 ["dragenter", "dragover"].forEach(t => work.addEventListener(t, e => { e.preventDefault(); work.classList.add("dragover"); }));
@@ -1331,6 +1598,7 @@ new ResizeObserver(() => resizeCanvas()).observe(work);
 window.addEventListener("resize", resizeCanvas);
 
 // avvio
+initTheme();
 buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); resizeCanvas(); resetHistory();

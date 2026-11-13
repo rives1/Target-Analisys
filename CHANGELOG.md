@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0] - 2026-11-13
+### Aggiunto
+- **Ricarica e condizioni** (per gruppo): data, bossolo, polvere + carica in grani, palla (il calibro resta nei parametri),
+  innesco, meteo, temperatura (°C), vento (velocità m/s · km/h · mph e direzione a ore), colpi sparati totali (flyer inclusi;
+  il pannello mostra quanti sono esclusi dal gruppo), colpi scaldacanna, note.
+  Salvati nella sessione, con undo/redo; un nuovo gruppo eredita munizione e condizioni dal gruppo attivo
+  (non colpi sparati, scaldacanna e note). Riportati nella Result Card (gruppo attivo: sezione «Ricarica e condizioni»;
+  tutti i gruppi: per ogni gruppo) e nel testo copiato. Le note vanno a capo automaticamente nella card.
+- **Griglia angolare** opzionale in MIL o MOA (pulsante ▦ Griglia, tasto `G`, passo regolabile, default 0,1 MIL; 0,25 MOA
+  passando a MOA), centrata sul punto di mira del gruppo attivo (o sul centro gruppo), posizioni esatte `D·tan(i·passo)`,
+  linee marcate ogni unità intera, etichette, legenda. Richiede scala calibrata e distanza. Compare anche nella Result Card.
+- **Tema scuro** opzionale (pulsante 🌙/☀️ nell'intestazione, tasto `T`); di default segue il tema del sistema,
+  la scelta è ricordata dal browser. La Result Card resta su sfondo bianco (stampabile).
+### Compatibilità
+- Le sessioni salvate con versioni precedenti si aprono senza dati di ricarica (campi vuoti).
+
 ## [0.6.1] - 2026-11-13
 ### Aggiunto
 - Pubblicazione su **GitHub Pages** (modalità «Deploy from a branch», `main` / root): https://rives1.github.io/Target-Analisys/

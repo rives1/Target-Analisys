@@ -3,7 +3,7 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.6.1** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
+> Stato: **v0.7.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
@@ -28,6 +28,8 @@ Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è
 La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando inserisci i punti ed è sempre attiva mentre trascini un punto.
 La tabella dei punti mostra per ogni foro, e per il **centro gruppo** (la correzione da applicare), i click verticali e orizzontali per portarlo sul punto di mira.
 La **Result Card** PNG può contenere il gruppo attivo (default, con la tabella punti dal centro gruppo in giù) o tutti i gruppi.
+Per ogni gruppo si registrano i **dati di ricarica e le condizioni** (polvere, palla, innesco, meteo, vento, colpi sparati, note…), riportati nella Result Card.
+La **griglia angolare** MIL/MOA (`G`) si sovrappone all'immagine centrata sul punto di mira. **Tema scuro** con 🌙 (`T`).
 Il **calibro** si sceglie da un elenco dei calibri più diffusi oppure si scrive a mano il diametro della palla.
 
 Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `Alt`+clic per un foro sovrapposto · rotella = zoom · trascina lo sfondo = pan · `Ctrl+Z` / `Ctrl+Y` undo/redo.
@@ -75,6 +77,7 @@ LICENSE
 - [x] Combo calibri, tabella punti nella Result Card (v0.5.0)
 - [x] Data/ora nei nomi file, esportazione in cima al pannello, gruppo attivo nella tabella punti (v0.6.0)
 - [x] Pubblicazione su GitHub Pages (v0.6.1)
+- [x] Dati di ricarica e condizioni, griglia MIL/MOA, tema scuro (v0.7.0)
 - [ ] Collaudo su Safari
 
 ## Licenza

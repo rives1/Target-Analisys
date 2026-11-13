@@ -32,7 +32,10 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
    - Salvataggio della sessione di lavoro in un file JSON locale (non nel `localStorage`, per garantire vera portabilità): dialog «Salva con nome» del browser dove disponibile (File System Access API: Edge/Chrome), altrimenti download del file.
    - Funzionalità di "Importa JSON" per riprendere sessioni precedenti.
 6. **Esportazione Risultati**: Generazione di una "Result Card" (scheda risultato) in formato testo o immagine sintetica da affiancare al quaderno di tiro. L'immagine può riguardare il solo gruppo attivo (default; include la tabella punti dal centro gruppo in giù) o tutti i gruppi.
-7. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
+7. **Dati di ricarica e condizioni** (per gruppo): data, bossolo, polvere e carica in grani, palla, innesco, condizioni atmosferiche, temperatura, velocità e direzione del vento, colpi sparati totali (flyer esclusi compresi), colpi scaldacanna, note. Devono comparire nella Result Card.
+8. **Griglia angolare** opzionale (MOA o MIL) sovrapposta all'immagine, centrata sul punto di mira, per una verifica visiva immediata.
+9. **Tema scuro** opzionale per la pagina.
+10. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
 
 ---
 
