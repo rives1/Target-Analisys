@@ -31,7 +31,7 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
 5. **Gestione Dati Locali**:
    - Salvataggio della sessione di lavoro in un file JSON locale (non nel `localStorage`, per garantire vera portabilità): dialog «Salva con nome» del browser dove disponibile (File System Access API: Edge/Chrome), altrimenti download del file.
    - Funzionalità di "Importa JSON" per riprendere sessioni precedenti.
-6. **Esportazione Risultati**: Generazione di una "Result Card" (scheda risultato) in formato testo o immagine sintetica da affiancare al quaderno di tiro.
+6. **Esportazione Risultati**: Generazione di una "Result Card" (scheda risultato) in formato testo o immagine sintetica da affiancare al quaderno di tiro. L'immagine può riguardare il solo gruppo attivo (default; include la tabella punti dal centro gruppo in giù) o tutti i gruppi.
 7. **Modalità Offline Totale**: Nessuna chiamata di rete, nessun tracking, nessun caricamento su cloud.
 
 ---
@@ -86,7 +86,7 @@ L'interfaccia deve essere suddivisa in due pannelli principali:
   - Toolbar flottante in alto: `[Carica Foto]` `[Undo]` `[Redo]` `[Elimina Ultimo]` `[Adatta allo Schermo]`.
   - Overlay visivo: i punti devono essere chiaramente distinguibili per colore (es. Rosso = Punto di mira, Blu = Foro, Verde = Punti di calibrazione scala).
 - **Pannello Destro (Controlli e Risultati - 35% larghezza)**:
-  - **Sezione Parametri**: Input per "Distanza di calibrazione nota", "Distanza di tiro", "Valore click mirino (MOA/MIL)".
+  - **Sezione Parametri**: Input per "Distanza di calibrazione nota", "Distanza di tiro", "Valore click mirino (MOA/MIL)", "Calibro" (combo con i calibri più diffusi e diametro nominale della palla in mm, sempre modificabile a mano per calibri non convenzionali).
   - **Sezione Risultati**: Visualizzazione in tempo reale di: Dimensione Gruppo, Raggio Medio, MOA/MIL, Correzione suggerita (es. "3 click SU, 1 click DESTRA").
   - **Sezione Gestione Dati**: Tabella elenco punti marcati (con coordinate X/Y, tipo e **click ↕/↔ per portare il punto sul punto di mira**, più una riga evidenziata per il **centro gruppo**, che è la correzione da applicare), pulsante `[Salva Sessione JSON]`, `[Carica Sessione JSON]`, `[Esporta Result Card]`.
 

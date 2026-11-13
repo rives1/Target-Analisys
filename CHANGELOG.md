@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0] - 2026-11-13
+### Aggiunto
+- Calibro: combo con i calibri più diffusi (carabina, pistola/revolver, aria compressa) e diametro nominale della palla in mm;
+  inserimento manuale sempre possibile: se il valore non corrisponde a un calibro dell'elenco la combo passa a «Personalizzato».
+  La scelta è salvata nella sessione e il nome del calibro compare nella Result Card e nel testo esportato.
+- Result Card del gruppo attivo: tabella punti dal «Centro gruppo» in giù (X, Y in mm dal punto di mira, Click ↕ / ↔),
+  presente quando la scala è calibrata e il punto di mira è impostato.
+### Cambiato
+- Calibro predefinito: **7,82 mm (.308")** invece di 7,62 mm. 7,62 mm è il diametro dell'anima tra i pieni;
+  la palla di una .308 Win / 7,62×51 misura .308" = 7,82 mm, ed è questa che fa il foro.
+### Corretto
+- Intestazioni delle colonne numeriche della tabella punti allineate a destra come i valori (prima erano a sinistra).
+
 ## [0.4.0] - 2026-11-13
 ### Aggiunto
 - Tabella «Punti del gruppo attivo»: colonne **Click ↕** e **Click ↔** con i click necessari a portare ogni foro sul punto

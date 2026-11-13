@@ -54,6 +54,7 @@
   .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .row label { flex: 1 1 auto; font-size: 13px; }
   .row input[type=number] { width: 90px; }
+  #caliberPreset { width: 100%; }
   input, select { font: inherit; padding: 5px 7px; border: 1px solid #cdd2da; border-radius: 6px; background: #fff; color: var(--ink); }
   input:focus, select:focus { outline: 2px solid #93c5fd; outline-offset: 0; border-color: var(--accent); }
   .btn { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid #cdd2da; background: #fff; cursor: pointer; }
@@ -89,7 +90,7 @@
   table.pts td { border-bottom: 1px solid #f0f2f5; padding: 3px 4px; }
   table.pts tr.sel td { background: #fff7d6; }
   table.pts tr.centroid td { background: #eff5ff; font-weight: 600; color: #1d4ed8; }
-  table.pts td.x { text-align: right; }
+  table.pts td.x, table.pts th.x { text-align: right; }
   table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
   table.pts button:hover { color: var(--danger); }
   details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
@@ -158,8 +159,11 @@
       </div>
       <div class="row">
         <label for="caliber">Calibro (diametro proiettile)</label>
-        <input id="caliber" type="number" min="0" step="any" value="7.62">
+        <input id="caliber" type="number" min="0" step="any" value="7.82">
         <select id="caliberUnit"><option value="mm">mm</option><option value="in">in</option></select>
+      </div>
+      <div class="row">
+        <select id="caliberPreset" style="flex:1" title="Calibri comuni: imposta il diametro della palla. Per un calibro non in elenco scrivi il diametro nel campo sopra."></select>
       </div>
       <div class="row">
         <label for="clickVal">Valore click mirino</label>
@@ -366,7 +370,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.4.0";
+const APP_VERSION = "0.5.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -429,13 +433,49 @@ function redo() { if (history.idx < history.stack.length - 1) restore(history.st
 function resetHistory() { history.stack = []; history.idx = -1; commit(); }
 function allIds() { const a = [0]; for (const g of state.groups) { a.push(g.id); for (const s of g.shots) a.push(s.id); } return a; }
 
+/* ----------------------------- CALIBRI ----------------------------- */
+// Diametro nominale della PALLA (non dell'anima), in pollici: è la misura che lascia il foro sul bersaglio.
+// Valori nominali SAAMI/C.I.P.; i mm sono derivati (×25,4) e arrotondati al centesimo.
+const CALIBERS = [
+  ["Carabina", [
+    ["c17hmr", ".17 HMR", 0.172], ["c22lr", ".22 LR", 0.223], ["c223", ".223 Rem / 5,56×45 NATO", 0.224],
+    ["c243", ".243 Win / 6 mm", 0.243], ["c65", "6,5 Creedmoor / 6,5×55 / 6,5×47", 0.264],
+    ["c270", ".270 Win", 0.277], ["c7mm", "7 mm (7×64, 7 mm-08, 7 mm Rem Mag)", 0.284],
+    ["c308", ".308 Win / 7,62×51 / .30-06 / .300 WM", 0.308], ["c76239", "7,62×39", 0.311],
+    ["c303", ".303 British / 7,62×54R", 0.312], ["c8x57", "8×57 IS", 0.323],
+    ["c338", ".338 Lapua Mag", 0.338], ["c50bmg", ".50 BMG", 0.510],
+  ]],
+  ["Pistola / revolver", [
+    ["p9", "9×19 (9 mm Luger)", 0.355], ["p357", ".38 Special / .357 Magnum", 0.357],
+    ["p40", ".40 S&W / 10 mm Auto", 0.400], ["p44", ".44 Magnum", 0.429], ["p45", ".45 ACP", 0.451],
+  ]],
+  ["Aria compressa", [
+    ["a45", "4,5 mm (.177)", 4.5 / 25.4], ["a55", "5,5 mm (.22)", 5.5 / 25.4],
+  ]],
+];
+const CALIBER_MM = Object.fromEntries(CALIBERS.flatMap(([, l]) => l.map(([id, , inch]) => [id, Math.round(inch * 25.4 * 100) / 100])));
+function buildCaliberPreset() {
+  const sel = $("caliberPreset");
+  sel.innerHTML = `<option value="custom">✎ Personalizzato (valore inserito sopra)</option>` + CALIBERS.map(([grp, list]) =>
+    `<optgroup label="${grp}">${list.map(([id, name]) => `<option value="${id}">${esc(name)} · ${fmt(CALIBER_MM[id], 2)} mm</option>`).join("")}</optgroup>`).join("");
+}
+/** Allinea la combo al valore del campo: se coincide con un calibro noto lo seleziona, altrimenti «Personalizzato». */
+function syncCaliberPreset() {
+  const v = parseFloat($("caliber").value), u = $("caliberUnit").value;
+  const mm = u === "in" ? v * 25.4 : v;
+  const hit = Object.entries(CALIBER_MM).find(([, d]) => Math.abs(d - mm) < 0.005);
+  // a parità di diametro (es. .38 Spl e .357 Mag) mantiene la scelta attuale
+  const cur = $("caliberPreset").value;
+  $("caliberPreset").value = cur !== "custom" && Math.abs((CALIBER_MM[cur] ?? -1) - mm) < 0.005 ? cur : hit ? hit[0] : "custom";
+}
+
 /* ----------------------------- PARAMETRI ----------------------------- */
 function params() {
   const num = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
   return {
     calDist: num("calDist"), calUnit: $("calUnit").value,
     shotDist: num("shotDist"), shotDistUnit: $("shotDistUnit").value,
-    caliber: num("caliber"), caliberUnit: $("caliberUnit").value,
+    caliber: num("caliber"), caliberUnit: $("caliberUnit").value, caliberPreset: $("caliberPreset").value,
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
   };
 }
@@ -443,6 +483,8 @@ function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
     caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit" }))
     if (p[k] !== undefined) $(id).value = p[k];
+  if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
+  syncCaliberPreset();
 }
 function calcContext() {
   const p = params();
@@ -977,6 +1019,15 @@ function correctionText(c) {
   return parts.length ? parts.join(", ") : "Nessuna correzione (entro ½ click)";
 }
 
+const DIR_SHORT = { SU: "SU", "GIÙ": "GIÙ", DESTRA: "DX", SINISTRA: "SX" };
+/** Calibro per i testi esportati: nome del calibro se scelto dall'elenco, altrimenti il valore. */
+function caliberLabel(p) {
+  const v = `${fmt(p.caliber, 2)} ${p.caliberUnit}`;
+  const e = CALIBERS.flatMap(([, l]) => l).find(([id]) => id === p.caliberPreset);
+  return e ? `${e[1]} (${v})` : v;
+}
+const clickTxt = (n, dir) => n === 0 ? "0" : `${n} ${DIR_SHORT[dir]}`;
+
 /* ----------------------------- UI PANNELLO ----------------------------- */
 function refresh() { refreshLists(); refreshResults(); updateHint(); updateButtons(); requestDraw(); }
 function updateButtons() {
@@ -1017,12 +1068,11 @@ function refreshLists() {
   };
   const unitLbl = k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine";
   // Click per portare il punto sul punto di mira (solo con mira, scala, distanza e valore click).
-  const SHORT = { SU: "SU", "GIÙ": "GIÙ", DESTRA: "DX", SINISTRA: "SX" };
   const clicks = p => {
     if (!k || !ref) return ["", ""];
     const c = Calc.correction((p.x - ref.x) * k, (ref.y - p.y) * k, cc);
     if (!c) return ["–", "–"];
-    const one = (n, dir, ang) => n === 0 ? `<span class="muted">0</span>` : `<span title="${fmt(ang, 2)} ${c.unit}">${n} ${SHORT[dir]}</span>`;
+    const one = (n, dir, ang) => n === 0 ? `<span class="muted">0</span>` : `<span title="${fmt(ang, 2)} ${c.unit}">${clickTxt(n, dir)}</span>`;
     return [one(c.vClicks, c.vDir, c.vAng), one(c.hClicks, c.hDir, c.hAng)];
   };
   let rows = "";
@@ -1098,7 +1148,7 @@ function resultText() {
   const p = params(), cc = calcContext();
   const L = [`SHOOT ANALYZER — ${new Date().toLocaleString("it-IT")}`,
     `Immagine: ${state.image ? state.image.name : "-"}`,
-    `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${fmt(p.caliber, 2)} ${p.caliberUnit} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
+    `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${caliberLabel(p)} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
   if (!cc.pxPerMm) L.push("ATTENZIONE: scala non calibrata");
   for (const g of state.groups) {
     const r = Calc.analyze(g.shots, g.poa, cc);
@@ -1147,7 +1197,7 @@ async function exportCard(scope = "active") {
   if (groups.length === 1) add(`${groups[0].name} · ${groups[0].shots.length} colpi`, 24, groups[0].color, 700, 4);
   else add(`${groups.length} gruppi · ${groups.reduce((a, g) => a + g.shots.length, 0)} colpi`, 24, "#1d2330", 700, 4);
   add(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
-  add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${fmt(p.caliber, 2)} ${p.caliberUnit}`, 14, "#374151", 400, 18);
+  add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${caliberLabel(p)}`, 14, "#374151", 400, 18);
   if (!cc.pxPerMm) add("Scala non calibrata", 16, "#9a3412", 600, 16);
   for (const g of groups) {
     const r = Calc.analyze(g.shots, g.poa, cc);
@@ -1165,7 +1215,20 @@ async function exportCard(scope = "active") {
       if (r.correction) {
         add("CORREZIONE", 12, "#6b7280", 700, 4);
         add(correctionText(r.correction), 18, "#1d4ed8", 700, 4);
-        add(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280");
+        add(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280", 400, 18);
+      }
+      // Tabella punti (dal centro gruppo in giù): solo con scala e punto di mira.
+      if (cc.pxPerMm && g.poa) {
+        const kk = 1 / cc.pxPerMm, ref = g.poa;
+        const cells = (label, q) => {
+          const c = Calc.correction((q.x - ref.x) * kk, (ref.y - q.y) * kk, cc);
+          return [label, fmt((q.x - ref.x) * kk, 1), fmt((ref.y - q.y) * kk, 1),
+            c ? clickTxt(c.vClicks, c.vDir) : "–", c ? clickTxt(c.hClicks, c.hDir) : "–"];
+        };
+        add("PUNTI (mm dal punto di mira, Y↑)", 12, "#6b7280", 700, 6);
+        L.push({ row: ["", "X", "Y", "Click ↕", "Click ↔"], size: 12, color: "#6b7280", weight: 600, line: true });
+        L.push({ row: cells("⊕ Centro gruppo", r.centroid), size: 13, color: "#1d4ed8", weight: 700, bg: "#eff5ff" });
+        g.shots.forEach((q, i) => L.push({ row: cells(`Foro ${i + 1}`, q), size: 13, color: "#1d2330", weight: 400 }));
       }
     } else {
       // versione compatta per gruppo
@@ -1180,7 +1243,8 @@ async function exportCard(scope = "active") {
     }
   }
   if (groups.length > 1 && cc.clickValue > 0) add(`Click: ${fmt(cc.clickValue, 3)} ${cc.clickUnit}`, 13, "#6b7280");
-  const textH = 24 + L.reduce((a, l) => a + l[1] + l[4], 0) + 20;
+  const ROW_H = 21;
+  const textH = 24 + L.reduce((a, l) => a + (l.row ? ROW_H : l[1] + l[4]), 0) + 20;
 
   const Wpanel = 400, W = Math.round(iw + Wpanel + 60), H = Math.round(Math.max(ih + 40, textH, 560));
   const c = document.createElement("canvas"); c.width = W; c.height = H;
@@ -1196,7 +1260,18 @@ async function exportCard(scope = "active") {
 
   let tx = iw + 40, ty = 24;
   k.textBaseline = "top";
-  for (const [t, size, color, weight, gap] of L) {
+  const COLS = [[0, "left"], [205, "right"], [260, "right"], [325, "right"], [390, "right"]];   // x di ancoraggio
+  for (const item of L) {
+    if (item.row) {
+      if (item.bg) { k.fillStyle = item.bg; k.fillRect(tx - 4, ty - 3, Wpanel - 2, ROW_H); }
+      k.font = `${item.weight} ${item.size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = item.color;
+      item.row.forEach((t, i) => { k.textAlign = COLS[i][1]; k.fillText(t, tx + COLS[i][0], ty, i ? 70 : 150); });
+      k.textAlign = "left";
+      if (item.line) { k.fillStyle = "#e3e6eb"; k.fillRect(tx - 4, ty + ROW_H - 5, Wpanel - 2, 1); }
+      ty += ROW_H;
+      continue;
+    }
+    const [t, size, color, weight, gap] = item;
     k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = color;
     k.fillText(t, tx, ty, Wpanel - 10); ty += size + gap;
   }
@@ -1225,6 +1300,13 @@ $("bCardPng").onclick = () => exportCard($("cardScope").value);
 $("bLoupe").onclick = () => setLoupe(!state.loupe);
 $("bCardTxt").onclick = copyText;
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+$("caliberPreset").addEventListener("change", () => {
+  const id = $("caliberPreset").value;
+  if (id === "custom") { $("caliber").focus(); $("caliber").select(); return; }
+  $("caliber").value = CALIBER_MM[id]; $("caliberUnit").value = "mm";
+});
+$("caliber").addEventListener("input", syncCaliberPreset);
+$("caliberUnit").addEventListener("change", syncCaliberPreset);
 document.querySelectorAll("#side input[type=number], #side select").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
 
 // drag & drop
@@ -1244,6 +1326,7 @@ new ResizeObserver(() => resizeCanvas()).observe(work);
 window.addEventListener("resize", resizeCanvas);
 
 // avvio
+buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); resizeCanvas(); resetHistory();
 

@@ -1,1 +1,1 @@
-- 
+- il campo calibro sarebbe intressante che ci fosse una combo box Con già inseriti i parametri relativi al diametro in millimetri dei principali calibri disponibili sul mercato. Ovviamente deve esserci sempre la possibilità di inserire manualmente La dimensione nel caso si tratti di un calibro non convenzionale
