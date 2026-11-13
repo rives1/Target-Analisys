@@ -30,6 +30,7 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
    - **Correzione in Click**: Calcolo del numero di click necessari per correggere l'offset, basato sul valore di click del mirino inserito dall'utente (es. 1/4 MOA per click, 0.1 MIL per click).
    - **H-spread / V-spread**, **FOM** (media tra H e V), **SD delle distanze dal centro**, **SD radiale √(σx²+σy²)**, **CEP / R95 / R99** previsti (modello circolare normale, σ corretto per pochi colpi).
    - **Flyer**: segnalati automaticamente (leave-one-out, soglia k·SD, default 2, da 5 colpi); ogni colpo può essere escluso dal gruppo e dalle statistiche.
+   - **Forma del gruppo**: angolo dell'asse maggiore (gradi dalla verticale, senso orario), rapporto d'aspetto (asse maggiore / minore), ellisse di dispersione di concentrazione (χ², percentuale 50/90/95/99%) disegnata sull'immagine e nei grafici.
    - **Tabella punti**: per ogni foro distanza dal punto di mira e dal centro gruppo, direzione dal centro gruppo in gradi (0° = alto, senso orario) con sigla cardinale.
 5. **Gestione Dati Locali**:
    - Salvataggio della sessione di lavoro in un file JSON locale (non nel `localStorage`, per garantire vera portabilità): dialog «Salva con nome» del browser dove disponibile (File System Access API: Edge/Chrome), altrimenti download del file.

@@ -129,4 +129,23 @@ near(Calc.principalAxis(diag).bearing, 45, 4, "asse diagonale ≈ 45°");
 near(Calc.principalAxis([-10, -4, 0, 4, 10].map((t, i) => ({ x: t, y: [0.5, -0.5, 0, 0.5, -0.5][i] }))).bearing, 90, 2, "asse orizzontale ≈ 90°");
 near(Calc.principalAxis(sq).ratio, 1, 1e-12, "quadrato: rapporto 1");
 
+// ---------- v0.10.0: ellisse di concentrazione e forma ----------
+// punti sugli assi: varianza x = 2·100/(4) ... (n−1 = 3)
+const cross = [{ x: -10, y: 0 }, { x: 10, y: 0 }, { x: 0, y: -4 }, { x: 0, y: 4 }];
+const el = Calc.ellipse(cross, 0.95);
+near(el.k, 2.4477468306808166, 1e-12, "k χ²₂ 95%");
+near(el.a, el.k * Math.sqrt(200 / 3), 1e-9, "semiasse maggiore = k·√λ1");
+near(el.b, el.k * Math.sqrt(32 / 3), 1e-9, "semiasse minore = k·√λ2");
+near(el.bearing, 90, 1e-9, "asse orizzontale = 90° dalla verticale");
+near(el.ratio, Math.sqrt(200 / 32), 1e-9, "rapporto d'aspetto = a/b");
+near(Calc.ellipse(cross, 0.5).k, Math.sqrt(2 * Math.LN2), 1e-12, "k 50% = fattore CEP");
+eq(Calc.ellipse(cross.slice(0, 2)), null, "ellisse: servono 3 fori");
+eq([0, 10, 30, 60, 90, 120, 160].map(Calc.axisWords).map(w => w.split(" ")[0]),
+  ["verticale", "verticale", "diagonale", "diagonale", "orizzontale", "diagonale", "verticale"], "descrizione dell'asse");
+// analyze (coordinate immagine, Y verso il basso): gruppo allungato verso alto-destra deve dare ~45°
+const imgDiag = [-10, -5, 0, 5, 10].map((t, i) => ({ x: 500 + t * 10 + [5, -5, 0, 5, -5][i], y: 500 - t * 10 }));
+const rd = Calc.analyze(imgDiag, null, { ...ctx, ellipseP: 0.95 });
+near(rd.shape.bearing, 45, 4, "analyze: asse ↗ in coordinate immagine ≈ 45°");
+near(rd.mm.ellA, rd.px.ellA / 10, 1e-12, "semiasse in mm");
+
 console.log(`OK — ${passed} verifiche superate`);

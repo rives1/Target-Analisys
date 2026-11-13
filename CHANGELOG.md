@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.10.0] - 2026-11-13
+### Aggiunto
+- **Forma e orientamento del gruppo** (pannello Risultati, Result Card, testo; da 3 fori, avviso sotto i 5):
+  - **Asse maggiore**: gradi dalla verticale in senso orario (0° = verticale, 90° = orizzontale, come bussola e orologio),
+    con ore dell'orologio e descrizione (verticale / orizzontale / diagonale ↗ ↖);
+  - **Rapporto d'aspetto** = asse maggiore / asse minore dell'ellisse (√ del rapporto tra le varianze principali); < 1,3 «circa circolare»;
+  - **Ellisse di dispersione** (di concentrazione): covarianza campionaria dei fori scalata con k = √χ²₂(p) = √(−2 ln(1−p));
+    percentuale 50/90/95/99% (default 95%), attivabile; disegnata sull'immagine (per ogni gruppo), nel grafico a dispersione
+    (con l'asse maggiore) e nella Result Card. Semiassi in mm nei risultati.
+- Orologio «dal centro gruppo»: indica anche l'angolo dell'asse e la sua descrizione.
+- `Calc.ellipse`, `Calc.axisWords`; `analyze` restituisce `shape` e `ellA/ellB`. 10 nuovi test (74 in totale).
+
 ## [0.9.0] - 2026-11-13
 ### Aggiunto
 - Sezione **Grafici · gruppo attivo** nel pannello destro (canvas, nessuna libreria, si aggiornano in tempo reale, anche durante

@@ -125,6 +125,7 @@
   .chart .cnote { font-size: 11.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
   .chart .key { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
   .chart .key.dash { border-top-style: dashed; }
+  .chart .key.dashdot { border-top-style: dotted; }
   #chTip { position: fixed; display: none; pointer-events: none; z-index: 20; background: #111827; color: #fff; font-size: 12px;
     padding: 5px 8px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.3); max-width: 320px; }
   .res .sub2 { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; padding-top: 6px; }
@@ -241,6 +242,10 @@
       <div class="row">
         <label for="flyerK" title="Un colpo è segnalato come flyer se la sua distanza dal centro degli altri colpi supera la loro distanza media di più di k deviazioni standard (servono almeno 5 colpi)">Soglia flyer (k · SD)</label>
         <input id="flyerK" type="number" min="0.5" step="0.1" value="2">
+      </div>
+      <div class="row">
+        <label for="ellipseOn" title="Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)"><input type="checkbox" id="ellipseOn" checked> Ellisse di dispersione al</label>
+        <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
       </div>
       <div class="row">
         <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
@@ -515,7 +520,24 @@ const Calc = (() => {
     const l1 = m + d, l2 = Math.max(m - d, 0);
     const theta = 0.5 * Math.atan2(2 * sxy, sxx - syy);            // angolo matematico dall'asse x
     const bearing = ((90 - theta * 180 / Math.PI) % 180 + 180) % 180;
-    return { bearing, ratio: l2 > 0 ? Math.sqrt(l1 / l2) : Infinity };
+    return { bearing, ratio: l2 > 0 ? Math.sqrt(l1 / l2) : Infinity, l1, l2 };
+  }
+  /**
+   * Ellisse di concentrazione (punti con Y verso l'alto, n ≥ 3): covarianza campionaria dei fori scalata con
+   * k = √χ²₂(p) = √(−2·ln(1−p)). Restituisce asse maggiore (bearing 0–180°, 0° = verticale, senso orario),
+   * semiassi a ≥ b nelle unità dei punti, rapporto d'aspetto a/b e k.
+   */
+  function ellipse(pts, p = 0.95) {
+    if (pts.length < 3) return null;
+    const ax = principalAxis(pts), k = Math.sqrt(-2 * Math.log(1 - p));
+    return { bearing: ax.bearing, ratio: ax.ratio, a: k * Math.sqrt(ax.l1), b: k * Math.sqrt(ax.l2), k, p };
+  }
+  /** Descrizione dell'orientamento di un asse (bearing 0–180°). */
+  function axisWords(bearing) {
+    const d = Math.min(bearing, 180 - bearing);           // scostamento dalla verticale
+    if (d < 22.5) return "verticale";
+    if (d > 67.5) return "orizzontale";
+    return bearing < 90 ? "diagonale ↗ (alto-destra / basso-sinistra)" : "diagonale ↖ (alto-sinistra / basso-destra)";
   }
 
   /**
@@ -537,6 +559,9 @@ const Calc = (() => {
     r.px = { es: es.d, mr: meanRadius(shots, c), w: ext.w, h: ext.h, fom: (ext.w + ext.h) / 2 };
     const disp = dispersion(shots);
     if (disp) Object.assign(r.px, disp);
+    // forma: ellisse calcolata con Y verso l'alto (l'immagine ha Y verso il basso)
+    const el = ellipse(shots.map(q => ({ x: q.x, y: -q.y })), ctx.ellipseP || 0.95);
+    if (el) { r.shape = { bearing: el.bearing, ratio: el.ratio, k: el.k, p: el.p }; r.px.ellA = el.a; r.px.ellB = el.b; }
     if (!k) return r;
 
     const mm = {};
@@ -548,7 +573,7 @@ const Calc = (() => {
     if (D > 0) {
       const ang = v => ({ MOA: fromRad(angleOfSize(v, D), "MOA"), MIL: fromRad(angleOfSize(v, D), "MIL"), IPHY: fromRad(angleOfSize(v, D), "IPHY") });
       r.ang = {};
-      for (const key of ["es", "mr", "w", "h", "fom", "sdRadii", "rsd", "cep", "r95", "r99"]) if (mm[key] !== undefined) r.ang[key] = ang(mm[key]);
+      for (const key of ["es", "mr", "w", "h", "fom", "sdRadii", "rsd", "cep", "r95", "r99", "ellA", "ellB"]) if (mm[key] !== undefined) r.ang[key] = ang(mm[key]);
     }
 
     if (poa) {
@@ -563,7 +588,7 @@ const Calc = (() => {
   }
 
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
-    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis };
+    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -573,7 +598,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.9.0";
+const APP_VERSION = "0.10.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -707,14 +732,16 @@ function params() {
     caliber: num("caliber"), caliberUnit: $("caliberUnit").value, caliberPreset: $("caliberPreset").value,
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
     flyerK: num("flyerK") || 2,
+    ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
+  if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
   syncGridButton();
   if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
   syncCaliberPreset();
@@ -726,6 +753,7 @@ function calcContext() {
     distMm: p.shotDist * Calc.DIST[p.shotDistUnit],
     caliberMm: p.caliber * Calc.LEN[p.caliberUnit],
     clickValue: p.clickVal, clickUnit: p.clickUnit,
+    ellipseP: p.ellipseP / 100,
   };
 }
 
@@ -981,6 +1009,14 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       const a = T(shotsIn[r.esIdx[0]]), b = T(shotsIn[r.esIdx[1]]);
       g.save(); g.strokeStyle = grp.color; g.globalAlpha = 0.85; g.lineWidth = 1.5; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
+    }
+    // ellisse di dispersione (orientata sull'asse maggiore)
+    if (r.shape && params().ellipseOn && !opts.light) {
+      const c = T(r.centroid), rot = Math.atan2(-Math.cos(r.shape.bearing * Math.PI / 180), Math.sin(r.shape.bearing * Math.PI / 180));
+      g.save(); g.strokeStyle = grp.color; g.lineWidth = 1.6; g.setLineDash([8, 3, 2, 3]); g.globalAlpha = 0.9;
+      g.fillStyle = hexA(grp.color, 0.06);
+      g.beginPath(); g.ellipse(c.x, c.y, Math.max(0.5, r.px.ellA * scl), Math.max(0.5, r.px.ellB * scl), rot, 0, Math.PI * 2); g.fill(); g.stroke();
+      g.restore();
     }
     // cerchio raggio medio + centroide
     if (r.n >= 1) {
@@ -1353,6 +1389,22 @@ const stamp = (d = new Date()) => {   // AAAA-MM-GG--hh-mm in ora locale (es. 20
 /* --------------------------- FORMATTAZIONE --------------------------- */
 function fmt(v, d = 2) { return v == null || !isFinite(v) ? "–" : v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
 const fmtLen = mm => `${fmt(mm, 1)} mm · ${fmt(mm / 25.4, 3)}"`;
+/** Testo dell'orientamento: «35° · ore 1–7 · diagonale ↗». */
+function axisText(shape) {
+  let h1 = Calc.clockHour(shape.bearing); if (h1 === 6) h1 = 12;
+  return `${fmt(shape.bearing, 0)}° · ore ${h1}–${h1 === 12 ? 6 : h1 + 6} · ${Calc.axisWords(shape.bearing)}`;
+}
+/** Righe «Forma del gruppo» per la tabella dei risultati. */
+function shapeRows(r) {
+  if (!r.shape) return `<table style="margin-top:4px"><tr><td colspan="2" class="sub2">Forma del gruppo</td></tr><tr><td colspan="2" class="muted">Servono almeno 3 fori.</td></tr></table>`;
+  const round = r.shape.ratio < 1.3;
+  return `<table style="margin-top:4px"><tr><td colspan="2" class="sub2">Forma del gruppo${r.n < 5 ? " · ⚠ poco affidabile con meno di 5 colpi" : ""}</td></tr>
+    <tr><td title="Orientamento dell'asse maggiore dell'ellisse di dispersione: gradi dalla verticale in senso orario (0° = verticale, 90° = orizzontale)">Asse maggiore</td><td class="v">${round ? `<span class="muted">${axisText(r.shape)}</span>` : axisText(r.shape)}</td></tr>
+    <tr><td title="Rapporto tra asse maggiore e asse minore dell'ellisse (√ del rapporto tra le varianze principali): 1 = gruppo circolare">Rapporto d'aspetto</td><td class="v">${fmt(r.shape.ratio, 2)} : 1${round ? " · circa circolare" : ""}</td></tr>
+    <tr><td title="Ellisse di concentrazione: contiene la percentuale indicata dei colpi se la dispersione è normale">Ellisse ${fmt(r.shape.p * 100, 0)}% (semiassi)</td><td class="v">${fmt(r.mm.ellA, 1)} × ${fmt(r.mm.ellB, 1)} mm</td></tr>
+  </table>
+  <div class="muted" style="font-size:11px;margin-top:2px">Con pochi colpi il rapporto d'aspetto tende a risultare più alto del reale; con un gruppo quasi circolare l'angolo non è significativo.</div>`;
+}
 /** "12,3 mm · 0,42 MOA · 0,12 MIL" su una riga. */
 const fmtLA = (mm, a) => `${fmt(mm, 1)} mm${a ? ` · ${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : ""}`;
 const fmtAng = a => a ? `${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : "—";
@@ -1515,7 +1567,8 @@ function refreshResults() {
         <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}</td></tr>
         <tr><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}</td></tr>
       </table>
-      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi).</div>`;
+      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi).</div>
+      ${shapeRows(r)}`;
     }
     if (r.mm && r.n >= 1) {
       if (!g.poa) html += `<div class="muted" style="margin-top:6px">Aggiungi il punto di mira per la correzione.</div>`;
@@ -1599,6 +1652,11 @@ function resultText() {
       L.push(`  SD dist.centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`);
       L.push(`  SD radiale:     ${fmtLA(r.mm.rsd, r.ang?.rsd)}  [√(σx²+σy²)]`);
       L.push(`  CEP / R95 / R99: ${fmt(r.mm.cep, 1)} / ${fmt(r.mm.r95, 1)} / ${fmt(r.mm.r99, 1)} mm  [previsti, modello circolare normale]`);
+      if (r.shape) {
+        L.push(`  Asse maggiore:  ${axisText(r.shape)}  [gradi dalla verticale, senso orario]`);
+        L.push(`  Rapp. aspetto:  ${fmt(r.shape.ratio, 2)} : 1`);
+        L.push(`  Ellisse ${fmt(r.shape.p * 100, 0)}%:    semiassi ${fmt(r.mm.ellA, 1)} × ${fmt(r.mm.ellB, 1)} mm`);
+      }
     }
     if (r.offset) L.push(`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? "destra" : "sinistra"}`);
     if (r.correction) L.push(`  Correzione:     ${correctionText(r.correction)}`);
@@ -1671,7 +1729,12 @@ async function exportCard(scope = "active") {
         add(`STATISTICHE${r.n < 5 ? " (poco affidabili con meno di 5 colpi)" : ""}`, 12, "#6b7280", 700, 4);
         add(`SD distanze dal centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`, 13, "#374151", 400, 3);
         add(`SD radiale √(σx²+σy²): ${fmtLA(r.mm.rsd, r.ang?.rsd)}`, 13, "#374151", 400, 3);
-        add(`CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} · R99 ${fmt(r.mm.r99, 1)} mm (previsti)`, 13, "#374151", 400, 18);
+        add(`CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} · R99 ${fmt(r.mm.r99, 1)} mm (previsti)`, 13, "#374151", 400, r.shape ? 12 : 18);
+        if (r.shape) {
+          add("FORMA DEL GRUPPO", 12, "#6b7280", 700, 4);
+          add(`Asse maggiore: ${axisText(r.shape)}`, 13, "#374151", 400, 3);
+          add(`Rapporto d'aspetto ${fmt(r.shape.ratio, 2)} : 1 · ellisse ${fmt(r.shape.p * 100, 0)}% ${fmt(r.mm.ellA, 1)} × ${fmt(r.mm.ellB, 1)} mm`, 13, "#374151", 400, 18);
+        }
       } else if (cc.pxPerMm) add("Servono almeno 2 fori", 16, "#9a3412");
       if (r.correction) {
         add("CORREZIONE", 12, "#6b7280", 700, 4);
@@ -1698,6 +1761,7 @@ async function exportCard(scope = "active") {
         add(`     ${fmtAng(r.ang?.es)}`, 13, "#374151", 400, 3);
         add(`R. medio ${fmt(r.mm.mr, 1)} mm · ${fmtAng(r.ang?.mr)}`, 13, "#374151", 400, 3);
         add(`FOM ${fmt(r.mm.fom, 1)} · CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} mm`, 13, "#374151", 400, 3);
+        if (r.shape) add(`Asse ${fmt(r.shape.bearing, 0)}° · rapporto ${fmt(r.shape.ratio, 2)}:1`, 13, "#374151", 400, 3);
       } else if (cc.pxPerMm) add("Servono almeno 2 fori", 13, "#9a3412", 400, 3);
       if (r.correction) add(`↻ ${correctionText(r.correction)}`, 14, "#1d4ed8", 700, 3);
       addLoad(g, 12);
@@ -1774,7 +1838,8 @@ function chartData() {
   const pts = g.shots.map((s, i) => ({ ...P(s), n: i + 1, excluded: !!s.excluded, flag: !!(fl.get(s.id) && fl.get(s.id).flagged) }));
   const r = Calc.analyze(shotsIn, g.poa, cc), u = k;
   return { g, cc, unit, pts, inPts: pts.filter(p => !p.excluded), poa: g.poa ? P(g.poa) : null,
-    mr: r.px.mr * u, cep: r.px.cep * u };
+    mr: r.px.mr * u, cep: r.px.cep * u,
+    ell: r.shape && params().ellipseOn ? { bearing: r.shape.bearing, a: r.px.ellA * u, b: r.px.ellB * u, p: r.shape.p } : null };
 }
 function drawCharts() {
   const box = $("charts"); if (!box || box.closest("details:not([open])")) return;
@@ -1794,7 +1859,7 @@ function drawScatter(cv, W, H, D) {
   const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), grid = cssVar("--line"), surf = cssVar("--panel");
   const col = D.g.color, hits = CH.hits.scatter = [];
   // scala: tutti i fori e i cerchi; la mira solo se non schiaccia il gruppo (altrimenti freccia al bordo)
-  let ext = Math.max(...D.pts.map(p => Math.max(Math.abs(p.x), Math.abs(p.y))), D.cep || 0, D.mr || 0, 1e-9);
+  let ext = Math.max(...D.pts.map(p => Math.max(Math.abs(p.x), Math.abs(p.y))), D.cep || 0, D.mr || 0, D.ell ? D.ell.a : 0, 1e-9);
   const poaIn = D.poa && Math.max(Math.abs(D.poa.x), Math.abs(D.poa.y)) <= ext * 2.5;
   if (poaIn) ext = Math.max(ext, Math.abs(D.poa.x), Math.abs(D.poa.y));
   const step = niceStep(ext * 2 / 6), lim = Math.ceil(ext * 1.12 / step) * step;
@@ -1816,6 +1881,15 @@ function drawScatter(cv, W, H, D) {
   g.beginPath(); g.arc(ox, oy, D.mr * s, 0, Math.PI * 2); g.stroke();
   if (D.cep) { g.setLineDash([5, 4]); g.beginPath(); g.arc(ox, oy, D.cep * s, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
   g.globalAlpha = 1;
+  // ellisse di dispersione e asse maggiore
+  if (D.ell) {
+    const rot = Math.atan2(-Math.cos(D.ell.bearing * Math.PI / 180), Math.sin(D.ell.bearing * Math.PI / 180));
+    g.strokeStyle = col; g.lineWidth = 1.6; g.setLineDash([8, 3, 2, 3]); g.fillStyle = hexA(col, 0.08);
+    g.beginPath(); g.ellipse(ox, oy, D.ell.a * s, Math.max(0.5, D.ell.b * s), rot, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.setLineDash([2, 3]); g.strokeStyle = muted; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(ox - Math.cos(rot) * D.ell.a * s, oy - Math.sin(rot) * D.ell.a * s); g.lineTo(ox + Math.cos(rot) * D.ell.a * s, oy + Math.sin(rot) * D.ell.a * s); g.stroke();
+    g.setLineDash([]);
+  }
   // centro gruppo
   g.strokeStyle = ink; g.lineWidth = 2; g.beginPath();
   g.moveTo(ox - 6, oy - 6); g.lineTo(ox + 6, oy + 6); g.moveTo(ox + 6, oy - 6); g.lineTo(ox - 6, oy + 6); g.stroke();
@@ -1852,7 +1926,7 @@ function drawScatter(cv, W, H, D) {
     const cp = Calc.compass(p.x, p.y), d = Math.hypot(p.x, p.y);
     hits.push({ x: px, y: py, r: 10, tip: `Foro ${p.n}${p.excluded ? " (escluso)" : ""}${p.flag ? " · ⚠ flyer" : ""} · ${nfmt(d)} ${D.unit} dal centro${cp ? ` · ${fmt(cp.deg, 0)}° ${cp.label}` : ""}` });
   }
-  $("chScatterNote").innerHTML = `<span class="key" style="border-color:${col}"></span>raggio medio ${nfmt(D.mr)} ${D.unit} · <span class="key dash" style="border-color:${col}"></span>CEP ${nfmt(D.cep)} ${D.unit} · ✕ centro gruppo${D.poa ? " · <span style='color:" + COL_POA + "'>⊕</span> mira" : ""}`;
+  $("chScatterNote").innerHTML = `<span class="key" style="border-color:${col}"></span>raggio medio ${nfmt(D.mr)} ${D.unit} · <span class="key dash" style="border-color:${col}"></span>CEP ${nfmt(D.cep)} ${D.unit}${D.ell ? ` · <span class="key dashdot" style="border-color:${col}"></span>ellisse ${nfmt(D.ell.p * 100, 0)}%` : ""} · ✕ centro gruppo${D.poa ? " · <span style='color:" + COL_POA + "'>⊕</span> mira" : ""}`;
 }
 
 /* ---- 2. Istogramma delle distanze dal centro gruppo (solo fori inclusi) ---- */
@@ -1955,7 +2029,7 @@ function drawClock(cv, W, H, D) {
       g.beginPath(); g.moveTo(cx - Math.sin(a) * R, cy + Math.cos(a) * R); g.lineTo(cx + Math.sin(a) * R, cy - Math.cos(a) * R); g.stroke(); g.setLineDash([]);
       info = ax.ratio < 1.3
         ? `Dispersione circa uniforme in tutte le direzioni (rapporto tra gli assi ${nfmt(ax.ratio, 2)}:1).`
-        : `Il gruppo è allungato lungo l'asse <b>ore ${h1}–${h2}</b> (rapporto tra gli assi ${nfmt(ax.ratio, 2)}:1). Spicchi = direzione di ogni colpo dal centro gruppo.`;
+        : `Il gruppo è allungato lungo l'asse <b>ore ${h1}–${h2}</b> (${fmt(ax.bearing, 0)}° dalla verticale, ${Calc.axisWords(ax.bearing)}; rapporto tra gli assi ${nfmt(ax.ratio, 2)}:1). Spicchi = direzione di ogni colpo dal centro gruppo.`;
     } else info = "Servono almeno 3 colpi per l'asse di dispersione.";
   }
   if ($("clockRef").value === "poa" && !D.poa) info = "Manca il punto di mira: direzioni dal centro gruppo. " + info;
@@ -2034,6 +2108,7 @@ $("gridUnit").addEventListener("change", () => {
   if ($("gridUnit").value === "MIL" && st === 0.25) $("gridStep").value = 0.1;
   requestDraw();
 });
+$("ellipseOn").addEventListener("change", () => { requestDraw(); drawCharts(); });
 $("gridOn").addEventListener("change", () => { syncGridButton(); requestDraw(); if ($("gridOn").checked && !gridSpec(calcContext())) toast("Griglia: servono scala calibrata e distanza di tiro."); });
 $("bTheme").onclick = toggleTheme;
 // dati di ricarica: scrittura nel gruppo attivo (con undo) al termine della modifica del campo
