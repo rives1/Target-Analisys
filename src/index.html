@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Nessuna risorsa esterna: tutto è inline per garantire il funzionamento offline. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'">
+<title>Shoot Analyzer</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --panel: #ffffff; --ink: #1d2330; --muted: #6b7280; --line: #e3e6eb;
+    --accent: #2563eb; --accent-ink: #ffffff; --danger: #dc2626;
+    --poa: #e11d48; --calib: #16a34a;
+    --radius: 8px;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    font-size: 14px; color: var(--ink);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  #app { display: grid; grid-template-columns: minmax(0, 65fr) minmax(320px, 35fr); height: 100vh; }
+
+  /* ---------- area di lavoro ---------- */
+  #work { position: relative; overflow: hidden; background: #2b2f36; }
+  #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+  #toolbar {
+    position: absolute; top: 10px; left: 10px; right: 10px; display: flex; flex-wrap: wrap; gap: 6px;
+    align-items: center; pointer-events: none; z-index: 2;
+  }
+  #toolbar .grp { display: flex; gap: 2px; background: rgba(255,255,255,.95); border-radius: var(--radius);
+    padding: 3px; box-shadow: 0 2px 8px rgba(0,0,0,.25); pointer-events: auto; }
+  #toolbar button { border: 0; background: transparent; padding: 6px 10px; border-radius: 6px; cursor: pointer;
+    font: inherit; color: var(--ink); white-space: nowrap; }
+  #toolbar button:hover:not(:disabled) { background: #eef1f5; }
+  #toolbar button:disabled { opacity: .35; cursor: default; }
+  #toolbar button.on { background: var(--accent); color: var(--accent-ink); }
+  #toolbar .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  #hint { position: absolute; left: 10px; bottom: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 6px 10px;
+    border-radius: 6px; font-size: 12.5px; pointer-events: none; max-width: calc(100% - 20px); z-index: 2; }
+  #zoomlbl { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 4px 8px;
+    border-radius: 6px; font-size: 12px; pointer-events: none; z-index: 2; }
+  #drop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column;
+    color: #cfd4dc; gap: 10px; text-align: center; padding: 20px; }
+  #drop .big { font-size: 20px; color: #fff; }
+  #work.dragover::after { content: "Rilascia qui l'immagine o la sessione JSON"; position: absolute; inset: 12px;
+    border: 3px dashed #93c5fd; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 18px; background: rgba(37,99,235,.18); z-index: 5; }
+
+  /* ---------- pannello destro ---------- */
+  #side { overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line); padding: 14px 16px 30px; }
+  h1 { font-size: 17px; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  section { border-top: 1px solid var(--line); padding: 12px 0 4px; }
+  section > h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; }
+  .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .row label { flex: 1 1 auto; font-size: 13px; }
+  .row input[type=number] { width: 90px; }
+  input, select { font: inherit; padding: 5px 7px; border: 1px solid #cdd2da; border-radius: 6px; background: #fff; color: var(--ink); }
+  input:focus, select:focus { outline: 2px solid #93c5fd; outline-offset: 0; border-color: var(--accent); }
+  .btn { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid #cdd2da; background: #fff; cursor: pointer; }
+  .btn:hover { background: #f3f5f8; }
+  .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.danger { color: var(--danger); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+  .status { font-size: 12.5px; padding: 6px 8px; border-radius: 6px; background: #f3f5f8; margin-bottom: 8px; }
+  .status.ok { background: #ecfdf3; color: #166534; }
+  .status.warn { background: #fff7ed; color: #9a3412; }
+
+  .groups { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .g { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; border: 1px solid transparent; cursor: pointer; }
+  .g.active { border-color: var(--accent); background: #eff5ff; }
+  .g .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .g input { flex: 1; padding: 3px 6px; border-color: transparent; background: transparent; }
+  .g.active input { border-color: #cdd2da; background: #fff; }
+  .g .n { color: var(--muted); font-size: 12px; min-width: 52px; text-align: right; }
+  .g button { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 15px; padding: 0 4px; }
+  .g button:hover { color: var(--danger); }
+
+  .res { border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 10px; margin-bottom: 8px; }
+  .res h3 { margin: 0 0 6px; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+  .res table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .res td { padding: 2px 0; vertical-align: top; }
+  .res td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+  .res td.v { font-variant-numeric: tabular-nums; text-align: right; }
+  .res .corr { margin-top: 6px; padding: 6px 8px; border-radius: 6px; background: #eff5ff; font-weight: 600; font-size: 13.5px; }
+  .muted { color: var(--muted); }
+
+  table.pts { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  table.pts th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 3px 4px; }
+  table.pts td { border-bottom: 1px solid #f0f2f5; padding: 3px 4px; }
+  table.pts tr.sel td { background: #fff7d6; }
+  table.pts td.x { text-align: right; }
+  table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
+  table.pts button:hover { color: var(--danger); }
+  details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
+  .help { font-size: 12.5px; color: #374151; line-height: 1.45; }
+  .help kbd { background: #eef1f5; border: 1px solid #d6dbe2; border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
+    padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
+  #toast.show { opacity: .95; }
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- ======================= AREA DI LAVORO ======================= -->
+  <div id="work">
+    <canvas id="canvas"></canvas>
+    <div id="drop">
+      <div class="big">Carica la foto di un bersaglio</div>
+      <div>Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .json).</div>
+    </div>
+    <div id="toolbar">
+      <div class="grp">
+        <button id="bLoad" title="Carica foto (Ctrl+O)">📂 Carica foto</button>
+      </div>
+      <div class="grp" id="modes">
+        <button data-mode="pan"   title="Sposta/zoom (1)">✋ Mano</button>
+        <button data-mode="calib" title="Calibrazione scala: 2 punti (2)"><span class="sw" style="background:var(--calib)"></span>Scala</button>
+        <button data-mode="poa"   title="Punto di mira del gruppo attivo (3)"><span class="sw" style="background:var(--poa)"></span>Mira</button>
+        <button data-mode="shot"  title="Aggiungi foro al gruppo attivo (4)"><span class="sw" id="shotSw"></span>Foro</button>
+      </div>
+      <div class="grp">
+        <button id="bUndo" title="Annulla (Ctrl+Z)">↶ Undo</button>
+        <button id="bRedo" title="Ripristina (Ctrl+Y)">↷ Redo</button>
+        <button id="bDelLast" title="Elimina l'ultimo punto del gruppo attivo (Backspace)">⌫ Elimina ultimo</button>
+        <button id="bClear" title="Elimina tutti i punti">🗑 Tutto</button>
+      </div>
+      <div class="grp">
+        <button id="bFit" title="Adatta allo schermo (F)">⤢ Adatta</button>
+      </div>
+    </div>
+    <div id="hint"></div>
+    <div id="zoomlbl"></div>
+  </div>
+
+  <!-- ======================= PANNELLO DESTRO ======================= -->
+  <aside id="side">
+    <h1>Shoot Analyzer</h1>
+    <div class="sub">Analisi rosata · 100% offline · <span id="ver"></span></div>
+
+    <section>
+      <h2>Calibrazione scala</h2>
+      <div id="calStatus" class="status warn">Non calibrato: seleziona «Scala» e clicca due punti a distanza nota.</div>
+      <div class="row">
+        <label for="calDist">Distanza nota tra i 2 punti</label>
+        <input id="calDist" type="number" min="0" step="any" value="10">
+        <select id="calUnit"><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option></select>
+      </div>
+    </section>
+
+    <section>
+      <h2>Parametri di tiro</h2>
+      <div class="row">
+        <label for="shotDist">Distanza di tiro</label>
+        <input id="shotDist" type="number" min="0" step="any" value="100">
+        <select id="shotDistUnit"><option value="m">m</option><option value="yd">yd</option></select>
+      </div>
+      <div class="row">
+        <label for="caliber">Calibro (diametro proiettile)</label>
+        <input id="caliber" type="number" min="0" step="any" value="7.62">
+        <select id="caliberUnit"><option value="mm">mm</option><option value="in">in</option></select>
+      </div>
+      <div class="row">
+        <label for="clickVal">Valore click mirino</label>
+        <input id="clickVal" type="number" min="0" step="any" value="0.1">
+        <select id="clickUnit">
+          <option value="MIL">MIL (mrad)</option>
+          <option value="MOA">MOA</option>
+          <option value="IPHY">in @100 yd (SMOA)</option>
+        </select>
+      </div>
+    </section>
+
+    <section>
+      <h2>Gruppi</h2>
+      <div class="groups" id="groups"></div>
+      <div class="btns"><button class="btn" id="bAddGroup">＋ Nuovo gruppo</button></div>
+    </section>
+
+    <section>
+      <h2>Risultati</h2>
+      <div id="results"></div>
+    </section>
+
+    <section>
+      <h2>Punti del gruppo attivo</h2>
+      <div id="points"></div>
+    </section>
+
+    <section>
+      <h2>Dati</h2>
+      <div class="btns">
+        <button class="btn" id="bSave">💾 Salva sessione JSON</button>
+        <button class="btn" id="bOpen">📂 Carica sessione JSON</button>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
+        <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
+      </div>
+      <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
+    </section>
+
+    <section>
+      <details>
+        <summary>Guida rapida e scorciatoie</summary>
+        <div class="help">
+          <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure) e con l'alto del bersaglio verso l'alto.</p>
+          <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
+          <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
+          <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
+          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>Ctrl+S</kbd> salva.</p>
+          <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.</p>
+        </div>
+      </details>
+    </section>
+  </aside>
+</div>
+<input type="file" id="fImg" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
+<input type="file" id="fJson" accept=".json,application/json" hidden>
+<div id="toast"></div>
+
+<!-- ==================================================================
+     MOTORE DI CALCOLO (puro, senza DOM: testabile in isolamento)
+     Convenzione interna: tutte le lunghezze reali in millimetri.
+     ================================================================== -->
+<script id="calc-engine">
+"use strict";
+const Calc = (() => {
+  const LEN = { mm: 1, cm: 10, in: 25.4 };          // → mm
+  const DIST = { m: 1000, yd: 914.4 };               // → mm
+  const RAD_TO_MOA = (180 / Math.PI) * 60;           // 1 rad = 3437.75 MOA
+  const RAD_TO_MIL = 1000;                           // 1 rad = 1000 mrad
+
+  const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+
+  function centroid(pts) {
+    if (!pts.length) return null;
+    let sx = 0, sy = 0;
+    for (const p of pts) { sx += p.x; sy += p.y; }
+    return { x: sx / pts.length, y: sy / pts.length };
+  }
+
+  /** Extreme spread: massima distanza tra tutte le coppie. Restituisce anche gli indici. */
+  function extremeSpread(pts) {
+    let best = { d: 0, i: -1, j: -1 };
+    for (let i = 0; i < pts.length; i++)
+      for (let j = i + 1; j < pts.length; j++) {
+        const d = dist(pts[i], pts[j]);
+        if (d > best.d) best = { d, i, j };
+      }
+    return best;
+  }
+
+  function meanRadius(pts, c) {
+    if (!pts.length) return 0;
+    let s = 0;
+    for (const p of pts) s += dist(p, c);
+    return s / pts.length;
+  }
+
+  function extent(pts) {
+    if (!pts.length) return { w: 0, h: 0 };
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const p of pts) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+    return { w: x1 - x0, h: y1 - y0 };
+  }
+
+  /** Angolo sotteso da una dimensione lineare centrata sull'asse di tiro (esatto). */
+  const angleOfSize = (sizeMm, distMm) => 2 * Math.atan(sizeMm / (2 * distMm));
+  /** Angolo di uno scostamento laterale rispetto all'asse di tiro (esatto). */
+  const angleOfOffset = (offMm, distMm) => Math.atan(offMm / distMm);
+
+  /** Converte un angolo in radianti nell'unità richiesta. IPHY = pollici a 100 yarde (tan·3600). */
+  function fromRad(rad, unit) {
+    switch (unit) {
+      case "MOA": return rad * RAD_TO_MOA;
+      case "MIL": return rad * RAD_TO_MIL;
+      case "IPHY": return Math.tan(rad) * 3600;
+      default: throw new Error("unità angolare sconosciuta: " + unit);
+    }
+  }
+
+  /** Fattore di scala S = pixel per mm. */
+  function scale(p1, p2, realValue, realUnit) {
+    if (!p1 || !p2 || !(realValue > 0)) return null;
+    const dpx = dist(p1, p2);
+    if (dpx <= 0) return null;
+    return dpx / (realValue * LEN[realUnit]);
+  }
+
+  /**
+   * Analisi completa di un gruppo.
+   * @param shots  [{x,y}] in pixel immagine (y verso il basso)
+   * @param poa    {x,y} | null
+   * @param ctx    { pxPerMm|null, distMm, caliberMm, clickValue, clickUnit }
+   */
+  function analyze(shots, poa, ctx) {
+    const n = shots.length;
+    const r = { n, calibrated: !!ctx.pxPerMm };
+    if (!n) return r;
+    const k = ctx.pxPerMm ? 1 / ctx.pxPerMm : null;   // mm per pixel
+    const c = centroid(shots);
+    const es = extremeSpread(shots);
+    const ext = extent(shots);
+    r.centroid = c;
+    r.esIdx = [es.i, es.j];
+    r.px = { es: es.d, mr: meanRadius(shots, c), w: ext.w, h: ext.h };
+    if (!k) return r;
+
+    const mm = { es: r.px.es * k, mr: r.px.mr * k, w: r.px.w * k, h: r.px.h * k };
+    mm.esEdge = n >= 2 ? mm.es + (ctx.caliberMm || 0) : null;   // bordo-bordo esterno
+    r.mm = mm;
+
+    const D = ctx.distMm;
+    if (D > 0) {
+      const ang = v => ({ MOA: fromRad(angleOfSize(v, D), "MOA"), MIL: fromRad(angleOfSize(v, D), "MIL"), IPHY: fromRad(angleOfSize(v, D), "IPHY") });
+      r.ang = { es: ang(mm.es), mr: ang(mm.mr), w: ang(mm.w), h: ang(mm.h) };
+    }
+
+    if (poa) {
+      // offset = centroide − mira. In immagine y cresce verso il basso → lo invertiamo (alto positivo).
+      const dx = (c.x - poa.x) * k;          // + = gruppo a DESTRA del punto di mira
+      const dy = (poa.y - c.y) * k;          // + = gruppo in ALTO rispetto al punto di mira
+      r.offset = { dx, dy, d: Math.hypot(dx, dy) };
+      if (D > 0 && ctx.clickValue > 0) {
+        const u = ctx.clickUnit;
+        const ax = fromRad(angleOfOffset(Math.abs(dx), D), u);
+        const ay = fromRad(angleOfOffset(Math.abs(dy), D), u);
+        // La correzione va nella direzione opposta allo scostamento del gruppo.
+        r.correction = {
+          unit: u, clickValue: ctx.clickValue,
+          hAng: ax, vAng: ay,
+          hClicks: Math.round(ax / ctx.clickValue), vClicks: Math.round(ay / ctx.clickValue),
+          hDir: dx > 0 ? "SINISTRA" : "DESTRA",
+          vDir: dy > 0 ? "GIÙ" : "SU",
+        };
+      }
+    }
+    return r;
+  }
+
+  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, scale, analyze };
+})();
+if (typeof module !== "undefined") module.exports = Calc;
+</script>
+
+<!-- ==================================================================
+     APPLICAZIONE (stato, canvas, interazione, UI)
+     ================================================================== -->
+<script id="app-main">
+"use strict";
+const APP_VERSION = "0.1.0";
+const SESSION_FORMAT = 1;
+const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
+const COL_POA = "#e11d48", COL_CAL = "#16a34a";
+const HIT_PX = 11;          // raggio di presa dei punti in pixel schermo
+const DRAG_THRESHOLD = 4;   // px prima che un clic diventi trascinamento
+
+const $ = id => document.getElementById(id);
+const canvas = $("canvas"), ctx2d = canvas.getContext("2d");
+const work = $("work");
+
+/* ------------------------------ STATO ------------------------------ */
+let uid = 1;
+const newId = () => uid++;
+
+const state = {
+  image: null,          // { name, w, h, dataUrl, bitmap }
+  calib: { p1: null, p2: null },
+  groups: [],
+  activeGroupId: null,
+  mode: "pan",
+  selected: null,       // { kind: 'shot'|'poa'|'calib', gid?, id?, which? }
+  view: { scale: 1, ox: 0, oy: 0 },
+};
+
+function makeGroup() {
+  const idx = state.groups.length;
+  const used = new Set(state.groups.map(g => g.color));
+  const color = GROUP_COLORS.find(c => !used.has(c)) || GROUP_COLORS[idx % GROUP_COLORS.length];
+  const nums = state.groups.map(g => +((g.name.match(/^Gruppo (\d+)$/) || [])[1] || 0));
+  return { id: newId(), name: "Gruppo " + (Math.max(0, ...nums) + 1), color, poa: null, shots: [] };
+}
+const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) || null;
+
+/* ------------------------- STORIA (UNDO/REDO) ------------------------- */
+// Lo stack contiene snapshot serializzati di calibrazione + gruppi (non l'immagine, non i parametri).
+const history = { stack: [], idx: -1, max: 300 };
+function snapshot() {
+  return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId });
+}
+function commit() {
+  const s = snapshot();
+  if (history.stack[history.idx] === s) return;
+  history.stack.splice(history.idx + 1);
+  history.stack.push(s);
+  if (history.stack.length > history.max) history.stack.shift();
+  history.idx = history.stack.length - 1;
+  refresh();
+}
+function restore(s) {
+  const o = JSON.parse(s);
+  state.calib = o.calib; state.groups = o.groups; state.activeGroupId = o.activeGroupId;
+  state.selected = null;
+  uid = Math.max(uid, ...allIds()) + 1;
+  refresh();
+}
+function undo() { if (history.idx > 0) restore(history.stack[--history.idx]); }
+function redo() { if (history.idx < history.stack.length - 1) restore(history.stack[++history.idx]); }
+function resetHistory() { history.stack = []; history.idx = -1; commit(); }
+function allIds() { const a = [0]; for (const g of state.groups) { a.push(g.id); for (const s of g.shots) a.push(s.id); } return a; }
+
+/* ----------------------------- PARAMETRI ----------------------------- */
+function params() {
+  const num = id => { const v = parseFloat($(id).value); return isFinite(v) ? v : 0; };
+  return {
+    calDist: num("calDist"), calUnit: $("calUnit").value,
+    shotDist: num("shotDist"), shotDistUnit: $("shotDistUnit").value,
+    caliber: num("caliber"), caliberUnit: $("caliberUnit").value,
+    clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
+  };
+}
+function setParams(p) {
+  for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit" }))
+    if (p[k] !== undefined) $(id).value = p[k];
+}
+function calcContext() {
+  const p = params();
+  return {
+    pxPerMm: Calc.scale(state.calib.p1, state.calib.p2, p.calDist, p.calUnit),
+    distMm: p.shotDist * Calc.DIST[p.shotDistUnit],
+    caliberMm: p.caliber * Calc.LEN[p.caliberUnit],
+    clickValue: p.clickVal, clickUnit: p.clickUnit,
+  };
+}
+
+/* ------------------------------ VISTA ------------------------------ */
+let dpr = window.devicePixelRatio || 1;
+let needsDraw = true;
+const toScreen = p => ({ x: p.x * state.view.scale + state.view.ox, y: p.y * state.view.scale + state.view.oy });
+const toImage = (sx, sy) => ({ x: (sx - state.view.ox) / state.view.scale, y: (sy - state.view.oy) / state.view.scale });
+
+function resizeCanvas() {
+  dpr = window.devicePixelRatio || 1;
+  const r = work.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.round(r.width * dpr));
+  canvas.height = Math.max(1, Math.round(r.height * dpr));
+  requestDraw();
+}
+function fitView() {
+  if (!state.image) return;
+  const r = work.getBoundingClientRect();
+  const top = 56; // spazio per la toolbar
+  const s = Math.min(r.width / state.image.w, (r.height - top) / state.image.h) * 0.96;
+  state.view.scale = s;
+  state.view.ox = (r.width - state.image.w * s) / 2;
+  state.view.oy = top + (r.height - top - state.image.h * s) / 2;
+  requestDraw();
+}
+function zoomAt(sx, sy, factor) {
+  const v = state.view;
+  const ns = Math.min(60, Math.max(0.01, v.scale * factor));
+  const f = ns / v.scale;
+  v.ox = sx - (sx - v.ox) * f;
+  v.oy = sy - (sy - v.oy) * f;
+  v.scale = ns;
+  requestDraw();
+}
+function requestDraw() {
+  if (needsDraw === "queued") return;
+  needsDraw = "queued";
+  requestAnimationFrame(() => { needsDraw = false; draw(); });
+}
+
+/* ----------------------------- RENDERING ----------------------------- */
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx2d.setTransform(1, 0, 0, 1, 0, 0);
+  ctx2d.clearRect(0, 0, W, H);
+  $("zoomlbl").textContent = state.image ? Math.round(state.view.scale * 100) + "%" : "";
+  if (!state.image) return;
+
+  const v = state.view;
+  ctx2d.setTransform(v.scale * dpr, 0, 0, v.scale * dpr, v.ox * dpr, v.oy * dpr);
+  ctx2d.imageSmoothingEnabled = v.scale < 3;   // a forte zoom mostra i pixel reali (precisione)
+  ctx2d.imageSmoothingQuality = "high";
+  ctx2d.drawImage(state.image.bitmap, 0, 0);
+
+  // Overlay disegnato in pixel CSS dello schermo: marcatori di dimensione costante.
+  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawOverlay(ctx2d, toScreen, v.scale, calcContext());
+}
+
+/**
+ * Disegna tutti i marcatori. Riutilizzata anche dalla Result Card.
+ * @param g     contesto 2D
+ * @param T     funzione immagine→coordinate di destinazione
+ * @param scl   pixel destinazione per pixel immagine
+ * @param cc    contesto di calcolo
+ * @param opts  { onlyGroupId, noCalib }
+ */
+function drawOverlay(g, T, scl, cc, opts = {}) {
+  const sel = state.selected;
+  // --- calibrazione
+  const { p1, p2 } = state.calib;
+  if (!opts.noCalib && p1) {
+    const a = T(p1);
+    if (p2) {
+      const b = T(p2);
+      g.save(); g.strokeStyle = COL_CAL; g.lineWidth = 2; g.setLineDash([6, 4]);
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
+      const p = params();
+      label(g, (a.x + b.x) / 2, (a.y + b.y) / 2 - 10, `${fmt(p.calDist, 2)} ${p.calUnit}`, COL_CAL);
+      crossMarker(g, b, COL_CAL, sel && sel.kind === "calib" && sel.which === "p2");
+    }
+    crossMarker(g, a, COL_CAL, sel && sel.kind === "calib" && sel.which === "p1");
+  }
+
+  for (const grp of state.groups) {
+    if (opts.onlyGroupId && grp.id !== opts.onlyGroupId) continue;
+    const isActive = grp.id === state.activeGroupId;
+    const r = Calc.analyze(grp.shots, grp.poa, cc);
+    const holeR = cc.pxPerMm && cc.caliberMm > 0 ? (cc.caliberMm / 2) * cc.pxPerMm * scl : 0;
+
+    // linea dell'extreme spread
+    if (r.n >= 2) {
+      const a = T(grp.shots[r.esIdx[0]]), b = T(grp.shots[r.esIdx[1]]);
+      g.save(); g.strokeStyle = grp.color; g.globalAlpha = 0.85; g.lineWidth = 1.5; g.setLineDash([5, 4]);
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
+    }
+    // cerchio raggio medio + centroide
+    if (r.n >= 1) {
+      const c = T(r.centroid);
+      if (r.n >= 2) {
+        g.save(); g.strokeStyle = grp.color; g.globalAlpha = 0.6; g.lineWidth = 1.2;
+        g.beginPath(); g.arc(c.x, c.y, r.px.mr * scl, 0, Math.PI * 2); g.stroke(); g.restore();
+      }
+      g.save(); g.strokeStyle = grp.color; g.lineWidth = 2;
+      g.beginPath(); g.moveTo(c.x - 7, c.y - 7); g.lineTo(c.x + 7, c.y + 7); g.moveTo(c.x + 7, c.y - 7); g.lineTo(c.x - 7, c.y + 7); g.stroke();
+      g.restore();
+      if (grp.poa) {
+        const pa = T(grp.poa);
+        g.save(); g.strokeStyle = COL_POA; g.globalAlpha = 0.7; g.lineWidth = 1.2; g.setLineDash([2, 3]);
+        g.beginPath(); g.moveTo(pa.x, pa.y); g.lineTo(c.x, c.y); g.stroke(); g.restore();
+      }
+    }
+    // fori
+    grp.shots.forEach((s, i) => {
+      const p = T(s);
+      const isSel = sel && sel.kind === "shot" && sel.id === s.id;
+      g.save();
+      if (holeR >= 3) {
+        g.fillStyle = hexA(grp.color, isActive ? 0.22 : 0.12);
+        g.strokeStyle = grp.color; g.lineWidth = isSel ? 3 : 1.6;
+        g.beginPath(); g.arc(p.x, p.y, holeR, 0, Math.PI * 2); g.fill(); g.stroke();
+      } else {
+        g.fillStyle = grp.color; g.strokeStyle = "#fff"; g.lineWidth = isSel ? 3 : 1.5;
+        g.beginPath(); g.arc(p.x, p.y, 5, 0, Math.PI * 2); g.fill(); g.stroke();
+      }
+      // puntino centrale per la precisione
+      g.fillStyle = "#fff"; g.beginPath(); g.arc(p.x, p.y, 1.6, 0, Math.PI * 2); g.fill();
+      g.fillStyle = grp.color; g.beginPath(); g.arc(p.x, p.y, 0.9, 0, Math.PI * 2); g.fill();
+      if (isSel) { g.strokeStyle = "#facc15"; g.lineWidth = 2; g.beginPath(); g.arc(p.x, p.y, Math.max(holeR, 5) + 4, 0, Math.PI * 2); g.stroke(); }
+      g.restore();
+      label(g, p.x + Math.max(holeR, 6) + 3, p.y - Math.max(holeR, 6) - 1, String(i + 1), grp.color, 11);
+    });
+    // punto di mira
+    if (grp.poa) {
+      const p = T(grp.poa);
+      const isSel = sel && sel.kind === "poa" && sel.gid === grp.id;
+      g.save(); g.strokeStyle = COL_POA; g.lineWidth = isSel ? 3 : 2;
+      g.beginPath(); g.arc(p.x, p.y, 9, 0, Math.PI * 2);
+      g.moveTo(p.x - 14, p.y); g.lineTo(p.x - 4, p.y); g.moveTo(p.x + 4, p.y); g.lineTo(p.x + 14, p.y);
+      g.moveTo(p.x, p.y - 14); g.lineTo(p.x, p.y - 4); g.moveTo(p.x, p.y + 4); g.lineTo(p.x, p.y + 14);
+      g.stroke(); g.restore();
+      if (state.groups.length > 1 || opts.onlyGroupId) label(g, p.x + 12, p.y + 22, grp.name, COL_POA, 11);
+    }
+  }
+}
+function crossMarker(g, p, color, selected) {
+  g.save(); g.strokeStyle = "#fff"; g.lineWidth = 4;
+  g.beginPath(); g.moveTo(p.x - 9, p.y); g.lineTo(p.x + 9, p.y); g.moveTo(p.x, p.y - 9); g.lineTo(p.x, p.y + 9); g.stroke();
+  g.strokeStyle = color; g.lineWidth = 2; g.stroke();
+  if (selected) { g.strokeStyle = "#facc15"; g.beginPath(); g.arc(p.x, p.y, 11, 0, Math.PI * 2); g.stroke(); }
+  g.restore();
+}
+function label(g, x, y, text, color, size = 12) {
+  g.save(); g.font = `600 ${size}px "Segoe UI", system-ui, sans-serif`; g.textBaseline = "middle";
+  const w = g.measureText(text).width;
+  g.fillStyle = "rgba(255,255,255,.88)"; g.fillRect(x - 3, y - size / 2 - 3, w + 6, size + 6);
+  g.fillStyle = color; g.fillText(text, x, y); g.restore();
+}
+function hexA(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+
+/* --------------------------- HIT-TEST PUNTI --------------------------- */
+function hitTest(sx, sy) {
+  const candidates = [];
+  const push = (ref, p) => { const s = toScreen(p); const d = Math.hypot(s.x - sx, s.y - sy); if (d <= HIT_PX) candidates.push({ ref, d }); };
+  if (state.calib.p1) push({ kind: "calib", which: "p1" }, state.calib.p1);
+  if (state.calib.p2) push({ kind: "calib", which: "p2" }, state.calib.p2);
+  // gruppo attivo prima: a parità di distanza vince
+  const ordered = [...state.groups].sort((a, b) => (b.id === state.activeGroupId) - (a.id === state.activeGroupId));
+  for (const g of ordered) {
+    if (g.poa) push({ kind: "poa", gid: g.id }, g.poa);
+    for (const s of g.shots) push({ kind: "shot", gid: g.id, id: s.id }, s);
+  }
+  candidates.sort((a, b) => a.d - b.d);
+  return candidates.length ? candidates[0].ref : null;
+}
+function refPoint(ref) {
+  if (!ref) return null;
+  if (ref.kind === "calib") return state.calib[ref.which];
+  const g = state.groups.find(g => g.id === ref.gid);
+  if (!g) return null;
+  if (ref.kind === "poa") return g.poa;
+  return g.shots.find(s => s.id === ref.id) || null;
+}
+function deleteRef(ref) {
+  if (!ref) return;
+  if (ref.kind === "calib") { state.calib = { p1: null, p2: null }; }
+  else {
+    const g = state.groups.find(g => g.id === ref.gid); if (!g) return;
+    if (ref.kind === "poa") g.poa = null;
+    else g.shots = g.shots.filter(s => s.id !== ref.id);
+  }
+  if (state.selected && JSON.stringify(state.selected) === JSON.stringify(ref)) state.selected = null;
+  commit();
+}
+
+/* --------------------------- INTERAZIONE MOUSE --------------------------- */
+let ptr = null;  // { id, button, sx, sy, lastX, lastY, moved, target, mode:'point'|'pan' }
+function localXY(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+const inImage = p => state.image && p.x >= 0 && p.y >= 0 && p.x <= state.image.w && p.y <= state.image.h;
+
+canvas.addEventListener("pointerdown", e => {
+  if (!state.image) return;
+  // Toglie il focus dai campi del pannello: altrimenti le scorciatoie (Ctrl+Z, Canc…) verrebbero ignorate.
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  const { x, y } = localXY(e);
+  canvas.setPointerCapture(e.pointerId);
+  // Alt+clic ignora i punti esistenti: serve per marcare fori sovrapposti (colpi nello stesso foro).
+  const hit = e.button === 0 && !e.altKey ? hitTest(x, y) : null;
+  ptr = { id: e.pointerId, button: e.button, sx: x, sy: y, lastX: x, lastY: y, moved: false,
+          target: hit, kind: hit ? "point" : "pan" };
+  if (hit) { state.selected = hit; refreshLists(); requestDraw(); }
+  e.preventDefault();
+});
+canvas.addEventListener("pointermove", e => {
+  const { x, y } = localXY(e);
+  if (!ptr) { updateCursor(x, y); return; }
+  if (!ptr.moved && Math.hypot(x - ptr.sx, y - ptr.sy) > DRAG_THRESHOLD) ptr.moved = true;
+  if (ptr.moved) {
+    if (ptr.kind === "point") {
+      const p = refPoint(ptr.target);
+      if (p) { const ip = toImage(x, y); p.x = clamp(ip.x, 0, state.image.w); p.y = clamp(ip.y, 0, state.image.h); refreshResults(); }
+    } else {
+      state.view.ox += x - ptr.lastX; state.view.oy += y - ptr.lastY;
+    }
+    requestDraw();
+  }
+  ptr.lastX = x; ptr.lastY = y;
+});
+canvas.addEventListener("pointerup", e => {
+  if (!ptr || e.pointerId !== ptr.id) return;
+  const { x, y } = localXY(e);
+  const p = ptr; ptr = null;
+  if (p.kind === "point" && p.moved) { commit(); return; }
+  if (!p.moved && p.button === 0 && !p.target) handleClick(toImage(x, y));
+  updateCursor(x, y);
+});
+canvas.addEventListener("pointercancel", () => { ptr = null; });
+canvas.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });   // niente autoscroll col tasto centrale
+canvas.addEventListener("contextmenu", e => {
+  e.preventDefault();
+  const { x, y } = localXY(e);
+  const hit = hitTest(x, y);
+  if (hit) deleteRef(hit);
+});
+canvas.addEventListener("wheel", e => {
+  if (!state.image) return;
+  e.preventDefault();
+  const { x, y } = localXY(e);
+  const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+  zoomAt(x, y, Math.exp(-dy * 0.0015));
+}, { passive: false });
+
+function updateCursor(x, y) {
+  if (!state.image) { canvas.style.cursor = "default"; return; }
+  if (hitTest(x, y)) canvas.style.cursor = "move";
+  else canvas.style.cursor = state.mode === "pan" ? "grab" : "crosshair";
+}
+
+function handleClick(ip) {
+  if (!inImage(ip)) return;
+  const pt = { x: ip.x, y: ip.y };
+  if (state.mode === "calib") {
+    const c = state.calib;
+    if (!c.p1 || c.p2) { state.calib = { p1: pt, p2: null }; }
+    else { c.p2 = pt; setMode(activeGroup() && activeGroup().poa ? "shot" : "poa"); setTimeout(() => $("calDist").select(), 0); }
+    commit();
+  } else if (state.mode === "poa") {
+    const g = ensureGroup(); g.poa = pt; state.selected = { kind: "poa", gid: g.id };
+    setMode("shot"); commit();
+  } else if (state.mode === "shot") {
+    const g = ensureGroup(); const s = { id: newId(), x: pt.x, y: pt.y }; g.shots.push(s);
+    state.selected = { kind: "shot", gid: g.id, id: s.id }; commit();
+  }
+}
+function ensureGroup() {
+  let g = activeGroup();
+  if (!g) { g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; }
+  return g;
+}
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+function setMode(m) {
+  state.mode = m;
+  document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  updateHint();
+  canvas.style.cursor = m === "pan" ? "grab" : "crosshair";
+}
+function updateHint() {
+  const h = $("hint");
+  if (!state.image) { h.textContent = "Carica una foto per iniziare."; return; }
+  const g = activeGroup();
+  const msgs = {
+    pan: "Mano: trascina per spostare, rotella per zoom. Puoi comunque trascinare i punti.",
+    calib: !state.calib.p1 || state.calib.p2 ? "Scala: clicca il PRIMO punto a distanza nota." : "Scala: clicca il SECONDO punto.",
+    poa: `Mira: clicca il punto mirato per «${g ? g.name : "Gruppo 1"}».`,
+    shot: `Foro: clicca il centro di ogni foro di «${g ? g.name : "Gruppo 1"}». Tasto destro su un punto = elimina.`,
+  };
+  h.textContent = msgs[state.mode];
+}
+
+/* ------------------------------ TASTIERA ------------------------------ */
+document.addEventListener("keydown", e => {
+  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
+  const k = e.key.toLowerCase();
+  if ((e.ctrlKey || e.metaKey) && k === "s") { e.preventDefault(); saveSession(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
+  if (typing) return;
+  if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((e.ctrlKey || e.metaKey) && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
+  else if (k === "delete") { if (state.selected) deleteRef(state.selected); }
+  else if (k === "backspace") { e.preventDefault(); deleteLast(); }
+  else if (k === "f") fitView();
+  else if (k === "1") setMode("pan");
+  else if (k === "2") setMode("calib");
+  else if (k === "3") setMode("poa");
+  else if (k === "4") setMode("shot");
+});
+
+/* ---------------------------- AZIONI TOOLBAR ---------------------------- */
+function deleteLast() {
+  const g = activeGroup(); if (!g) return;
+  if (g.shots.length) g.shots.pop(); else if (g.poa) g.poa = null; else return;
+  state.selected = null; commit();
+}
+function clearAll() {
+  if (!state.groups.some(g => g.shots.length || g.poa) && !state.calib.p1) return;
+  if (!confirm("Eliminare tutti i punti (calibrazione, mire e fori di tutti i gruppi)?")) return;
+  state.calib = { p1: null, p2: null };
+  state.groups.forEach(g => { g.poa = null; g.shots = []; });
+  state.selected = null; commit();
+}
+
+/* --------------------------- CARICAMENTO IMMAGINE --------------------------- */
+async function loadImageFile(file) {
+  const dataUrl = await readAs(file, "dataURL");
+  await setImage(file.name, dataUrl);
+  state.calib = { p1: null, p2: null };
+  state.groups = []; const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id;
+  state.selected = null;
+  resetHistory();
+  setMode("calib");
+  toast(`Immagine caricata: ${state.image.w}×${state.image.h} px`);
+}
+async function setImage(name, dataUrl) {
+  const img = new Image();                             // data: URL → nessuna rete
+  img.src = dataUrl;
+  await img.decode();
+  const bitmap = await createImageBitmap(img);
+  if (state.image && state.image.bitmap.close) state.image.bitmap.close();
+  state.image = { name, w: bitmap.width, h: bitmap.height, dataUrl, bitmap };
+  $("drop").style.display = "none";
+  fitView();
+}
+function readAs(file, how) {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error);
+    how === "dataURL" ? fr.readAsDataURL(file) : fr.readAsText(file);
+  });
+}
+
+/* --------------------------- SESSIONE JSON --------------------------- */
+/* Livello di astrazione per il file system: in Fase 4 verrà usato window.pywebview.api
+   se disponibile; nel browser si ripiega su download / input file. */
+const Storage = {
+  async saveText(filename, text, mime = "application/json") {
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.save_file)
+      return window.pywebview.api.save_file(filename, text);
+    downloadBlob(new Blob([text], { type: mime }), filename);
+    return true;
+  },
+  async saveDataUrl(filename, dataUrl) {
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.save_binary)
+      return window.pywebview.api.save_binary(filename, dataUrl);
+    const a = document.createElement("a"); a.href = dataUrl; a.download = filename; a.click();
+    return true;
+  },
+};
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+function buildSession() {
+  const embed = $("embedImg").checked;
+  return {
+    app: "ShootAnalyzer", format: SESSION_FORMAT, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
+    image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, dataUrl: embed ? state.image.dataUrl : null } : null,
+    params: params(),
+    calib: state.calib,
+    groups: state.groups.map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa, shots: g.shots })),
+    activeGroupId: state.activeGroupId,
+    results: state.groups.map(g => ({ group: g.name, ...summarize(g) })),   // informativo, ricalcolato al caricamento
+  };
+}
+async function saveSession() {
+  if (!state.image) { toast("Niente da salvare: carica prima un'immagine."); return; }
+  const base = (state.image.name || "sessione").replace(/\.[^.]+$/, "");
+  await Storage.saveText(`${base}_${stamp()}.json`, JSON.stringify(buildSession(), null, 1));
+  toast("Sessione salvata");
+}
+async function loadSessionText(text) {
+  let s;
+  try { s = JSON.parse(text); } catch { toast("File JSON non valido"); return; }
+  if (s.app !== "ShootAnalyzer" || !s.format) { toast("Il file non è una sessione di Shoot Analyzer"); return; }
+  if (s.format > SESSION_FORMAT) { toast("Sessione creata con una versione più recente"); return; }
+  if (s.image && s.image.dataUrl) await setImage(s.image.name, s.image.dataUrl);
+  else if (!state.image || state.image.w !== s.image?.w || state.image.h !== s.image?.h) {
+    toast("La sessione non contiene l'immagine: carica prima la stessa foto (" + (s.image?.name || "?") + "), poi la sessione.");
+    return;
+  }
+  setParams(s.params || {});
+  state.calib = s.calib || { p1: null, p2: null };
+  state.groups = (s.groups || []).map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa || null, shots: g.shots || [] }));
+  if (!state.groups.length) state.groups.push(makeGroup());
+  state.activeGroupId = state.groups.some(g => g.id === s.activeGroupId) ? s.activeGroupId : state.groups[0].id;
+  uid = Math.max(...allIds()) + 1;
+  state.selected = null;
+  resetHistory(); setMode("shot");
+  toast("Sessione caricata");
+}
+const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "").replace(/^(\d{8})/, "$1_");
+
+/* --------------------------- FORMATTAZIONE --------------------------- */
+function fmt(v, d = 2) { return v == null || !isFinite(v) ? "–" : v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
+const fmtLen = mm => `${fmt(mm, 1)} mm · ${fmt(mm / 25.4, 3)}"`;
+const fmtAng = a => a ? `${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : "—";
+
+function summarize(g) {
+  const r = Calc.analyze(g.shots, g.poa, calcContext());
+  return { n: r.n, mm: r.mm || null, ang: r.ang || null, offset: r.offset || null, correction: r.correction || null };
+}
+function correctionText(c) {
+  if (!c) return null;
+  const part = (n, dir) => n === 0 ? null : `${n} click ${dir}`;
+  const parts = [part(c.vClicks, c.vDir), part(c.hClicks, c.hDir)].filter(Boolean);
+  return parts.length ? parts.join(", ") : "Nessuna correzione (entro ½ click)";
+}
+
+/* ----------------------------- UI PANNELLO ----------------------------- */
+function refresh() { refreshLists(); refreshResults(); updateHint(); updateButtons(); requestDraw(); }
+function updateButtons() {
+  $("bUndo").disabled = history.idx <= 0;
+  $("bRedo").disabled = history.idx >= history.stack.length - 1;
+  const g = activeGroup();
+  $("bDelLast").disabled = !g || (!g.shots.length && !g.poa);
+  $("shotSw").style.background = g ? g.color : GROUP_COLORS[0];
+}
+function refreshLists() {
+  // gruppi
+  const gl = $("groups"); gl.innerHTML = "";
+  for (const g of state.groups) {
+    const el = document.createElement("div");
+    el.className = "g" + (g.id === state.activeGroupId ? " active" : "");
+    el.innerHTML = `<span class="dot" style="background:${g.color}"></span><input value="${esc(g.name)}" aria-label="Nome gruppo">
+      <span class="n">${g.shots.length} colpi</span><button title="Elimina gruppo">✕</button>`;
+    el.addEventListener("click", ev => { if (ev.target.tagName === "BUTTON") return; if (state.activeGroupId !== g.id) { state.activeGroupId = g.id; commit(); } });
+    const inp = el.querySelector("input");
+    inp.addEventListener("change", () => { g.name = inp.value.trim() || g.name; commit(); });
+    el.querySelector("button").addEventListener("click", () => {
+      if ((g.shots.length || g.poa) && !confirm(`Eliminare «${g.name}» e i suoi punti?`)) return;
+      state.groups = state.groups.filter(x => x.id !== g.id);
+      if (!state.groups.length) state.groups.push(makeGroup());
+      if (!activeGroup()) state.activeGroupId = state.groups[0].id;
+      commit();
+    });
+    gl.appendChild(el);
+  }
+  // punti del gruppo attivo
+  const g = activeGroup(), cc = calcContext(), pts = $("points");
+  if (!g || (!g.poa && !g.shots.length && !state.calib.p1)) { pts.innerHTML = `<div class="muted">Nessun punto.</div>`; return; }
+  const ref = g.poa || null;
+  const k = cc.pxPerMm ? 1 / cc.pxPerMm : null;
+  const coord = p => {
+    if (k && ref) return [fmt((p.x - ref.x) * k, 1), fmt((ref.y - p.y) * k, 1)];
+    return [fmt(p.x, 0), fmt(p.y, 0)];
+  };
+  const unitLbl = k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine";
+  let rows = "";
+  const selKey = JSON.stringify(state.selected);
+  const row = (ref2, tipo, p) => {
+    const [x, y] = coord(p);
+    rows += `<tr class="${JSON.stringify(ref2) === selKey ? "sel" : ""}" data-ref='${JSON.stringify(ref2)}'><td>${tipo}</td><td class="x">${x}</td><td class="x">${y}</td><td><button data-del='${JSON.stringify(ref2)}' title="Elimina">✕</button></td></tr>`;
+  };
+  if (state.calib.p1) row({ kind: "calib", which: "p1" }, "Scala A", state.calib.p1);
+  if (state.calib.p2) row({ kind: "calib", which: "p2" }, "Scala B", state.calib.p2);
+  if (g.poa) row({ kind: "poa", gid: g.id }, "Mira", g.poa);
+  g.shots.forEach((s, i) => row({ kind: "shot", gid: g.id, id: s.id }, `Foro ${i + 1}`, s));
+  pts.innerHTML = `<table class="pts"><thead><tr><th>Tipo</th><th class="x">X</th><th class="x">Y</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Coordinate in ${unitLbl}.</div>`;
+  pts.querySelectorAll("button[data-del]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); deleteRef(JSON.parse(b.dataset.del)); }));
+  pts.querySelectorAll("tr[data-ref]").forEach(tr => tr.addEventListener("click", () => { state.selected = JSON.parse(tr.dataset.ref); refreshLists(); requestDraw(); }));
+}
+function refreshResults() {
+  const cc = calcContext();
+  // stato calibrazione
+  const cs = $("calStatus");
+  if (cc.pxPerMm) { cs.className = "status ok"; cs.textContent = `Calibrato: ${fmt(cc.pxPerMm, 2)} px/mm (${fmt(1 / cc.pxPerMm, 3)} mm/px)`; }
+  else if (state.calib.p1 && !state.calib.p2) { cs.className = "status warn"; cs.textContent = "Clicca il secondo punto di calibrazione."; }
+  else { cs.className = "status warn"; cs.textContent = "Non calibrato: seleziona «Scala» e clicca due punti a distanza nota."; }
+
+  const out = $("results"); out.innerHTML = "";
+  for (const g of state.groups) {
+    const r = Calc.analyze(g.shots, g.poa, cc);
+    const box = document.createElement("div"); box.className = "res";
+    let html = `<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi</span></h3>`;
+    if (r.n < 2) html += `<div class="muted">Servono almeno 2 fori.</div>`;
+    else if (!r.mm) html += `<div class="muted">Calibra la scala per ottenere le misure. (ES = ${fmt(r.px.es, 0)} px)</div>`;
+    else {
+      html += `<table>
+        <tr><td>Group size (c-c)</td><td class="v"><b>${fmtLen(r.mm.es)}</b><br>${fmtAng(r.ang?.es)}</td></tr>
+        <tr><td>Bordo-bordo esterno</td><td class="v">${fmtLen(r.mm.esEdge)}</td></tr>
+        <tr><td>Raggio medio</td><td class="v">${fmtLen(r.mm.mr)}<br>${fmtAng(r.ang?.mr)}</td></tr>
+        <tr><td>Larghezza × altezza</td><td class="v">${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm</td></tr>
+      </table>`;
+    }
+    if (r.mm && r.n >= 1) {
+      if (!g.poa) html += `<div class="muted" style="margin-top:6px">Aggiungi il punto di mira per la correzione.</div>`;
+      else {
+        const o = r.offset;
+        const h = o.dx === 0 ? "" : `${fmt(Math.abs(o.dx), 1)} mm a ${o.dx > 0 ? "destra" : "sinistra"}`;
+        const v = o.dy === 0 ? "" : `${fmt(Math.abs(o.dy), 1)} mm in ${o.dy > 0 ? "alto" : "basso"}`;
+        html += `<table style="margin-top:4px"><tr><td>Scostamento centro gruppo</td><td class="v">${[v, h].filter(Boolean).join("<br>") || "0"}</td></tr></table>`;
+        if (r.correction) {
+          const c = r.correction;
+          html += `<div class="corr">↻ ${correctionText(c)}</div>
+            <div class="muted" style="font-size:11.5px;margin-top:3px">Esatto: ${fmt(c.vAng, 2)} ${c.unit} ${c.vDir} / ${fmt(c.hAng, 2)} ${c.unit} ${c.hDir} · ${fmt(c.clickValue, 3)} ${c.unit}/click</div>`;
+        } else html += `<div class="muted">Inserisci distanza di tiro e valore click.</div>`;
+      }
+    }
+    box.innerHTML = html; out.appendChild(box);
+  }
+  updateButtons();
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ----------------------------- RESULT CARD ----------------------------- */
+function resultText() {
+  const p = params(), cc = calcContext();
+  const L = [`SHOOT ANALYZER — ${new Date().toLocaleString("it-IT")}`,
+    `Immagine: ${state.image ? state.image.name : "-"}`,
+    `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${fmt(p.caliber, 2)} ${p.caliberUnit} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
+  if (!cc.pxPerMm) L.push("ATTENZIONE: scala non calibrata");
+  for (const g of state.groups) {
+    const r = Calc.analyze(g.shots, g.poa, cc);
+    L.push("", `[${g.name}] ${r.n} colpi`);
+    if (r.mm && r.n >= 2) {
+      L.push(`  Group size c-c: ${fmtLen(r.mm.es)} = ${fmtAng(r.ang?.es)}`);
+      L.push(`  Bordo-bordo:    ${fmtLen(r.mm.esEdge)}`);
+      L.push(`  Raggio medio:   ${fmtLen(r.mm.mr)} = ${fmtAng(r.ang?.mr)}`);
+      L.push(`  Larg. x alt.:   ${fmt(r.mm.w, 1)} x ${fmt(r.mm.h, 1)} mm`);
+    }
+    if (r.offset) L.push(`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? "destra" : "sinistra"}`);
+    if (r.correction) L.push(`  Correzione:     ${correctionText(r.correction)}`);
+  }
+  return L.join("\n");
+}
+async function copyText() {
+  const t = resultText();
+  try { await navigator.clipboard.writeText(t); toast("Risultati copiati negli appunti"); }
+  catch { await Storage.saveText(`risultati_${stamp()}.txt`, t, "text/plain"); }
+}
+async function exportCard() {
+  if (!state.image) { toast("Carica prima un'immagine."); return; }
+  const g = activeGroup(); if (!g || !g.shots.length) { toast("Il gruppo attivo non ha fori."); return; }
+  const cc = calcContext(), r = Calc.analyze(g.shots, g.poa, cc), p = params();
+  // area di ritaglio attorno a fori + mira
+  const pts = [...g.shots, ...(g.poa ? [g.poa] : [])];
+  let x0 = Math.min(...pts.map(q => q.x)), x1 = Math.max(...pts.map(q => q.x));
+  let y0 = Math.min(...pts.map(q => q.y)), y1 = Math.max(...pts.map(q => q.y));
+  const pad = Math.max(40, 0.35 * Math.max(x1 - x0, y1 - y0), cc.pxPerMm ? cc.caliberMm * cc.pxPerMm * 2 : 0);
+  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+  x1 = Math.min(state.image.w, x1 + pad); y1 = Math.min(state.image.h, y1 + pad);
+  const side = 640, cw = x1 - x0, ch = y1 - y0, s = side / Math.max(cw, ch);
+  const iw = cw * s, ih = ch * s;
+  const W = 1040, H = Math.max(ih, 560) + 40, Wpanel = W - iw - 60;
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const k = c.getContext("2d");
+  k.fillStyle = "#fff"; k.fillRect(0, 0, W, H);
+  const ox = 20, oy = 20 + (H - 40 - ih) / 2;
+  k.save(); k.beginPath(); k.rect(ox, oy, iw, ih); k.clip();
+  k.drawImage(state.image.bitmap, x0, y0, cw, ch, ox, oy, iw, ih);
+  drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { onlyGroupId: g.id, noCalib: true });
+  k.restore();
+  k.strokeStyle = "#d1d5db"; k.strokeRect(ox, oy, iw, ih);
+  // testo
+  let tx = iw + 40, ty = 24;
+  k.textBaseline = "top";
+  const line = (t, size = 15, color = "#1d2330", weight = 400, gap = 8) => { k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = color; k.fillText(t, tx, ty, Wpanel); ty += size + gap; };
+  line("SHOOT ANALYZER", 13, "#6b7280", 700);
+  line(`${g.name} · ${r.n} colpi`, 24, g.color, 700, 4);
+  line(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
+  line(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${fmt(p.caliber, 2)} ${p.caliberUnit}`, 14, "#374151", 400, 18);
+  if (r.mm && r.n >= 2) {
+    line("GROUP SIZE (centro-centro)", 12, "#6b7280", 700, 4);
+    line(fmtLen(r.mm.es), 22, "#1d2330", 700, 4);
+    line(fmtAng(r.ang?.es), 16, "#1d2330", 400, 16);
+    line("RAGGIO MEDIO", 12, "#6b7280", 700, 4);
+    line(`${fmtLen(r.mm.mr)}`, 17, "#1d2330", 600, 4);
+    line(fmtAng(r.ang?.mr), 15, "#1d2330", 400, 16);
+    line(`Bordo-bordo: ${fmtLen(r.mm.esEdge)}`, 14, "#374151", 400, 6);
+    line(`Larg. × alt.: ${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm`, 14, "#374151", 400, 18);
+  } else line(cc.pxPerMm ? "Servono almeno 2 fori" : "Scala non calibrata", 16, "#9a3412");
+  if (r.correction) {
+    line("CORREZIONE", 12, "#6b7280", 700, 4);
+    line(correctionText(r.correction), 18, "#1d4ed8", 700, 4);
+    line(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280");
+  }
+  const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
+  await Storage.saveDataUrl(`${base}_${g.name.replace(/\W+/g, "_")}_card.png`, c.toDataURL("image/png"));
+  toast("Result Card esportata");
+}
+
+/* ------------------------------ VARIE ------------------------------ */
+let toastT;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
+
+/* ------------------------------ BINDING ------------------------------ */
+$("ver").textContent = "v" + APP_VERSION;
+$("bLoad").onclick = () => $("fImg").click();
+$("fImg").onchange = e => { const f = e.target.files[0]; if (f) loadImageFile(f).catch(err => toast("Impossibile aprire l'immagine: " + err.message)); e.target.value = ""; };
+$("bOpen").onclick = () => $("fJson").click();
+$("fJson").onchange = async e => { const f = e.target.files[0]; if (f) await loadSessionText(await readAs(f, "text")); e.target.value = ""; };
+$("bSave").onclick = saveSession;
+$("bUndo").onclick = undo; $("bRedo").onclick = redo;
+$("bDelLast").onclick = deleteLast; $("bClear").onclick = clearAll;
+$("bFit").onclick = fitView;
+$("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; setMode(state.image ? "poa" : state.mode); commit(); };
+$("bCardPng").onclick = exportCard;
+$("bCardTxt").onclick = copyText;
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll("#side input[type=number], #side select").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
+
+// drag & drop
+["dragenter", "dragover"].forEach(t => work.addEventListener(t, e => { e.preventDefault(); work.classList.add("dragover"); }));
+["dragleave", "drop"].forEach(t => work.addEventListener(t, e => { e.preventDefault(); if (t === "dragleave" && work.contains(e.relatedTarget)) return; work.classList.remove("dragover"); }));
+work.addEventListener("drop", async e => {
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  if (/\.json$/i.test(f.name) || f.type === "application/json") await loadSessionText(await readAs(f, "text"));
+  else if (f.type.startsWith("image/")) await loadImageFile(f).catch(err => toast("Impossibile aprire l'immagine: " + err.message));
+  else toast("Formato non supportato");
+});
+// blocca il drop fuori dall'area (eviterebbe la navigazione verso il file)
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => e.preventDefault());
+
+new ResizeObserver(() => resizeCanvas()).observe(work);
+window.addEventListener("resize", resizeCanvas);
+
+// avvio
+state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
+setMode("pan"); resizeCanvas(); resetHistory();
+
+// Hook di test (usato dai test automatici; innocuo in produzione)
+window.__SA = { state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, history };
+</script>
+</body>
+</html>

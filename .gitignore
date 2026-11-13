@@ -1,0 +1,22 @@
+# Python / build (Fasi 4-5)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+build/
+dist/
+*.spec.bak
+
+# Node (solo test)
+node_modules/
+
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Sessioni e card generate durante i test manuali
+*_card.png
+sessione_*.json
