@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.0] - 2026-11-13
+Prima versione ufficiale. Raccoglie tutte le funzioni sviluppate dalla 0.1.0 alla 0.12.0 (vedi sotto).
+### Pulizia del codice
+- Rinominate due variabili globali che nascondevano oggetti del browser: `history` → `undoStack` (pila undo/redo)
+  e `Storage` → `FileStore` (salvataggio dei file). Nessun cambiamento di comportamento.
+- Analisi statica (ESLint: variabili non usate, non definite, ridichiarate): nessun problema residuo.
+- Intestazione del file con versione, licenza e indirizzo del progetto; guida rapida in app aggiornata
+  (gruppi, ricarica, flyer, confronto, ipotesi statistiche, privacy).
+- README riscritto come guida utente; criteri di accettazione della specifica verificati.
+- `feature-request.md` (appunti personali) tolto dal repository e aggiunto a `.gitignore`; il file locale resta.
+### Verifiche di rilascio
+- 90 test del motore di calcolo superati.
+- Regressione completa nel browser (Chrome headless): calibrazione, punti, drag, undo/redo, lente, griglia, gruppi,
+  ricarica, flyer ed esclusione, forma ed ellisse, grafici e tooltip, confronto e storico, intervalli di confidenza,
+  avvisi di qualità, tema scuro, pannello ridimensionabile, salvataggio e ricaricamento della sessione, Result Card,
+  «Salva con nome»: nessun errore, nessuna richiesta di rete.
+
 ## [0.12.0] - 2026-11-13
 ### Aggiunto
 - **Qualità della calibrazione** (nel riquadro della scala, nel testo e nella Result Card):

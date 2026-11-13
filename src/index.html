@@ -1,5 +1,10 @@
 <!DOCTYPE html>
 <html lang="it">
+<!--
+  Shoot Analyzer 1.0.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
+  Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
+-->
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -376,9 +381,12 @@
           <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure) e con l'alto del bersaglio verso l'alto.</p>
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
+          <p><b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.</p>
+          <p><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
           <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>Ctrl+S</kbd> salva.</p>
-          <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.</p>
+          <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
+          <p class="muted">I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
       </details>
     </section>
@@ -718,7 +726,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.12.0";
+const APP_VERSION = "1.0.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -782,17 +790,17 @@ const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) |
 
 /* ------------------------- STORIA (UNDO/REDO) ------------------------- */
 // Lo stack contiene snapshot serializzati di calibrazione + gruppi (non l'immagine, non i parametri).
-const history = { stack: [], idx: -1, max: 300 };
+const undoStack = { stack: [], idx: -1, max: 300 };   // («history» è già un oggetto del browser)
 function snapshot() {
   return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId });
 }
 function commit() {
   const s = snapshot();
-  if (history.stack[history.idx] === s) return;
-  history.stack.splice(history.idx + 1);
-  history.stack.push(s);
-  if (history.stack.length > history.max) history.stack.shift();
-  history.idx = history.stack.length - 1;
+  if (undoStack.stack[undoStack.idx] === s) return;
+  undoStack.stack.splice(undoStack.idx + 1);
+  undoStack.stack.push(s);
+  if (undoStack.stack.length > undoStack.max) undoStack.stack.shift();
+  undoStack.idx = undoStack.stack.length - 1;
   refresh();
 }
 function restore(s) {
@@ -802,9 +810,9 @@ function restore(s) {
   uid = Math.max(uid, ...allIds()) + 1;
   refresh();
 }
-function undo() { if (history.idx > 0) restore(history.stack[--history.idx]); }
-function redo() { if (history.idx < history.stack.length - 1) restore(history.stack[++history.idx]); }
-function resetHistory() { history.stack = []; history.idx = -1; commit(); }
+function undo() { if (undoStack.idx > 0) restore(undoStack.stack[--undoStack.idx]); }
+function redo() { if (undoStack.idx < undoStack.stack.length - 1) restore(undoStack.stack[++undoStack.idx]); }
+function resetHistory() { undoStack.stack = []; undoStack.idx = -1; commit(); }
 function allIds() { const a = [0]; for (const g of state.groups) { a.push(g.id); for (const s of g.shots) a.push(s.id); } return a; }
 
 /* ----------------------------- CALIBRI ----------------------------- */
@@ -1438,7 +1446,7 @@ const FILE_TYPES = {
   "image/png": { description: "Immagine PNG", ext: ".png" },
   "text/plain": { description: "Testo", ext: ".txt" },
 };
-const Storage = {
+const FileStore = {
   async saveBlob(filename, blob) {
     if (typeof window.showSaveFilePicker === "function") {
       const t = FILE_TYPES[blob.type];
@@ -1458,7 +1466,7 @@ const Storage = {
     downloadBlob(blob, filename);
     return true;
   },
-  saveText(filename, text, mime = "application/json") { return Storage.saveBlob(filename, new Blob([text], { type: mime })); },
+  saveText(filename, text, mime = "application/json") { return FileStore.saveBlob(filename, new Blob([text], { type: mime })); },
 };
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -1482,7 +1490,7 @@ function buildSession() {
 async function saveSession() {
   if (!state.image) { toast("Niente da salvare: carica prima un'immagine."); return; }
   const base = (state.image.name || "sessione").replace(/\.[^.]+$/, "");
-  if (await Storage.saveText(`${base}_${stamp()}.json`, JSON.stringify(buildSession(), null, 1))) toast("Sessione salvata");
+  if (await FileStore.saveText(`${base}_${stamp()}.json`, JSON.stringify(buildSession(), null, 1))) toast("Sessione salvata");
 }
 async function loadSessionText(text) {
   let s;
@@ -1597,8 +1605,8 @@ const clickTxt = (n, dir) => n === 0 ? "0" : `${n} ${DIR_SHORT[dir]}`;
 /* ----------------------------- UI PANNELLO ----------------------------- */
 function refresh() { refreshLists(); refreshResults(); updateHint(); updateButtons(); requestDraw(); }
 function updateButtons() {
-  $("bUndo").disabled = history.idx <= 0;
-  $("bRedo").disabled = history.idx >= history.stack.length - 1;
+  $("bUndo").disabled = undoStack.idx <= 0;
+  $("bRedo").disabled = undoStack.idx >= undoStack.stack.length - 1;
   const g = activeGroup();
   $("bDelLast").disabled = !g || (!g.shots.length && !g.poa);
   $("shotSw").style.background = g ? g.color : GROUP_COLORS[0];
@@ -1859,7 +1867,7 @@ function resultText() {
 async function copyText() {
   const t = resultText();
   try { await navigator.clipboard.writeText(t); toast("Risultati copiati negli appunti"); }
-  catch { if (await Storage.saveText(`risultati_${stamp()}.txt`, t, "text/plain")) toast("Risultati salvati in un file di testo"); }
+  catch { if (await FileStore.saveText(`risultati_${stamp()}.txt`, t, "text/plain")) toast("Risultati salvati in un file di testo"); }
 }
 /**
  * Esporta la Result Card in PNG.
@@ -2003,7 +2011,7 @@ async function exportCard(scope = "active") {
   const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
   const suffix = groups.length === 1 ? groups[0].name.replace(/\W+/g, "_") : "tutti_i_gruppi";
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (await Storage.saveBlob(`${base}_${suffix}_card_${stamp()}.png`, blob)) toast("Result Card esportata");
+  if (await FileStore.saveBlob(`${base}_${suffix}_card_${stamp()}.png`, blob)) toast("Result Card esportata");
 }
 
 /* ------------------------------ GRAFICI ------------------------------ */
@@ -2508,8 +2516,8 @@ buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); resizeCanvas(); resetHistory();
 
-// Hook di test (usato dai test automatici; innocuo in produzione)
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, history };
+// Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
+window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack };
 </script>
 </body>
 </html>

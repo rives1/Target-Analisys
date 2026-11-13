@@ -11,3 +11,6 @@ desktop.ini
 # Sessioni e card generate durante i test manuali
 *_card*.png
 sessione_*.json
+
+# Appunti personali (non fanno parte del progetto)
+feature-request.md

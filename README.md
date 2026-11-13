@@ -1,43 +1,61 @@
 # Shoot Analyzer
 
-Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
-Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
+Analisi della dispersione dei colpi da una foto del bersaglio: group size, raggio medio, statistiche, forma del gruppo,
+correzione in click del mirino, confronto tra gruppi e sessioni.
 
-> Stato: **v0.12.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
-> Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
+**Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
+**100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-## Uso
+**Versione 1.0.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
-**Online**: https://rives1.github.io/Target-Analisys/ (GitHub Pages). Anche online l'app non invia nulla: immagini e sessioni restano sul tuo dispositivo.
+## Come usarla
 
-**Offline**: apri `src/index.html` con un browser (doppio clic sul file). Non serve installare nulla e non serve connessione.
-Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è l'intera applicazione.
+- **Online**: apri https://rives1.github.io/Target-Analisys/
+- **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
 
 | Browser | Stato |
 |---|---|
-| Edge / Chrome (Windows, macOS, Linux) | riferimento, testato · salvataggio con dialog «Salva con nome» |
-| Firefox | collaudato · i file salvati finiscono nella cartella Download |
-| Safari | supportato, non ancora collaudato · salvataggi nella cartella Download |
+| Edge / Chrome (Windows, macOS, Linux) | riferimento, collaudato · salvataggio con «Salva con nome» |
+| Firefox | collaudato · i file salvati vanno nella cartella Download |
+| Safari | supportato, non collaudato · i file salvati vanno nella cartella Download |
 
-1. **Carica foto**: pulsante o trascinamento. La foto va scattata perpendicolare al bersaglio.
-2. **Scala**: clicca due punti a distanza nota e inserisci il valore.
-3. **Mira**: clicca il punto mirato.
-4. **Foro**: clicca il centro di ogni foro.
-5. Per più rosate sulla stessa immagine: **＋ Nuovo gruppo**.
+### In breve
 
-La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando inserisci i punti ed è sempre attiva mentre trascini un punto.
-La tabella dei punti mostra per ogni foro, e per il **centro gruppo** (la correzione da applicare), i click verticali e orizzontali per portarlo sul punto di mira.
-La **Result Card** PNG può contenere il gruppo attivo (default, con la tabella punti dal centro gruppo in giù) o tutti i gruppi.
-Statistiche: group size, raggio medio, H/V-spread, FOM, SD, CEP/R95/R99 (modello circolare normale). I **flyer** sono segnalati automaticamente (⚠) e si possono escludere dal calcolo.
-**Qualità dei dati**: controlli sulla calibrazione, avviso sul numero di colpi, **intervalli di confidenza** per σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione in click.
-**Confronto tra gruppi**: tabella affiancata, Δ rispetto al precedente, andamento nel tempo con media mobile; si possono importare altre sessioni come **storico**.
-**Forma del gruppo**: angolo dell'asse maggiore, rapporto d'aspetto ed **ellisse di dispersione** (50–99%) sull'immagine e nei grafici.
-Tre **grafici** del gruppo attivo: dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni. Il **pannello destro si ridimensiona** trascinando la linea di separazione.
-Per ogni gruppo si registrano i **dati di ricarica e le condizioni** (polvere, palla, innesco, meteo, vento, colpi sparati, note…), riportati nella Result Card.
-La **griglia angolare** MIL/MOA (`G`) si sovrappone all'immagine centrata sul punto di mira. **Tema scuro** con 🌙 (`T`).
-Il **calibro** si sceglie da un elenco dei calibri più diffusi oppure si scrive a mano il diametro della palla.
+1. **Carica la foto** (pulsante o trascinamento), scattata perpendicolare al bersaglio e con l'alto in alto.
+2. **Scala**: clicca due punti a distanza nota, il più lontani possibile, e inserisci il valore.
+3. **Mira**: clicca il punto mirato. **Foro**: clicca il centro di ogni foro (la lente 🔍 aiuta).
+4. Imposta distanza di tiro, calibro (elenco o valore libero) e valore del click del mirino.
+5. Leggi risultati, grafici e correzione; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (JSON).
 
-Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `Alt`+clic per un foro sovrapposto · rotella = zoom · trascina lo sfondo = pan · `Ctrl+Z` / `Ctrl+Y` undo/redo.
+Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
+
+### Funzioni
+
+- **Misure**: group size centro-centro e bordo-bordo, raggio medio, H-spread, V-spread, FOM, in mm, pollici, MOA e MIL.
+- **Statistiche** (modello normale circolare): SD delle distanze dal centro, SD radiale √(σx²+σy²), CEP, R95, R99, con **intervalli di confidenza** (90/95/99%).
+- **Forma del gruppo**: angolo dell'asse maggiore, rapporto d'aspetto, **ellisse di dispersione** (50–99%).
+- **Correzione**: click per asse dal centro gruppo al punto di mira, con intervallo di confidenza; click anche per ogni foro nella tabella punti.
+- **Flyer**: segnalati automaticamente (⚠, da 5 fori) ed escludibili dal calcolo.
+- **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
+- **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, meteo, temperatura, vento, colpi sparati, scaldacanna, note.
+- **Grafici**: dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni.
+- **Confronto tra gruppi**: tabella affiancata, differenza rispetto al precedente, andamento nel tempo con media mobile, storico da altre sessioni.
+- **Qualità dei dati**: incertezza della scala, inquadratura improbabile (errori di unità), risoluzione del foro, avviso sotto i 3 e i 5 colpi.
+- **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento, undo/redo, tema chiaro/scuro, pannello ridimensionabile.
+
+### Mouse e tastiera
+
+Trascina un punto per spostarlo · tasto destro su un punto = elimina · `Alt`+clic = foro sopra un punto esistente ·
+rotella = zoom · trascina lo sfondo o tasto centrale = pan.
+`1`–`4` strumenti · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
+`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `Ctrl+S` salva · `Ctrl+O` apri foto.
+
+### Limiti
+
+- La foto deve essere perpendicolare al bersaglio: non c'è correzione prospettica né rotazione dell'immagine.
+- Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
+- Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
+- Il riconoscimento dei flyer usa la distanza dal centro: in gruppi molto allungati può segnalare i fori alle estremità.
 
 ## Calcoli
 
@@ -72,38 +90,21 @@ La correzione indica dove spostare il punto d'impatto (gruppo basso → click SU
 
 > Nota: la formula `size(in) / dist(yd) × 100` riportata nella specifica originale restituisce i *pollici a 100 yarde* (IPHY/SMOA), non i MOA veri. Il programma calcola entrambi correttamente.
 
-## Struttura
+## Sviluppo
 
 ```
-src/index.html            frontend autocontenuto (HTML+CSS+JS, nessuna dipendenza)
-tests/calc.test.js        test del motore di calcolo  →  node tests/calc.test.js
-index.html                reindirizza a src/index.html (pagina iniziale di GitHub Pages)
-.nojekyll                 GitHub Pages pubblica i file senza elaborarli
-docs/context/             file di contesto per versione (per riprendere lo sviluppo)
-specifiche_target_analyzer.md   specifica di progetto
-CHANGELOG.md
-LICENSE
+src/index.html                  l'applicazione (HTML + CSS + JS in un unico file)
+tests/calc.test.js              test del motore di calcolo  →  node tests/calc.test.js
+index.html, .nojekyll           pagina iniziale di GitHub Pages (reindirizza a src/index.html)
+docs/context/                   file di contesto per versione (per riprendere lo sviluppo)
+specifiche_target_analyzer.md   specifica di progetto (revisione 2)
+CHANGELOG.md                    storia delle versioni
 ```
 
-## Roadmap
-
-- [x] Fase 1: layout, canvas, caricamento immagine
-- [x] Fase 2: zoom/pan, punti, drag, undo/redo
-- [x] Fase 3: motore di calcolo e risultati in tempo reale
-- [x] ~~Fase 4: wrapper Python~~ e ~~Fase 5: build `.exe`~~: eliminate (rev. 2 della specifica, v0.3.0)
-- [x] Collaudo su Firefox
-- [x] Click per singolo foro e per il centro gruppo nella tabella punti (v0.4.0)
-- [x] Combo calibri, tabella punti nella Result Card (v0.5.0)
-- [x] Data/ora nei nomi file, esportazione in cima al pannello, gruppo attivo nella tabella punti (v0.6.0)
-- [x] Pubblicazione su GitHub Pages (v0.6.1)
-- [x] Dati di ricarica e condizioni, griglia MIL/MOA, tema scuro (v0.7.0)
-- [x] Metriche FOM/CEP/R95/R99/SD/H-V spread, flyer ed esclusione, distanze e direzione nella tabella punti (v0.8.0)
-- [x] Grafici (dispersione, istogramma, orologio) e pannello ridimensionabile (v0.9.0)
-- [x] Forma del gruppo: asse maggiore, rapporto d'aspetto, ellisse di dispersione (v0.10.0)
-- [x] Confronto tra gruppi, Δ, andamento, media mobile, storico da altre sessioni (v0.11.0)
-- [x] Indicatori di qualità della calibrazione, avvisi sul numero di colpi, intervalli di confidenza (v0.12.0)
-- [ ] Collaudo su Safari
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (90 verifiche, inclusi
+confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
+Pubblicazione: ogni push su `main` aggiorna GitHub Pages.
 
 ## Licenza
 
-MIT, vedi [LICENSE](LICENSE).
+MIT © 2026 Rives, vedi [LICENSE](LICENSE).

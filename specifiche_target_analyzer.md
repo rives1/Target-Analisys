@@ -3,6 +3,7 @@
 > **Revisione 2 (2026-11-13)**: l'applicazione è un **singolo file HTML** che gira in qualsiasi browser moderno su qualsiasi sistema operativo.
 > Eliminati il requisito dell'eseguibile `.exe` per Windows, il wrapper Python/pywebview (ex Fase 4) e la build PyInstaller (ex Fase 5).
 > Corretta la formula MOA (sez. 5.6).
+> **Versione 1.0.0 rilasciata il 2026-11-13**: requisiti funzionali 1–13 implementati, criteri di accettazione verificati (sez. 8).
 
 ## 1. Panoramica del Progetto
 **Obiettivo**: Realizzare un'applicazione portatile e multipiattaforma, costituita da un unico file HTML, che replichi esattamente le funzionalità di [https://www.holdover.ca/target-analyzer/](https://www.holdover.ca/target-analyzer/).  
@@ -121,9 +122,9 @@ Se si utilizza un'AI per scrivere il codice, fornire queste istruzioni in sequen
 ## 8. Criteri di Collaudo e Accettazione
 Prima di considerare il progetto completato, verificare i seguenti punti:
 - [x] Il file `index.html` si apre con doppio clic e funziona in Edge/Chrome su Windows 11 e in almeno un altro browser/OS (es. Firefox, Safari su macOS), senza installazione. *(Chrome: test automatici; Firefox: collaudo utente, v0.3.0)*
-- [ ] Caricando un'immagine di test e marcando 3 punti a distanza nota, i calcoli di MOA e correzione in click corrispondono a quelli ottenuti manualmente o sul sito originale.
-- [ ] Le funzionalità di Salvataggio e Caricamento JSON funzionano correttamente, preservando tutti i punti e i parametri.
-- [ ] Monitorando il traffico di rete (es. con Resource Monitor o Wireshark), non viene effettuata alcuna chiamata in uscita durante l'utilizzo.
-- [ ] Il ridimensionamento della finestra non rompe il layout e il canvas si adatta correttamente.
+- [x] Caricando un'immagine di test e marcando 3 punti a distanza nota, i calcoli di MOA e correzione in click corrispondono a quelli ottenuti manualmente o sul sito originale. *(test automatici su valori di riferimento e bersaglio di prova a geometria nota; confronto con il sito originale non eseguito)*
+- [x] Le funzionalità di Salvataggio e Caricamento JSON funzionano correttamente, preservando tutti i punti e i parametri. *(test automatici di andata e ritorno, incluse sessioni di versioni precedenti)*
+- [x] Monitorando il traffico di rete (es. con Resource Monitor o Wireshark), non viene effettuata alcuna chiamata in uscita durante l'utilizzo. *(Content-Security-Policy `connect-src 'none'`; nessuna richiesta registrata nei test automatici del browser)*
+- [x] Il ridimensionamento della finestra non rompe il layout e il canvas si adatta correttamente. *(ResizeObserver su area di lavoro e grafici; pannello ridimensionabile con limiti)*
 
 ---
