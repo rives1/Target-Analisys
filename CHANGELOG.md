@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.12.0] - 2026-11-13
+### Aggiunto
+- **Qualità della calibrazione** (nel riquadro della scala, nel testo e nella Result Card):
+  scala anche in DPI equivalenti; incertezza di scala stimata (±1 px per punto → √2 / lunghezza del segmento),
+  avviso se supera l'1% (segmento < ~141 px); inquadratura reale della foto con avviso se fuori da 2 cm – 3 m
+  (tipico errore di valore o di unità mm/cm/in); diametro del foro in pixel con avviso se < 8 px.
+- **Numero minimo di colpi**: avviso per gruppo sotto i 3 colpi (statistiche non significative) e sotto i 5 (poco significative),
+  nei risultati, nel testo e nella Result Card.
+- **Intervalli di confidenza** (livello 90/95/99%, default 95%):
+  - σ del modello circolare normale con la distribuzione χ² (ν = 2(n−1)) e, da σ, CEP, R95, R99 e raggio medio atteso (σ·√(π/2));
+  - posizione del centro gruppo per asse con la t di Student (n−1 gradi di libertà) e, da questa, **intervallo dei click
+    di correzione** (es. «verticale 4–6 SU»), con avviso se su un asse l'intervallo comprende lo zero.
+  Gli intervalli sono asimmetrici e sono quindi scritti «min–max», non «±». Il group size (ES) non ha un intervallo esatto
+  e non viene stimato.
+- Funzioni `Calc`: `chi2cdfEven`, `chi2inv`, `ibeta`, `tcdf`, `tinv`, `confidence`, `correctionCI`.
+  16 nuovi test (90 in totale), tra cui quantili χ² e t confrontati con le tavole e una simulazione Monte Carlo
+  (4000 gruppi da 5 colpi) che verifica la copertura effettiva del 95% degli intervalli di σ e del centro gruppo.
+
 ## [0.11.0] - 2026-11-13
 ### Aggiunto
 - Sezione **Confronto tra gruppi** (da 2 gruppi con fori):

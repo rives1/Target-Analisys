@@ -148,4 +148,38 @@ const rd = Calc.analyze(imgDiag, null, { ...ctx, ellipseP: 0.95 });
 near(rd.shape.bearing, 45, 4, "analyze: asse ↗ in coordinate immagine ≈ 45°");
 near(rd.mm.ellA, rd.px.ellA / 10, 1e-12, "semiasse in mm");
 
+// ---------- v0.12.0: distribuzioni e intervalli di confidenza ----------
+// quantili di riferimento (tavole statistiche)
+near(Calc.chi2inv(0.025, 8), 2.1797307, 1e-6, "χ²(8) 2,5%");
+near(Calc.chi2inv(0.975, 8), 17.5345461, 1e-6, "χ²(8) 97,5%");
+near(Calc.chi2inv(0.95, 2), 5.9914645, 1e-6, "χ²(2) 95% = −2 ln 0,05");
+near(Calc.tinv(0.975, 4), 2.7764451, 1e-6, "t(4) 97,5%");
+near(Calc.tinv(0.975, 9), 2.2621572, 1e-6, "t(9) 97,5%");
+near(Calc.tinv(0.975, 1), 12.7062047, 1e-5, "t(1) 97,5%");
+near(Calc.tinv(0.025, 4), -2.7764451, 1e-6, "t simmetrica");
+// IC su dati noti: quadrato ±10 (n = 4, ν = 6)
+const ci4 = Calc.confidence(sq, 0.95), s2 = 400 / 3;
+near(ci4.sigma.lo, Math.sqrt(6 * s2 / Calc.chi2inv(0.975, 6)), 1e-9, "IC σ inferiore");
+near(ci4.sigma.hi, Math.sqrt(6 * s2 / Calc.chi2inv(0.025, 6)), 1e-9, "IC σ superiore");
+near(ci4.cep.hi / ci4.sigma.hi, 1.1774100225154747, 1e-12, "IC CEP = K·IC σ");
+near(ci4.center.hx, Calc.tinv(0.975, 3) * Math.sqrt(s2) / 2, 1e-9, "IC centro: t·s/√n");
+// copertura simulata (Monte Carlo, generatore con seme): l'IC 95% di σ deve contenere il σ vero ~95% delle volte
+let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+const gauss = () => { let u = 0; while (u === 0) u = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd()); };
+let hitS = 0, hitC = 0; const TR = 4000;
+for (let i = 0; i < TR; i++) {
+  const pts = Array.from({ length: 5 }, () => ({ x: gauss() * 3, y: gauss() * 3 }));
+  const c = Calc.confidence(pts, 0.95), m = Calc.centroid(pts);
+  if (c.sigma.lo <= 3 && 3 <= c.sigma.hi) hitS++;
+  if (Math.abs(m.x) <= c.center.hx) hitC++;
+}
+ok(Math.abs(hitS / TR - 0.95) < 0.015, `copertura IC σ ≈ 95% (simulata ${(hitS / TR * 100).toFixed(1)}%)`);
+ok(Math.abs(hitC / TR - 0.95) < 0.015, `copertura IC centro ≈ 95% (simulata ${(hitC / TR * 100).toFixed(1)}%)`);
+// intervallo dei click: gruppo 50 mm in basso ± 10 mm a 100 m, click 0,1 MIL → 4–6 SU
+const cci = Calc.correctionCI(0, -50, 3, 10, ctx);
+eq([cci.v.lo, cci.v.hi], [4, 6], "IC click verticali");
+eq([cci.h.lo, cci.h.hi], [0, 0], "IC click orizzontali (±3 mm = 0)");
+const cross0 = Calc.correctionCI(5, 0, 20, 0, ctx);
+ok(cross0.h.lo < 0 && cross0.h.hi > 0, "IC che comprende lo zero");
+
 console.log(`OK — ${passed} verifiche superate`);

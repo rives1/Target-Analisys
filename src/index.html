@@ -130,6 +130,10 @@
   table.cmp .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
   table.cmp .src { font-size: 11px; font-weight: 400; max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
   table.cmp button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
+  .qinfo { font-size: 11.5px; opacity: .85; margin-top: 2px; }
+  .qwarn { font-size: 12px; margin-top: 3px; font-weight: 600; }
+  .nwarn { font-size: 12px; color: var(--warn-ink); background: var(--warn-bg); padding: 4px 8px; border-radius: 6px; margin: 2px 0 6px; }
+  .civ { font-size: 11.5px; color: var(--muted); }
   .cmpsum { font-size: 12.5px; margin-bottom: 6px; padding: 6px 8px; border-radius: 6px; background: var(--hover); }
   .chart .ctitle { font-size: 13px; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
   .chart canvas { display: block; }
@@ -257,6 +261,10 @@
       <div class="row">
         <label for="ellipseOn" title="Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)"><input type="checkbox" id="ellipseOn" checked> Ellisse di dispersione al</label>
         <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
+      </div>
+      <div class="row">
+        <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
+        <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
       </div>
       <div class="row">
         <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
@@ -537,6 +545,75 @@ const Calc = (() => {
     return { deg, label: COMPASS[Math.round(deg / 22.5) % 16] };
   }
 
+  /* ---------- Distribuzioni per gli intervalli di confidenza ---------- */
+  /** Funzione di ripartizione χ² con ν PARI (forma chiusa): P = 1 − e^(−x/2)·Σ_{k<ν/2} (x/2)^k / k!. */
+  function chi2cdfEven(x, nu) {
+    if (x <= 0) return 0;
+    const y = x / 2; let term = 1, sum = 1;
+    for (let k = 1; k < nu / 2; k++) { term *= y / k; sum += term; }
+    return Math.max(0, Math.min(1, 1 - Math.exp(-y) * sum));
+  }
+  /** Quantile χ² (ν pari) per bisezione. */
+  function chi2inv(p, nu) {
+    let lo = 0, hi = nu + 10 * Math.sqrt(2 * nu) + 50;
+    while (chi2cdfEven(hi, nu) < p) hi *= 2;
+    for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; if (chi2cdfEven(m, nu) < p) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  /** Beta incompleta regolarizzata I_x(a,b) (frazione continua, Numerical Recipes). */
+  function ibeta(x, a, b) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    const cf = (a, b, x) => {
+      const FP = 1e-300; let qab = a + b, qap = a + 1, qam = a - 1, c = 1, d = 1 - qab * x / qap;
+      if (Math.abs(d) < FP) d = FP; d = 1 / d; let h = d;
+      for (let m = 1; m <= 300; m++) {
+        const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+        d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+        d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d;
+        const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-15) break;
+      }
+      return h;
+    };
+    const bt = Math.exp(lgamma(a + b) - lgamma(a) - lgamma(b) + a * Math.log(x) + b * Math.log(1 - x));
+    return x < (a + 1) / (a + b + 2) ? bt * cf(a, b, x) / a : 1 - bt * cf(b, a, 1 - x) / b;
+  }
+  /** Funzione di ripartizione e quantile della t di Student con ν gradi di libertà. */
+  function tcdf(t, nu) { const p = 0.5 * ibeta(nu / (nu + t * t), nu / 2, 0.5); return t > 0 ? 1 - p : p; }
+  function tinv(p, nu) {
+    if (p === 0.5) return 0;
+    if (p < 0.5) return -tinv(1 - p, nu);
+    let lo = 0, hi = 10; while (tcdf(hi, nu) < p) hi *= 2;
+    for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; if (tcdf(m, nu) < p) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  /**
+   * Intervalli di confidenza (livello es. 0,95) per un gruppo di n ≥ 2 fori.
+   * σ (modello circolare normale): ν·σ̂²/σ² ~ χ²_ν con σ̂² = (sx²+sy²)/2 e ν = 2(n−1) → [σ̂·√(ν/χ²_{1−α/2}), σ̂·√(ν/χ²_{α/2})].
+   * Da σ: CEP, R95, R99 (×K) e raggio medio atteso (×√(π/2)).
+   * Centro gruppo, per asse: semiampiezza t_{n−1, 1−α/2}·s/√n.
+   */
+  function confidence(pts, level = 0.95) {
+    const n = pts.length; if (n < 2) return null;
+    const d = dispersion(pts), nu = 2 * (n - 1), a = (1 - level) / 2, s2 = (d.sx * d.sx + d.sy * d.sy) / 2;
+    const sig = { lo: Math.sqrt(nu * s2 / chi2inv(1 - a, nu)), hi: Math.sqrt(nu * s2 / chi2inv(a, nu)) };
+    const sc = k => ({ lo: sig.lo * k, hi: sig.hi * k });
+    const t = tinv(1 - a, n - 1);
+    return { level, n, sigma: sig, cep: sc(K_CEP), r95: sc(K_R95), r99: sc(K_R99), mrExp: sc(Math.sqrt(Math.PI / 2)),
+      center: { hx: t * d.sx / Math.sqrt(n), hy: t * d.sy / Math.sqrt(n), t } };
+  }
+  /**
+   * Intervallo dei click di correzione per asse, dato lo scostamento del centro (mm, dx + = destra, dy + = alto)
+   * e le semiampiezze del suo intervallo di confidenza. Click CON SEGNO: v > 0 = SU, h > 0 = DESTRA.
+   */
+  function correctionCI(dx, dy, hx, hy, ctx) {
+    const D = ctx.distMm; if (!(D > 0) || !(ctx.clickValue > 0)) return null;
+    const clk = o => Math.round(Math.sign(o) * fromRad(angleOfOffset(Math.abs(o), D), ctx.clickUnit) / ctx.clickValue);
+    // la correzione ha segno opposto allo scostamento
+    const range = (o, h) => { const a = -clk(o + h) || 0, b = -clk(o - h) || 0; return { lo: Math.min(a, b), hi: Math.max(a, b) }; };   // || 0 elimina −0
+    return { v: range(dy, hy), h: range(dx, hx) };
+  }
+
   /** Ora dell'orologio (1–12) per una direzione bussola in gradi (0° = ore 12, 90° = ore 3). */
   function clockHour(deg) { const h = Math.round((((deg % 360) + 360) % 360) / 30) % 12; return h === 0 ? 12 : h; }
   /**
@@ -595,6 +672,8 @@ const Calc = (() => {
     // forma: ellisse calcolata con Y verso l'alto (l'immagine ha Y verso il basso)
     const el = ellipse(shots.map(q => ({ x: q.x, y: -q.y })), ctx.ellipseP || 0.95);
     if (el) { r.shape = { bearing: el.bearing, ratio: el.ratio, k: el.k, p: el.p }; r.px.ellA = el.a; r.px.ellB = el.b; }
+    const ci = confidence(shots, ctx.ciLevel || 0.95);
+    if (ci) r.ciPx = ci;
     if (!k) return r;
 
     const mm = {};
@@ -602,6 +681,12 @@ const Calc = (() => {
     mm.esEdge = n >= 2 ? mm.es + (ctx.caliberMm || 0) : null;   // bordo-bordo esterno
     r.mm = mm;
 
+    if (r.ciPx) {   // intervalli di confidenza in mm (stessa struttura, lunghezze × k)
+      const m = o => ({ lo: o.lo * k, hi: o.hi * k });
+      const c = r.ciPx;
+      r.ci = { level: c.level, n: c.n, sigma: m(c.sigma), cep: m(c.cep), r95: m(c.r95), r99: m(c.r99), mrExp: m(c.mrExp),
+        center: { hx: c.center.hx * k, hy: c.center.hy * k, t: c.center.t } };
+    }
     const D = ctx.distMm;
     if (D > 0) {
       const ang = v => ({ MOA: fromRad(angleOfSize(v, D), "MOA"), MIL: fromRad(angleOfSize(v, D), "MIL"), IPHY: fromRad(angleOfSize(v, D), "IPHY") });
@@ -616,12 +701,14 @@ const Calc = (() => {
       r.offset = { dx, dy, d: Math.hypot(dx, dy) };
       const corr = correction(dx, dy, ctx);
       if (corr) r.correction = corr;
+      if (corr && r.ci) r.correctionCI = correctionCI(dx, dy, r.ci.center.hx, r.ci.center.hy, ctx);
     }
     return r;
   }
 
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
-    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords };
+    lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
+    chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -631,7 +718,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.11.0";
+const APP_VERSION = "0.12.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -767,12 +854,13 @@ function params() {
     flyerK: num("flyerK") || 2,
     cmpMetric: $("cmpMetric").value, cmpUnit: $("cmpUnit").value, cmpN: num("cmpN") || 3,
     ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95,
+    ciLevel: parseFloat($("ciLevel").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
@@ -788,6 +876,7 @@ function calcContext() {
     caliberMm: p.caliber * Calc.LEN[p.caliberUnit],
     clickValue: p.clickVal, clickUnit: p.clickUnit,
     ellipseP: p.ellipseP / 100,
+    ciLevel: p.ciLevel / 100,
   };
 }
 
@@ -1425,6 +1514,46 @@ const stamp = (d = new Date()) => {   // AAAA-MM-GG--hh-mm in ora locale (es. 20
 /* --------------------------- FORMATTAZIONE --------------------------- */
 function fmt(v, d = 2) { return v == null || !isFinite(v) ? "–" : v.toLocaleString("it-IT", { minimumFractionDigits: d, maximumFractionDigits: d }); }
 const fmtLen = mm => `${fmt(mm, 1)} mm · ${fmt(mm / 25.4, 3)}"`;
+/**
+ * Indicatori di qualità della calibrazione (euristiche dichiarate):
+ * - incertezza di scala: con ±1 px di errore per ciascun punto cliccato l'errore relativo è ≈ √2 / lunghezza del segmento;
+ * - inquadratura: larghezza e altezza reali della foto; fuori da 2 cm – 3 m è probabile un errore di valore o di unità;
+ * - risoluzione: diametro del foro in pixel; sotto 8 px il centro del foro è difficile da individuare.
+ */
+function calibQuality(cc) {
+  const dPx = Calc.dist(state.calib.p1, state.calib.p2), relErr = Math.SQRT2 / dPx;
+  const fovW = state.image.w / cc.pxPerMm, fovH = state.image.h / cc.pxPerMm, holePx = cc.caliberMm * cc.pxPerMm;
+  const warn = [];
+  if (relErr > 0.01) warn.push(`Segmento di scala corto (${fmt(dPx, 0)} px): errore di scala fino a ±${fmt(relErr * 100, 1)}%. Usa due punti più lontani (almeno 150 px).`);
+  if (Math.max(fovW, fovH) < 20 || Math.max(fovW, fovH) > 3000)
+    warn.push(`La foto risulterebbe larga ${fmtSpan(fovW)}: valore insolito per un bersaglio, controlla la distanza nota e la sua unità (mm / cm / in).`);
+  if (cc.caliberMm > 0 && holePx < 8) warn.push(`Risoluzione bassa: un foro misura solo ${fmt(holePx, 1)} px, il centro è difficile da individuare con precisione.`);
+  return { dPx, relErr, fovW, fovH, holePx, warn };
+}
+const fmtSpan = mm => mm >= 1000 ? `${fmt(mm / 1000, 2)} m` : mm >= 100 ? `${fmt(mm / 10, 0)} cm` : `${fmt(mm, 0)} mm`;
+/** Avviso sul numero di colpi del gruppo (null se ≥ 5). */
+function shotsWarning(n) {
+  if (n < 3) return "Meno di 3 colpi: le statistiche non sono significative.";
+  if (n < 5) return `Solo ${n} colpi: statistiche poco significative (consigliati almeno 5, meglio 10).`;
+  return null;
+}
+/** Testo di un intervallo di click con segno: «3–7 SU», «da 1 GIÙ a 2 SU», «0». */
+function clickRangeText(r, pos, neg) {
+  const one = v => v === 0 ? "0" : v > 0 ? `${v} ${pos}` : `${-v} ${neg}`;
+  if (r.lo === r.hi) return one(r.lo);
+  if (r.lo >= 0) return `${r.lo}–${r.hi} ${pos}`;
+  if (r.hi <= 0) return `${-r.hi}–${-r.lo} ${neg}`;
+  return `da ${one(r.lo)} a ${one(r.hi)}`;
+}
+/** Righe di testo con gli intervalli di confidenza della correzione. */
+function correctionCIText(r) {
+  if (!r.correctionCI) return null;
+  const c = r.correctionCI, lv = fmt(r.ci.level * 100, 0);
+  const v = clickRangeText(c.v, "SU", "GIÙ"), h = clickRangeText(c.h, "DX", "SX");
+  const unsure = (c.v.lo < 0 && c.v.hi > 0) || (c.h.lo < 0 && c.h.hi > 0);
+  return { text: `IC ${lv}%: verticale ${v} · orizzontale ${h}`, unsure };
+}
+const fmtCI = (o, d = 1) => `${fmt(o.lo, d)}–${fmt(o.hi, d)} mm`;
 /** Testo dell'orientamento: «35° · ore 1–7 · diagonale ↗». */
 function axisText(shape) {
   let h1 = Calc.clockHour(shape.bearing); if (h1 === 6) h1 = 12;
@@ -1576,7 +1705,14 @@ function refreshResults() {
   const cc = calcContext();
   // stato calibrazione
   const cs = $("calStatus");
-  if (cc.pxPerMm) { cs.className = "status ok"; cs.textContent = `Calibrato: ${fmt(cc.pxPerMm, 2)} px/mm (${fmt(1 / cc.pxPerMm, 3)} mm/px)`; }
+  if (cc.pxPerMm) {
+    const q = calibQuality(cc);
+    cs.className = "status " + (q.warn.length ? "warn" : "ok");
+    cs.innerHTML = `Calibrato: ${fmt(cc.pxPerMm, 2)} px/mm (${fmt(1 / cc.pxPerMm, 3)} mm/px · ≈ ${fmt(cc.pxPerMm * 25.4, 0)} DPI)` +
+      `<div class="qinfo">Segmento di scala ${fmt(q.dPx, 0)} px → incertezza di scala ≈ ±${fmt(q.relErr * 100, 1)}% · inquadratura ${fmtSpan(q.fovW)} × ${fmtSpan(q.fovH)}` +
+      `${cc.caliberMm > 0 ? ` · foro ⌀ ${fmt(q.holePx, 0)} px` : ""}</div>` +
+      q.warn.map(w => `<div class="qwarn">⚠ ${w}</div>`).join("");
+  }
   else if (state.calib.p1 && !state.calib.p2) { cs.className = "status warn"; cs.textContent = "Clicca il secondo punto di calibrazione."; }
   else { cs.className = "status warn"; cs.textContent = "Non calibrato: seleziona «Scala» e clicca due punti a distanza nota."; }
 
@@ -1586,24 +1722,26 @@ function refreshResults() {
     const box = document.createElement("div"); box.className = "res";
     const nEx = g.shots.length - r.n;
     let html = `<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi${nEx ? ` (${esclusi(nEx)})` : ""}</span></h3>`;
+    const nw = shotsWarning(r.n);
+    if (nw && r.n > 0) html += `<div class="nwarn">⚠ ${nw}</div>`;
     if (r.n < 2) html += `<div class="muted">Servono almeno 2 fori.</div>`;
     else if (!r.mm) html += `<div class="muted">Calibra la scala per ottenere le misure. (ES = ${fmt(r.px.es, 0)} px)</div>`;
     else {
       html += `<table>
         <tr><td>Group size (c-c)</td><td class="v"><b>${fmtLen(r.mm.es)}</b><br>${fmtAng(r.ang?.es)}</td></tr>
         <tr><td>Bordo-bordo esterno</td><td class="v">${fmtLen(r.mm.esEdge)}</td></tr>
-        <tr><td>Raggio medio</td><td class="v">${fmtLen(r.mm.mr)}<br>${fmtAng(r.ang?.mr)}</td></tr>
+        <tr><td>Raggio medio</td><td class="v">${fmtLen(r.mm.mr)}<br>${fmtAng(r.ang?.mr)}${r.ci ? `<br><span class="civ" title="Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))">IC ${fmt(r.ci.level * 100, 0)}% atteso: ${fmtCI(r.ci.mrExp)}</span>` : ""}</td></tr>
         <tr><td title="Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)">H-spread (orizz.)</td><td class="v">${fmtLA(r.mm.w, r.ang?.w)}</td></tr>
         <tr><td title="Dispersione verticale: dal colpo più basso al più alto (c-c)">V-spread (vert.)</td><td class="v">${fmtLA(r.mm.h, r.ang?.h)}</td></tr>
         <tr><td title="Figure of Merit: media tra H-spread e V-spread">FOM</td><td class="v">${fmtLA(r.mm.fom, r.ang?.fom)}</td></tr>
         <tr><td colspan="2" class="sub2">Statistiche${r.n < 5 ? " · ⚠ poco affidabili con meno di 5 colpi" : ""}</td></tr>
         <tr><td title="Deviazione standard delle distanze dei fori dal centro gruppo">SD distanze dal centro</td><td class="v">${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}</td></tr>
         <tr><td title="Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale">SD radiale √(σx²+σy²)</td><td class="v">${fmtLA(r.mm.rsd, r.ang?.rsd)}</td></tr>
-        <tr><td title="Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)">CEP (50%)</td><td class="v">${fmtLA(r.mm.cep, r.ang?.cep)}</td></tr>
-        <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}</td></tr>
-        <tr><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}</td></tr>
+        <tr><td title="Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)">CEP (50%)</td><td class="v">${fmtLA(r.mm.cep, r.ang?.cep)}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.cep)}</span>` : ""}</td></tr>
+        <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.r95)}</span>` : ""}</td></tr>
+        <tr><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.r99)}</span>` : ""}</td></tr>
       </table>
-      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi).</div>
+      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi${r.ci ? `; IC ${fmt(r.ci.level * 100, 0)}% di σ: ${fmtCI(r.ci.sigma, 2)}` : ""}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.</div>
       ${shapeRows(r)}`;
     }
     if (r.mm && r.n >= 1) {
@@ -1612,10 +1750,12 @@ function refreshResults() {
         const o = r.offset;
         const h = o.dx === 0 ? "" : `${fmt(Math.abs(o.dx), 1)} mm a ${o.dx > 0 ? "destra" : "sinistra"}`;
         const v = o.dy === 0 ? "" : `${fmt(Math.abs(o.dy), 1)} mm in ${o.dy > 0 ? "alto" : "basso"}`;
-        html += `<table style="margin-top:4px"><tr><td>Scostamento centro gruppo</td><td class="v">${[v, h].filter(Boolean).join("<br>") || "0"}</td></tr></table>`;
+        html += `<table style="margin-top:4px"><tr><td>Scostamento centro gruppo</td><td class="v">${[v, h].filter(Boolean).join("<br>") || "0"}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ±${fmt(r.ci.center.hy, 1)} mm vert. · ±${fmt(r.ci.center.hx, 1)} mm orizz.</span>` : ""}</td></tr></table>`;
         if (r.correction) {
           const c = r.correction;
+          const cic = correctionCIText(r);
           html += `<div class="corr">↻ ${correctionText(c)}</div>
+            ${cic ? `<div class="civ" style="margin-top:3px" title="Intervallo di confidenza della posizione del centro gruppo (t di Student per asse) tradotto in click">${cic.text}${cic.unsure ? " · su un asse l'intervallo comprende lo zero: la correzione su quell'asse non è certa" : ""}</div>` : ""}
             <div class="muted" style="font-size:11.5px;margin-top:3px">Esatto: ${fmt(c.vAng, 2)} ${c.unit} ${c.vDir} / ${fmt(c.hAng, 2)} ${c.unit} ${c.hDir} · ${fmt(c.clickValue, 3)} ${c.unit}/click</div>`;
         } else html += `<div class="muted">Inserisci distanza di tiro e valore click.</div>`;
       }
@@ -1675,6 +1815,7 @@ function resultText() {
     `Immagine: ${state.image ? state.image.name : "-"}`,
     `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${caliberLabel(p)} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
   if (!cc.pxPerMm) L.push("ATTENZIONE: scala non calibrata");
+  else for (const w of calibQuality(cc).warn) L.push("ATTENZIONE: " + w);
   for (const g of state.groups) {
     const r = Calc.analyze(inc(g), g.poa, cc);
     L.push("", `[${g.name}] ${r.n} colpi${g.shots.length > r.n ? ` (${esclusi(g.shots.length - r.n)} dal calcolo)` : ""}`);
@@ -1689,6 +1830,7 @@ function resultText() {
       L.push(`  SD dist.centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`);
       L.push(`  SD radiale:     ${fmtLA(r.mm.rsd, r.ang?.rsd)}  [√(σx²+σy²)]`);
       L.push(`  CEP / R95 / R99: ${fmt(r.mm.cep, 1)} / ${fmt(r.mm.r95, 1)} / ${fmt(r.mm.r99, 1)} mm  [previsti, modello circolare normale]`);
+      if (r.ci) L.push(`  IC ${fmt(r.ci.level * 100, 0)}%:         CEP ${fmtCI(r.ci.cep)} · R95 ${fmtCI(r.ci.r95)} · R99 ${fmtCI(r.ci.r99)} · raggio medio atteso ${fmtCI(r.ci.mrExp)}`);
       if (r.shape) {
         L.push(`  Asse maggiore:  ${axisText(r.shape)}  [gradi dalla verticale, senso orario]`);
         L.push(`  Rapp. aspetto:  ${fmt(r.shape.ratio, 2)} : 1`);
@@ -1697,6 +1839,8 @@ function resultText() {
     }
     if (r.offset) L.push(`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? "destra" : "sinistra"}`);
     if (r.correction) L.push(`  Correzione:     ${correctionText(r.correction)}`);
+    { const cic = correctionCIText(r); if (cic) L.push(`                  ${cic.text}${cic.unsure ? " (asse non significativo)" : ""}`); }
+    { const nw = shotsWarning(r.n); if (nw && r.n > 0) L.push(`  ⚠ ${nw}`); }
   }
   const rows = compareRows();
   if (rows.length >= 2) {
@@ -1759,6 +1903,8 @@ async function exportCard(scope = "active") {
   for (const g of groups) {
     const r = Calc.analyze(inc(g), g.poa, cc);
     if (groups.length === 1) {
+      { const nw = shotsWarning(r.n); if (nw) add("⚠ " + nw, 13, "#9a3412", 600, 12); }
+      if (cc.pxPerMm) for (const w of calibQuality(cc).warn) wrapText("⚠ " + w, `600 13px "Segoe UI", system-ui, sans-serif`, 540).forEach((t, i, a) => add(t, 13, "#9a3412", 600, i === a.length - 1 ? 12 : 2));
       if (loadLines(g).length) {
         add("RICARICA E CONDIZIONI", 12, "#6b7280", 700, 5);
         addLoad(g, 13);
@@ -1778,7 +1924,8 @@ async function exportCard(scope = "active") {
         add(`STATISTICHE${r.n < 5 ? " (poco affidabili con meno di 5 colpi)" : ""}`, 12, "#6b7280", 700, 4);
         add(`SD distanze dal centro: ${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}`, 13, "#374151", 400, 3);
         add(`SD radiale √(σx²+σy²): ${fmtLA(r.mm.rsd, r.ang?.rsd)}`, 13, "#374151", 400, 3);
-        add(`CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} · R99 ${fmt(r.mm.r99, 1)} mm (previsti)`, 13, "#374151", 400, r.shape ? 12 : 18);
+        add(`CEP ${fmt(r.mm.cep, 1)} · R95 ${fmt(r.mm.r95, 1)} · R99 ${fmt(r.mm.r99, 1)} mm (previsti)`, 13, "#374151", 400, r.ci ? 3 : r.shape ? 12 : 18);
+        if (r.ci) add(`IC ${fmt(r.ci.level * 100, 0)}%: CEP ${fmtCI(r.ci.cep)} · R95 ${fmtCI(r.ci.r95)} · R99 ${fmtCI(r.ci.r99)}`, 12, "#6b7280", 400, r.shape ? 12 : 18);
         if (r.shape) {
           add("FORMA DEL GRUPPO", 12, "#6b7280", 700, 4);
           add(`Asse maggiore: ${axisText(r.shape)}`, 13, "#374151", 400, 3);
@@ -1788,6 +1935,8 @@ async function exportCard(scope = "active") {
       if (r.correction) {
         add("CORREZIONE", 12, "#6b7280", 700, 4);
         add(correctionText(r.correction), 18, "#1d4ed8", 700, 4);
+        const cic = correctionCIText(r);
+        if (cic) add(cic.text + (cic.unsure ? " (un asse non è significativo)" : ""), 13, "#374151", 400, 4);
         add(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280", 400, 18);
       }
       // Tabella punti (dal centro gruppo in giù): solo con scala e punto di mira.

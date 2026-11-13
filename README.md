@@ -3,7 +3,7 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.11.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
+> Stato: **v0.12.0** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
@@ -29,6 +29,7 @@ La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando 
 La tabella dei punti mostra per ogni foro, e per il **centro gruppo** (la correzione da applicare), i click verticali e orizzontali per portarlo sul punto di mira.
 La **Result Card** PNG può contenere il gruppo attivo (default, con la tabella punti dal centro gruppo in giù) o tutti i gruppi.
 Statistiche: group size, raggio medio, H/V-spread, FOM, SD, CEP/R95/R99 (modello circolare normale). I **flyer** sono segnalati automaticamente (⚠) e si possono escludere dal calcolo.
+**Qualità dei dati**: controlli sulla calibrazione, avviso sul numero di colpi, **intervalli di confidenza** per σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione in click.
 **Confronto tra gruppi**: tabella affiancata, Δ rispetto al precedente, andamento nel tempo con media mobile; si possono importare altre sessioni come **storico**.
 **Forma del gruppo**: angolo dell'asse maggiore, rapporto d'aspetto ed **ellisse di dispersione** (50–99%) sull'immagine e nei grafici.
 Tre **grafici** del gruppo attivo: dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni. Il **pannello destro si ridimensiona** trascinando la linea di separazione.
@@ -58,6 +59,9 @@ Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `A
 | CEP / R95 / R99 | σ̂·√(−2 ln(1−p)) con σ̂ = √((σx²+σy²)/2) / c(ν=2(n−1)): 1,1774 / 2,4477 / 3,0349 σ̂ |
 | Flyer | leave-one-out: (d − media) / SD delle distanze degli altri fori dal loro centro > k (default 2), n ≥ 5 |
 | Direzione | atan2(dx, dy) in gradi, 0° = alto, senso orario, 16 settori (N, NNE, … NNO) |
+| IC di σ | [σ̂·√(ν/χ²_{ν,1−α/2}), σ̂·√(ν/χ²_{ν,α/2})], σ̂² = (σx²+σy²)/2, ν = 2(n−1); CEP/R95/R99 e raggio medio atteso (σ·√(π/2)) in proporzione |
+| IC del centro gruppo | per asse ± t_{n−1,1−α/2}·s/√n, tradotto in click di correzione |
+| Incertezza di scala | √2 / lunghezza del segmento di calibrazione in px (±1 px per punto) |
 | Ore dell'orologio | round(direzione / 30°), 0 → 12 |
 | Asse maggiore | autovettore maggiore della matrice di covarianza campionaria dei fori; angolo dalla verticale, senso orario, 0–180° |
 | Rapporto d'aspetto | √(λ1/λ2) = asse maggiore / asse minore dell'ellisse |
@@ -97,6 +101,7 @@ LICENSE
 - [x] Grafici (dispersione, istogramma, orologio) e pannello ridimensionabile (v0.9.0)
 - [x] Forma del gruppo: asse maggiore, rapporto d'aspetto, ellisse di dispersione (v0.10.0)
 - [x] Confronto tra gruppi, Δ, andamento, media mobile, storico da altre sessioni (v0.11.0)
+- [x] Indicatori di qualità della calibrazione, avvisi sul numero di colpi, intervalli di confidenza (v0.12.0)
 - [ ] Collaudo su Safari
 
 ## Licenza
