@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] - 2026-11-13
+### Aggiunto
+- Tabella «Punti del gruppo attivo»: colonne **Click ↕** e **Click ↔** con i click necessari a portare ogni foro sul punto
+  di mira (in base a distanza di tiro e valore click; il valore angolare esatto è nel tooltip).
+- Riga evidenziata **⊕ Centro gruppo** con coordinate e click del centroide: è la correzione da applicare alle torrette
+  (i valori del singolo foro includono la dispersione casuale; la nota sotto la tabella lo ricorda).
+- `Calc.correction(dx, dy, ctx)`: calcolo della correzione riutilizzabile per qualsiasi punto; `analyze` la usa per il centroide.
+- 4 nuovi test (33 in totale).
+### Collaudo
+- Firefox: verificato dall'utente con la v0.3.0.
+
 ## [0.3.0] - 2026-11-13
 ### Cambiato
 - **Revisione 2 della specifica**: l'applicazione è il solo file `src/index.html`, multipiattaforma.

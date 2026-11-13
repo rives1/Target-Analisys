@@ -88,6 +88,7 @@
   table.pts th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 3px 4px; }
   table.pts td { border-bottom: 1px solid #f0f2f5; padding: 3px 4px; }
   table.pts tr.sel td { background: #fff7d6; }
+  table.pts tr.centroid td { background: #eff5ff; font-weight: 600; color: #1d4ed8; }
   table.pts td.x { text-align: right; }
   table.pts button { border: 0; background: transparent; cursor: pointer; color: var(--muted); }
   table.pts button:hover { color: var(--danger); }
@@ -286,6 +287,27 @@ const Calc = (() => {
     }
   }
 
+  /**
+   * Correzione in click per portare un impatto sul punto di mira.
+   * @param dx  scostamento orizzontale in mm (+ = impatto a DESTRA della mira)
+   * @param dy  scostamento verticale in mm (+ = impatto in ALTO rispetto alla mira)
+   * La correzione va nella direzione opposta allo scostamento. null se mancano distanza o valore click.
+   */
+  function correction(dx, dy, ctx) {
+    const D = ctx.distMm;
+    if (!(D > 0) || !(ctx.clickValue > 0)) return null;
+    const u = ctx.clickUnit;
+    const ax = fromRad(angleOfOffset(Math.abs(dx), D), u);
+    const ay = fromRad(angleOfOffset(Math.abs(dy), D), u);
+    return {
+      unit: u, clickValue: ctx.clickValue,
+      hAng: ax, vAng: ay,
+      hClicks: Math.round(ax / ctx.clickValue), vClicks: Math.round(ay / ctx.clickValue),
+      hDir: dx > 0 ? "SINISTRA" : "DESTRA",
+      vDir: dy > 0 ? "GIÙ" : "SU",
+    };
+  }
+
   /** Fattore di scala S = pixel per mm. */
   function scale(p1, p2, realValue, realUnit) {
     if (!p1 || !p2 || !(realValue > 0)) return null;
@@ -328,24 +350,13 @@ const Calc = (() => {
       const dx = (c.x - poa.x) * k;          // + = gruppo a DESTRA del punto di mira
       const dy = (poa.y - c.y) * k;          // + = gruppo in ALTO rispetto al punto di mira
       r.offset = { dx, dy, d: Math.hypot(dx, dy) };
-      if (D > 0 && ctx.clickValue > 0) {
-        const u = ctx.clickUnit;
-        const ax = fromRad(angleOfOffset(Math.abs(dx), D), u);
-        const ay = fromRad(angleOfOffset(Math.abs(dy), D), u);
-        // La correzione va nella direzione opposta allo scostamento del gruppo.
-        r.correction = {
-          unit: u, clickValue: ctx.clickValue,
-          hAng: ax, vAng: ay,
-          hClicks: Math.round(ax / ctx.clickValue), vClicks: Math.round(ay / ctx.clickValue),
-          hDir: dx > 0 ? "SINISTRA" : "DESTRA",
-          vDir: dy > 0 ? "GIÙ" : "SU",
-        };
-      }
+      const corr = correction(dx, dy, ctx);
+      if (corr) r.correction = corr;
     }
     return r;
   }
 
-  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, scale, analyze };
+  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -355,7 +366,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.3.0";
+const APP_VERSION = "0.4.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -1005,18 +1016,37 @@ function refreshLists() {
     return [fmt(p.x, 0), fmt(p.y, 0)];
   };
   const unitLbl = k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine";
+  // Click per portare il punto sul punto di mira (solo con mira, scala, distanza e valore click).
+  const SHORT = { SU: "SU", "GIÙ": "GIÙ", DESTRA: "DX", SINISTRA: "SX" };
+  const clicks = p => {
+    if (!k || !ref) return ["", ""];
+    const c = Calc.correction((p.x - ref.x) * k, (ref.y - p.y) * k, cc);
+    if (!c) return ["–", "–"];
+    const one = (n, dir, ang) => n === 0 ? `<span class="muted">0</span>` : `<span title="${fmt(ang, 2)} ${c.unit}">${n} ${SHORT[dir]}</span>`;
+    return [one(c.vClicks, c.vDir, c.vAng), one(c.hClicks, c.hDir, c.hAng)];
+  };
   let rows = "";
   const selKey = JSON.stringify(state.selected);
-  const row = (ref2, tipo, p) => {
+  const row = (ref2, tipo, p, withClicks = false) => {
     const [x, y] = coord(p);
-    rows += `<tr class="${JSON.stringify(ref2) === selKey ? "sel" : ""}" data-ref='${JSON.stringify(ref2)}'><td>${tipo}</td><td class="x">${x}</td><td class="x">${y}</td><td><button data-del='${JSON.stringify(ref2)}' title="Elimina">✕</button></td></tr>`;
+    const [cv, ch] = withClicks ? clicks(p) : ["", ""];
+    rows += `<tr class="${JSON.stringify(ref2) === selKey ? "sel" : ""}" data-ref='${JSON.stringify(ref2)}'><td>${tipo}</td><td class="x">${x}</td><td class="x">${y}</td><td class="x">${cv}</td><td class="x">${ch}</td><td><button data-del='${JSON.stringify(ref2)}' title="Elimina">✕</button></td></tr>`;
   };
   if (state.calib.p1) row({ kind: "calib", which: "p1" }, "Scala A", state.calib.p1);
   if (state.calib.p2) row({ kind: "calib", which: "p2" }, "Scala B", state.calib.p2);
   if (g.poa) row({ kind: "poa", gid: g.id }, "Mira", g.poa);
-  g.shots.forEach((s, i) => row({ kind: "shot", gid: g.id, id: s.id }, `Foro ${i + 1}`, s));
-  pts.innerHTML = `<table class="pts"><thead><tr><th>Tipo</th><th class="x">X</th><th class="x">Y</th><th></th></tr></thead><tbody>${rows}</tbody></table>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">Coordinate in ${unitLbl}.</div>`;
+  // Centro del gruppo: è la correzione da applicare (riga evidenziata, non selezionabile né eliminabile).
+  if (g.shots.length) {
+    const c = Calc.centroid(g.shots);
+    const [x, y] = coord(c), [cv, ch] = clicks(c);
+    rows += `<tr class="centroid" title="Correzione da applicare alle torrette"><td>⊕ Centro gruppo</td><td class="x">${x}</td><td class="x">${y}</td><td class="x">${cv}</td><td class="x">${ch}</td><td></td></tr>`;
+  }
+  g.shots.forEach((s, i) => row({ kind: "shot", gid: g.id, id: s.id }, `Foro ${i + 1}`, s, true));
+  const showClicks = k && ref;
+  pts.innerHTML = `<table class="pts"><thead><tr><th>Tipo</th><th class="x">X</th><th class="x">Y</th><th class="x" title="Click verticali per portare il punto sulla mira">Click ↕</th><th class="x" title="Click orizzontali per portare il punto sulla mira">Click ↔</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Coordinate in ${unitLbl}.${showClicks
+      ? ` Click (${fmt(cc.clickValue, 3)} ${cc.clickUnit}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>; i valori del singolo foro includono la dispersione casuale.`
+      : " Per i click servono punto di mira e scala calibrata."}</div>`;
   pts.querySelectorAll("button[data-del]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); deleteRef(JSON.parse(b.dataset.del)); }));
   pts.querySelectorAll("tr[data-ref]").forEach(tr => tr.addEventListener("click", () => { state.selected = JSON.parse(tr.dataset.ref); refreshLists(); requestDraw(); }));
 }

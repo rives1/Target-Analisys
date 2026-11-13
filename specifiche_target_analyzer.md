@@ -88,7 +88,7 @@ L'interfaccia deve essere suddivisa in due pannelli principali:
 - **Pannello Destro (Controlli e Risultati - 35% larghezza)**:
   - **Sezione Parametri**: Input per "Distanza di calibrazione nota", "Distanza di tiro", "Valore click mirino (MOA/MIL)".
   - **Sezione Risultati**: Visualizzazione in tempo reale di: Dimensione Gruppo, Raggio Medio, MOA/MIL, Correzione suggerita (es. "3 click SU, 1 click DESTRA").
-  - **Sezione Gestione Dati**: Tabella elenco punti marcati (con coordinate X/Y e tipo), pulsante `[Salva Sessione JSON]`, `[Carica Sessione JSON]`, `[Esporta Result Card]`.
+  - **Sezione Gestione Dati**: Tabella elenco punti marcati (con coordinate X/Y, tipo e **click ↕/↔ per portare il punto sul punto di mira**, più una riga evidenziata per il **centro gruppo**, che è la correzione da applicare), pulsante `[Salva Sessione JSON]`, `[Carica Sessione JSON]`, `[Esporta Result Card]`.
 
 ---
 
@@ -107,7 +107,7 @@ Se si utilizza un'AI per scrivere il codice, fornire queste istruzioni in sequen
 
 ## 8. Criteri di Collaudo e Accettazione
 Prima di considerare il progetto completato, verificare i seguenti punti:
-- [ ] Il file `index.html` si apre con doppio clic e funziona in Edge/Chrome su Windows 11 e in almeno un altro browser/OS (es. Firefox, Safari su macOS), senza installazione.
+- [x] Il file `index.html` si apre con doppio clic e funziona in Edge/Chrome su Windows 11 e in almeno un altro browser/OS (es. Firefox, Safari su macOS), senza installazione. *(Chrome: test automatici; Firefox: collaudo utente, v0.3.0)*
 - [ ] Caricando un'immagine di test e marcando 3 punti a distanza nota, i calcoli di MOA e correzione in click corrispondono a quelli ottenuti manualmente o sul sito originale.
 - [ ] Le funzionalità di Salvataggio e Caricamento JSON funzionano correttamente, preservando tutti i punti e i parametri.
 - [ ] Monitorando il traffico di rete (es. con Resource Monitor o Wireshark), non viene effettuata alcuna chiamata in uscita durante l'utilizzo.

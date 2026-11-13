@@ -3,7 +3,7 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.3.0**, applicazione completa in `src/index.html`.
+> Stato: **v0.4.0**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
@@ -14,7 +14,8 @@ Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è
 | Browser | Stato |
 |---|---|
 | Edge / Chrome (Windows, macOS, Linux) | riferimento, testato · salvataggio con dialog «Salva con nome» |
-| Firefox, Safari | supportati, non ancora collaudati · i file salvati finiscono nella cartella Download |
+| Firefox | collaudato · i file salvati finiscono nella cartella Download |
+| Safari | supportato, non ancora collaudato · salvataggi nella cartella Download |
 
 1. **Carica foto**: pulsante o trascinamento. La foto va scattata perpendicolare al bersaglio.
 2. **Scala**: clicca due punti a distanza nota e inserisci il valore.
@@ -23,6 +24,7 @@ Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è
 5. Per più rosate sulla stessa immagine: **＋ Nuovo gruppo**.
 
 La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando inserisci i punti ed è sempre attiva mentre trascini un punto.
+La tabella dei punti mostra per ogni foro, e per il **centro gruppo** (la correzione da applicare), i click verticali e orizzontali per portarlo sul punto di mira.
 La **Result Card** PNG può contenere il gruppo attivo (default) o tutti i gruppi.
 
 Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `Alt`+clic per un foro sovrapposto · rotella = zoom · trascina lo sfondo = pan · `Ctrl+Z` / `Ctrl+Y` undo/redo.
@@ -63,7 +65,9 @@ LICENSE
 - [x] Fase 2: zoom/pan, punti, drag, undo/redo
 - [x] Fase 3: motore di calcolo e risultati in tempo reale
 - [x] ~~Fase 4: wrapper Python~~ e ~~Fase 5: build `.exe`~~: eliminate (rev. 2 della specifica, v0.3.0)
-- [ ] Collaudo su Firefox e Safari
+- [x] Collaudo su Firefox
+- [x] Click per singolo foro e per il centro gruppo nella tabella punti (v0.4.0)
+- [ ] Collaudo su Safari
 
 ## Licenza
 

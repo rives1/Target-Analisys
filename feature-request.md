@@ -1,2 +1,1 @@
-- nella tabella dei punti attivi aggiungi due colonne che indicano qualio dovrebbero essere le correzioni da effettuare in click sulle torrette, i base al parametro del click minimo, per centrare il punto di mira
 - 

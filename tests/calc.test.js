@@ -70,4 +70,13 @@ eq([r3.correction.vDir, r3.correction.hDir], ["GIÙ", "SINISTRA"], "direzioni op
 const r4 = Calc.analyze(shots, poa, { ...ctx, pxPerMm: null });
 eq(r4.mm, undefined, "nessun mm senza scala"); near(r4.px.es, Math.hypot(200, 200), 1e-9, "ES in px");
 
+// correzione per singolo punto (usata nella tabella punti): 20 mm a destra, 50 mm in basso a 100 m, 0,1 MIL
+const c1 = Calc.correction(20, -50, ctx);
+eq([c1.vClicks, c1.vDir, c1.hClicks, c1.hDir], [5, "SU", 2, "SINISTRA"], "correzione singolo punto");
+eq(Calc.correction(1, 1, { ...ctx, distMm: 0 }), null, "correzione senza distanza");
+eq(Calc.correction(1, 1, { ...ctx, clickValue: 0 }), null, "correzione senza valore click");
+// coerenza: la correzione del gruppo coincide con quella calcolata sul centroide
+const cg = Calc.correction(r.offset.dx, r.offset.dy, ctx);
+eq(cg, r.correction, "correzione gruppo = correzione del centroide");
+
 console.log(`OK — ${passed} verifiche superate`);
