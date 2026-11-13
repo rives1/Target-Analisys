@@ -3,12 +3,14 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.6.0**, applicazione completa in `src/index.html`.
+> Stato: **v0.6.1** · **Usala online: https://rives1.github.io/Target-Analisys/**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
 
-Apri `src/index.html` con un browser (doppio clic sul file). Non serve installare nulla e non serve connessione.
+**Online**: https://rives1.github.io/Target-Analisys/ (GitHub Pages). Anche online l'app non invia nulla: immagini e sessioni restano sul tuo dispositivo.
+
+**Offline**: apri `src/index.html` con un browser (doppio clic sul file). Non serve installare nulla e non serve connessione.
 Il file si può copiare dove si vuole (chiavetta USB, cloud, allegato email): è l'intera applicazione.
 
 | Browser | Stato |
@@ -54,6 +56,8 @@ La correzione indica dove spostare il punto d'impatto (gruppo basso → click SU
 ```
 src/index.html            frontend autocontenuto (HTML+CSS+JS, nessuna dipendenza)
 tests/calc.test.js        test del motore di calcolo  →  node tests/calc.test.js
+index.html                reindirizza a src/index.html (pagina iniziale di GitHub Pages)
+.nojekyll                 GitHub Pages pubblica i file senza elaborarli
 docs/context/             file di contesto per versione (per riprendere lo sviluppo)
 specifiche_target_analyzer.md   specifica di progetto
 CHANGELOG.md
@@ -70,6 +74,7 @@ LICENSE
 - [x] Click per singolo foro e per il centro gruppo nella tabella punti (v0.4.0)
 - [x] Combo calibri, tabella punti nella Result Card (v0.5.0)
 - [x] Data/ora nei nomi file, esportazione in cima al pannello, gruppo attivo nella tabella punti (v0.6.0)
+- [x] Pubblicazione su GitHub Pages (v0.6.1)
 - [ ] Collaudo su Safari
 
 ## Licenza

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1] - 2026-11-13
+### Aggiunto
+- Pubblicazione su **GitHub Pages** (modalità «Deploy from a branch», `main` / root): https://rives1.github.io/Target-Analisys/
+  - `index.html` nella radice del repo: reindirizza a `src/index.html` (funziona sia online sia aprendo la cartella in locale);
+  - `.nojekyll`: GitHub pubblica i file così come sono, senza elaborazione Jekyll.
+  Prerequisito una tantum: Settings → Pages → Source «Deploy from a branch», branch `main`, cartella `/ (root)`.
+
 ## [0.6.0] - 2026-11-13
 ### Cambiato
 - Nome dei file salvati con data e ora in coda nel formato `AAAA-MM-GG--hh-mm` (es. `2026-10-01--22-33`), ora locale:

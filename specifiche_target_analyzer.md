@@ -39,6 +39,7 @@ Il software deve implementare le seguenti funzionalità, replicando la logica de
 ## 3. Requisiti Non Funzionali e Vincoli
 - **Piattaforma**: qualsiasi sistema operativo con un browser moderno (Chromium ≥ 100, Firefox ≥ 100, Safari ≥ 16). Riferimento principale: Edge/Chrome su Windows 11.
 - **Portabilità**: Il rilascio è il singolo file `index.html` (distribuibile anche da chiavetta USB o come allegato). Nessun eseguibile, nessun installer.
+- **Distribuzione web**: lo stesso file è pubblicato su GitHub Pages (https://rives1.github.io/Target-Analisys/) direttamente dal branch `main` (radice del repo, `index.html` che reindirizza a `src/index.html`), aggiornato automaticamente a ogni push. Anche online nessun dato lascia il dispositivo.
 - **Privacy**: I dati dell'immagine e delle sessioni devono risiedere esclusivamente nella memoria locale o su file system locale gestito dall'utente.
 - **Prestazioni**: Rendering del canvas fluido anche con immagini ad alta risoluzione (fino a 20MP). Zoom e pan dell'immagine devono essere reattivi.
 - **Interfaccia**: Layout pulito, moderno, a due colonne (area di lavoro a sinistra, pannello di controllo e risultati a destra), responsive all'interno della finestra desktop.

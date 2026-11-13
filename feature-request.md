@@ -12,3 +12,7 @@ v.0.6.0
 - Nella tabella appunto del gruppo attivo riporta quale sia il gruppo attivo
 
 - Sposta il bottone con la procedura di esportazione E anche l'indicazione per gruppi singoli o gruppi totali all'inizio della Parte di destra vicino alla scritta Shoot Analyzer
+
+
+v.0.7.0
+- rendi la pagina web disponibile, funzionannte tramite github
