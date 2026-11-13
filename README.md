@@ -3,7 +3,7 @@
 Applicazione desktop **portatile** per Windows 11 x64 che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.1.0**, frontend completo (Fasi 1, 2 e 3), testabile in qualsiasi browser.
+> Stato: **v0.2.0**, frontend completo (Fasi 1, 2 e 3), testabile in qualsiasi browser.
 > Il wrapper desktop (Python + pywebview) e la build `.exe` (PyInstaller via GitHub Actions) sono le prossime fasi.
 
 ## Provare subito
@@ -15,6 +15,9 @@ Apri `src/index.html` con Edge o Chrome (doppio clic sul file). Non serve instal
 3. **Mira**: clicca il punto mirato.
 4. **Foro**: clicca il centro di ogni foro.
 5. Per più rosate sulla stessa immagine: **＋ Nuovo gruppo**.
+
+La **lente di ingrandimento** (🔍, tasto `L`) appare vicino al cursore quando inserisci i punti ed è sempre attiva mentre trascini un punto.
+La **Result Card** PNG può contenere il gruppo attivo (default) o tutti i gruppi.
 
 Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · `Alt`+clic per un foro sovrapposto · rotella = zoom · trascina lo sfondo = pan · `Ctrl+Z` / `Ctrl+Y` undo/redo.
 
@@ -45,6 +48,7 @@ tests/calc.test.js        test del motore di calcolo  →  node tests/calc.test.
 docs/context/             file di contesto per versione (per riprendere lo sviluppo)
 specifiche_target_analyzer.md   specifica di progetto
 CHANGELOG.md
+LICENSE
 ```
 
 ## Roadmap
@@ -54,3 +58,7 @@ CHANGELOG.md
 - [x] Fase 3: motore di calcolo e risultati in tempo reale
 - [ ] Fase 4: wrapper Python `pywebview` + API file system
 - [ ] Fase 5: build PyInstaller su runner Windows (GitHub Actions)
+
+## Licenza
+
+MIT, vedi [LICENSE](LICENSE).

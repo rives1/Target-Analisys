@@ -126,6 +126,7 @@
       </div>
       <div class="grp">
         <button id="bFit" title="Adatta allo schermo (F)">⤢ Adatta</button>
+        <button id="bLoupe" title="Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.">🔍 Lente</button>
       </div>
     </div>
     <div id="hint"></div>
@@ -194,6 +195,12 @@
       </div>
       <div class="btns">
         <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
+        <select id="cardScope" title="Contenuto della Result Card">
+          <option value="active" selected>Gruppo attivo</option>
+          <option value="all">Tutti i gruppi</option>
+        </select>
+      </div>
+      <div class="btns">
         <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
       </div>
       <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
@@ -207,7 +214,7 @@
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>Ctrl+S</kbd> salva.</p>
+          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.</p>
         </div>
       </details>
@@ -348,7 +355,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.1.0";
+const APP_VERSION = "0.2.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -371,6 +378,8 @@ const state = {
   mode: "pan",
   selected: null,       // { kind: 'shot'|'poa'|'calib', gid?, id?, which? }
   view: { scale: 1, ox: 0, oy: 0 },
+  loupe: true,          // lente al passaggio del mouse nelle modalità di inserimento
+  hover: null,          // ultima posizione del cursore sul canvas (pixel CSS)
 };
 
 function makeGroup() {
@@ -488,7 +497,68 @@ function draw() {
 
   // Overlay disegnato in pixel CSS dello schermo: marcatori di dimensione costante.
   ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-  drawOverlay(ctx2d, toScreen, v.scale, calcContext());
+  const cc = calcContext();
+  drawOverlay(ctx2d, toScreen, v.scale, cc);
+  if (loupeActive()) drawLoupe(cc);
+}
+
+/* ------------------------- LENTE DI INGRANDIMENTO ------------------------- */
+const LOUPE_R = 85;       // raggio in pixel CSS
+const LOUPE_ZOOM = 4;     // ingrandimento rispetto alla vista corrente
+function loupeActive() {
+  if (!state.image || !state.hover) return false;
+  if (ptr && ptr.kind === "point" && ptr.moved) return true;        // trascinamento punto: sempre
+  return state.loupe && state.mode !== "pan" && !ptr;               // inserimento punti: se attivata
+}
+function drawLoupe(cc) {
+  const g = ctx2d, h = state.hover, R = LOUPE_R;
+  // Centro della lente: il punto trascinato (esatto) oppure il punto sotto il cursore.
+  const dragged = ptr && ptr.kind === "point" ? refPoint(ptr.target) : null;
+  const ip = dragged ? { x: dragged.x, y: dragged.y } : toImage(h.x, h.y);
+  const ls = Math.min(60, Math.max(state.view.scale * LOUPE_ZOOM, 1));   // px lente per px immagine
+  // Posizione: in alto a destra del cursore, ribaltata vicino ai bordi.
+  const cw = canvas.width / dpr, top = 56, gap = 28;
+  let cx = h.x + gap + R, cy = h.y - gap - R;
+  if (cx + R > cw - 4) cx = h.x - gap - R;
+  if (cy - R < top) cy = h.y + gap + R;
+  const T = q => ({ x: cx + (q.x - ip.x) * ls, y: cy + (q.y - ip.y) * ls });
+
+  g.save();
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = 12;
+  g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fillStyle = "#2b2f36"; g.fill();
+  g.shadowBlur = 0;
+  g.save(); g.clip();
+  // solo la porzione di immagine visibile nella lente (veloce anche con immagini da 20 MP)
+  const W = state.image.w, H = state.image.h, half = R / ls;
+  const sx0 = Math.max(0, ip.x - half), sy0 = Math.max(0, ip.y - half);
+  const sx1 = Math.min(W, ip.x + half), sy1 = Math.min(H, ip.y + half);
+  if (sx1 > sx0 && sy1 > sy0) {
+    const d0 = T({ x: sx0, y: sy0 });
+    g.imageSmoothingEnabled = ls < 3; g.imageSmoothingQuality = "high";
+    g.drawImage(state.image.bitmap, sx0, sy0, sx1 - sx0, sy1 - sy0, d0.x, d0.y, (sx1 - sx0) * ls, (sy1 - sy0) * ls);
+  }
+  drawOverlay(g, T, ls, cc, { light: true });
+  // mirino centrale con spazio vuoto al centro per non coprire il bordo del foro
+  for (const [col, w] of [["rgba(0,0,0,.75)", 3], ["#00e5ff", 1]]) {
+    g.strokeStyle = col; g.lineWidth = w; g.beginPath();
+    g.moveTo(cx - R, cy); g.lineTo(cx - 6, cy); g.moveTo(cx + 6, cy); g.lineTo(cx + R, cy);
+    g.moveTo(cx, cy - R); g.lineTo(cx, cy - 6); g.moveTo(cx, cy + 6); g.lineTo(cx, cy + R);
+    g.stroke();
+  }
+  g.restore();
+  g.lineWidth = 2; g.strokeStyle = "#fff"; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+  const zl = `×${fmt(ls / state.view.scale, 0)}  ·  ${fmt(ls * 100, 0)}%`;
+  g.font = "600 11px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  const tw = g.measureText(zl).width + 10;
+  g.fillStyle = "rgba(0,0,0,.65)"; g.fillRect(cx - tw / 2, cy + R - 22, tw, 16);
+  g.fillStyle = "#fff"; g.fillText(zl, cx, cy + R - 14);
+  g.restore();
+}
+function setLoupe(on) {
+  state.loupe = on;
+  $("bLoupe").classList.toggle("on", on);
+  requestDraw();
 }
 
 /**
@@ -497,7 +567,7 @@ function draw() {
  * @param T     funzione immagine→coordinate di destinazione
  * @param scl   pixel destinazione per pixel immagine
  * @param cc    contesto di calcolo
- * @param opts  { onlyGroupId, noCalib }
+ * @param opts  { onlyGroupIds, noCalib, showNames, light }
  */
 function drawOverlay(g, T, scl, cc, opts = {}) {
   const sel = state.selected;
@@ -517,7 +587,7 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
   }
 
   for (const grp of state.groups) {
-    if (opts.onlyGroupId && grp.id !== opts.onlyGroupId) continue;
+    if (opts.onlyGroupIds && !opts.onlyGroupIds.includes(grp.id)) continue;
     const isActive = grp.id === state.activeGroupId;
     const r = Calc.analyze(grp.shots, grp.poa, cc);
     const holeR = cc.pxPerMm && cc.caliberMm > 0 ? (cc.caliberMm / 2) * cc.pxPerMm * scl : 0;
@@ -550,8 +620,9 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       const isSel = sel && sel.kind === "shot" && sel.id === s.id;
       g.save();
       if (holeR >= 3) {
-        g.fillStyle = hexA(grp.color, isActive ? 0.22 : 0.12);
-        g.strokeStyle = grp.color; g.lineWidth = isSel ? 3 : 1.6;
+        // In modalità "light" (lente) solo il contorno sottile: il bordo reale del foro deve restare visibile.
+        g.fillStyle = hexA(grp.color, opts.light ? 0 : isActive ? 0.22 : 0.12);
+        g.strokeStyle = grp.color; g.lineWidth = opts.light ? 1 : isSel ? 3 : 1.6;
         g.beginPath(); g.arc(p.x, p.y, holeR, 0, Math.PI * 2); g.fill(); g.stroke();
       } else {
         g.fillStyle = grp.color; g.strokeStyle = "#fff"; g.lineWidth = isSel ? 3 : 1.5;
@@ -560,7 +631,7 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       // puntino centrale per la precisione
       g.fillStyle = "#fff"; g.beginPath(); g.arc(p.x, p.y, 1.6, 0, Math.PI * 2); g.fill();
       g.fillStyle = grp.color; g.beginPath(); g.arc(p.x, p.y, 0.9, 0, Math.PI * 2); g.fill();
-      if (isSel) { g.strokeStyle = "#facc15"; g.lineWidth = 2; g.beginPath(); g.arc(p.x, p.y, Math.max(holeR, 5) + 4, 0, Math.PI * 2); g.stroke(); }
+      if (isSel && !opts.light) { g.strokeStyle = "#facc15"; g.lineWidth = 2; g.beginPath(); g.arc(p.x, p.y, Math.max(holeR, 5) + 4, 0, Math.PI * 2); g.stroke(); }
       g.restore();
       label(g, p.x + Math.max(holeR, 6) + 3, p.y - Math.max(holeR, 6) - 1, String(i + 1), grp.color, 11);
     });
@@ -573,7 +644,7 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       g.moveTo(p.x - 14, p.y); g.lineTo(p.x - 4, p.y); g.moveTo(p.x + 4, p.y); g.lineTo(p.x + 14, p.y);
       g.moveTo(p.x, p.y - 14); g.lineTo(p.x, p.y - 4); g.moveTo(p.x, p.y + 4); g.lineTo(p.x, p.y + 14);
       g.stroke(); g.restore();
-      if (state.groups.length > 1 || opts.onlyGroupId) label(g, p.x + 12, p.y + 22, grp.name, COL_POA, 11);
+      if (opts.showNames ?? state.groups.length > 1) label(g, p.x + 12, p.y + 22, grp.name, COL_POA, 11);
     }
   }
 }
@@ -650,7 +721,8 @@ canvas.addEventListener("pointerdown", e => {
 });
 canvas.addEventListener("pointermove", e => {
   const { x, y } = localXY(e);
-  if (!ptr) { updateCursor(x, y); return; }
+  state.hover = { x, y };
+  if (!ptr) { updateCursor(x, y); if (state.loupe && state.mode !== "pan" && state.image) requestDraw(); return; }
   if (!ptr.moved && Math.hypot(x - ptr.sx, y - ptr.sy) > DRAG_THRESHOLD) ptr.moved = true;
   if (ptr.moved) {
     if (ptr.kind === "point") {
@@ -667,11 +739,12 @@ canvas.addEventListener("pointerup", e => {
   if (!ptr || e.pointerId !== ptr.id) return;
   const { x, y } = localXY(e);
   const p = ptr; ptr = null;
-  if (p.kind === "point" && p.moved) { commit(); return; }
+  if (p.kind === "point" && p.moved) { commit(); requestDraw(); return; }
   if (!p.moved && p.button === 0 && !p.target) handleClick(toImage(x, y));
   updateCursor(x, y);
 });
-canvas.addEventListener("pointercancel", () => { ptr = null; });
+canvas.addEventListener("pointercancel", () => { ptr = null; requestDraw(); });
+canvas.addEventListener("pointerleave", () => { if (!ptr) { state.hover = null; requestDraw(); } });
 canvas.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });   // niente autoscroll col tasto centrale
 canvas.addEventListener("contextmenu", e => {
   e.preventDefault();
@@ -747,6 +820,7 @@ document.addEventListener("keydown", e => {
   else if (k === "delete") { if (state.selected) deleteRef(state.selected); }
   else if (k === "backspace") { e.preventDefault(); deleteLast(); }
   else if (k === "f") fitView();
+  else if (k === "l") setLoupe(!state.loupe);
   else if (k === "1") setMode("pan");
   else if (k === "2") setMode("calib");
   else if (k === "3") setMode("poa");
@@ -998,54 +1072,90 @@ async function copyText() {
   try { await navigator.clipboard.writeText(t); toast("Risultati copiati negli appunti"); }
   catch { await Storage.saveText(`risultati_${stamp()}.txt`, t, "text/plain"); }
 }
-async function exportCard() {
+/**
+ * Esporta la Result Card in PNG.
+ * @param scope "active" = solo il gruppo attivo (default) · "all" = tutti i gruppi con almeno un foro
+ */
+async function exportCard(scope = "active") {
   if (!state.image) { toast("Carica prima un'immagine."); return; }
-  const g = activeGroup(); if (!g || !g.shots.length) { toast("Il gruppo attivo non ha fori."); return; }
-  const cc = calcContext(), r = Calc.analyze(g.shots, g.poa, cc), p = params();
-  // area di ritaglio attorno a fori + mira
-  const pts = [...g.shots, ...(g.poa ? [g.poa] : [])];
+  const groups = scope === "all" ? state.groups.filter(g => g.shots.length) : [activeGroup()].filter(g => g && g.shots.length);
+  if (!groups.length) { toast(scope === "all" ? "Nessun gruppo ha fori." : "Il gruppo attivo non ha fori."); return; }
+  const cc = calcContext(), p = params();
+
+  // Area di ritaglio attorno a fori e punti di mira dei gruppi inclusi.
+  const pts = groups.flatMap(g => [...g.shots, ...(g.poa ? [g.poa] : [])]);
   let x0 = Math.min(...pts.map(q => q.x)), x1 = Math.max(...pts.map(q => q.x));
   let y0 = Math.min(...pts.map(q => q.y)), y1 = Math.max(...pts.map(q => q.y));
-  const pad = Math.max(40, 0.35 * Math.max(x1 - x0, y1 - y0), cc.pxPerMm ? cc.caliberMm * cc.pxPerMm * 2 : 0);
+  const pad = Math.max(40, 0.2 * Math.max(x1 - x0, y1 - y0), cc.pxPerMm ? cc.caliberMm * cc.pxPerMm * 2 : 0);
   x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
   x1 = Math.min(state.image.w, x1 + pad); y1 = Math.min(state.image.h, y1 + pad);
-  const side = 640, cw = x1 - x0, ch = y1 - y0, s = side / Math.max(cw, ch);
+  const side = scope === "all" ? 760 : 640;
+  const cw = x1 - x0, ch = y1 - y0, s = side / Math.max(cw, ch);
   const iw = cw * s, ih = ch * s;
-  const W = 1040, H = Math.max(ih, 560) + 40, Wpanel = W - iw - 60;
+
+  // Contenuto testuale: [testo, dimensione, colore, peso, spazio dopo]
+  const L = [];
+  const add = (t, size = 15, color = "#1d2330", weight = 400, gap = 8) => L.push([t, size, color, weight, gap]);
+  add("SHOOT ANALYZER", 13, "#6b7280", 700);
+  if (groups.length === 1) add(`${groups[0].name} · ${groups[0].shots.length} colpi`, 24, groups[0].color, 700, 4);
+  else add(`${groups.length} gruppi · ${groups.reduce((a, g) => a + g.shots.length, 0)} colpi`, 24, "#1d2330", 700, 4);
+  add(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
+  add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${fmt(p.caliber, 2)} ${p.caliberUnit}`, 14, "#374151", 400, 18);
+  if (!cc.pxPerMm) add("Scala non calibrata", 16, "#9a3412", 600, 16);
+  for (const g of groups) {
+    const r = Calc.analyze(g.shots, g.poa, cc);
+    if (groups.length === 1) {
+      if (r.mm && r.n >= 2) {
+        add("GROUP SIZE (centro-centro)", 12, "#6b7280", 700, 4);
+        add(fmtLen(r.mm.es), 22, "#1d2330", 700, 4);
+        add(fmtAng(r.ang?.es), 16, "#1d2330", 400, 16);
+        add("RAGGIO MEDIO", 12, "#6b7280", 700, 4);
+        add(fmtLen(r.mm.mr), 17, "#1d2330", 600, 4);
+        add(fmtAng(r.ang?.mr), 15, "#1d2330", 400, 16);
+        add(`Bordo-bordo: ${fmtLen(r.mm.esEdge)}`, 14, "#374151", 400, 6);
+        add(`Larg. × alt.: ${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm`, 14, "#374151", 400, 18);
+      } else if (cc.pxPerMm) add("Servono almeno 2 fori", 16, "#9a3412");
+      if (r.correction) {
+        add("CORREZIONE", 12, "#6b7280", 700, 4);
+        add(correctionText(r.correction), 18, "#1d4ed8", 700, 4);
+        add(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280");
+      }
+    } else {
+      // versione compatta per gruppo
+      add(`● ${g.name} · ${r.n} colpi`, 17, g.color, 700, 5);
+      if (r.mm && r.n >= 2) {
+        add(`c-c ${fmtLen(r.mm.es)}`, 14, "#1d2330", 600, 3);
+        add(`     ${fmtAng(r.ang?.es)}`, 13, "#374151", 400, 3);
+        add(`R. medio ${fmt(r.mm.mr, 1)} mm · ${fmtAng(r.ang?.mr)}`, 13, "#374151", 400, 3);
+      } else if (cc.pxPerMm) add("Servono almeno 2 fori", 13, "#9a3412", 400, 3);
+      if (r.correction) add(`↻ ${correctionText(r.correction)}`, 14, "#1d4ed8", 700, 3);
+      L[L.length - 1][4] = 16;   // spazio dopo il gruppo
+    }
+  }
+  if (groups.length > 1 && cc.clickValue > 0) add(`Click: ${fmt(cc.clickValue, 3)} ${cc.clickUnit}`, 13, "#6b7280");
+  const textH = 24 + L.reduce((a, l) => a + l[1] + l[4], 0) + 20;
+
+  const Wpanel = 400, W = Math.round(iw + Wpanel + 60), H = Math.round(Math.max(ih + 40, textH, 560));
   const c = document.createElement("canvas"); c.width = W; c.height = H;
   const k = c.getContext("2d");
   k.fillStyle = "#fff"; k.fillRect(0, 0, W, H);
-  const ox = 20, oy = 20 + (H - 40 - ih) / 2;
+  const ox = 20, oy = (H - ih) / 2;
   k.save(); k.beginPath(); k.rect(ox, oy, iw, ih); k.clip();
   k.drawImage(state.image.bitmap, x0, y0, cw, ch, ox, oy, iw, ih);
-  drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { onlyGroupId: g.id, noCalib: true });
+  drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc,
+    { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
   k.restore();
   k.strokeStyle = "#d1d5db"; k.strokeRect(ox, oy, iw, ih);
-  // testo
+
   let tx = iw + 40, ty = 24;
   k.textBaseline = "top";
-  const line = (t, size = 15, color = "#1d2330", weight = 400, gap = 8) => { k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = color; k.fillText(t, tx, ty, Wpanel); ty += size + gap; };
-  line("SHOOT ANALYZER", 13, "#6b7280", 700);
-  line(`${g.name} · ${r.n} colpi`, 24, g.color, 700, 4);
-  line(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
-  line(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${fmt(p.caliber, 2)} ${p.caliberUnit}`, 14, "#374151", 400, 18);
-  if (r.mm && r.n >= 2) {
-    line("GROUP SIZE (centro-centro)", 12, "#6b7280", 700, 4);
-    line(fmtLen(r.mm.es), 22, "#1d2330", 700, 4);
-    line(fmtAng(r.ang?.es), 16, "#1d2330", 400, 16);
-    line("RAGGIO MEDIO", 12, "#6b7280", 700, 4);
-    line(`${fmtLen(r.mm.mr)}`, 17, "#1d2330", 600, 4);
-    line(fmtAng(r.ang?.mr), 15, "#1d2330", 400, 16);
-    line(`Bordo-bordo: ${fmtLen(r.mm.esEdge)}`, 14, "#374151", 400, 6);
-    line(`Larg. × alt.: ${fmt(r.mm.w, 1)} × ${fmt(r.mm.h, 1)} mm`, 14, "#374151", 400, 18);
-  } else line(cc.pxPerMm ? "Servono almeno 2 fori" : "Scala non calibrata", 16, "#9a3412");
-  if (r.correction) {
-    line("CORREZIONE", 12, "#6b7280", 700, 4);
-    line(correctionText(r.correction), 18, "#1d4ed8", 700, 4);
-    line(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280");
+  for (const [t, size, color, weight, gap] of L) {
+    k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = color;
+    k.fillText(t, tx, ty, Wpanel - 10); ty += size + gap;
   }
   const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
-  await Storage.saveDataUrl(`${base}_${g.name.replace(/\W+/g, "_")}_card.png`, c.toDataURL("image/png"));
+  const suffix = groups.length === 1 ? groups[0].name.replace(/\W+/g, "_") : "tutti_i_gruppi";
+  await Storage.saveDataUrl(`${base}_${suffix}_card.png`, c.toDataURL("image/png"));
   toast("Result Card esportata");
 }
 
@@ -1064,7 +1174,8 @@ $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bDelLast").onclick = deleteLast; $("bClear").onclick = clearAll;
 $("bFit").onclick = fitView;
 $("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; setMode(state.image ? "poa" : state.mode); commit(); };
-$("bCardPng").onclick = exportCard;
+$("bCardPng").onclick = () => exportCard($("cardScope").value);
+$("bLoupe").onclick = () => setLoupe(!state.loupe);
 $("bCardTxt").onclick = copyText;
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 document.querySelectorAll("#side input[type=number], #side select").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
@@ -1087,7 +1198,7 @@ window.addEventListener("resize", resizeCanvas);
 
 // avvio
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
-setMode("pan"); resizeCanvas(); resetHistory();
+setMode("pan"); setLoupe(true); resizeCanvas(); resetHistory();
 
 // Hook di test (usato dai test automatici; innocuo in produzione)
 window.__SA = { state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, history };

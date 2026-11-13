@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2026-11-13
+### Aggiunto
+- Lente di ingrandimento (×4 rispetto alla vista, mirino ciano con centro libero): visibile al passaggio del mouse
+  nelle modalità Scala/Mira/Foro (attivabile/disattivabile con 🔍 o tasto `L`) e sempre attiva durante il trascinamento
+  di un punto, centrata esattamente sul punto trascinato. Nella lente i fori sono disegnati solo come contorno sottile.
+- Result Card: selettore «Gruppo attivo» (default) / «Tutti i gruppi»; la versione multi-gruppo mostra la rosata
+  completa e un riepilogo compatto per ogni gruppo.
+- Licenza MIT.
+
 ## [0.1.0] - 2026-11-13
 ### Aggiunto
 - `src/index.html` autocontenuto: layout a due colonne (65/35), canvas con zoom (rotella, centrato sul cursore) e pan.
