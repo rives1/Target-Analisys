@@ -3,7 +3,7 @@
 Applicazione **portatile e multipiattaforma** (un unico file HTML) che analizza la foto di un bersaglio e calcola la dispersione dei gruppi di colpi: group size (extreme spread), raggio medio, MOA/MIL e correzione in click del mirino.
 Funziona **100% offline**: nessuna chiamata di rete, nessun tracking.
 
-> Stato: **v0.5.0**, applicazione completa in `src/index.html`.
+> Stato: **v0.6.0**, applicazione completa in `src/index.html`.
 > Funziona su Windows, macOS e Linux con qualsiasi browser moderno: nessun eseguibile, nessuna installazione.
 
 ## Uso
@@ -69,6 +69,7 @@ LICENSE
 - [x] Collaudo su Firefox
 - [x] Click per singolo foro e per il centro gruppo nella tabella punti (v0.4.0)
 - [x] Combo calibri, tabella punti nella Result Card (v0.5.0)
+- [x] Data/ora nei nomi file, esportazione in cima al pannello, gruppo attivo nella tabella punti (v0.6.0)
 - [ ] Collaudo su Safari
 
 ## Licenza

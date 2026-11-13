@@ -9,5 +9,5 @@ desktop.ini
 .idea/
 
 # Sessioni e card generate durante i test manuali
-*_card.png
+*_card*.png
 sessione_*.json

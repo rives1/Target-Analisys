@@ -86,9 +86,11 @@ L'interfaccia deve essere suddivisa in due pannelli principali:
   - Toolbar flottante in alto: `[Carica Foto]` `[Undo]` `[Redo]` `[Elimina Ultimo]` `[Adatta allo Schermo]`.
   - Overlay visivo: i punti devono essere chiaramente distinguibili per colore (es. Rosso = Punto di mira, Blu = Foro, Verde = Punti di calibrazione scala).
 - **Pannello Destro (Controlli e Risultati - 35% larghezza)**:
+  - **Intestazione**: titolo, versione e, subito sotto, `[Esporta Result Card]` con la scelta «Gruppo attivo / Tutti i gruppi».
   - **Sezione Parametri**: Input per "Distanza di calibrazione nota", "Distanza di tiro", "Valore click mirino (MOA/MIL)", "Calibro" (combo con i calibri più diffusi e diametro nominale della palla in mm, sempre modificabile a mano per calibri non convenzionali).
   - **Sezione Risultati**: Visualizzazione in tempo reale di: Dimensione Gruppo, Raggio Medio, MOA/MIL, Correzione suggerita (es. "3 click SU, 1 click DESTRA").
-  - **Sezione Gestione Dati**: Tabella elenco punti marcati (con coordinate X/Y, tipo e **click ↕/↔ per portare il punto sul punto di mira**, più una riga evidenziata per il **centro gruppo**, che è la correzione da applicare), pulsante `[Salva Sessione JSON]`, `[Carica Sessione JSON]`, `[Esporta Result Card]`.
+  - **Sezione Gestione Dati**: Tabella elenco punti marcati del gruppo attivo (nome e colore del gruppo indicati in testa; con coordinate X/Y, tipo e **click ↕/↔ per portare il punto sul punto di mira**, più una riga evidenziata per il **centro gruppo**, che è la correzione da applicare), pulsante `[Salva Sessione JSON]`, `[Carica Sessione JSON]`, `[Copia risultati]`.
+  - **Nomi dei file salvati**: data e ora locali in coda, formato `AAAA-MM-GG--hh-mm` (es. `2026-10-01--22-33`).
 
 ---
 

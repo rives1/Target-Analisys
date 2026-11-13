@@ -55,6 +55,9 @@
   .row label { flex: 1 1 auto; font-size: 13px; }
   .row input[type=number] { width: 90px; }
   #caliberPreset { width: 100%; }
+  #exportBar { margin: 0 0 12px; }
+  .pgroup { display: flex; align-items: center; gap: 6px; font-weight: 600; margin: -2px 0 6px; }
+  .pgroup .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
   input, select { font: inherit; padding: 5px 7px; border: 1px solid #cdd2da; border-radius: 6px; background: #fff; color: var(--ink); }
   input:focus, select:focus { outline: 2px solid #93c5fd; outline-offset: 0; border-color: var(--accent); }
   .btn { font: inherit; padding: 6px 11px; border-radius: 6px; border: 1px solid #cdd2da; background: #fff; cursor: pointer; }
@@ -139,6 +142,13 @@
   <aside id="side">
     <h1>Shoot Analyzer</h1>
     <div class="sub">Analisi rosata · 100% offline · <span id="ver"></span></div>
+    <div class="btns" id="exportBar">
+      <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
+      <select id="cardScope" title="Contenuto della Result Card">
+        <option value="active" selected>Gruppo attivo</option>
+        <option value="all">Tutti i gruppi</option>
+      </select>
+    </div>
 
     <section>
       <h2>Calibrazione scala</h2>
@@ -189,6 +199,7 @@
 
     <section>
       <h2>Punti del gruppo attivo</h2>
+      <div id="pointsGroup" class="pgroup"></div>
       <div id="points"></div>
     </section>
 
@@ -197,13 +208,6 @@
       <div class="btns">
         <button class="btn" id="bSave">💾 Salva sessione JSON</button>
         <button class="btn" id="bOpen">📂 Carica sessione JSON</button>
-      </div>
-      <div class="btns">
-        <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
-        <select id="cardScope" title="Contenuto della Result Card">
-          <option value="active" selected>Gruppo attivo</option>
-          <option value="all">Tutti i gruppi</option>
-        </select>
       </div>
       <div class="btns">
         <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
@@ -370,7 +374,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "0.5.0";
+const APP_VERSION = "0.6.0";
 const SESSION_FORMAT = 1;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
@@ -998,9 +1002,9 @@ async function loadSessionText(text) {
   resetHistory(); setMode("shot");
   toast("Sessione caricata");
 }
-const stamp = (d = new Date()) => {   // AAAAMMGG_hhmm in ora locale
+const stamp = (d = new Date()) => {   // AAAA-MM-GG--hh-mm in ora locale (es. 2026-10-01--22-33)
   const z = n => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`;
+  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}--${z(d.getHours())}-${z(d.getMinutes())}`;
 };
 
 /* --------------------------- FORMATTAZIONE --------------------------- */
@@ -1059,6 +1063,7 @@ function refreshLists() {
   }
   // punti del gruppo attivo
   const g = activeGroup(), cc = calcContext(), pts = $("points");
+  $("pointsGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)}<span class="muted" style="font-weight:400">· ${g.shots.length} colpi</span>` : "";
   if (!g || (!g.poa && !g.shots.length && !state.calib.p1)) { pts.innerHTML = `<div class="muted">Nessun punto.</div>`; return; }
   const ref = g.poa || null;
   const k = cc.pxPerMm ? 1 / cc.pxPerMm : null;
@@ -1278,7 +1283,7 @@ async function exportCard(scope = "active") {
   const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
   const suffix = groups.length === 1 ? groups[0].name.replace(/\W+/g, "_") : "tutti_i_gruppi";
   const blob = await new Promise(res => c.toBlob(res, "image/png"));
-  if (await Storage.saveBlob(`${base}_${suffix}_card.png`, blob)) toast("Result Card esportata");
+  if (await Storage.saveBlob(`${base}_${suffix}_card_${stamp()}.png`, blob)) toast("Result Card esportata");
 }
 
 /* ------------------------------ VARIE ------------------------------ */

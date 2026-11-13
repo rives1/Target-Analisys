@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0] - 2026-11-13
+### Cambiato
+- Nome dei file salvati con data e ora in coda nel formato `AAAA-MM-GG--hh-mm` (es. `2026-10-01--22-33`), ora locale:
+  Result Card `<immagine>_<gruppo>_card_2026-10-01--22-33.png`, sessione `<immagine>_2026-10-01--22-33.json`,
+  testo `risultati_2026-10-01--22-33.txt`.
+- Pulsante «Esporta Result Card (PNG)» e selettore «Gruppo attivo / Tutti i gruppi» spostati in cima al pannello destro,
+  sotto il titolo Shoot Analyzer.
+### Aggiunto
+- Sezione «Punti del gruppo attivo»: indica quale gruppo è attivo (pallino colore, nome, numero di colpi).
+
 ## [0.5.0] - 2026-11-13
 ### Aggiunto
 - Calibro: combo con i calibri più diffusi (carabina, pistola/revolver, aria compressa) e diametro nominale della palla in mm;
