@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.0.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.1.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -70,7 +70,29 @@
     color: #fff; font-size: 18px; background: rgba(37,99,235,.18); z-index: 5; }
 
   /* ---------- pannello destro ---------- */
-  #side { overflow-y: auto; background: var(--panel); padding: 14px 16px 30px; min-width: 0; }
+  /* il pannello è una colonna: contenuto scorrevole + piede fisso con il pulsante della vista grafici/confronto */
+  #side { display: flex; flex-direction: column; overflow: hidden; background: var(--panel); min-width: 0; }
+  #sideScroll { flex: 1 1 auto; overflow-y: auto; padding: 14px 16px 20px; min-height: 0; }
+  #sideFoot { flex: none; padding: 10px 16px 12px; border-top: 1px solid var(--line); background: var(--panel); }
+  #sideFoot .btn { width: 100%; font-weight: 600; padding: 8px 11px; }
+  #toolbar select { border: 0; background: transparent; color: var(--ink); padding: 4px 2px; cursor: pointer; }
+  #toolbar select:hover { background: var(--tb-hover); }
+  .rotrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .rotrow input[type=number] { width: 80px; }
+
+  /* ---------- vista a schermo intero: grafici e confronto ---------- */
+  #anaView { position: fixed; inset: 0; z-index: 8; background: var(--bg); overflow-y: auto; }
+  #anaView[hidden] { display: none; }
+  .ana-head { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+    padding: 10px 16px; background: var(--panel); border-bottom: 1px solid var(--line); box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .ana-head h2 { font-size: 16px; margin: 0; flex: 1 1 auto; }
+  .ana-head label { font-size: 13px; display: flex; align-items: center; gap: 6px; }
+  .ana-grid { display: flex; flex-direction: column; gap: 16px; padding: 16px; max-width: 1500px; margin: 0 auto; }
+  .ana-panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px 8px; }
+  .ana-panel > h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+  #charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 6px 20px; }
+  #chMsg { grid-column: 1 / -1; }
+  #chMsg:empty { display: none; }   /* altrimenti occupa tutte le colonne e ne crea una vuota */
   h1 { font-size: 17px; margin: 0 0 2px; }
   .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
   section { border-top: 1px solid var(--line); padding: 12px 0 4px; }
@@ -188,6 +210,7 @@
         <button data-mode="calib" title="Calibrazione scala: 2 punti (2)"><span class="sw" style="background:var(--calib)"></span>Scala</button>
         <button data-mode="poa"   title="Punto di mira del gruppo attivo (3)"><span class="sw" style="background:var(--poa)"></span>Mira</button>
         <button data-mode="shot"  title="Aggiungi foro al gruppo attivo (4)"><span class="sw" id="shotSw"></span>Foro</button>
+        <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)">📐 Raddrizza</button>
       </div>
       <div class="grp">
         <button id="bUndo" title="Annulla (Ctrl+Z)">↶ Undo</button>
@@ -198,6 +221,9 @@
       <div class="grp">
         <button id="bFit" title="Adatta allo schermo (F)">⤢ Adatta</button>
         <button id="bLoupe" title="Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.">🔍 Lente</button>
+        <select id="loupeZoom" title="Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)">
+          <option value="2">×2</option><option value="3">×3</option><option value="4" selected>×4</option><option value="6">×6</option><option value="8">×8</option><option value="12">×12</option>
+        </select>
         <button id="bGrid" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)">▦ Griglia</button>
       </div>
     </div>
@@ -210,6 +236,7 @@
 
   <!-- ======================= PANNELLO DESTRO ======================= -->
   <aside id="side">
+   <div id="sideScroll">
     <div class="titlebar">
       <div>
         <h1>Shoot Analyzer</h1>
@@ -224,6 +251,21 @@
         <option value="all">Tutti i gruppi</option>
       </select>
     </div>
+
+    <section>
+      <h2>Orientamento immagine</h2>
+      <div id="rotStatus" class="status">Immagine non ruotata.</div>
+      <div class="rotrow">
+        <label for="rotDeg" style="flex:1 1 auto;font-size:13px" title="Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.">Rotazione (° , + = orario)</label>
+        <input id="rotDeg" type="number" step="0.1" value="0">
+      </div>
+      <div class="btns">
+        <button class="btn" id="bRotL" title="Ruota di 90° in senso antiorario">⟲ 90°</button>
+        <button class="btn" id="bRotR" title="Ruota di 90° in senso orario">⟳ 90°</button>
+        <button class="btn" id="bAlign" title="Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)">📐 Raddrizza con 2 punti</button>
+        <button class="btn" id="bRot0" title="Riporta la foto all'orientamento originale">Azzera</button>
+      </div>
+    </section>
 
     <section>
       <h2>Calibrazione scala</h2>
@@ -298,6 +340,10 @@
           <label for="ld-weather">Meteo</label><input id="ld-weather" data-k="weather" list="weatherList" placeholder="condizioni atmosferiche">
           <label for="ld-temp">Temperatura</label>
           <div class="pair"><input id="ld-temp" data-k="temp" type="number" step="any" placeholder="°C"><span class="muted" style="align-self:center">°C</span></div>
+          <label for="ld-humidity">Umidità</label>
+          <div class="pair"><input id="ld-humidity" data-k="humidity" type="number" min="0" max="100" step="any" placeholder="umidità relativa"><span class="muted" style="align-self:center">%</span></div>
+          <label for="ld-pressure">Pressione</label>
+          <div class="pair"><input id="ld-pressure" data-k="pressure" type="number" min="0" step="any" placeholder="come indicata dallo strumento" title="Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)"><span class="muted" style="align-self:center">hPa</span></div>
           <label for="ld-wind">Vento</label>
           <div class="pair"><input id="ld-wind" data-k="wind" type="number" min="0" step="any" placeholder="velocità">
             <select id="ld-windUnit" data-k="windUnit"><option>m/s</option><option>km/h</option><option>mph</option></select>
@@ -317,43 +363,6 @@
     <section>
       <h2>Risultati</h2>
       <div id="results"></div>
-    </section>
-
-    <section>
-      <details class="box" open id="chartsBox">
-        <summary>Grafici · gruppo attivo</summary>
-        <div id="charts">
-          <div id="chMsg" class="muted"></div>
-          <div class="chart"><div class="ctitle">Dispersione (senza immagine, rispetto al centro gruppo)</div>
-            <canvas id="chScatter" aria-label="Grafico a dispersione dei fori"></canvas><div class="cnote" id="chScatterNote"></div></div>
-          <div class="chart"><div class="ctitle">Istogramma delle distanze dal centro gruppo</div>
-            <canvas id="chHist" aria-label="Istogramma delle distanze dal centro gruppo"></canvas><div class="cnote" id="chHistNote"></div></div>
-          <div class="chart"><div class="ctitle">Orologio
-              <select id="clockRef" title="Riferimento delle direzioni"><option value="poa">dal punto di mira</option><option value="center">dal centro gruppo</option></select></div>
-            <canvas id="chClock" aria-label="Diagramma a orologio delle direzioni dei colpi"></canvas><div class="cnote" id="clockInfo"></div></div>
-        </div>
-      </details>
-    </section>
-
-    <section>
-      <details class="box" open id="cmpBox">
-        <summary>Confronto tra gruppi</summary>
-        <div class="row" style="flex-wrap:wrap">
-          <label for="cmpMetric" style="flex:0 0 auto">Metrica</label>
-          <select id="cmpMetric"><option value="es" selected>Group size (ES)</option><option value="mr">Raggio medio</option><option value="fom">FOM</option><option value="cep">CEP</option></select>
-          <select id="cmpUnit"><option value="MIL" selected>MIL</option><option value="MOA">MOA</option></select>
-          <label for="cmpN" style="flex:0 0 auto" title="Numero di gruppi per la media mobile">Media su</label>
-          <input id="cmpN" type="number" min="2" max="50" step="1" value="3" style="width:60px">
-        </div>
-        <div id="cmpBody"></div>
-        <div class="chart" id="cmpChartWrap"><div class="ctitle">Andamento nel tempo</div>
-          <canvas id="chTrend" aria-label="Andamento della metrica scelta nel tempo"></canvas><div class="cnote" id="cmpLegend"></div></div>
-        <div class="btns">
-          <button class="btn" id="bHistAdd" title="Aggiunge i gruppi di altre sessioni salvate (.json) per confrontarli con quelli attuali">＋ Importa sessioni nello storico</button>
-          <button class="btn" id="bHistClear">Svuota storico</button>
-        </div>
-        <div class="muted" style="font-size:11.5px" id="cmpHistInfo"></div>
-      </details>
     </section>
 
     <section>
@@ -378,19 +387,65 @@
       <details>
         <summary>Guida rapida e scorciatoie</summary>
         <div class="help">
-          <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure) e con l'alto del bersaglio verso l'alto.</p>
+          <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure). Se è storta, <b>📐 Raddrizza</b> (<kbd>5</kbd>): clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale; per la regolazione fine usa il campo «Rotazione», per le foto girate i pulsanti ⟲/⟳ 90°. Ruotano anche i punti già inseriti e tutte le direzioni (correzione, bussola, orologio, ellisse, griglia) si riferiscono all'alto del bersaglio raddrizzato.</p>
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p><b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.</p>
+          <p><b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.</p>
           <p><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
-          <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>4</kbd> strumenti · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>Ctrl+S</kbd> salva.</p>
+          <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.</p>
+          <p><kbd>1</kbd>–<kbd>5</kbd> strumenti (5 = raddrizza) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
           <p class="muted">I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
       </details>
     </section>
+   </div>
+   <div id="sideFoot">
+     <button class="btn primary" id="bAnalysis" title="Apre a schermo intero i grafici del gruppo attivo e il confronto tra gruppi (tasto A)">📊 Grafici e confronto tra gruppi</button>
+   </div>
   </aside>
+</div>
+<!-- ============ VISTA A SCHERMO INTERO: GRAFICI E CONFRONTO TRA GRUPPI ============ -->
+<div id="anaView" role="dialog" aria-modal="true" aria-labelledby="anaTitle" hidden>
+  <div class="ana-head">
+    <button class="btn" id="bAnaClose" title="Torna all'immagine (Esc)">← Torna all'analisi</button>
+    <h2 id="anaTitle">Grafici e confronto tra gruppi</h2>
+    <label for="anaGroup">Gruppo attivo <select id="anaGroup"></select></label>
+  </div>
+  <div class="ana-grid">
+    <section class="ana-panel" id="chartsBox">
+      <h3>Grafici · <span id="anaGroupName"></span></h3>
+        <div id="charts">
+          <div id="chMsg" class="muted"></div>
+          <div class="chart"><div class="ctitle">Dispersione (senza immagine, rispetto al centro gruppo)</div>
+            <canvas id="chScatter" aria-label="Grafico a dispersione dei fori"></canvas><div class="cnote" id="chScatterNote"></div></div>
+          <div class="chart"><div class="ctitle">Istogramma delle distanze dal centro gruppo</div>
+            <canvas id="chHist" aria-label="Istogramma delle distanze dal centro gruppo"></canvas><div class="cnote" id="chHistNote"></div></div>
+          <div class="chart"><div class="ctitle">Orologio
+              <select id="clockRef" title="Riferimento delle direzioni"><option value="poa">dal punto di mira</option><option value="center">dal centro gruppo</option></select></div>
+            <canvas id="chClock" aria-label="Diagramma a orologio delle direzioni dei colpi"></canvas><div class="cnote" id="clockInfo"></div></div>
+        </div>
+    </section>
+    <section class="ana-panel" id="cmpBox">
+      <h3>Confronto tra gruppi</h3>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="cmpMetric" style="flex:0 0 auto">Metrica</label>
+          <select id="cmpMetric"><option value="es" selected>Group size (ES)</option><option value="mr">Raggio medio</option><option value="fom">FOM</option><option value="cep">CEP</option></select>
+          <select id="cmpUnit"><option value="MIL" selected>MIL</option><option value="MOA">MOA</option></select>
+          <label for="cmpN" style="flex:0 0 auto" title="Numero di gruppi per la media mobile">Media su</label>
+          <input id="cmpN" type="number" min="2" max="50" step="1" value="3" style="width:60px">
+        </div>
+        <div id="cmpBody"></div>
+        <div class="chart" id="cmpChartWrap"><div class="ctitle">Andamento nel tempo</div>
+          <canvas id="chTrend" aria-label="Andamento della metrica scelta nel tempo"></canvas><div class="cnote" id="cmpLegend"></div></div>
+        <div class="btns">
+          <button class="btn" id="bHistAdd" title="Aggiunge i gruppi di altre sessioni salvate (.json) per confrontarli con quelli attuali">＋ Importa sessioni nello storico</button>
+          <button class="btn" id="bHistClear">Svuota storico</button>
+        </div>
+        <div class="muted" style="font-size:11.5px" id="cmpHistInfo"></div>
+    </section>
+  </div>
 </div>
 <input type="file" id="fImg" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
 <input type="file" id="fJson" accept=".json,application/json" hidden>
@@ -726,8 +781,8 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.0.0";
-const SESSION_FORMAT = 1;
+const APP_VERSION = "1.1.0";
+const SESSION_FORMAT = 2;   // 2 = coordinate nel sistema della foto ruotata (campo «rotation»); scritto solo se la foto è ruotata
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
 const HIT_PX = 11;          // raggio di presa dei punti in pixel schermo
@@ -751,6 +806,10 @@ const state = {
   view: { scale: 1, ox: 0, oy: 0 },
   loupe: true,          // lente al passaggio del mouse nelle modalità di inserimento
   hover: null,          // ultima posizione del cursore sul canvas (pixel CSS)
+  loupeZoom: 4,         // ingrandimento della lente rispetto alla vista
+  rot: 0,               // rotazione della foto in gradi, + = orario (vedi «ROTAZIONE»)
+  alignP1: null,        // primo punto dello strumento «Raddrizza» (temporaneo, non nella storia)
+  prevMode: "pan",      // modalità a cui tornare dopo «Raddrizza»
 };
 
 function makeGroup() {
@@ -766,8 +825,8 @@ function makeGroup() {
   return { id: newId(), name: "Gruppo " + (Math.max(0, ...nums) + 1), color, poa: null, shots: [], load };
 }
 /* Dati di ricarica e condizioni (per gruppo). Tutti stringhe: come scritti dall'utente. */
-const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
-const LOAD_INHERIT = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "wind", "windUnit", "windDir"];
+const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
+const LOAD_INHERIT = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir"];
 function todayISO() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
 function defaultLoad() { const o = Object.fromEntries(LOAD_KEYS.map(k => [k, ""])); o.date = todayISO(); o.windUnit = "m/s"; return o; }
 /** Colpi che entrano nelle statistiche (esclusi i colpi marcati «escludi dal gruppo»). */
@@ -789,10 +848,11 @@ function toggleExclude(gid, id) {
 const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) || null;
 
 /* ------------------------- STORIA (UNDO/REDO) ------------------------- */
-// Lo stack contiene snapshot serializzati di calibrazione + gruppi (non l'immagine, non i parametri).
+// Lo stack contiene snapshot serializzati di calibrazione + gruppi + rotazione (non l'immagine, non i parametri).
+// La rotazione è nella storia perché ruota anche i punti: punti e angolo devono tornare indietro insieme.
 const undoStack = { stack: [], idx: -1, max: 300 };   // («history» è già un oggetto del browser)
 function snapshot() {
-  return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId });
+  return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId, rot: state.rot });
 }
 function commit() {
   const s = snapshot();
@@ -806,6 +866,7 @@ function commit() {
 function restore(s) {
   const o = JSON.parse(s);
   state.calib = o.calib; state.groups = o.groups; state.activeGroupId = o.activeGroupId;
+  state.rot = o.rot || 0; state.alignP1 = null;
   state.selected = null;
   uid = Math.max(uid, ...allIds()) + 1;
   refresh();
@@ -905,11 +966,99 @@ function fitView() {
   if (!state.image) return;
   const r = work.getBoundingClientRect();
   const top = 56; // spazio per la toolbar
-  const s = Math.min(r.width / state.image.w, (r.height - top) / state.image.h) * 0.96;
+  const b = worldBBox(), bw = b.x1 - b.x0, bh = b.y1 - b.y0;
+  const s = Math.min(r.width / bw, (r.height - top) / bh) * 0.96;
   state.view.scale = s;
-  state.view.ox = (r.width - state.image.w * s) / 2;
-  state.view.oy = top + (r.height - top - state.image.h * s) / 2;
+  state.view.ox = (r.width - bw * s) / 2 - b.x0 * s;
+  state.view.oy = top + (r.height - top - bh * s) / 2 - b.y0 * s;
   requestDraw();
+}
+
+/* ------------------------------ ROTAZIONE ------------------------------
+   Sistema «mondo» = foto ruotata di state.rot gradi (+ = orario sullo schermo) attorno al centro dell'immagine.
+   TUTTI i punti (scala, mire, fori) sono memorizzati in coordinate mondo, in pixel immagine: la rotazione non cambia
+   le distanze (scala, group size…), ma rende «alto» e «destra» quelli del bersaglio raddrizzato. Quindi il motore di
+   calcolo, la griglia, i grafici e la Result Card non sanno nulla della rotazione: la conoscono solo il disegno della
+   foto (paintImage) e i controlli «il punto è dentro la foto». Ruotando, si ruotano anche tutti i punti (rotateBy). */
+const imgCenter = () => ({ x: state.image.w / 2, y: state.image.h / 2 });
+function rotPoint(p, deg, c) {
+  const a = deg * Math.PI / 180, co = Math.cos(a), si = Math.sin(a), dx = p.x - c.x, dy = p.y - c.y;
+  return { x: c.x + dx * co - dy * si, y: c.y + dx * si + dy * co };
+}
+const imgToWorld = p => state.rot ? rotPoint(p, state.rot, imgCenter()) : { x: p.x, y: p.y };
+const worldToImg = p => state.rot ? rotPoint(p, -state.rot, imgCenter()) : { x: p.x, y: p.y };
+/** Angoli della foto in coordinate mondo (in senso orario dall'angolo in alto a sinistra). */
+function imageCorners() {
+  const { w, h } = state.image;
+  return [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }].map(imgToWorld);
+}
+function worldBBox() {
+  const c = imageCorners(), xs = c.map(p => p.x), ys = c.map(p => p.y);
+  return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+}
+/** Riporta un punto mondo dentro la foto (per il trascinamento). */
+function clampToImage(p) {
+  const q = worldToImg(p);
+  return imgToWorld({ x: clamp(q.x, 0, state.image.w), y: clamp(q.y, 0, state.image.h) });
+}
+/** Percorso (non riempito) del contorno della foto nelle coordinate di destinazione T. */
+function imagePath(g, T) {
+  g.beginPath(); imageCorners().map(T).forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath();
+}
+/**
+ * Disegna la foto con la mappatura mondo → destinazione  q ↦ (q·s + t), nel sistema corrente del contesto.
+ * @param vis area di interesse in coordinate mondo {x0,y0,x1,y1}: si disegna solo la porzione di foto che la copre
+ *            (veloce anche con immagini da 20 MP nella lente).
+ */
+function paintImage(g, s, tx, ty, vis) {
+  const W = state.image.w, H = state.image.h;
+  let sx0 = 0, sy0 = 0, sx1 = W, sy1 = H;
+  if (vis) {
+    const q = [{ x: vis.x0, y: vis.y0 }, { x: vis.x1, y: vis.y0 }, { x: vis.x1, y: vis.y1 }, { x: vis.x0, y: vis.y1 }].map(worldToImg);
+    sx0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.x))) - 1); sx1 = Math.min(W, Math.ceil(Math.max(...q.map(p => p.x))) + 1);
+    sy0 = Math.max(0, Math.floor(Math.min(...q.map(p => p.y))) - 1); sy1 = Math.min(H, Math.ceil(Math.max(...q.map(p => p.y))) + 1);
+  }
+  if (sx1 <= sx0 || sy1 <= sy0) return;
+  g.save();
+  g.transform(s, 0, 0, s, tx, ty);
+  if (state.rot) { const c = imgCenter(); g.translate(c.x, c.y); g.rotate(state.rot * Math.PI / 180); g.translate(-c.x, -c.y); }
+  g.drawImage(state.image.bitmap, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
+  g.restore();
+}
+/** Angolo normalizzato in (−180, 180], arrotondato al milionesimo di grado. */
+function normDeg(d) {
+  let x = ((d % 360) + 360) % 360; if (x > 180) x -= 360;
+  return Math.round(x * 1e6) / 1e6;
+}
+/** Ruota la foto di delta gradi (+ = orario) insieme a tutti i punti, attorno al centro della foto. */
+function rotateBy(delta, opts = {}) {
+  if (!state.image || !isFinite(delta) || Math.abs(delta) < 1e-9) return;
+  const c = imgCenter(), R = p => { if (!p) return p; const q = rotPoint(p, delta, c); p.x = q.x; p.y = q.y; return p; };
+  R(state.calib.p1); R(state.calib.p2); R(state.alignP1);
+  for (const g of state.groups) { R(g.poa); g.shots.forEach(R); }
+  state.rot = normDeg(state.rot + delta);
+  if (opts.fit) fitView();
+  commit();
+}
+const setRotation = deg => rotateBy(normDeg(deg) - state.rot);
+function refreshRotation() {
+  const r = state.rot, el = $("rotDeg");
+  if (document.activeElement !== el) el.value = Math.round(r * 100) / 100;
+  $("rotStatus").textContent = !r ? "Immagine non ruotata." :
+    `Immagine ruotata di ${fmt(Math.abs(r), 2)}° in senso ${r > 0 ? "orario" : "antiorario"}.`;
+  $("rotStatus").className = "status" + (r ? " ok" : "");
+}
+/** Strumento «Raddrizza»: la linea p1–p2 viene portata all'orizzontale o alla verticale più vicina. */
+function alignFromLine(p1, p2) {
+  const dx = p2.x - p1.x, dy = p2.y - p1.y;
+  if (Math.hypot(dx, dy) * state.view.scale < 10) { toast("Raddrizza: i due punti sono troppo vicini, scegline due più distanti sulla linea."); return false; }
+  const a = Math.atan2(dy, dx) * 180 / Math.PI;           // angolo della linea sullo schermo (+ = orario)
+  const target = Math.round(a / 90) * 90, delta = target - a;
+  const horiz = Math.abs(target) % 180 === 0;
+  if (Math.abs(delta) < 1e-6) { toast(`La linea è già ${horiz ? "orizzontale" : "verticale"}.`); return true; }
+  rotateBy(delta);
+  toast(`Foto raddrizzata di ${fmt(Math.abs(delta), 2)}° in senso ${delta > 0 ? "orario" : "antiorario"} (linea ${horiz ? "orizzontale" : "verticale"}).`);
+  return true;
 }
 function zoomAt(sx, sy, factor) {
   const v = state.view;
@@ -935,18 +1084,34 @@ function draw() {
   if (!state.image) return;
 
   const v = state.view;
-  ctx2d.setTransform(v.scale * dpr, 0, 0, v.scale * dpr, v.ox * dpr, v.oy * dpr);
+  const tl = toImage(0, 0), br = toImage(canvas.width / dpr, canvas.height / dpr);
+  const vis = { x0: tl.x, y0: tl.y, x1: br.x, y1: br.y };
+  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx2d.imageSmoothingEnabled = v.scale < 3;   // a forte zoom mostra i pixel reali (precisione)
   ctx2d.imageSmoothingQuality = "high";
-  ctx2d.drawImage(state.image.bitmap, 0, 0);
+  paintImage(ctx2d, v.scale, v.ox, v.oy, vis);
 
   // Overlay disegnato in pixel CSS dello schermo: marcatori di dimensione costante.
-  ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
   const cc = calcContext();
-  const tl = toImage(0, 0), br = toImage(canvas.width / dpr, canvas.height / dpr);
-  drawGrid(ctx2d, toScreen, v.scale, cc, { x0: tl.x, y0: tl.y, x1: br.x, y1: br.y });
+  drawGrid(ctx2d, toScreen, v.scale, cc, vis);
   drawOverlay(ctx2d, toScreen, v.scale, cc);
+  drawAlignGuide();
   if (loupeActive()) drawLoupe(cc);
+}
+/** Strumento «Raddrizza»: primo punto e linea elastica verso il cursore. */
+function drawAlignGuide() {
+  if (state.mode !== "align" || !state.alignP1) return;
+  const g = ctx2d, a = toScreen(state.alignP1), h = state.hover;
+  g.save();
+  if (h) {
+    for (const [col, w] of [["rgba(0,0,0,.7)", 4], ["#facc15", 2]]) {
+      g.strokeStyle = col; g.lineWidth = w; g.setLineDash(w === 2 ? [8, 5] : []);
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(h.x, h.y); g.stroke();
+    }
+    g.setLineDash([]);
+  }
+  crossMarker(g, a, "#facc15", true);
+  g.restore();
 }
 
 /* ------------------------- GRIGLIA ANGOLARE ------------------------- */
@@ -967,7 +1132,8 @@ function gridSpec(cc) {
  */
 function drawGrid(g, T, scl, cc, bounds) {
   const G = gridSpec(cc); if (!G) return;
-  bounds = { x0: Math.max(0, bounds.x0), y0: Math.max(0, bounds.y0), x1: Math.min(state.image.w, bounds.x1), y1: Math.min(state.image.h, bounds.y1) };
+  const wb = worldBBox();   // la foto in coordinate mondo (ruotata): la griglia resta dentro il suo contorno
+  bounds = { x0: Math.max(wb.x0, bounds.x0), y0: Math.max(wb.y0, bounds.y0), x1: Math.min(wb.x1, bounds.x1), y1: Math.min(wb.y1, bounds.y1) };
   if (bounds.x1 <= bounds.x0 || bounds.y1 <= bounds.y0) return;
   const off = i => Math.tan(i * G.rad) * G.kPx;               // scostamento in px immagine della linea i
   const spPx = off(1) * scl;                                    // spaziatura sullo schermo
@@ -980,6 +1146,7 @@ function drawGrid(g, T, scl, cc, bounds) {
   if (ix1 - ix0 > 2000 || iy1 - iy0 > 2000) return;
   const a = T({ x: bounds.x0, y: bounds.y0 }), b = T({ x: bounds.x1, y: bounds.y1 });
   g.save();
+  if (state.rot) { imagePath(g, T); g.clip(); }   // foto ruotata: niente linee fuori dal suo contorno
   for (const axis of ["x", "y"]) {
     const [i0, i1] = axis === "x" ? [ix0, ix1] : [iy0, iy1];
     for (let i = i0; i <= i1; i++) {
@@ -1011,6 +1178,7 @@ function drawGrid(g, T, scl, cc, bounds) {
     const c = T({ x: G.center.x, y: py });
     label(g, c0.x + 4, c.y - 8, val(i), "#0e7490", 10);
   }
+  g.restore(); g.save();   // la legenda non è ritagliata
   // legenda nell'angolo in basso a sinistra dell'area disegnata
   const onScreen = g === ctx2d;                                  // vista principale: sopra il riquadro dei suggerimenti
   const vh = onScreen ? canvas.height / dpr - 44 : g.canvas.height;
@@ -1046,7 +1214,8 @@ function toggleTheme() {
 
 /* ------------------------- LENTE DI INGRANDIMENTO ------------------------- */
 const LOUPE_R = 85;       // raggio in pixel CSS
-const LOUPE_ZOOM = 4;     // ingrandimento rispetto alla vista corrente
+const LOUPE_ZOOMS = [2, 3, 4, 6, 8, 12];   // ingrandimenti selezionabili rispetto alla vista corrente
+const LOUPE_KEY = "shootAnalyzer.loupeZoom";
 function loupeActive() {
   if (!state.image || !state.hover) return false;
   if (ptr && ptr.kind === "point" && ptr.moved) return true;        // trascinamento punto: sempre
@@ -1057,7 +1226,7 @@ function drawLoupe(cc) {
   // Centro della lente: il punto trascinato (esatto) oppure il punto sotto il cursore.
   const dragged = ptr && ptr.kind === "point" ? refPoint(ptr.target) : null;
   const ip = dragged ? { x: dragged.x, y: dragged.y } : toImage(h.x, h.y);
-  const ls = Math.min(60, Math.max(state.view.scale * LOUPE_ZOOM, 1));   // px lente per px immagine
+  const ls = Math.min(60, Math.max(state.view.scale * state.loupeZoom, 1));   // px lente per px immagine
   // Posizione: in alto a destra del cursore, ribaltata vicino ai bordi.
   const cw = canvas.width / dpr, top = 56, gap = 28;
   let cx = h.x + gap + R, cy = h.y - gap - R;
@@ -1072,14 +1241,9 @@ function drawLoupe(cc) {
   g.shadowBlur = 0;
   g.save(); g.clip();
   // solo la porzione di immagine visibile nella lente (veloce anche con immagini da 20 MP)
-  const W = state.image.w, H = state.image.h, half = R / ls;
-  const sx0 = Math.max(0, ip.x - half), sy0 = Math.max(0, ip.y - half);
-  const sx1 = Math.min(W, ip.x + half), sy1 = Math.min(H, ip.y + half);
-  if (sx1 > sx0 && sy1 > sy0) {
-    const d0 = T({ x: sx0, y: sy0 });
-    g.imageSmoothingEnabled = ls < 3; g.imageSmoothingQuality = "high";
-    g.drawImage(state.image.bitmap, sx0, sy0, sx1 - sx0, sy1 - sy0, d0.x, d0.y, (sx1 - sx0) * ls, (sy1 - sy0) * ls);
-  }
+  const half = R / ls;
+  g.imageSmoothingEnabled = ls < 3; g.imageSmoothingQuality = "high";
+  paintImage(g, ls, cx - ip.x * ls, cy - ip.y * ls, { x0: ip.x - half, y0: ip.y - half, x1: ip.x + half, y1: ip.y + half });
   drawOverlay(g, T, ls, cc, { light: true });
   // mirino centrale con spazio vuoto al centro per non coprire il bordo del foro
   for (const [col, w] of [["rgba(0,0,0,.75)", 3], ["#00e5ff", 1]]) {
@@ -1101,6 +1265,27 @@ function setLoupe(on) {
   state.loupe = on;
   $("bLoupe").classList.toggle("on", on);
   requestDraw();
+}
+/** Imposta l'ingrandimento della lente (uno dei valori di LOUPE_ZOOMS); save = ricordalo tra le sessioni. */
+function setLoupeZoom(z, save) {
+  z = LOUPE_ZOOMS.includes(+z) ? +z : 4;
+  state.loupeZoom = z; $("loupeZoom").value = String(z);
+  if (save) try { localStorage.setItem(LOUPE_KEY, String(z)); } catch { /* storage non disponibile */ }
+  requestDraw();
+}
+function initLoupeZoom() {
+  let z = 4;
+  try { z = parseInt(localStorage.getItem(LOUPE_KEY), 10) || 4; } catch { /* ignora */ }
+  setLoupeZoom(z, false);
+}
+/** Shift+rotella: passa all'ingrandimento successivo/precedente; accumula il delta (touchpad = tanti eventi piccoli). */
+let loupeWheelAcc = 0;
+function loupeWheel(d) {
+  loupeWheelAcc += d;
+  if (Math.abs(loupeWheelAcc) < 50) return;
+  const i = LOUPE_ZOOMS.indexOf(state.loupeZoom), j = clamp(i + (loupeWheelAcc < 0 ? 1 : -1), 0, LOUPE_ZOOMS.length - 1);
+  loupeWheelAcc = 0;
+  if (j !== i) setLoupeZoom(LOUPE_ZOOMS[j], true);
 }
 
 /**
@@ -1267,7 +1452,8 @@ function deleteRef(ref) {
 /* --------------------------- INTERAZIONE MOUSE --------------------------- */
 let ptr = null;  // { id, button, sx, sy, lastX, lastY, moved, target, mode:'point'|'pan' }
 function localXY(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-const inImage = p => state.image && p.x >= 0 && p.y >= 0 && p.x <= state.image.w && p.y <= state.image.h;
+/** Il punto (coordinate mondo) cade dentro la foto? (con la foto ruotata il contorno non è allineato agli assi) */
+const inImage = p => { if (!state.image) return false; const q = worldToImg(p); return q.x >= 0 && q.y >= 0 && q.x <= state.image.w && q.y <= state.image.h; };
 
 canvas.addEventListener("pointerdown", e => {
   if (!state.image) return;
@@ -1276,7 +1462,7 @@ canvas.addEventListener("pointerdown", e => {
   const { x, y } = localXY(e);
   canvas.setPointerCapture(e.pointerId);
   // Alt+clic ignora i punti esistenti: serve per marcare fori sovrapposti (colpi nello stesso foro).
-  const hit = e.button === 0 && !e.altKey ? hitTest(x, y) : null;
+  const hit = e.button === 0 && !e.altKey && state.mode !== "align" ? hitTest(x, y) : null;   // «Raddrizza»: i punti non si prendono
   ptr = { id: e.pointerId, button: e.button, sx: x, sy: y, lastX: x, lastY: y, moved: false,
           target: hit, kind: hit ? "point" : "pan" };
   if (hit) { state.selected = hit; refreshLists(); requestDraw(); }
@@ -1285,12 +1471,12 @@ canvas.addEventListener("pointerdown", e => {
 canvas.addEventListener("pointermove", e => {
   const { x, y } = localXY(e);
   state.hover = { x, y };
-  if (!ptr) { updateCursor(x, y); if (state.loupe && state.mode !== "pan" && state.image) requestDraw(); return; }
+  if (!ptr) { updateCursor(x, y); if ((state.loupe && state.mode !== "pan" || state.alignP1) && state.image) requestDraw(); return; }
   if (!ptr.moved && Math.hypot(x - ptr.sx, y - ptr.sy) > DRAG_THRESHOLD) ptr.moved = true;
   if (ptr.moved) {
     if (ptr.kind === "point") {
       const p = refPoint(ptr.target);
-      if (p) { const ip = toImage(x, y); p.x = clamp(ip.x, 0, state.image.w); p.y = clamp(ip.y, 0, state.image.h); refreshResults(); }
+      if (p) { const q = clampToImage(toImage(x, y)); p.x = q.x; p.y = q.y; refreshResults(); }
     } else {
       state.view.ox += x - ptr.lastX; state.view.oy += y - ptr.lastY;
     }
@@ -1319,13 +1505,15 @@ canvas.addEventListener("wheel", e => {
   if (!state.image) return;
   e.preventDefault();
   const { x, y } = localXY(e);
-  const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
-  zoomAt(x, y, Math.exp(-dy * 0.0015));
+  const k = e.deltaMode === 1 ? 16 : 1;
+  // Shift+rotella con la lente visibile: ingrandimento della lente (alcuni browser trasformano Shift+rotella in deltaX)
+  if (e.shiftKey && loupeActive()) { loupeWheel((e.deltaY || e.deltaX) * k); return; }
+  zoomAt(x, y, Math.exp(-e.deltaY * k * 0.0015));
 }, { passive: false });
 
 function updateCursor(x, y) {
   if (!state.image) { canvas.style.cursor = "default"; return; }
-  if (hitTest(x, y)) canvas.style.cursor = "move";
+  if (state.mode !== "align" && hitTest(x, y)) canvas.style.cursor = "move";
   else canvas.style.cursor = state.mode === "pan" ? "grab" : "crosshair";
 }
 
@@ -1343,6 +1531,11 @@ function handleClick(ip) {
   } else if (state.mode === "shot") {
     const g = ensureGroup(); const s = { id: newId(), x: pt.x, y: pt.y }; g.shots.push(s);
     state.selected = { kind: "shot", gid: g.id, id: s.id }; commit();
+  } else if (state.mode === "align") {
+    if (!state.alignP1) { state.alignP1 = pt; updateHint(); requestDraw(); return; }
+    const p1 = state.alignP1;
+    state.alignP1 = null;
+    if (alignFromLine(p1, pt)) setMode(state.prevMode); else { updateHint(); requestDraw(); }
   }
 }
 function ensureGroup() {
@@ -1353,7 +1546,11 @@ function ensureGroup() {
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 function setMode(m) {
+  if (m === "align" && !state.image) { toast("Carica prima un'immagine."); return; }
+  if (m === "align" && state.mode !== "align") state.prevMode = state.mode;
+  if (m !== "align") state.alignP1 = null;
   state.mode = m;
+  $("bAlign").classList.toggle("primary", m === "align");
   document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
   updateHint();
   canvas.style.cursor = m === "pan" ? "grab" : "crosshair";
@@ -1367,6 +1564,8 @@ function updateHint() {
     calib: !state.calib.p1 || state.calib.p2 ? "Scala: clicca il PRIMO punto a distanza nota." : "Scala: clicca il SECONDO punto.",
     poa: `Mira: clicca il punto mirato per «${g ? g.name : "Gruppo 1"}».`,
     shot: `Foro: clicca il centro di ogni foro di «${g ? g.name : "Gruppo 1"}». Tasto destro su un punto = elimina.`,
+    align: !state.alignP1 ? "Raddrizza: clicca il PRIMO punto di una linea del bersaglio che deve risultare orizzontale o verticale (bordo, riga della griglia). Esc = annulla."
+      : "Raddrizza: clicca il SECONDO punto sulla stessa linea, il più lontano possibile dal primo. Esc = annulla.",
   };
   h.textContent = msgs[state.mode];
 }
@@ -1376,8 +1575,15 @@ document.addEventListener("keydown", e => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
   const k = e.key.toLowerCase();
   if ((e.ctrlKey || e.metaKey) && k === "s") { e.preventDefault(); saveSession(); return; }
+  // Vista grafici/confronto aperta: Esc chiude; le scorciatoie dell'immagine sono disattivate (agirebbero «alla cieca»).
+  if (anaOpen()) {
+    if (k === "escape") { e.preventDefault(); closeAnalysis(); }
+    else if (!typing && k === "t") toggleTheme();
+    return;
+  }
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
   if (typing) return;
+  if (k === "escape") { if (state.mode === "align") setMode(state.prevMode); return; }
   if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
   else if ((e.ctrlKey || e.metaKey) && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
   else if (k === "delete") { if (state.selected) deleteRef(state.selected); }
@@ -1391,6 +1597,8 @@ document.addEventListener("keydown", e => {
   else if (k === "2") setMode("calib");
   else if (k === "3") setMode("poa");
   else if (k === "4") setMode("shot");
+  else if (k === "5") setMode("align");
+  else if (k === "a" && !e.ctrlKey && !e.metaKey) openAnalysis();
 });
 
 /* ---------------------------- AZIONI TOOLBAR ---------------------------- */
@@ -1410,6 +1618,7 @@ function clearAll() {
 /* --------------------------- CARICAMENTO IMMAGINE --------------------------- */
 async function loadImageFile(file) {
   const dataUrl = await readAs(file, "dataURL");
+  state.rot = 0; state.alignP1 = null;
   await setImage(file.name, dataUrl);
   state.calib = { p1: null, p2: null };
   state.groups = []; const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id;
@@ -1477,8 +1686,10 @@ function downloadBlob(blob, filename) {
 function buildSession() {
   const embed = $("embedImg").checked;
   return {
-    app: "ShootAnalyzer", format: SESSION_FORMAT, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
+    // formato 1 se la foto non è ruotata: la sessione resta leggibile dalle versioni precedenti
+    app: "ShootAnalyzer", format: state.rot ? SESSION_FORMAT : 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
     image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, dataUrl: embed ? state.image.dataUrl : null } : null,
+    rotation: state.rot,   // gradi, + = orario; i punti sono nel sistema della foto ruotata
     params: params(),
     calib: state.calib,
     groups: state.groups.map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa, shots: g.shots, load: g.load })),
@@ -1503,6 +1714,8 @@ async function loadSessionText(text) {
     return;
   }
   setParams(s.params || {});
+  state.rot = normDeg(+s.rotation || 0); state.alignP1 = null;
+  fitView();
   cmpState.history = Array.isArray(s.history) ? s.history : [];
   state.calib = s.calib || { p1: null, p2: null };
   state.groups = (s.groups || []).map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa || null, shots: g.shots || [],
@@ -1603,7 +1816,7 @@ function caliberLabel(p) {
 const clickTxt = (n, dir) => n === 0 ? "0" : `${n} ${DIR_SHORT[dir]}`;
 
 /* ----------------------------- UI PANNELLO ----------------------------- */
-function refresh() { refreshLists(); refreshResults(); updateHint(); updateButtons(); requestDraw(); }
+function refresh() { refreshLists(); refreshResults(); refreshRotation(); updateHint(); updateButtons(); requestDraw(); }
 function updateButtons() {
   $("bUndo").disabled = undoStack.idx <= 0;
   $("bRedo").disabled = undoStack.idx >= undoStack.stack.length - 1;
@@ -1623,6 +1836,7 @@ function refreshLoadForm() {
 }
 function refreshLists() {
   refreshLoadForm();
+  if (anaOpen()) refreshAnaHeader();
   // gruppi
   const gl = $("groups"); gl.innerHTML = "";
   for (const g of state.groups) {
@@ -1788,7 +2002,8 @@ function loadLines(g) {
   const p = params();
   if (v("bullet")) out.push(["Palla", `${v("bullet")} · cal. ${caliberLabel(p)}`]);
   if (v("primer")) out.push(["Innesco", v("primer")]);
-  const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : ""].filter(Boolean).join(" · ");
+  const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : "", v("humidity") ? `UR ${num("humidity", 0)}%` : "",
+    v("pressure") ? `${num("pressure", 1)} hPa` : ""].filter(Boolean).join(" · ");
   if (met) out.push(["Meteo", met]);
   const wind = [v("wind") ? `${num("wind", 1)} ${v("windUnit") || "m/s"}` : "", v("windDir") ? `da ore ${v("windDir")}` : ""].filter(Boolean).join(" ");
   if (wind) out.push(["Vento", wind]);
@@ -1817,11 +2032,13 @@ function wrapText(text, font, maxW) {
 }
 
 /* ----------------------------- RESULT CARD ----------------------------- */
+const rotationNote = () => `Foto ruotata di ${fmt(Math.abs(state.rot), 2)}° in senso ${state.rot > 0 ? "orario" : "antiorario"} (direzioni riferite al bersaglio raddrizzato)`;
 function resultText() {
   const p = params(), cc = calcContext();
   const L = [`SHOOT ANALYZER — ${new Date().toLocaleString("it-IT")}`,
     `Immagine: ${state.image ? state.image.name : "-"}`,
     `Distanza: ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · Calibro: ${caliberLabel(p)} · Click: ${fmt(p.clickVal, 3)} ${p.clickUnit}`];
+  if (state.rot) L.push(rotationNote());
   if (!cc.pxPerMm) L.push("ATTENZIONE: scala non calibrata");
   else for (const w of calibQuality(cc).warn) L.push("ATTENZIONE: " + w);
   for (const g of state.groups) {
@@ -1884,8 +2101,9 @@ async function exportCard(scope = "active") {
   let x0 = Math.min(...pts.map(q => q.x)), x1 = Math.max(...pts.map(q => q.x));
   let y0 = Math.min(...pts.map(q => q.y)), y1 = Math.max(...pts.map(q => q.y));
   const pad = Math.max(40, 0.2 * Math.max(x1 - x0, y1 - y0), cc.pxPerMm ? cc.caliberMm * cc.pxPerMm * 2 : 0);
-  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
-  x1 = Math.min(state.image.w, x1 + pad); y1 = Math.min(state.image.h, y1 + pad);
+  const wb = worldBBox();   // contorno della foto in coordinate mondo (ruotata)
+  x0 = Math.max(wb.x0, x0 - pad); y0 = Math.max(wb.y0, y0 - pad);
+  x1 = Math.min(wb.x1, x1 + pad); y1 = Math.min(wb.y1, y1 + pad);
   const side = scope === "all" ? 760 : 640;
   const cw = x1 - x0, ch = y1 - y0, s = side / Math.max(cw, ch);
   const iw = cw * s, ih = ch * s;
@@ -1897,7 +2115,8 @@ async function exportCard(scope = "active") {
   if (groups.length === 1) add(`${groups[0].name} · ${inc(groups[0]).length} colpi`, 24, groups[0].color, 700, 4);
   else add(`${groups.length} gruppi · ${groups.reduce((a, g) => a + inc(g).length, 0)} colpi`, 24, "#1d2330", 700, 4);
   add(new Date().toLocaleString("it-IT"), 13, "#6b7280", 400, 16);
-  add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${caliberLabel(p)}`, 14, "#374151", 400, 18);
+  add(`Distanza ${fmt(p.shotDist, 0)} ${p.shotDistUnit} · calibro ${caliberLabel(p)}`, 14, "#374151", 400, state.rot ? 4 : 18);
+  if (state.rot) add(rotationNote(), 12, "#6b7280", 400, 18);
   if (!cc.pxPerMm) add("Scala non calibrata", 16, "#9a3412", 600, 16);
   // Righe "Etichetta: valore" con a capo automatico entro il pannello di testo.
   const addLoad = (g, size) => {
@@ -1984,7 +2203,9 @@ async function exportCard(scope = "active") {
   k.fillStyle = "#fff"; k.fillRect(0, 0, W, H);
   const ox = 20, oy = (H - ih) / 2;
   k.save(); k.beginPath(); k.rect(ox, oy, iw, ih); k.clip();
-  k.drawImage(state.image.bitmap, x0, y0, cw, ch, ox, oy, iw, ih);
+  if (state.rot) { k.fillStyle = "#f3f4f6"; k.fillRect(ox, oy, iw, ih); }   // angoli fuori dalla foto ruotata
+  k.imageSmoothingQuality = "high";
+  paintImage(k, s, ox - x0 * s, oy - y0 * s, { x0, y0, x1, y1 });
   drawGrid(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { x0, y0, x1, y1 });
   drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc,
     { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
@@ -2048,16 +2269,16 @@ function chartData() {
     ell: r.shape && params().ellipseOn ? { bearing: r.shape.bearing, a: r.px.ellA * u, b: r.px.ellB * u, p: r.shape.p } : null };
 }
 function drawCharts() {
-  const box = $("charts"); if (!box || box.closest("details:not([open])")) return;
+  if (!anaOpen()) return;   // i grafici sono nella vista a schermo intero: si disegnano solo se è aperta
   const W = Math.max(220, Math.floor($("chScatter").parentElement.clientWidth));
   const D = chartData();
   const msg = D ? (D.few ? "Servono almeno 2 fori inclusi nel gruppo attivo." : "") : "Nessun gruppo.";
   $("chMsg").textContent = msg;
   for (const id of ["chScatter", "chHist", "chClock"]) $(id).parentElement.style.display = msg ? "none" : "";
   if (msg) return;
-  drawScatter($("chScatter"), W, Math.min(W, 360), D);
-  drawHistogram($("chHist"), W, 170, D);
-  drawClock($("chClock"), W, Math.min(W, 300), D);
+  drawScatter($("chScatter"), W, Math.min(W, 420), D);
+  drawHistogram($("chHist"), W, 200, D);
+  drawClock($("chClock"), W, Math.min(W, 340), D);
 }
 
 /* ---- 1. Dispersione senza immagine ---- */
@@ -2329,7 +2550,7 @@ function movingAverage(vals, N) {
 const fmtA = v => fmt(v, Math.abs(v) < 0.1 ? 3 : 2);
 const dIT = d => { if (!d) return "–"; const [y, m, g] = d.split("-"); return g ? `${g}/${m}/${y.slice(2)}` : d; };
 function drawCompare() {
-  const box = $("cmpBody"); if (!box) return;
+  const box = $("cmpBody"); if (!box || !anaOpen()) return;
   const rows = compareRows();
   const metric = $("cmpMetric").value, unit = $("cmpUnit").value, N = Math.max(2, parseInt($("cmpN").value, 10) || 3);
   $("cmpHistInfo").textContent = cmpState.history.length ? `Storico: ${cmpState.history.length} gruppi da altre sessioni.` : "Storico vuoto.";
@@ -2368,7 +2589,7 @@ function drawCompare() {
     <div class="muted" style="font-size:11.5px;margin-top:4px">Valori in ${unit}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «${CMP_METRICS[metric]}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>`;
   box.querySelectorAll("button[data-hdel]").forEach(b => b.addEventListener("click", () => { cmpState.history.splice(+b.dataset.hdel, 1); drawCompare(); }));
   $("cmpChartWrap").style.display = "";
-  drawTrend($("chTrend"), Math.max(220, Math.floor($("cmpChartWrap").clientWidth)), 200, rows, vals, ma, N, unit, metric);
+  drawTrend($("chTrend"), Math.max(220, Math.floor($("cmpChartWrap").clientWidth)), 240, rows, vals, ma, N, unit, metric);
 }
 /** Grafico dell'andamento: un punto per gruppo (in ordine di data) e la media mobile. */
 function drawTrend(cv, W, H, rows, vals, ma, N, unit, metric) {
@@ -2432,6 +2653,29 @@ async function importHistory(files) {
   toast(`Storico: ${added} gruppi aggiunti${skipped ? `, ${skipped} saltati (meno di 2 fori, scala o distanza mancanti)` : ""}.`);
 }
 
+/* -------------------- VISTA A SCHERMO INTERO: GRAFICI E CONFRONTO -------------------- */
+/* Copre l'app nella stessa finestra (funziona uguale su ogni browser, anche da file://). Mentre è aperta le
+   scorciatoie dell'immagine sono disattivate; si cambia il gruppo attivo dal selettore in alto. */
+const anaOpen = () => !$("anaView").hidden;
+function refreshAnaHeader() {
+  const sel = $("anaGroup"), g = activeGroup();
+  sel.innerHTML = state.groups.map(x => `<option value="${x.id}">${esc(x.name)} · ${inc(x).length} colpi</option>`).join("");
+  if (g) sel.value = String(g.id);
+  $("anaGroupName").innerHTML = g ? `<span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)}` : "nessun gruppo";
+}
+function openAnalysis() {
+  if (anaOpen()) return;
+  $("anaView").hidden = false;
+  refreshAnaHeader(); drawCharts(); drawCompare();
+  $("bAnaClose").focus();
+}
+function closeAnalysis() {
+  if (!anaOpen()) return;
+  $("anaView").hidden = true; $("chTip").style.display = "none";
+  $("bAnalysis").focus();
+  requestDraw();
+}
+
 /* ------------------------------ VARIE ------------------------------ */
 let toastT;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
@@ -2449,6 +2693,22 @@ $("bFit").onclick = fitView;
 $("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; setMode(state.image ? "poa" : state.mode); commit(); };
 $("bCardPng").onclick = () => exportCard($("cardScope").value);
 $("bLoupe").onclick = () => setLoupe(!state.loupe);
+$("loupeZoom").addEventListener("change", () => setLoupeZoom($("loupeZoom").value, true));
+// rotazione
+$("bRotL").onclick = () => rotateBy(-90, { fit: true });
+$("bRotR").onclick = () => rotateBy(90, { fit: true });
+$("bRot0").onclick = () => rotateBy(-state.rot, { fit: Math.abs(state.rot) > 45 });
+$("bAlign").onclick = () => setMode(state.mode === "align" ? state.prevMode : "align");
+$("rotDeg").addEventListener("change", () => {
+  const v = parseFloat($("rotDeg").value);
+  if (!state.image) { $("rotDeg").value = 0; toast("Carica prima un'immagine."); return; }
+  if (isFinite(v)) setRotation(v); refreshRotation();
+});
+$("rotDeg").addEventListener("keydown", e => { if (e.key === "Enter") $("rotDeg").blur(); });
+// vista grafici e confronto
+$("bAnalysis").onclick = openAnalysis;
+$("bAnaClose").onclick = closeAnalysis;
+$("anaGroup").addEventListener("change", () => { const id = +$("anaGroup").value; if (id !== state.activeGroupId) { state.activeGroupId = id; commit(); } });
 $("bGrid").onclick = toggleGrid;
 // passo tipico quando si cambia unità: 0,1 MIL ↔ 0,25 MOA
 $("gridUnit").addEventListener("change", () => {
@@ -2480,7 +2740,8 @@ $("caliberPreset").addEventListener("change", () => {
 });
 $("caliber").addEventListener("input", syncCaliberPreset);
 $("caliberUnit").addEventListener("change", syncCaliberPreset);
-document.querySelectorAll("#side input[type=number]:not([data-k]), #side select:not([data-k])").forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
+document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg), #side select:not([data-k]), #anaView select:not(#anaGroup), #anaView input[type=number]")
+  .forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); requestDraw(); }));
 
 // drag & drop
 ["dragenter", "dragover"].forEach(t => work.addEventListener(t, e => { e.preventDefault(); work.classList.add("dragover"); }));
@@ -2497,8 +2758,6 @@ window.addEventListener("drop", e => e.preventDefault());
 
 new ResizeObserver(() => resizeCanvas()).observe(work);
 new ResizeObserver(() => drawCharts()).observe($("charts"));
-$("chartsBox").addEventListener("toggle", drawCharts);
-$("cmpBox").addEventListener("toggle", drawCompare);
 { let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawCompare(); } }).observe($("cmpBox")); }
 $("bHistAdd").onclick = () => $("fHist").click();
 $("fHist").onchange = async e => { const fs = [...e.target.files]; if (fs.length) await importHistory(fs); e.target.value = ""; };
@@ -2514,10 +2773,11 @@ window.addEventListener("resize", resizeCanvas);
 initTheme();
 buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
-setMode("pan"); setLoupe(true); resizeCanvas(); resetHistory();
+setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack };
+window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack,
+  rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView };
 </script>
 </body>
 </html>

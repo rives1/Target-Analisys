@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.0] - 2026-11-15
+### Aggiunto
+- **Rotazione della foto** (sezione «Orientamento immagine» e strumento 📐 **Raddrizza**, tasto `5`):
+  - *Raddrizza con 2 punti*: si cliccano due punti su una linea del bersaglio (bordo, riga della griglia); la foto ruota
+    in modo che la linea diventi orizzontale o verticale (la più vicina). `Esc` annulla.
+  - campo **Rotazione** in gradi (+ = orario) per la regolazione fine; pulsanti **⟲ 90° / ⟳ 90°** per le foto girate; **Azzera**.
+  - Ruotano anche i punti già inseriti (scala, mire, fori): le distanze non cambiano, mentre tutte le direzioni
+    (correzione SU/GIÙ/DX/SX, H/V-spread, FOM, bussola, orologio, asse dell'ellisse, griglia angolare) si riferiscono
+    all'alto del bersaglio raddrizzato. La rotazione è nella storia undo/redo, nella sessione, nel testo e nella Result Card.
+- **Ingrandimento della lente regolabile**: ×2, ×3, ×4, ×6, ×8, ×12 dal menu accanto a «Lente» o con `Shift`+rotella
+  sull'immagine mentre la lente è visibile; la scelta è ricordata nel browser.
+- **Umidità relativa (%) e pressione atmosferica (hPa)** nei dati di ricarica e condizioni: ereditate dai nuovi gruppi,
+  riportate nella Result Card e nel testo (riga «Meteo»). Sono annotazioni: nessun calcolo le usa.
+- **Vista a schermo intero «Grafici e confronto tra gruppi»**: i grafici del gruppo attivo e il confronto tra gruppi
+  (tabella, andamento nel tempo, storico) non sono più nel pannello destro ma in una vista dedicata, aperta dal pulsante
+  📊 fisso in fondo al pannello o con il tasto `A`; selettore del gruppo attivo in alto; `Esc` o «← Torna all'analisi» per tornare.
+  Mentre la vista è aperta le scorciatoie dell'immagine sono disattivate.
+- **Test dell'interfaccia** `tests/ui.test.js` (Playwright, 11 scenari: caricamento senza rete, inserimento punti col mouse,
+  trascinamento e undo/redo, rotazione e raddrizzamento, lente, umidità/pressione, vista grafici, sessione ruotata,
+  Result Card, griglia e tema) e `package.json` (`npm test`, `npm run test:calc`, `npm run test:ui`).
+- **GitHub Actions**: workflow pronto in `docs/ci/test.yml` (test del calcolo e dell'interfaccia a ogni push e pull request).
+  Va copiato a mano in `.github/workflows/` (gli strumenti remoti di Claude non possono scrivere in quella cartella).
+### Modificato
+- Sessione JSON: campo `rotation` (gradi). Il formato resta `1` se la foto non è ruotata (leggibile dalle versioni
+  precedenti) e diventa `2` se è ruotata (le versioni precedenti la rifiutano invece di mostrare i punti nel posto sbagliato).
+- Collaudo: Safari collaudato dall'utente con esito positivo.
+
 ## [1.0.0] - 2026-11-13
 Prima versione ufficiale. Raccoglie tutte le funzioni sviluppate dalla 0.1.0 alla 0.12.0 (vedi sotto).
 ### Pulizia del codice

@@ -1,0 +1,30 @@
+# Test automatici a ogni push e pull request: motore di calcolo (Node) e interfaccia (Playwright, Chromium headless).
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Installa le dipendenze di test
+        run: npm ci
+      - name: Installa Chromium per Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Test del motore di calcolo
+        run: npm run test:calc
+      - name: Test dell'interfaccia
+        run: npm run test:ui
