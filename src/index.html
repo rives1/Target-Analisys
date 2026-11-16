@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.3.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.4.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -96,6 +96,50 @@
   #charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 6px 20px; }
   #chMsg { grid-column: 1 / -1; }
   #chMsg:empty { display: none; }   /* altrimenti occupa tutte le colonne e ne crea una vuota */
+
+  /* ---------- help tecnico (vista a schermo intero) ---------- */
+  #helpView { position: fixed; inset: 0; z-index: 9; background: var(--bg); overflow-y: auto; }
+  #helpView[hidden] { display: none; }
+  .help-wrap { display: grid; grid-template-columns: 230px minmax(0, 860px); gap: 28px; justify-content: center; padding: 18px 20px 60px; }
+  .help-toc { position: sticky; top: 64px; align-self: start; display: flex; flex-direction: column; gap: 2px; font-size: 13px; max-height: calc(100vh - 90px); overflow-y: auto; }
+  .help-toc-t { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 6px; }
+  .help-toc a { color: var(--ink); text-decoration: none; padding: 4px 8px; border-radius: 6px; cursor: pointer; }
+  .help-toc a:hover, .help-toc a.on { background: var(--hover); color: var(--accent); }
+  .help-body { font-size: 14.5px; line-height: 1.6; color: var(--ink); }
+  .help-body section { border-top: 1px solid var(--line); padding: 18px 0 6px; }
+  .help-body section:first-child { border-top: 0; padding-top: 0; }
+  .help-body section { scroll-margin-top: 70px; }   /* la barra in alto non copre il titolo della sezione */
+  .help-body h3 { font-size: 19px; margin: 0 0 10px; }
+  .help-body h4 { font-size: 15px; margin: 0 0 6px; }
+  .help-body p, .help-body ul, .help-body ol { margin: 0 0 10px; }
+  .help-body li { margin-bottom: 4px; }
+  .help-dl dt { font-weight: 700; margin-top: 12px; }
+  .help-dl dd { margin: 3px 0 8px 0; }
+  .formula { display: block; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 13px; background: var(--hl);
+    color: var(--hl-ink); border-radius: 6px; padding: 7px 10px; margin: 6px 0 10px; overflow-x: auto; line-height: 1.5; }
+  .help-tab { width: 100%; border-collapse: collapse; font-size: 13.5px; margin: 6px 0 12px; }
+  .help-tab th { text-align: left; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--line); padding: 5px 6px; }
+  .help-tab td { border-bottom: 1px solid var(--row-line); padding: 5px 6px; vertical-align: top; }
+  .help-tab td:first-child { font-weight: 600; white-space: nowrap; }
+  .help-num td:first-child { white-space: nowrap; }
+  .help-fig { margin: 8px 0 14px; text-align: center; }
+  .help-fig svg { width: 100%; max-width: 520px; height: auto; }
+  .help-fig figcaption { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+  .help-fig .fg { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+  .help-fig .acc { stroke: var(--accent); fill: none; }
+  .help-fig .t { fill: var(--ink); font-size: 13px; }
+  .help-fig .acc-t { fill: var(--accent); font-weight: 700; }
+  .help-fig .hole { fill: rgba(37,99,235,.25); stroke: var(--accent); stroke-width: 1.5; }
+  .help-fig .box { fill: none; stroke: var(--muted); stroke-dasharray: 5 4; }
+  .help-fig .dotfg { fill: var(--ink); }
+  .help-fig .ring95 { fill: none; stroke: var(--muted); stroke-dasharray: 3 4; stroke-width: 1.5; }
+  .help-fig .ringcep { fill: none; stroke: var(--accent); stroke-dasharray: 7 4; stroke-width: 2; }
+  .help-fig .ringmr { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: .6; }
+  .help-fig .ell { fill: rgba(37,99,235,.12); stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  .help-fig .grid { stroke: var(--line); stroke-width: 1; }
+  .help-ex { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px 4px; margin: 10px 0 14px; }
+  .help-steps li { margin-bottom: 6px; }
+  @media (max-width: 820px) { .help-wrap { grid-template-columns: minmax(0, 1fr); } .help-toc { position: static; max-height: none; flex-flow: row wrap; } }
   h1 { font-size: 17px; margin: 0 0 2px; }
   .sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
   section { border-top: 1px solid var(--line); padding: 12px 0 4px; }
@@ -438,6 +482,7 @@
       <div class="btns">
         <button class="btn" id="bCsvShots" title="Una riga per foro, tutti i gruppi: coordinate, distanze, direzione, click, escluso, flyer. Separatore «;» e virgola decimale (Excel/LibreOffice in italiano)">📄 CSV fori</button>
         <button class="btn" id="bCsvGroups" title="Una riga per gruppo: misure in mm/MOA/MIL, statistiche, correzione, dati di ricarica. Separatore «;» e virgola decimale">📄 CSV gruppi</button>
+        <button class="btn" id="bHelp" title="Significato di termini, misure e grafici, con formule ed esempi (tasto H)">📘 Help tecnico</button>
       </div>
       <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
     </section>
@@ -455,7 +500,7 @@
           <p><b>📄 CSV fori / CSV gruppi</b> (sezione Dati): tabelle per Excel o LibreOffice, separatore «;» e virgola decimale; una riga per foro (tutti i gruppi) o una per gruppo (misure, statistiche, correzione, ricarica).</p>
           <p><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>Ctrl+S</kbd> salva.</p>
+          <p><kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
           <p class="muted">I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
@@ -518,6 +563,321 @@
      MOTORE DI CALCOLO (puro, senza DOM: testabile in isolamento)
      Convenzione interna: tutte le lunghezze reali in millimetri.
      ================================================================== -->
+<!-- ============ HELP TECNICO: TERMINI, MISURE, GRAFICI (vista a schermo intero) ============ -->
+<div id="helpView" role="dialog" aria-modal="true" aria-labelledby="helpTitle" hidden>
+  <div class="ana-head">
+    <button class="btn" id="bHelpClose" title="Torna all'immagine (Esc)">← Torna all'analisi</button>
+    <h2 id="helpTitle">Help tecnico · termini, misure e grafici</h2>
+    <span class="muted" style="font-size:12px">Gli esempi numerici sono calcolati dal motore dell'app</span>
+  </div>
+  <div class="help-wrap">
+    <nav class="help-toc" aria-label="Indice">
+      <div class="help-toc-t">Indice</div>
+      <a data-to="h-intro">Come leggere questa pagina</a>
+      <a data-to="h-glossario">Glossario A–Z</a>
+      <a data-to="h-angoli">Unità angolari: MOA, MIL, IPHY</a>
+      <a data-to="h-mira">Mira, centro gruppo e correzione</a>
+      <a data-to="h-dimensioni">Dimensioni del gruppo</a>
+      <a data-to="h-statistica">Statistiche: SD, σ, CEP, R95, R99</a>
+      <a data-to="h-ic">Intervalli di confidenza (IC)</a>
+      <a data-to="h-forma">Forma del gruppo ed ellisse</a>
+      <a data-to="h-flyer">Flyer ed esclusione</a>
+      <a data-to="h-prob">Probabilità di colpire</a>
+      <a data-to="h-grafici">Come leggere i grafici</a>
+      <a data-to="h-qualita">Qualità della misura</a>
+      <a data-to="h-correggersi">Dalla lettura alla correzione</a>
+      <a data-to="h-esempi">Esempi svolti</a>
+    </nav>
+    <article class="help-body">
+
+<section id="h-intro">
+<h3>Come leggere questa pagina</h3>
+<p>Qui non si spiega come usare l'app, ma <b>che cosa significano</b> i termini, le sigle e i numeri che mostra, come sono calcolati e come usarli per capire il bersaglio e correggersi. Ogni voce ha: il significato pratico, la formula usata dall'app e, dove serve, un esempio.</p>
+<p>Convenzioni usate ovunque nell'app:</p>
+<ul>
+  <li><b>X</b> positivo = a destra, <b>Y</b> positivo = in alto (come si guarda il bersaglio). Le misure sono in <b>mm</b> sul bersaglio, poi convertite in angoli.</li>
+  <li>I fori si marcano al <b>centro</b>: tutte le distanze sono «centro-centro» salvo dove è scritto «bordo-bordo».</li>
+  <li><b>n</b> = numero di colpi del gruppo (i fori esclusi non contano). <b>D</b> = distanza di tiro.</li>
+  <li>Il «modello» statistico è quello <b>normale circolare</b>: ogni colpo = centro vero + errore casuale normale, uguale in orizzontale e in verticale (deviazione standard σ per asse). È il modello più usato nell'analisi della dispersione delle armi leggere; dove l'app lo usa, lo dice.</li>
+</ul>
+</section>
+
+<section id="h-glossario">
+<h3>Glossario A–Z</h3>
+<table class="help-tab">
+<thead><tr><th>Sigla / termine</th><th>Significato</th><th>Dove nell'app</th></tr></thead>
+<tbody>
+<tr><td>Asse maggiore</td><td>Direzione lungo cui il gruppo è più allungato, in gradi dalla verticale (senso orario) e in «ore».</td><td>Forma del gruppo</td></tr>
+<tr><td>Bordo-bordo</td><td>Group size misurato fra i bordi esterni dei due fori più lontani = c-c + calibro.</td><td>Risultati</td></tr>
+<tr><td>c-c (centro-centro)</td><td>Distanza misurata tra i centri dei fori. È la misura standard del group size.</td><td>Risultati, card</td></tr>
+<tr><td>CEP</td><td><i>Circular Error Probable</i>: raggio del cerchio, centrato sul centro gruppo, che contiene il 50% dei colpi previsti dal modello.</td><td>Statistiche, grafici, confronto</td></tr>
+<tr><td>Centro gruppo (POI)</td><td>Media delle posizioni dei fori inclusi: dove l'arma «manda» mediamente i colpi.</td><td>Tabella punti, correzione</td></tr>
+<tr><td>χ² (chi quadrato)</td><td>Distribuzione statistica usata per l'incertezza di una deviazione standard stimata da pochi colpi.</td><td>IC di σ, CEP, R95, R99</td></tr>
+<tr><td>Click</td><td>Scatto della torretta dell'ottica; il suo valore (es. 0,1 MIL o 1/4 MOA) è un parametro.</td><td>Correzione</td></tr>
+<tr><td>ES / Group size</td><td><i>Extreme Spread</i>: distanza massima tra due fori del gruppo.</td><td>Risultati, confronto</td></tr>
+<tr><td>Ellisse di concentrazione</td><td>Ellisse che, nel modello, contiene la percentuale scelta (50/90/95/99%) dei colpi; mostra forma e orientamento.</td><td>Immagine, grafici, card</td></tr>
+<tr><td>FOM</td><td><i>Figure Of Merit</i>: media tra H-spread e V-spread.</td><td>Risultati, confronto</td></tr>
+<tr><td>Flyer</td><td>Colpo anomalo, molto più lontano degli altri dal centro del gruppo.</td><td>Tabella punti (⚠)</td></tr>
+<tr><td>H-spread / V-spread</td><td>Estensione orizzontale / verticale del gruppo (dal foro più a sinistra al più a destra; dal più basso al più alto).</td><td>Risultati</td></tr>
+<tr><td>IC</td><td><i>Intervallo di confidenza</i>: intervallo di valori compatibili con i colpi sparati, al livello scelto (90, 95 o 99%).</td><td>Statistiche, correzione, probabilità</td></tr>
+<tr><td>IPHY / SMOA</td><td><i>Inch Per Hundred Yards</i> (o <i>Shooter's MOA</i>): 1 pollice a 100 iarde. Vicino al MOA ma non uguale.</td><td>Unità click</td></tr>
+<tr><td>MIL (mrad)</td><td>Milliradiante: 1/1000 di radiante; 1 MIL = 10 cm a 100 m.</td><td>Ovunque</td></tr>
+<tr><td>MOA</td><td><i>Minute Of Angle</i>: 1/60 di grado; 1 MOA ≈ 2,91 cm a 100 m.</td><td>Ovunque</td></tr>
+<tr><td>MR / Raggio medio</td><td><i>Mean Radius</i>: distanza media dei fori dal centro gruppo.</td><td>Risultati, confronto</td></tr>
+<tr><td>n</td><td>Numero di colpi (inclusi) del gruppo.</td><td>Ovunque</td></tr>
+<tr><td>POA (punto di mira)</td><td><i>Point Of Aim</i>: dove si mirava. Riferimento per lo scostamento e la correzione.</td><td>Mira</td></tr>
+<tr><td>R95 / R99</td><td>Raggi che contengono il 95% / 99% dei colpi previsti dal modello.</td><td>Statistiche</td></tr>
+<tr><td>Rapporto d'aspetto</td><td>Quanto il gruppo è allungato: 1 = rotondo; 2 = lungo il doppio in una direzione.</td><td>Forma del gruppo</td></tr>
+<tr><td>Rayleigh</td><td>Distribuzione delle distanze dal centro nel modello normale circolare: da essa derivano CEP, R95, R99.</td><td>Statistiche</td></tr>
+<tr><td>SD</td><td><i>Standard Deviation</i>, deviazione standard: misura «media» della variabilità attorno alla media.</td><td>Statistiche</td></tr>
+<tr><td>SEP</td><td><i>Spherical Error Probable</i>: versione <b>tridimensionale</b> del CEP (sfera che contiene il 50% dei punti). <b>Non è usato</b>: su un bersaglio piano la misura corretta è il CEP.</td><td>—</td></tr>
+<tr><td>σ (sigma)</td><td>Deviazione standard per asse del modello normale circolare, stimata dai fori.</td><td>Statistiche, probabilità</td></tr>
+<tr><td>t di Student</td><td>Distribuzione usata per l'incertezza di una media (il centro gruppo) stimata da pochi colpi.</td><td>IC del centro e della correzione</td></tr>
+</tbody></table>
+</section>
+
+<section id="h-angoli">
+<h3>Unità angolari: MOA, MIL, IPHY</h3>
+<p>Un gruppo di 30 mm a 100 m e uno di 60 mm a 200 m sono <b>la stessa precisione</b>: lo stesso «cono» di dispersione visto a due distanze. Per questo l'app converte ogni misura in <b>angolo</b>: così gruppi sparati a distanze diverse sono confrontabili, e la correzione si esprime direttamente in click.</p>
+<figure class="help-fig"><svg viewBox="0 0 520 150" role="img" aria-label="Angolo sotteso da una misura a una distanza">
+  <line x1="20" y1="75" x2="470" y2="30" class="fg"/><line x1="20" y1="75" x2="470" y2="120" class="fg"/>
+  <line x1="470" y1="30" x2="470" y2="120" class="acc" stroke-width="3"/>
+  <path d="M70 70 A50 50 0 0 1 70 80" class="fg" fill="none"/>
+  <text x="80" y="79" class="t">α</text><text x="240" y="140" class="t">D (distanza)</text><text x="478" y="80" class="t">s</text>
+  <circle cx="20" cy="75" r="4" class="dotfg"/>
+</svg><figcaption>Una misura <i>s</i> a distanza <i>D</i> sottende l'angolo α = 2·atan(s / 2D).</figcaption></figure>
+<ul>
+  <li><b>MOA</b> = 1/60 di grado. A 100 m vale <b data-ex="moa100"></b> mm; a 100 iarde 1,047 pollici.</li>
+  <li><b>MIL</b> (milliradiante, mrad) = 1/1000 di radiante = 3,438 MOA. A 100 m vale <b data-ex="mil100"></b> mm, cioè 1 cm per ogni 100 m.</li>
+  <li><b>IPHY</b> (o SMOA) = 1 pollice a 100 iarde = 0,955 MOA. Alcune ottiche americane hanno click in «1/4 di pollice a 100 iarde»: scegliere MOA al posto di IPHY dà un errore del 4,7%.</li>
+</ul>
+<p class="formula">Dimensione (group size, raggi): α = 2·atan(s / 2D) &nbsp;·&nbsp; Scostamento (correzione): α = atan(o / D) &nbsp;·&nbsp; poi MOA = α·(180/π)·60, MIL = α·1000</p>
+<p>L'app usa le formule <b>esatte</b> (non l'approssimazione «1 MOA = 1 pollice a 100 iarde» né la regola «cm/m × 10»). Alle distanze di tiro la differenza è piccola, ma così l'unico errore residuo è quello di misura.</p>
+</section>
+
+<section id="h-mira">
+<h3>Mira, centro gruppo e correzione</h3>
+<ul>
+  <li><b>Punto di mira (POA)</b>: dove si mirava. Si segna per ogni gruppo.</li>
+  <li><b>Centro gruppo</b> (o POI medio, ⊕ nella tabella punti): media delle coordinate dei fori inclusi. È la miglior stima del punto in cui l'arma manda i colpi.</li>
+  <li><b>Scostamento</b>: centro gruppo − punto di mira, in mm (X destra, Y alto) e in angolo.</li>
+  <li><b>Correzione</b>: i click da dare alla torretta per portare il centro gruppo sul punto di mira, <b>per asse</b>, arrotondati al click intero, <b>in verso opposto</b> allo scostamento: gruppo basso → SU, gruppo a destra → SINISTRA.</li>
+</ul>
+<p class="formula">click = arrotonda( atan(o / D) espresso nell'unità del click ÷ valore del click )</p>
+<p><b>IC della correzione</b>: il centro gruppo è stimato da pochi colpi e ha un'incertezza (vedi IC). L'app mostra quindi anche l'intervallo dei click compatibili, ad esempio «orizzontale 3–4 SX». Se l'intervallo di un asse <b>contiene lo 0</b>, su quell'asse lo scostamento <b>non è dimostrato</b>: correggere può voler dire inseguire il caso.</p>
+<p>Nella tabella punti ogni foro ha i propri click (Click ↕ / Click ↔), ma la correzione da applicare è <b>sempre quella del centro gruppo</b>: un foro singolo contiene anche la dispersione casuale.</p>
+</section>
+
+<section id="h-dimensioni">
+<h3>Dimensioni del gruppo</h3>
+<figure class="help-fig"><svg viewBox="0 0 520 220" role="img" aria-label="Group size, H-spread e V-spread">
+  <rect x="150" y="40" width="230" height="150" class="box"/>
+  <circle cx="160" cy="120" r="10" class="hole"/><circle cx="250" cy="50" r="10" class="hole"/><circle cx="370" cy="160" r="10" class="hole"/>
+  <circle cx="300" cy="180" r="10" class="hole"/><circle cx="270" cy="110" r="10" class="hole"/>
+  <line x1="250" y1="50" x2="370" y2="160" class="acc" stroke-width="2.5"/>
+  <text x="318" y="95" class="t acc-t">ES c-c</text>
+  <line x1="150" y1="205" x2="380" y2="205" class="fg"/><text x="232" y="218" class="t">H-spread</text>
+  <line x1="395" y1="40" x2="395" y2="190" class="fg"/><text x="402" y="118" class="t">V-spread</text>
+</svg><figcaption>ES (group size) = distanza massima tra due centri. H-spread e V-spread = lati del rettangolo che racchiude i centri.</figcaption></figure>
+<dl class="help-dl">
+<dt>Group size · ES (Extreme Spread)</dt>
+<dd>Distanza massima tra i centri di due fori del gruppo. È la misura più usata e più facile da confrontare con le riviste o i dati di un costruttore. <b>Limite</b>: usa solo 2 fori su n e <b>cresce con il numero di colpi</b>: un gruppo da 10 colpi ha in media un ES più grande di uno da 5 con la stessa arma. Confronta ES solo tra gruppi con lo stesso n.
+<span class="formula">ES = max<sub>i,j</sub> |P<sub>i</sub> − P<sub>j</sub>|</span></dd>
+<dt>Bordo-bordo</dt>
+<dd>ES misurato tra i bordi esterni dei fori: ES + calibro. È quello che si misura con il calibro a corsoio sul cartone; per ottenere c-c a mano si sottrae il calibro.</dd>
+<dt>Raggio medio · MR (Mean Radius)</dt>
+<dd>Distanza media dei fori dal centro gruppo. Usa <b>tutti</b> i colpi, quindi è statisticamente più stabile dell'ES e dipende poco da n: è la misura migliore per confrontare cariche o armi.
+<span class="formula">MR = (1/n)·Σ |P<sub>i</sub> − C|, C = centro gruppo</span></dd>
+<dt>H-spread / V-spread</dt>
+<dd>Estensione orizzontale e verticale (dal foro più a sinistra al più a destra; dal più basso al più alto). Servono a capire se la dispersione è soprattutto orizzontale o verticale.</dd>
+<dt>FOM (Figure Of Merit)</dt>
+<dd>Media tra H-spread e V-spread. È meno sensibile dell'ES a un singolo foro estremo, ma come l'ES dipende dagli estremi.
+<span class="formula">FOM = (H-spread + V-spread) / 2</span></dd>
+</dl>
+</section>
+
+<section id="h-statistica">
+<h3>Statistiche: SD, σ, CEP, R95, R99</h3>
+<p>Le misure di dimensione descrivono <b>questo</b> gruppo. Le statistiche stimano invece la dispersione «vera» dell'insieme arma + munizione + tiratore, cioè quella che si vedrebbe sparando moltissimi colpi, e permettono di <b>prevedere</b> dove andranno i prossimi.</p>
+<dl class="help-dl">
+<dt>SD distanze dal centro</dt>
+<dd>Deviazione standard delle distanze dei fori dal centro gruppo: dice quanto queste distanze sono regolari. È piccola se i fori stanno tutti «alla stessa distanza» dal centro.</dd>
+<dt>SD radiale √(σx²+σy²)</dt>
+<dd>Combina la deviazione standard orizzontale <i>s<sub>x</sub></i> e quella verticale <i>s<sub>y</sub></i> delle coordinate: è la dispersione complessiva attorno al centro (distanza quadratica media). Non va confusa con la precedente: misurano cose diverse e l'app le mostra entrambe, etichettate.
+<span class="formula">s<sub>x</sub> = √( Σ(x<sub>i</sub> − x̄)² / (n−1) ), idem s<sub>y</sub> · SD radiale = √(s<sub>x</sub>² + s<sub>y</sub>²)</span></dd>
+<dt>σ (sigma) del modello</dt>
+<dd>Deviazione standard per asse del modello normale circolare. Si stima combinando i due assi, con un fattore di correzione <i>c</i> che elimina la sottostima tipica dei campioni piccoli (con 5 colpi <i>c</i> = <b data-ex="c5"></b>).
+<span class="formula">σ = √((s<sub>x</sub>² + s<sub>y</sub>²) / 2) / c, &nbsp; ν = 2(n−1) gradi di libertà</span></dd>
+<dt>CEP, R95, R99</dt>
+<dd>Nel modello, la distanza di un colpo dal centro segue la distribuzione di <b>Rayleigh</b>; da essa si ricavano i raggi che contengono il 50%, il 95% e il 99% dei colpi <b>previsti</b>, centrati sul centro gruppo (non sul punto di mira).
+<span class="formula">r(p) = σ·√(−2·ln(1−p)) &nbsp;→&nbsp; CEP = 1,177·σ &nbsp;·&nbsp; R95 = 2,448·σ &nbsp;·&nbsp; R99 = 3,035·σ</span>
+Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 colpi il 95% non esiste): si possono solo stimare dal modello. Per questo l'app li calcola da σ, e li scrive «previsti».</dd>
+</dl>
+<figure class="help-fig"><svg viewBox="0 0 520 230" role="img" aria-label="Raggio medio, CEP e R95">
+  <g transform="translate(70 0)">
+  <circle cx="260" cy="115" r="98" class="ring95"/><circle cx="260" cy="115" r="47" class="ringcep"/><circle cx="260" cy="115" r="50" class="ringmr"/>
+  <g class="dotfg"><circle cx="232" cy="96" r="5"/><circle cx="290" cy="140" r="5"/><circle cx="250" cy="155" r="5"/><circle cx="300" cy="90" r="5"/><circle cx="215" cy="128" r="5"/><circle cx="268" cy="60" r="5"/><circle cx="272" cy="117" r="5"/><circle cx="330" cy="150" r="5"/></g>
+  <path d="M254 115h12M260 109v12" class="acc"/>
+  </g>
+  <line x1="10" y1="40" x2="50" y2="40" class="ringcep"/><text x="58" y="44" class="t">CEP (50% dei colpi)</text>
+  <line x1="10" y1="64" x2="50" y2="64" class="ringmr"/><text x="58" y="68" class="t">raggio medio</text>
+  <line x1="10" y1="88" x2="50" y2="88" class="ring95"/><text x="58" y="92" class="t">R95 (95%)</text>
+  <path d="M24 112h12M30 106v12" class="acc"/><text x="58" y="116" class="t">centro gruppo</text>
+</svg><figcaption>CEP e raggio medio sono quasi uguali (nel modello MR = 1,253·σ, CEP = 1,177·σ); R95 è circa il doppio del CEP.</figcaption></figure>
+</section>
+
+<section id="h-ic">
+<h3>Intervalli di confidenza (IC)</h3>
+<p>Con 5 colpi ogni numero calcolato è <b>incerto</b>: ripetendo lo stesso gruppo con la stessa arma si otterrebbero valori diversi. L'IC dice <b>quanto</b>. Un IC al 95% è costruito in modo che, ripetendo la prova molte volte, il 95% degli intervalli contenga il valore vero.</p>
+<ul>
+  <li><b>σ, CEP, R95, R99, raggio medio atteso</b>: IC dalla distribuzione χ² con ν = 2(n−1) gradi di libertà. L'intervallo è <b>asimmetrico</b> (più lungo verso l'alto), perché una dispersione può essere sottostimata molto più di quanto possa essere sovrastimata: per questo l'app scrive «min–max» e non «±».
+  <span class="formula">σ ∈ [ s·√(ν/χ²<sub>ν, 1−α/2</sub>) ; s·√(ν/χ²<sub>ν, α/2</sub>) ], &nbsp; s = √((s<sub>x</sub>² + s<sub>y</sub>²)/2), &nbsp; α = 1 − livello</span></li>
+  <li><b>Centro gruppo e correzione</b>: IC dalla t di Student con n−1 gradi di libertà, per asse.
+  <span class="formula">centro ± t<sub>n−1, 1−α/2</sub>·s / √n</span></li>
+  <li><b>Group size (ES)</b>: nessun IC. Non esiste una formula esatta per la sua distribuzione: un intervallo «inventato» sarebbe peggio di nessun intervallo.</li>
+  <li><b>Probabilità di colpire</b>: IC per simulazione dallo stesso modello (vedi sotto).</li>
+</ul>
+<p><b>Quanto conta il numero di colpi.</b> L'ampiezza relativa dell'IC al 95% di σ (e quindi di CEP, R95, R99) dipende <b>solo da n</b>:</p>
+<table class="help-tab help-num"><thead><tr><th>Colpi</th><th>σ vero, rispetto a quello stimato (IC 95%)</th></tr></thead>
+<tbody id="helpIcTable"></tbody></table>
+<p>Con 3 colpi la dispersione vera può essere più del doppio di quella misurata; con 10 il margine si riduce molto. È per questo che l'app avvisa sotto i 5 colpi e consiglia 10. Il bootstrap (ricampionare i fori) non è usato: con 3–10 colpi dà intervalli troppo stretti.</p>
+</section>
+
+<section id="h-forma">
+<h3>Forma del gruppo ed ellisse</h3>
+<figure class="help-fig"><svg viewBox="0 0 520 210" role="img" aria-label="Ellisse e asse maggiore">
+  <line x1="260" y1="15" x2="260" y2="195" class="grid"/>
+  <ellipse cx="260" cy="105" rx="45" ry="88" transform="rotate(30 260 105)" class="ell"/>
+  <line x1="216" y1="181" x2="304" y2="29" class="acc" stroke-width="2"/>
+  <path d="M260 55 A50 50 0 0 1 285 62" class="fg" fill="none"/><text x="268" y="47" class="t">30°</text>
+  <text x="310" y="30" class="t">asse maggiore: 30° · ore 1–7</text>
+  <text x="300" y="150" class="t">rapporto = semiasse magg. / min.</text>
+</svg><figcaption>Angolo misurato dalla verticale in senso orario (0° = verticale, 90° = orizzontale), come una bussola.</figcaption></figure>
+<dl class="help-dl">
+<dt>Asse maggiore</dt>
+<dd>Direzione di massima dispersione, calcolata dalla matrice di covarianza dei fori (asse principale). Si esprime in gradi dalla verticale (0–180°) e in «ore»: «ore 12–6» = verticale, «ore 3–9» = orizzontale, «ore 1–7» = diagonale ↗.</dd>
+<dt>Rapporto d'aspetto</dt>
+<dd>√(λ<sub>1</sub>/λ<sub>2</sub>), con λ<sub>1</sub>, λ<sub>2</sub> varianze lungo l'asse maggiore e minore. 1 = rotondo. Sotto <b>1,3</b> l'app considera l'orientamento non significativo. Con pochi colpi il rapporto è <b>sovrastimato</b>: anche un'arma perfettamente «rotonda» dà gruppi da 5 colpi allungati per caso.</dd>
+<dt>Ellisse di concentrazione (50/90/95/99%)</dt>
+<dd>Ellisse che nel modello normale (con σ diversi sugli assi) contiene la percentuale scelta di colpi; semiassi k·√λ<sub>1</sub> e k·√λ<sub>2</sub>, con k = √(−2·ln(1−p)) (2,448 al 95%). Rende visibile forma e orientamento sul bersaglio.</dd>
+</dl>
+</section>
+
+<section id="h-flyer">
+<h3>Flyer ed esclusione</h3>
+<p>Un <b>flyer</b> è un colpo che sembra non appartenere al gruppo. L'app lo segnala (⚠) con un criterio <b>leave-one-out</b>, da 5 colpi in su: per ogni foro calcola centro e distanze degli <b>altri</b> fori, poi quanto quel foro ne è lontano in deviazioni standard:</p>
+<p class="formula">z = (d − media delle distanze degli altri) / SD delle distanze degli altri &nbsp;→&nbsp; flyer se z &gt; k (k = 2 di default)</p>
+<p>Escludere il foro dal calcolo è una scelta del tiratore: va fatto solo se c'è un <b>motivo noto</b> (colpo «tirato», munizione difettosa, primo colpo a canna fredda). Escludere i fori solo perché peggiorano il gruppo rende tutte le statistiche ottimiste. I fori esclusi restano visibili (tratteggiati) ed elencati nel CSV dei fori.</p>
+</section>
+
+<section id="h-prob">
+<h3>Probabilità di colpire</h3>
+<p>Traduce la statistica in una risposta pratica: <b>con questo gruppo, che probabilità ho che un colpo entri in un bersaglio di queste dimensioni?</b> «Colpi a segno su 100» è la stessa probabilità detta in modo concreto.</p>
+<ul>
+  <li><b>Con la correzione applicata</b>: il centro dei colpi è sul centro del bersaglio, salvo lo scostamento che resta dopo l'arrotondamento al click (alla distanza del gruppo).</li>
+  <li><b>Con la taratura attuale</b>: il bersaglio è dove si mira oggi, quindi conta anche lo scostamento del gruppo. Non viene calcolata a un'altra distanza, perché lì lo scostamento dipende dalla caduta del proiettile (balistica).</li>
+</ul>
+<p class="formula">Cerchio di raggio R con centro a distanza d dal centro dei colpi: P = 1 − Q<sub>1</sub>(d/σ, R/σ) (Marcum, χ² non centrale a 2 gradi di libertà). <br>Rettangolo L × A spostato di (dx, dy): P = [Φ((L/2−dx)/σ) − Φ((−L/2−dx)/σ)]·[Φ((A/2−dy)/σ) − Φ((−A/2−dy)/σ)]</p>
+<p><b>IC</b>: 4000 simulazioni estraggono valori di σ (dalla χ²) e del centro gruppo (dalla normale) compatibili con i colpi, e per ciascuna calcolano la probabilità esatta. Lo stesso seme dà sempre gli stessi numeri. <b>A un'altra distanza</b> si suppone la stessa dispersione angolare; in realtà vento e differenze di velocità la aumentano, quindi il valore è un <b>limite superiore</b>.</p>
+</section>
+
+<section id="h-grafici">
+<h3>Come leggere i grafici</h3>
+<dl class="help-dl">
+<dt>Dispersione (senza immagine)</dt>
+<dd>I fori riportati attorno al centro gruppo, in mm, con assi in scala uguale. Cerchio continuo = raggio medio, tratteggiato = CEP; la retta è l'asse maggiore. La mira è mostrata se vicina, altrimenti una freccia al bordo ne indica la direzione. <b>Cosa guardare</b>: circa metà dei fori dovrebbe stare dentro il CEP; un foro molto fuori dal CEP è un possibile flyer; una nuvola lunga e stretta indica dispersione prevalente in una direzione.</dd>
+<dt>Istogramma delle distanze dal centro</dt>
+<dd>Quanti fori cadono in ogni fascia di distanza dal centro. Nel modello ha la forma di Rayleigh: pochi fori molto vicini al centro (l'area vicina al centro è piccola), un massimo vicino a σ, una coda verso destra. Linee verticali: raggio medio e CEP. <b>Cosa guardare</b>: una barra isolata a destra, staccata dalle altre, è il segno tipico di un flyer.</dd>
+<dt>Orologio — «dal punto di mira»</dt>
+<dd>Ogni spicchio è un'ora del quadrante (12 = alto, 3 = destra); la lunghezza dice quanti fori stanno in quella direzione rispetto alla mira. La freccia indica dove sta il centro gruppo: «i colpi tendono a ore 2» = alto-destra. <b>Uso</b>: è lo scostamento sistematico, quello che si corregge con i click.</dd>
+<dt>Orologio — «dal centro gruppo»</dt>
+<dd>Rispetto al centro gruppo le direzioni si bilanciano per costruzione, quindi l'informazione utile è <b>lungo quale asse</b> i fori si dispongono: «ore 12–6» = stringatura verticale, «ore 3–9» = orizzontale. Rapporto sotto 1,3 = gruppo sostanzialmente rotondo.</dd>
+<dt>Confronto tra gruppi e andamento nel tempo</dt>
+<dd>Una riga per gruppo (sessione corrente + storico importato) in ordine di data, con la metrica scelta (ES, raggio medio, FOM, CEP) in MIL o MOA, quindi confrontabile anche a distanze diverse. <b>Δ</b> = differenza rispetto al gruppo precedente; <b>media mobile</b> = media degli ultimi N gruppi, che smorza il caso e mostra la tendenza. Nel grafico, i punti vuoti sono lo storico. <b>Attenzione</b>: tra gruppi di pochi colpi differenze del 20–30% sono normali anche senza cambiare nulla; fidati della tendenza della media mobile più che del singolo Δ, e confronta l'ES solo a parità di colpi.</dd>
+</dl>
+</section>
+
+<section id="h-qualita">
+<h3>Qualità della misura</h3>
+<dl class="help-dl">
+<dt>Scala e sua incertezza</dt>
+<dd>La scala (px/mm) viene dai 2 punti di calibrazione oppure dal rettangolo della correzione prospettica. Supponendo ±1 px di errore per punto cliccato, l'incertezza relativa è √2 / (lunghezza in px); sopra l'1% l'app avvisa. Ogni misura in mm (e in angolo) ha lo stesso errore percentuale. Usa un riferimento il più lungo possibile.</dd>
+<dt>DPI equivalenti, inquadratura, foro in px</dt>
+<dd>DPI = px/mm × 25,4: solo informativo (in una foto dipende dalla distanza di ripresa). L'inquadratura reale (lato della foto in mm) serve a scoprire errori di valore o di unità della scala. Un foro più piccolo di 8 px rende difficile trovarne il centro: avvicina la fotocamera o usa una foto a risoluzione maggiore.</dd>
+<dt>Rotazione</dt>
+<dd>Se la foto è storta, «alto» e «destra» non sono quelli del bersaglio: correzione, H/V-spread, FOM, asse e orologio verrebbero scambiati in parte tra gli assi. Raddrizzare non cambia le distanze.</dd>
+<dt>Correzione prospettica (omografia)</dt>
+<dd>Una foto di sbieco comprime il bersaglio in una direzione e cambia la scala da un punto all'altro. Con i 4 angoli di un rettangolo di dimensioni note l'app calcola l'<b>omografia</b> (trasformazione proiettiva, 8 parametri) che lo riporta a un rettangolo esatto e ricampiona la foto. Non corregge la distorsione dell'obiettivo né un foglio non piano.</dd>
+<dt>Griglia angolare</dt>
+<dd>Linee a passo fisso in MIL o MOA alla distanza di tiro, centrate sulla mira: permette di leggere a occhio scostamenti e dimensioni in angolo e di verificare la scala (ad esempio 0,1 MIL a 100 m = 10 mm).</dd>
+</dl>
+</section>
+
+<section id="h-correggersi">
+<h3>Dalla lettura alla correzione</h3>
+<ol class="help-steps">
+  <li><b>Quanti colpi?</b> Sotto 5 i numeri sono poco significativi; per decisioni (scegliere una carica, cambiare taratura) meglio 10 o più, o più gruppi.</li>
+  <li><b>Ci sono flyer?</b> Se c'è un motivo noto, escludili; altrimenti tienili e annotali.</li>
+  <li><b>Lo scostamento è reale?</b> Guarda l'IC della correzione: se un asse contiene lo 0, su quell'asse non correggere ancora.</li>
+  <li><b>Applica i click</b> del centro gruppo e verifica con un nuovo gruppo: il centro dovrebbe cadere sulla mira entro l'IC.</li>
+  <li><b>Guarda la forma</b> solo se il rapporto d'aspetto è almeno 1,3 e i colpi sono almeno 10.</li>
+  <li><b>Confronta</b> cariche e sessioni con raggio medio o CEP (più stabili), in angolo, e con la media mobile.</li>
+</ol>
+<table class="help-tab">
+<thead><tr><th>Cosa vedi</th><th>Cause tipicamente indicate (da verificare, non diagnosi)</th><th>Cosa fare</th></tr></thead>
+<tbody>
+<tr><td>Gruppo compatto ma lontano dalla mira</td><td>Taratura dell'ottica</td><td>Applica la correzione, se l'IC esclude lo 0</td></tr>
+<tr><td>Allungato in verticale (ore 12–6)</td><td>Differenze di velocità alla bocca (più evidenti a distanza), respirazione, appoggio non costante</td><td>Verifica la velocità con un cronografo; cura posizione e appoggio; confronta cariche</td></tr>
+<tr><td>Allungato in orizzontale (ore 3–9)</td><td>Vento laterale variabile, scatto non costante</td><td>Annota il vento nei dati di ricarica; spara con condizioni stabili</td></tr>
+<tr><td>Allungato in diagonale</td><td>Inclinazione variabile dell'arma (cant), presa non costante; per le armi corte gli schemi diagnostici diffusi (es. basso-sinistra per un destrorso che «strappa» il grilletto) sono indicazioni di massima</td><td>Usa una livella sull'ottica; ripeti con attenzione allo scatto</td></tr>
+<tr><td>Un colpo isolato lontano</td><td>Errore del singolo colpo, munizione difettosa, primo colpo a canna fredda o pulita</td><td>Annota gli scaldacanna; se si ripete al primo colpo, è un comportamento dell'arma</td></tr>
+<tr><td>Gruppi che peggiorano nel corso della sessione</td><td>Canna che si scalda, affaticamento</td><td>Guarda la media mobile nell'andamento; fai pause tra i gruppi</td></tr>
+</tbody></table>
+<p class="muted">Le cause in tabella sono quelle più citate nella pratica del tiro; nessun programma può stabilirle da un solo bersaglio. Con meno di 10 colpi la forma del gruppo è spesso solo casuale.</p>
+</section>
+
+<section id="h-esempi">
+<h3>Esempi svolti</h3>
+<p>Valori calcolati in questo momento dal motore dell'app sui dati indicati.</p>
+<div class="help-ex">
+<h4>Esempio 1 · Un gruppo di 5 colpi a 100 m</h4>
+<p>Calibro 7,82 mm (.308), click 0,1 MIL. Fori in mm rispetto al punto di mira (X destra, Y alto): <span data-ex="ptsA"></span>.</p>
+<ul>
+  <li>Group size c-c <b data-ex="esA"></b> (bordo-bordo <b data-ex="esEdgeA"></b>) = <b data-ex="esAngA"></b>.</li>
+  <li>Raggio medio <b data-ex="mrA"></b>; H-spread <b data-ex="wA"></b>, V-spread <b data-ex="hA"></b>, FOM <b data-ex="fomA"></b>.</li>
+  <li>σ = <b data-ex="sigA"></b> → CEP <b data-ex="cepA"></b> (IC 95% <b data-ex="cepCiA"></b>), R95 <b data-ex="r95A"></b>.</li>
+  <li>Centro gruppo a <b data-ex="offA"></b> dalla mira → correzione <b data-ex="corrA"></b> (valore esatto <b data-ex="corrExA"></b>); IC 95%: <b data-ex="corrCiA"></b>.</li>
+  <li>Forma: <b data-ex="shapeA"></b>. Con 5 colpi l'orientamento è un'indicazione, non una prova.</li>
+</ul>
+<p><b>Lettura</b>: il gruppo è piccolo (<span data-ex="esAngA2"></span>) ma spostato a destra; l'IC della correzione orizzontale non contiene lo 0, quindi lo spostamento è reale: si danno i click a sinistra. In verticale lo scostamento è dentro l'incertezza: nessuna correzione.</p>
+</div>
+<div class="help-ex">
+<h4>Esempio 2 · Lo stesso gruppo con un flyer</h4>
+<p>Aggiungiamo un sesto colpo in <span data-ex="flyPt"></span> mm. Il suo z (leave-one-out) è <b data-ex="flyZ"></b>, contro un massimo di <b data-ex="flyZmax"></b> per gli altri fori: è segnalato come flyer (soglia 2). Con il flyer il group size passa da <b data-ex="esA3"></b> a <b data-ex="flyEs"></b> e il raggio medio da <b data-ex="mrA2"></b> a <b data-ex="flyMr"></b>: l'ES, che dipende dai soli estremi, peggiora molto di più.</p>
+</div>
+<div class="help-ex">
+<h4>Esempio 3 · Probabilità di colpire</h4>
+<p>Con il gruppo dell'esempio 1, un cerchio di ⌀ 4 cm:</p>
+<ul>
+  <li>a 100 m, con la correzione applicata: <b data-ex="hit100c"></b> (IC 95% <b data-ex="hit100cCi"></b>); con la taratura attuale (gruppo a <span data-ex="offShort"></span>): <b data-ex="hit100n"></b>;</li>
+  <li>a 300 m, con la correzione applicata e la stessa dispersione angolare: <b data-ex="hit300c"></b> (IC 95% <b data-ex="hit300cCi"></b>), da considerare un limite superiore.</li>
+</ul>
+<p><b>Lettura</b>: a 100 m il bersaglio è facile solo se la taratura è corretta; a 300 m lo stesso gruppo, a parità di angolo, è grande il triplo in mm e la probabilità scende.</p>
+</div>
+<div class="help-ex">
+<h4>Esempio 4 · Conversioni rapide</h4>
+<ul>
+  <li>Un gruppo di 25 mm a 100 m = <b data-ex="cv25"></b>.</li>
+  <li>Un gruppo di 1 MOA a 300 m misura <b data-ex="cv300"></b>.</li>
+  <li>Scostamento di 5 cm in alto a 100 m con click da 1/4 MOA: <b data-ex="cvClick"></b>.</li>
+</ul>
+</div>
+</section>
+
+    </article>
+  </div>
+</div>
+
 <script id="calc-engine">
 "use strict";
 const Calc = (() => {
@@ -1057,7 +1417,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.3.0";
+const APP_VERSION = "1.4.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 3;
@@ -2048,6 +2408,11 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && k === "s") { e.preventDefault(); saveSession(); return; }
   // Vista grafici/confronto aperta: Esc chiude; le scorciatoie dell'immagine sono disattivate (agirebbero «alla cieca»).
   if (state.busy) { e.preventDefault(); return; }   // rettifica in corso
+  if (helpOpen()) {   // help tecnico aperto: Esc chiude, le scorciatoie dell'immagine sono disattivate
+    if (k === "escape") { e.preventDefault(); closeHelp(); }
+    else if (!typing && k === "t") toggleTheme();
+    return;
+  }
   if (anaOpen()) {
     if (k === "escape") { e.preventDefault(); closeAnalysis(); }
     else if (!typing && k === "t") toggleTheme();
@@ -2073,6 +2438,7 @@ document.addEventListener("keydown", e => {
   else if (k === "5") setMode("align");
   else if (k === "6") setMode("persp");
   else if (k === "a" && !e.ctrlKey && !e.metaKey) openAnalysis();
+  else if (k === "h" && !e.ctrlKey && !e.metaKey) openHelp();
 });
 
 /* ---------------------------- AZIONI TOOLBAR ---------------------------- */
@@ -3343,6 +3709,77 @@ function closeAnalysis() {
   requestDraw();
 }
 
+/* ------------------------------ HELP TECNICO ------------------------------
+   Vista a schermo intero con il significato di termini, misure e grafici. Gli esempi numerici NON sono scritti a mano:
+   fillHelp() li calcola con il motore Calc sugli stessi dati descritti nel testo (sempre coerenti con l'app). */
+const helpOpen = () => !$("helpView").hidden;
+const HELP_A = [{ x: 31.0, y: 2.5 }, { x: 35.0, y: -2.5 }, { x: 27.5, y: -5.0 }, { x: 33.8, y: 3.8 }, { x: 31.3, y: -1.3 }];   // mm, Y↑
+const HELP_FLY = { x: 46.0, y: 9.0 };
+function helpExamples() {
+  const E = {}, img = p => ({ x: p.x, y: -p.y });   // coordinate «immagine» (Y↓) in mm: 1 px = 1 mm
+  const ctx = { pxPerMm: 1, distMm: 100000, caliberMm: 7.82, clickValue: 0.1, clickUnit: "MIL", ciLevel: 0.95, ellipseP: 0.95 };
+  const A = HELP_A.map(img), poa = { x: 0, y: 0 }, r = Calc.analyze(A, poa, ctx), mm = v => `${fmt(v, 1)} mm`;
+  const signed = v => (v < 0 ? "−" : "") + fmt(Math.abs(v), 1);
+  E.ptsA = HELP_A.map(p => `(${signed(p.x)}; ${signed(p.y)})`).join(" · ");
+  E.esA = E.esA3 = mm(r.mm.es); E.esEdgeA = mm(r.mm.esEdge);
+  E.esAngA = `${fmt(r.ang.es.MOA, 2)} MOA · ${fmt(r.ang.es.MIL, 2)} MIL`; E.esAngA2 = `${fmt(r.ang.es.MOA, 2)} MOA`;
+  E.mrA = E.mrA2 = mm(r.mm.mr); E.wA = mm(r.mm.w); E.hA = mm(r.mm.h); E.fomA = mm(r.mm.fom);
+  E.sigA = mm(r.mm.sigma); E.cepA = mm(r.mm.cep); E.r95A = mm(r.mm.r95);
+  E.cepCiA = `${fmt(r.ci.cep.lo, 1)}–${fmt(r.ci.cep.hi, 1)} mm`;
+  E.offA = `${fmt(Math.abs(r.offset.dx), 1)} mm a ${r.offset.dx >= 0 ? "destra" : "sinistra"} e ${fmt(Math.abs(r.offset.dy), 1)} mm in ${r.offset.dy >= 0 ? "alto" : "basso"}`;
+  E.corrA = correctionText(r.correction);
+  E.corrExA = `${fmt(r.correction.hAng, 3)} MIL orizzontale, ${fmt(r.correction.vAng, 3)} MIL verticale`;
+  E.offShort = `${fmt(Math.abs(r.offset.dx), 1)} mm a ${r.offset.dx >= 0 ? "destra" : "sinistra"}`;
+  { const t = correctionCIText(r); E.corrCiA = t ? t.text.replace(/^IC 95%:\s*/, "") : "–"; }
+  E.shapeA = `${axisText(r.shape)}, rapporto ${fmt(r.shape.ratio, 2)} : 1`;
+  E.c5 = fmt(Calc.sigmaCorrection(5), 4);
+  E.moa100 = fmt(2 * 100000 * Math.tan(Math.PI / 180 / 60 / 2), 2);
+  E.mil100 = fmt(2 * 100000 * Math.tan(0.0005), 2);
+  // flyer
+  const F = [...A, img(HELP_FLY)], fz = Calc.flyers(F, 2), rf = Calc.analyze(F, poa, ctx);
+  E.flyPt = `(${signed(HELP_FLY.x)}; ${signed(HELP_FLY.y)})`;
+  E.flyZ = fmt(fz[5].z, 1); E.flyZmax = fmt(Math.max(...fz.slice(0, 5).map(f => f.z)), 1);
+  E.flyEs = mm(rf.mm.es); E.flyMr = mm(rf.mm.mr);
+  E._flyFlag = fz[5].flagged && !fz.slice(0, 5).some(f => f.flagged);
+  // probabilità di colpire: cerchio ⌀ 4 cm
+  const d = Calc.dispersion(A), base = { n: A.length, s2: (d.sx * d.sx + d.sy * d.sy) / 2, sigma: d.sigma, shape: "circle", level: 0.95, seed: 20261116 };
+  const res = (o, clicks) => Math.sign(o) * ctx.distMm * Math.tan(Math.atan(Math.abs(o) / ctx.distMm) - toRad(clicks * ctx.clickValue, ctx.clickUnit));
+  const h100c = Calc.hitProbability({ ...base, R: 20, dx: res(r.offset.dx, r.correction.hClicks), dy: res(r.offset.dy, r.correction.vClicks) });
+  const h100n = Calc.hitProbability({ ...base, R: 20, dx: r.offset.dx, dy: r.offset.dy });
+  const h300c = Calc.hitProbability({ ...base, R: 20 * 100 / 300, dx: 0, dy: 0 });
+  E.hit100c = fmtP(h100c.p); E.hit100cCi = fmtPR(h100c); E.hit100n = fmtP(h100n.p);
+  E.hit300c = fmtP(h300c.p); E.hit300cCi = fmtPR(h300c);
+  E._hit = { h100c, h100n, h300c };
+  // conversioni
+  const a25 = Calc.angleOfSize(25, 100000);
+  E.cv25 = `${fmt(Calc.fromRad(a25, "MOA"), 2)} MOA = ${fmt(Calc.fromRad(a25, "MIL"), 2)} MIL`;
+  E.cv300 = mm(2 * 300000 * Math.tan(Math.PI / 180 / 60 / 2));
+  const cc = Calc.correction(0, 50, { distMm: 100000, clickValue: 0.25, clickUnit: "MOA" });
+  E.cvClick = `${fmt(cc.vAng, 2)} MOA → ${cc.vClicks} click ${cc.vDir}`;
+  // IC di σ in funzione del numero di colpi
+  E._ic = [3, 5, 10, 20].map(n => { const nu = 2 * (n - 1); return { n, lo: Math.sqrt(nu / Calc.chi2inv(0.975, nu)), hi: Math.sqrt(nu / Calc.chi2inv(0.025, nu)) }; });
+  E._r = r;
+  return E;
+}
+function fillHelp() {
+  const E = helpExamples();
+  document.querySelectorAll("#helpView [data-ex]").forEach(el => { const v = E[el.dataset.ex]; el.textContent = v == null ? "?" : v; });
+  $("helpIcTable").innerHTML = E._ic.map(x => `<tr><td>${x.n}</td><td>da ×${fmt(x.lo, 2)} a ×${fmt(x.hi, 2)}</td></tr>`).join("");
+}
+function openHelp() {
+  if (helpOpen()) return;
+  if (anaOpen()) closeAnalysis();
+  fillHelp();
+  $("helpView").hidden = false;
+  $("bHelpClose").focus();
+}
+function closeHelp() {
+  if (!helpOpen()) return;
+  $("helpView").hidden = true;
+  $("bHelp").focus();
+  requestDraw();
+}
+
 /* ------------------------------ VARIE ------------------------------ */
 let toastT;
 function toast(msg) { const t = $("toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 2600); }
@@ -3401,6 +3838,13 @@ document.querySelectorAll("#ldForm [data-k]").forEach(el => el.addEventListener(
 $("bCardTxt").onclick = copyText;
 $("bCsvShots").onclick = () => exportCsv("shots");
 $("bCsvGroups").onclick = () => exportCsv("groups");
+// help tecnico
+$("bHelp").onclick = openHelp;
+$("bHelpClose").onclick = closeHelp;
+document.querySelectorAll("#helpView .help-toc a").forEach(a => a.addEventListener("click", () => {
+  const t = document.getElementById(a.dataset.to); if (t) t.scrollIntoView({ block: "start" });
+  document.querySelectorAll("#helpView .help-toc a").forEach(x => x.classList.toggle("on", x === a));
+}));
 // correzione prospettica
 $("bPersp").onclick = () => setMode(state.mode === "persp" ? state.prevMode : "persp");
 $("bPerspOff").onclick = () => removePersp();
@@ -3458,7 +3902,7 @@ state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext };
 </script>
 </body>

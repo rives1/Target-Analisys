@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.4.0] - 2026-11-16
+### Aggiunto
+- **Help tecnico** (pulsante «📘 Help tecnico» nella sezione Dati, accanto ai CSV, o tasto `H`): vista a schermo intero
+  con indice laterale che spiega **significato, formula e uso** di ogni termine dell'app, non il suo utilizzo:
+  - glossario A–Z (c-c, bordo-bordo, CEP, χ², click, ES, ellisse, FOM, flyer, H/V-spread, IC, IPHY/SMOA, MIL, MOA, MR,
+    POA, R95/R99, rapporto d'aspetto, Rayleigh, SD, σ, t di Student; SEP spiegato come non usato: è il CEP in 3D);
+  - unità angolari e formule esatte; mira, centro gruppo, correzione e suo IC; dimensioni (ES, MR, H/V-spread, FOM);
+    statistiche (SD, σ con correzione per piccoli campioni, CEP/R95/R99 dal modello di Rayleigh); intervalli di
+    confidenza con tabella dell'ampiezza in funzione del numero di colpi; forma ed ellisse; flyer; probabilità di colpire;
+  - come leggere i grafici (dispersione, istogramma, orologio dal punto di mira e dal centro gruppo, confronto e
+    andamento con media mobile);
+  - qualità della misura (incertezza della scala, DPI, rotazione, omografia, griglia);
+  - «Dalla lettura alla correzione»: procedura in 6 passi e tabella forme del gruppo → cause tipicamente indicate → cosa
+    fare, presentate come indicazioni e non come diagnosi;
+  - 4 esempi svolti (gruppo di 5 colpi, flyer, probabilità di colpire, conversioni) i cui numeri sono **calcolati dal
+    motore dell'app** all'apertura, quindi sempre coerenti con i risultati;
+  - 5 schemi SVG che seguono il tema chiaro/scuro.
+- Test dell'interfaccia (17 in totale): apertura, indice, tasti, esempi compilati e coerenza delle frasi di commento
+  con i valori calcolati.
+
 ## [1.3.0] - 2026-11-16
 ### Aggiunto
 - **Probabilità di colpire** un bersaglio noto (sezione del pannello, gruppo attivo): cerchio (diametro) o rettangolo

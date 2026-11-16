@@ -6,7 +6,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.3.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.4.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -44,6 +44,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 - **Grafici** (vista a schermo intero): dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni.
 - **Confronto tra gruppi**: tabella affiancata, differenza rispetto al precedente, andamento nel tempo con media mobile, storico da altre sessioni.
 - **Qualità dei dati**: incertezza della scala, inquadratura improbabile (errori di unità), risoluzione del foro, avviso sotto i 3 e i 5 colpi.
+- **Help tecnico** integrato: significato e formula di ogni termine, lettura dei grafici, guida alla correzione ed esempi svolti calcolati dall'app.
 - **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (`;` e virgola decimale), sessione JSON.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
@@ -52,7 +53,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 Trascina un punto per spostarlo · tasto destro su un punto = elimina · `Alt`+clic = foro sopra un punto esistente ·
 rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfondo o tasto centrale = pan.
 `1`–`6` strumenti (`5` = raddrizza, `6` = prospettiva, `Esc` annulla) · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
-`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `Ctrl+S` salva · `Ctrl+O` apri foto.
+`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `H` help tecnico · `Ctrl+S` salva · `Ctrl+O` apri foto.
 
 ### Limiti
 
@@ -114,7 +115,7 @@ CHANGELOG.md                    storia delle versioni
 
 Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (126 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
-L'interfaccia è collaudata end-to-end con Playwright (16 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (17 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

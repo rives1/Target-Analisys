@@ -484,6 +484,40 @@ test("probabilità di colpire: cerchio, rettangolo, altra distanza, testo e sess
 });
 const ok2 = (c, msg) => assert.ok(c, msg);
 
+test("help tecnico: apertura, indice, esempi calcolati e coerenti col testo", async page => {
+  assert.ok(await page.isHidden("#helpView"));
+  await page.click("#bHelp");
+  assert.ok(await page.isVisible("#helpView"));
+  // tutti i valori degli esempi sono compilati
+  const empty = await page.$$eval("#helpView [data-ex]", els => els.filter(e => !e.textContent || e.textContent === "?").map(e => e.dataset.ex));
+  assert.deepStrictEqual(empty, [], "segnaposto non compilati");
+  assert.strictEqual(await page.locator("#helpIcTable tr").count(), 4);
+  // le frasi di commento degli esempi sono vere con i dati usati
+  const E = await page.evaluate(() => { const e = window.__SA.helpExamples(), r = e._r;
+    return { corr: r.correction, cci: r.correctionCI, fly: e._flyFlag, hit: e._hit, es: r.mm.es, mr: r.mm.mr, ic: e._ic, ratio: r.shape.ratio }; });
+  assert.strictEqual(E.corr.hDir, "SINISTRA"); assert.strictEqual(E.corr.hClicks, 3); assert.strictEqual(E.corr.vClicks, 0);
+  ok2(E.cci.h.hi < 0 && E.cci.v.lo <= 0 && E.cci.v.hi >= 0, "IC orizzontale esclude lo 0, verticale lo contiene");
+  ok2(E.fly, "il sesto colpo è l'unico flyer");
+  ok2(E.hit.h100c.p > E.hit.h300c.p && E.hit.h100n.p < E.hit.h300c.p, "ordine delle probabilità come nel testo");
+  ok2(E.ic[0].hi > 2 && E.ic.every((x, i) => i === 0 || x.hi < E.ic[i - 1].hi), "con 3 colpi più del doppio; l'IC si stringe con n");
+  // le voci dell'indice portano alla sezione
+  await page.click('.help-toc a[data-to="h-esempi"]');
+  await page.waitForTimeout(100);
+  const top = await page.evaluate(() => document.getElementById("h-esempi").getBoundingClientRect().top);
+  ok2(top >= 0 && top < 120, `sezione «Esempi svolti» in cima alla vista (${top})`);
+  // le scorciatoie dell'immagine sono disattivate; Esc chiude; H riapre
+  await page.keyboard.press("4");
+  assert.notStrictEqual((await S(page)).mode, "shot");
+  await page.keyboard.press("Escape");
+  assert.ok(await page.isHidden("#helpView"));
+  await key(page, "h");
+  assert.ok(await page.isVisible("#helpView"), "tasto H");
+  await page.click("#bHelpClose");
+  assert.ok(await page.isHidden("#helpView"));
+  // SEP: spiegato come non usato
+  assert.match(await page.textContent("#h-glossario"), /SEP.*tridimensionale.*Non è usato/s);
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
