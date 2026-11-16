@@ -6,7 +6,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.4.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.5.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -44,6 +44,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 - **Grafici** (vista a schermo intero): dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni.
 - **Confronto tra gruppi**: tabella affiancata, differenza rispetto al precedente, andamento nel tempo con media mobile, storico da altre sessioni.
 - **Qualità dei dati**: incertezza della scala, inquadratura improbabile (errori di unità), risoluzione del foro, avviso sotto i 3 e i 5 colpi.
+- **Zone di punteggio** ISSF (10 m aria, 50 m carabina, 25/50 m pistola, 300 m) o personalizzate attorno al punto di mira, con **punteggio per foro** (bordo del foro, 10 interni, colpi sulla linea).
+- **Salvataggio automatico** nel browser con ripristino alla riapertura; **archivio** delle sessioni esportabile in un unico **ZIP** (JSON, foto, CSV, riepilogo).
 - **Help tecnico** integrato: significato e formula di ogni termine, lettura dei grafici, guida alla correzione ed esempi svolti calcolati dall'app.
 - **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (`;` e virgola decimale), sessione JSON.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
@@ -61,6 +63,8 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
 - Il riconoscimento dei flyer usa la distanza dal centro: in gruppi molto allungati può segnalare i fori alle estremità.
+- Salvataggio automatico e archivio stanno nel browser (IndexedDB): si perdono cancellando i dati del sito e non passano da un browser o PC all'altro. «Salva sessione» resta il salvataggio vero. Da `file://` IndexedDB funziona in Chrome ed Edge; negli altri browser, se non è disponibile, l'app lo segnala.
+- Il punteggio è stimato dalla foto: per i colpi «sulla linea» (≈) decide il calibro di controllo; il punteggio decimale dei bersagli elettronici non è calcolato.
 
 ## Calcoli
 
@@ -113,9 +117,9 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (126 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (141 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
-L'interfaccia è collaudata end-to-end con Playwright (17 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (20 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.5.0] - 2026-11-16
+### Aggiunto
+- **Salvataggio automatico** nel browser (IndexedDB) 1,2 s dopo ogni modifica e quando la pagina viene nascosta: sessione
+  + foto originale (come file binario, una sola copia per foto). Alla riapertura, se c'è un lavoro non salvato su file,
+  un avviso propone **Ripristina / Ignora** (ignorato, resta disponibile finché non inizi un nuovo lavoro). Indicatore
+  «Salvato automaticamente alle hh:mm» sotto il titolo. Se IndexedDB non è disponibile l'app lo segnala e continua.
+  localStorage scartato: ~5 MB in tutto, meno di una foto.
+- **Zone di punteggio** (nuova sezione): bersagli ISSF 10 m carabina e pistola ad aria, 50 m carabina, 25 m precisione /
+  50 m pistola, 300 m carabina (diametri dal regolamento tecnico ISSF) e personalizzato (⌀ del 10, passo, 10 interno).
+  Anelli disegnati attorno al punto di mira di ogni gruppo, nella vista e nella Result Card.
+  - **Punteggio per foro** con la regola dei bersagli di carta: vale l'anello toccato dal **bordo** del foro (calibro
+    impostato); `*` = 10 interno (carabina ad aria: punto asportato del tutto); `≈` = «sulla linea» entro l'incertezza di
+    posizione. Totale, massimo, media e 10 interni per gruppo nei risultati, nella tabella punti (colonna «Punti»), nella
+    card, nel testo e nei CSV (fori: Punti, 10 interno, Sulla linea; gruppi: Bersaglio, Punteggio, Massimo, Media, 10 interni).
+    Contano tutti i fori, anche quelli esclusi dalle statistiche.
+- **Archivio delle sessioni** (sezione Dati): ogni «Salva sessione» archivia anche la sessione nel browser (stessa
+  sessione = stessa voce); «＋ Aggiungi sessioni» importa sessioni salvate in precedenza; «Svuota archivio».
+- **🗜 Esporta archivio (ZIP)**: un unico file con una cartella per sessione (`sessione.json` senza foto incorporata,
+  foto originale, `fori.csv`, `gruppi.csv`), più `riepilogo_gruppi.csv` con tutti i gruppi di tutte le sessioni e
+  `LEGGIMI.txt`. Scrittore ZIP interno (metodo «store», CRC-32, nomi UTF-8), nessuna libreria.
+- Help tecnico: sezione «Zone di punteggio e punteggio» (tabella ISSF, regola, formula) e voci nel glossario; guida
+  rapida aggiornata.
+- Test: 15 nuovi test del calcolo (141: diametri ISSF di tutti i bersagli, limiti di linea, 10 interno) e 3 nuovi test
+  dell'interfaccia (20: anelli e punteggio contro un calcolo indipendente, autosave e ripristino, archivio e ZIP letto
+  da un lettore indipendente con verifica dei CRC).
+### Modificato
+- La sessione JSON contiene `sessionId`. I CSV sono generati da una «sorgente» (sessione aperta o salvata), così lo ZIP
+  calcola i CSV anche delle sessioni archiviate.
+
 ## [1.4.0] - 2026-11-16
 ### Aggiunto
 - **Help tecnico** (pulsante «📘 Help tecnico» nella sezione Dati, accanto ai CSV, o tasto `H`): vista a schermo intero

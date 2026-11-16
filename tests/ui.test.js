@@ -518,6 +518,130 @@ test("help tecnico: apertura, indice, esempi calcolati e coerenti col testo", as
   assert.match(await page.textContent("#h-glossario"), /SEP.*tridimensionale.*Non è usato/s);
 });
 
+test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#caliber", 4.5);
+  const at = await screenOf(page, { x: POA.x + 155.5 / 2 * 4, y: POA.y });   // anello 1 della pistola ad aria (r = 77,75 mm, 4 px/mm)
+  const px = () => page.evaluate(([x, y]) => { const c = document.getElementById("canvas"), r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    return [...c.getContext("2d").getImageData(Math.round((x - r.left) * d), Math.round((y - r.top) * d), 1, 1).data]; }, [at.x, at.y]);
+  const before = await px();
+  await page.selectOption("#scoreTarget", "issf10ap");
+  await page.waitForTimeout(100);
+  const after = await px();
+  ok2(after.some((v, i) => Math.abs(v - before[i]) > 40), `anello disegnato sull'immagine (${before} → ${after})`);
+  // punteggio confrontato con un calcolo indipendente (distanze in mm dal punto di mira, bordo del foro)
+  const st = await S(page);
+  const exp = await page.evaluate(([shots, poa]) => shots.map(sh => window.__SA.Calc.shotScore(Math.hypot(sh.x - poa.x, sh.y - poa.y) / 4, 4.5, window.__SA.Calc.SCORE_TARGETS.issf10ap).value), [st.g.shots, st.g.poa]);
+  const si = await page.evaluate(() => { const x = window.__SA.scoreHere(window.__SA.state.groups[0]); return { total: x.total, max: x.max, vals: [...x.byId.values()].map(v => v.value) }; });
+  assert.deepStrictEqual(si.vals, exp); assert.strictEqual(si.total, exp.reduce((a, b) => a + b, 0)); assert.strictEqual(si.max, 50);
+  assert.match(await page.textContent("#points thead"), /Punti/);
+  assert.match(await page.textContent("#results"), new RegExp(`Punteggio.*${si.total} / 50`));
+  assert.match(await page.evaluate(() => window.__SA.resultText()), /Punteggio \(ISSF 10 m pistola ad aria\): \d+ \/ 50/);
+  const csvF = await page.evaluate(() => window.__SA.csvShots()), csvG = await page.evaluate(() => window.__SA.csvGroups());
+  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea$/);
+  assert.match(csvG, new RegExp(`;ISSF 10 m pistola ad aria;${si.total};50;`));
+  // bersaglio personalizzato
+  await page.selectOption("#scoreTarget", "custom");
+  ok2(await page.isVisible("#scoreD10"), "campi del bersaglio personalizzato");
+  await setField(page, "#scoreD10", 20); await setField(page, "#scoreStep", 20);
+  const sc2 = await page.evaluate(() => window.__SA.scoreHere(window.__SA.state.groups[0]).t.name);
+  assert.match(sc2, /personalizzato/);
+  // nella sessione
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  assert.strictEqual(await page.inputValue("#scoreTarget"), "custom");
+  assert.strictEqual(await page.inputValue("#scoreD10"), "20");
+});
+
+test("salvataggio automatico (IndexedDB): proposta di ripristino, Ripristina, Ignora", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.waitForFunction(() => /Salvato automaticamente/.test(document.getElementById("autosaveInfo").textContent), null, { timeout: 5000 });
+  const before = await S(page);
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.waitForSelector("#restoreBar:not([hidden])");
+  assert.match(await page.textContent("#restoreText"), /bersaglio\.png, 1 gruppo, 5 fori/);
+  await page.click("#bRestore");
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.groups[0].shots.length === 5);
+  const after = await S(page);
+  assert.deepStrictEqual(after.g.shots, before.g.shots); assert.deepStrictEqual(after.calib, before.calib);
+  // dopo il ripristino il lavoro resta «non salvato»: al prossimo avvio la proposta ricompare; Ignora la chiude
+  await page.waitForTimeout(1500);
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.waitForSelector("#restoreBar:not([hidden])");
+  await page.click("#bRestoreIgnore");
+  ok2(await page.isHidden("#restoreBar") && !(await page.evaluate(() => window.__SA.state.image)), "Ignora: nessun ripristino");
+  // con la sessione salvata su file, al riavvio non c'è niente da ripristinare
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.waitForSelector("#restoreBar:not([hidden])");
+  await page.click("#bRestore");
+  await page.waitForFunction(() => window.__SA.state.image);
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
+  await page.waitForFunction(() => /sessione salvata su file/.test(document.getElementById("autosaveInfo").textContent), null, { timeout: 5000 });
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.waitForTimeout(500);
+  ok2(await page.isHidden("#restoreBar"), "nessuna proposta dopo il salvataggio su file");
+});
+
+/** Lettore ZIP minimo per il test (indipendente dallo scrittore dell'app): directory centrale + CRC con zlib. */
+function readZip(buf) {
+  const zlib = require("zlib");
+  let e = buf.length - 22; while (e >= 0 && buf.readUInt32LE(e) !== 0x06054b50) e--;
+  assert.ok(e >= 0, "fine della directory centrale");
+  const n = buf.readUInt16LE(e + 10); let p = buf.readUInt32LE(e + 16); const out = {};
+  for (let i = 0; i < n; i++) {
+    assert.strictEqual(buf.readUInt32LE(p), 0x02014b50);
+    const crc = buf.readUInt32LE(p + 16), size = buf.readUInt32LE(p + 24), nl = buf.readUInt16LE(p + 28), off = buf.readUInt32LE(p + 42);
+    const name = buf.slice(p + 46, p + 46 + nl).toString("utf8");
+    assert.strictEqual(buf.readUInt32LE(off), 0x04034b50);
+    const lnl = buf.readUInt16LE(off + 26), lex = buf.readUInt16LE(off + 28), data = buf.slice(off + 30 + lnl + lex, off + 30 + lnl + lex + size);
+    if (zlib.crc32) assert.strictEqual(zlib.crc32(data) >>> 0, crc, `CRC di ${name}`);
+    out[name] = data; p += 46 + nl;
+  }
+  return out;
+}
+
+test("archivio delle sessioni ed esportazione ZIP", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  for (const nm of ["primo.png", "secondo bersaglio.png"]) {
+    await loadTarget(page, nm);
+    await setupGroup(page, POA, nm === "primo.png" ? SHOTS : SHOTS.slice(0, 3));
+    await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
+    await page.waitForFunction(n => new RegExp(`${n} session[ei] archiviat`).test(document.getElementById("archiveInfo").textContent), nm === "primo.png" ? 1 : 2, { timeout: 5000 });
+  }
+  // risalvare la stessa sessione aggiorna la voce, non ne crea un'altra
+  await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
+  await page.waitForTimeout(400);
+  assert.match(await page.textContent("#archiveInfo"), /^2 sessioni archiviate · 8 fori/);
+  // una sessione salvata in precedenza (con foto incorporata) aggiunta da file
+  const old = await page.evaluate(() => { const s = window.__SA.buildSession(true); s.sessionId = undefined; s.savedAt = "2026-01-02T10:00:00.000Z"; return JSON.stringify(s); });
+  await page.setInputFiles("#fArch", { name: "vecchia.json", mimeType: "application/json", buffer: Buffer.from(old) });
+  await page.waitForFunction(() => /^3 sessioni/.test(document.getElementById("archiveInfo").textContent), null, { timeout: 5000 });
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bZip")]);
+  assert.match(dl.suggestedFilename(), /^shoot-analyzer_archivio_\d{4}-\d\d-\d\d--\d\d-\d\d\.zip$/);
+  const Z = readZip(require("fs").readFileSync(await dl.path()));
+  const names = Object.keys(Z);
+  ok2(names.includes("LEGGIMI.txt") && names.includes("riepilogo_gruppi.csv"), "file alla radice");
+  const dirs = [...new Set(names.filter(n => n.includes("/")).map(n => n.split("/")[0]))];
+  assert.strictEqual(dirs.length, 3, "una cartella per sessione");
+  ok2(/^001_.*_2026-01-02--\d\d-\d\d$/.test(dirs[0]), `ordine per data: la sessione del 2/1/2026 è la prima (${dirs[0]})`);
+  for (const d of dirs) for (const f of ["sessione.json", "foto.png", "fori.csv", "gruppi.csv"]) ok2(Z[`${d}/${f}`], `${d}/${f}`);
+  const js = JSON.parse(Z[`${dirs[1]}/sessione.json`].toString("utf8"));
+  ok2(js.app === "ShootAnalyzer" && js.image.dataUrl === null && js.image.file === "foto.png", "sessione senza foto incorporata, con riferimento al file");
+  ok2(Z[`${dirs[1]}/foto.png`].slice(1, 4).toString() === "PNG", "foto originale PNG");
+  const rie = Z["riepilogo_gruppi.csv"].toString("utf8").replace(/^﻿/, "").trim().split("\r\n");
+  assert.strictEqual(rie.length, 4, "intestazione + 3 gruppi");
+  ok2(rie[0].startsWith("Sessione;Salvata il;Immagine;Gruppo;"), "colonne del riepilogo");
+  // svuota archivio
+  await page.click("#bArchClear");
+  await page.waitForFunction(() => /^Archivio vuoto/.test(document.getElementById("archiveInfo").textContent), null, { timeout: 5000 });
+  ok2(await page.isDisabled("#bZip"), "ZIP disattivato con archivio vuoto");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };

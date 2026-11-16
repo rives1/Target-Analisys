@@ -261,4 +261,24 @@ eq(Calc.hitProbability({ n: 1, s2: 0, sigma: 0, dx: 0, dy: 0, shape: "circle", R
   ok(Math.abs(hit / TT - 0.95) < 0.035, `copertura IC probabilità ≈ 95% (simulata ${(hit / TT * 100).toFixed(1)}%)`);
 }
 
+// --- zone di punteggio ISSF (diametri dal regolamento tecnico) e valore del colpo (bordo del foro)
+const T = Calc.SCORE_TARGETS;
+eq(Calc.ringDiameters(T.issf10ar).map(v => +v.toFixed(1)), [0.5, 5.5, 10.5, 15.5, 20.5, 25.5, 30.5, 35.5, 40.5, 45.5], "anelli carabina ad aria 10 m");
+eq(Calc.ringDiameters(T.issf10ap).map(v => +v.toFixed(1)), [11.5, 27.5, 43.5, 59.5, 75.5, 91.5, 107.5, 123.5, 139.5, 155.5], "anelli pistola ad aria 10 m");
+eq(Calc.ringDiameters(T.issf50r).map(v => +v.toFixed(1)), [10.4, 26.4, 42.4, 58.4, 74.4, 90.4, 106.4, 122.4, 138.4, 154.4], "anelli carabina 50 m");
+eq(Calc.ringDiameters(T.issf25p), [50, 100, 150, 200, 250, 300, 350, 400, 450, 500], "anelli pistola 25/50 m");
+eq(Calc.ringDiameters(T.issf300r), [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000], "anelli carabina 300 m");
+// carabina ad aria, piombino 4,5 mm: 10 se il bordo tocca il punto (d ≤ 2,25 + 0,25 = 2,5 mm), 10 interno se lo asporta (d ≤ 2,0 mm)
+eq(Calc.shotScore(2.5, 4.5, T.issf10ar).value, 10, "10 al limite del punto");
+eq(Calc.shotScore(2.51, 4.5, T.issf10ar).value, 9, "9 appena fuori dal punto");
+ok(Calc.shotScore(2.0, 4.5, T.issf10ar).inner && !Calc.shotScore(2.01, 4.5, T.issf10ar).inner, "10 interno: punto asportato del tutto");
+eq(Calc.shotScore(25.0, 4.5, T.issf10ar).value, 1, "1 (bordo a 22,75 mm ≤ 22,75)");
+eq(Calc.shotScore(25.01, 4.5, T.issf10ar).value, 0, "fuori bersaglio");
+// pistola 25 m, .22 LR (5,66 mm): il 9 arriva a 50 mm di raggio, cioè centro del foro a 52,83 mm
+eq(Calc.shotScore(52.83, 5.66, T.issf25p).value, 9, "linea del 9 toccata");
+eq(Calc.shotScore(52.84, 5.66, T.issf25p).value, 8, "linea del 9 non toccata");
+ok(Calc.shotScore(15.33, 5.66, T.issf25p).inner, "10 interno pistola (bordo a 12,5 mm)");
+near(Calc.shotScore(52.0, 5.66, T.issf25p).margin, 0.83, 1e-9, "distanza dalla linea più vicina");
+eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio personalizzato senza 10 interno");
+
 console.log(`OK — ${passed} verifiche superate`);
