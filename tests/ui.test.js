@@ -268,6 +268,179 @@ test("griglia angolare e tema scuro", async page => {
   assert.strictEqual(await page.evaluate(() => document.documentElement.dataset.theme), "light");
 });
 
+test("icona della scheda (SVG e PNG incorporati)", async page => {
+  const icons = await page.evaluate(async () => {
+    const out = [];
+    for (const l of document.querySelectorAll('link[rel="icon"]')) {
+      const img = new Image(); img.src = l.href; await img.decode();
+      out.push({ type: l.type, w: img.naturalWidth, data: l.href.startsWith("data:") });
+    }
+    return out;
+  });
+  assert.deepStrictEqual(icons.map(i => i.type), ["image/svg+xml", "image/png"]);
+  assert.ok(icons.every(i => i.data && i.w > 0), "icone incorporate e leggibili");
+});
+
+/** Legge un CSV «italiano» (; e virgolette RFC 4180) in righe di celle. */
+function parseCsv(t) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < t.length; i++) {
+    const ch = t[i];
+    if (q) { if (ch === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
+    else if (ch === '"') q = true;
+    else if (ch === ";") { row.push(cell); cell = ""; }
+    else if (ch === "\r" && t[i + 1] === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; i++; }
+    else cell += ch;
+  }
+  return rows;
+}
+const csvNumber = c => parseFloat(c.replace(",", "."));
+async function download(page, sel) {
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click(sel)]);
+  const fs = require("fs");
+  return { name: dl.suggestedFilename(), text: fs.readFileSync(await dl.path(), "utf8") };
+}
+
+test("export CSV dei fori e dei gruppi (; e virgola decimale)", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await setField(page, "#ld-humidity", 55); await setField(page, "#ld-charge", "42.5");
+  await page.fill("#ld-notes", 'prova; "nuova" carica'); await page.dispatchEvent("#ld-notes", "change");
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const f = await download(page, "#bCsvShots");
+  assert.match(f.name, /^bersaglio_fori_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  assert.ok(f.text.startsWith("\uFEFF"), "BOM UTF-8");
+  assert.ok(f.text.includes("\r\n") && !/[^\r]\n/.test(f.text), "righe CRLF");
+  const R = parseCsv(f.text.slice(1));
+  assert.strictEqual(R.length, 6, "intestazione + 5 fori");
+  assert.ok(R.every(r => r.length === R[0].length), "stesso numero di colonne su ogni riga");
+  const col = name => R[0].indexOf(name);
+  const s0 = (await S(page)).g.shots[0];
+  near(csvNumber(R[1][col("X dal punto di mira (mm)")]), (s0.x - POA.x) / 4, 0.05, "X del foro 1 in mm");
+  assert.match(R[1][col("X dal punto di mira (mm)")], /^-?\d+,\d{3}$/, "virgola decimale");
+  assert.strictEqual(R[1][col("Verso orizzontale")], "SINISTRA");
+  assert.strictEqual(R[1][col("Escluso")], "no");
+  const g = await download(page, "#bCsvGroups");
+  const G = parseCsv(g.text.slice(1));
+  assert.strictEqual(G.length, 2, "intestazione + 1 gruppo");
+  assert.strictEqual(G[1].length, G[0].length);
+  const gc = name => G[1][G[0].indexOf(name)];
+  const r = await analyzeActive(page);
+  near(csvNumber(gc("Group size c-c (mm)")), r.mm.es, 0.001, "group size nel CSV");
+  assert.strictEqual(gc("Umidità (%)"), "55");
+  assert.strictEqual(gc("Carica (gr)"), "42,5", "numero dei dati di ricarica con la virgola");
+  assert.strictEqual(gc("Note"), 'prova; "nuova" carica', "testo con ; e virgolette");
+  assert.match(g.text, /"prova; ""nuova"" carica"/, "virgolette raddoppiate (RFC 4180)");
+});
+
+/* Foto sintetica DI SBIECO: un foglio 297 × 210 mm con griglia ogni 10 mm e 3 fori neri (⌀ 8 mm) proiettato con
+   un'omografia nota (angoli del foglio nella foto: PHOTO_CORNERS). */
+const PHOTO_CORNERS = [{ x: 150, y: 120 }, { x: 780, y: 190 }, { x: 700, y: 610 }, { x: 170, y: 560 }];
+const HOLES_MM = [{ x: 120, y: 80 }, { x: 150, y: 95 }, { x: 130, y: 120 }];
+async function loadSkewedTarget(page) {
+  const dataUrl = await page.evaluate(([corners, holes]) => {
+    const { Calc } = window.__SA, W = 900, H = 700;
+    const Hm = Calc.homography(corners, [{ x: 0, y: 0 }, { x: 297, y: 0 }, { x: 297, y: 210 }, { x: 0, y: 210 }]);   // foto → mm
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d"), im = g.createImageData(W, H), D = im.data;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const m = Calc.applyH(Hm, { x: x + 0.5, y: y + 0.5 }), o = (y * W + x) * 4;
+      let v = 90;   // sfondo
+      if (m.x >= 0 && m.x <= 297 && m.y >= 0 && m.y <= 210) {
+        v = 250;
+        if (Math.abs(m.x - Math.round(m.x / 10) * 10) < 0.35 || Math.abs(m.y - Math.round(m.y / 10) * 10) < 0.35) v = 170;
+        if (holes.some(h => Math.hypot(m.x - h.x, m.y - h.y) < 4)) v = 10;
+      }
+      D[o] = D[o + 1] = D[o + 2] = v; D[o + 3] = 255;
+    }
+    g.putImageData(im, 0, 0);
+    return c.toDataURL("image/png");
+  }, [PHOTO_CORNERS, HOLES_MM]);
+  await page.setInputFiles("#fImg", { name: "sbieco.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 900);
+}
+const holesInPhoto = page => page.evaluate(([corners, holes]) => {
+  const { Calc } = window.__SA, Hp = Calc.homography([{ x: 0, y: 0 }, { x: 297, y: 0 }, { x: 297, y: 210 }, { x: 0, y: 210 }], corners);
+  return holes.map(h => Calc.applyH(Hp, h));
+}, [PHOTO_CORNERS, HOLES_MM]);
+const waitBase = page => page.waitForFunction(() => !window.__SA.state.busy && window.__SA.state.base && window.__SA.state.baseKey !== "orig");
+
+test("correzione prospettica a 4 punti: foto appiattita, fori in mm, scala automatica", async page => {
+  await loadSkewedTarget(page);
+  // fori inseriti PRIMA della correzione, sulla foto storta
+  await key(page, "4");
+  const hp = await holesInPhoto(page);
+  for (const h of hp) await clickAt(page, h);
+  await page.selectOption("#perspPreset", "297x210");
+  await key(page, "6");
+  assert.strictEqual((await S(page)).mode, "persp");
+  for (const i of [2, 0, 3, 1]) await clickAt(page, PHOTO_CORNERS[i]);   // ordine sparso
+  await waitBase(page);
+  const info = await page.evaluate(() => {
+    const { state, perspR, calcContext } = window.__SA, R = perspR();
+    return { R: { k: R.k, ox: R.ox, oy: R.oy, W: R.W, H: R.Hpx }, base: { w: state.base.w, h: state.base.h }, mode: state.mode,
+      shots: state.groups[0].shots.map(s => ({ x: s.x, y: s.y })), px: calcContext().pxPerMm, persp: state.persp, rot: state.rot };
+  });
+  assert.strictEqual(info.mode, "shot", "torna alla modalità precedente");
+  assert.deepStrictEqual(info.base, { w: info.R.W, h: info.R.H }, "la foto rettificata è la foto di lavoro");
+  near(info.px, info.R.k, 1e-12, "scala automatica dal rettangolo");
+  info.shots.forEach((s, i) => {
+    const mm = { x: (s.x - info.R.ox) / info.R.k, y: (s.y - info.R.oy) / info.R.k };
+    near(Math.hypot(mm.x - HOLES_MM[i].x, mm.y - HOLES_MM[i].y), 0, 1.0, `foro ${i + 1} in mm dopo la correzione`);
+  });
+  // il centro di ogni foro nella foto rettificata è nero (ricampionamento corretto)
+  const dark = await page.evaluate(holes => {
+    const { state, perspR } = window.__SA, R = perspR(), c = document.createElement("canvas");
+    c.width = state.base.w; c.height = state.base.h; const g = c.getContext("2d"); g.drawImage(state.base.bitmap, 0, 0);
+    return holes.map(h => g.getImageData(Math.round(R.ox + h.x * R.k), Math.round(R.oy + h.y * R.k), 1, 1).data[0]);
+  }, HOLES_MM);
+  assert.ok(dark.every(v => v < 60), `centri dei fori scuri nella foto rettificata (${dark})`);
+  // group size misurato = distanza reale massima tra i fori (± errore di clic)
+  const trueES = Math.max(...HOLES_MM.flatMap((a, i) => HOLES_MM.slice(i + 1).map(b => Math.hypot(a.x - b.x, a.y - b.y))));
+  const esMm = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA; return Calc.extremeSpread(state.groups[0].shots).d / calcContext().pxPerMm; });
+  near(esMm, trueES, 1.0, "group size in mm sulla foto appiattita");
+  assert.match(await page.textContent("#perspStatus"), /297,0 × 210,0 mm/);
+  assert.match(await page.textContent("#calStatus"), /Scala dal rettangolo/);
+  // undo / redo / rimozione
+  await key(page, "Control+z");
+  await page.waitForFunction(() => !window.__SA.state.busy && window.__SA.state.baseKey === "orig");
+  const back = (await S(page)).g.shots;
+  back.forEach((s, i) => near(Math.hypot(s.x - hp[i].x, s.y - hp[i].y), 0, 1.5, `undo: foro ${i + 1} sulla foto originale`));
+  await key(page, "Control+y");
+  await waitBase(page);
+  await page.click("#bPerspOff");
+  await page.waitForFunction(() => !window.__SA.state.busy && window.__SA.state.baseKey === "orig");
+  const off = (await S(page)).g.shots;
+  off.forEach((s, i) => near(Math.hypot(s.x - back[i].x, s.y - back[i].y), 0, 1e-6, `rimozione: foro ${i + 1} di nuovo sulla foto originale`));
+  assert.ok(await page.isDisabled("#bPerspOff"));
+});
+
+test("prospettiva: sessione salvata e ricaricata, Esc e Backspace", async page => {
+  await loadSkewedTarget(page);
+  await page.selectOption("#perspPreset", "297x210");
+  // Esc annulla a metà, Backspace toglie l'ultimo angolo
+  await key(page, "6"); await clickAt(page, PHOTO_CORNERS[0]); await clickAt(page, PHOTO_CORNERS[1]);
+  await key(page, "Backspace");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.perspPts.length), 1);
+  await key(page, "Escape");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.persp), null);
+  await key(page, "6");
+  for (const c of PHOTO_CORNERS) await clickAt(page, c);
+  await waitBase(page);
+  await key(page, "3"); await clickAt(page, { x: 300, y: 200 });
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  const o = JSON.parse(sess);
+  assert.strictEqual(o.format, 3); assert.strictEqual(o.persp.wMm, 297);
+  const before = await S(page);
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  await waitBase(page);
+  const after = await S(page);
+  assert.deepStrictEqual(after.g.poa, before.g.poa);
+  near(await page.evaluate(() => window.__SA.calcContext().pxPerMm), await page.evaluate(() => window.__SA.perspR().k), 1e-12, "scala dopo il ricaricamento");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };

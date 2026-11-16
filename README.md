@@ -6,7 +6,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.1.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.2.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -21,7 +21,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 
 ### In breve
 
-1. **Carica la foto** (pulsante o trascinamento), scattata perpendicolare al bersaglio. Se è storta, **📐 Raddrizza**: clicca due punti su una linea del bersaglio.
+1. **Carica la foto** (pulsante o trascinamento). Se è storta, **📐 Raddrizza**: clicca due punti su una linea del bersaglio. Se è di sbieco, **⬚ Prospettiva**: clicca i 4 angoli di un rettangolo di dimensioni note (es. il foglio A4): la foto viene appiattita e la scala è già impostata.
 2. **Scala**: clicca due punti a distanza nota, il più lontani possibile, e inserisci il valore.
 3. **Mira**: clicca il punto mirato. **Foro**: clicca il centro di ogni foro (la lente 🔍 aiuta).
 4. Imposta distanza di tiro, calibro (elenco o valore libero) e valore del click del mirino.
@@ -39,21 +39,23 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 - **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
 - **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, meteo, temperatura, umidità, pressione, vento, colpi sparati, scaldacanna, note.
 - **Orientamento**: rotazione della foto (raddrizza con 2 punti, angolo libero, ±90°); punti e direzioni seguono il bersaglio raddrizzato.
+- **Correzione prospettica** a 4 punti (omografia) per le foto di sbieco, con scala automatica dal rettangolo di riferimento.
 - **Grafici** (vista a schermo intero): dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni.
 - **Confronto tra gruppi**: tabella affiancata, differenza rispetto al precedente, andamento nel tempo con media mobile, storico da altre sessioni.
 - **Qualità dei dati**: incertezza della scala, inquadratura improbabile (errori di unità), risoluzione del foro, avviso sotto i 3 e i 5 colpi.
+- **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (`;` e virgola decimale), sessione JSON.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
 
 Trascina un punto per spostarlo · tasto destro su un punto = elimina · `Alt`+clic = foro sopra un punto esistente ·
 rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfondo o tasto centrale = pan.
-`1`–`5` strumenti (`5` = raddrizza, `Esc` annulla) · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
+`1`–`6` strumenti (`5` = raddrizza, `6` = prospettiva, `Esc` annulla) · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
 `X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `Ctrl+S` salva · `Ctrl+O` apri foto.
 
 ### Limiti
 
-- La foto deve essere perpendicolare al bersaglio: non c'è correzione prospettica (la rotazione corregge solo una foto storta, non una foto di sbieco).
+- La correzione prospettica richiede un rettangolo reale di dimensioni note nella foto e un bersaglio piano: non corregge la distorsione dell'obiettivo (grandangoli, «effetto barile») né un foglio piegato o ondulato.
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
 - Il riconoscimento dei flyer usa la distanza dal centro: in gruppi molto allungati può segnalare i fori alle estremità.
@@ -84,6 +86,7 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 | Ore dell'orologio | round(direzione / 30°), 0 → 12 |
 | Asse maggiore | autovettore maggiore della matrice di covarianza campionaria dei fori; angolo dalla verticale, senso orario, 0–180° |
 | Rapporto d'aspetto | √(λ1/λ2) = asse maggiore / asse minore dell'ellisse |
+| Correzione prospettica | omografia H dai 4 angoli cliccati al rettangolo wMm × hMm (sistema 8×8, normalizzazione di Hartley); foto ricampionata con interpolazione bilineare; k = √(area del quadrilatero in px / (wMm·hMm)) px/mm |
 | Ellisse di dispersione p | semiassi k·√λ1, k·√λ2 con k = √(−2 ln(1−p)) (χ² con 2 gradi di libertà): 1,1774 (50%), 2,1460 (90%), 2,4477 (95%), 3,0349 (99%) |
 
 Riferimenti: 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.
@@ -98,16 +101,16 @@ src/index.html                  l'applicazione (HTML + CSS + JS in un unico file
 tests/calc.test.js              test del motore di calcolo  →  npm run test:calc
 tests/ui.test.js                test dell'interfaccia (Playwright)  →  npm run test:ui
 package.json                    script di test (npm test = entrambi)
-docs/ci/test.yml                workflow GitHub Actions (da copiare in .github/workflows/)
+.github/workflows/test.yml      GitHub Actions: tutti i test a ogni push (copia di riferimento in docs/ci/)
 index.html, .nojekyll           pagina iniziale di GitHub Pages (reindirizza a src/index.html)
 docs/context/                   file di contesto per versione (per riprendere lo sviluppo)
 specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (90 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (107 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
-L'interfaccia è collaudata end-to-end con Playwright (11 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (15 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```
@@ -119,19 +122,10 @@ npm test                          # calcolo + interfaccia
 Su Windows si può evitare il download del browser usando Edge: `set PW_CHANNEL=msedge && npm run test:ui`
 (PowerShell: `$env:PW_CHANNEL="msedge"; npm run test:ui`).
 
-Pubblicazione: ogni push su `main` aggiorna GitHub Pages.
-
-**Test automatici su GitHub** (una volta sola): copia il workflow nella cartella che GitHub legge e pubblicalo.
-
-```
-mkdir .github\workflows
-copy docs\ci\test.yml .github\workflows\test.yml
-git add .github/workflows/test.yml
-git commit -m "CI: test automatici con GitHub Actions"
-git push origin main
-```
-
-Da quel momento ogni push esegue tutti i test (scheda *Actions* del repository).
+Pubblicazione: ogni push su `main` aggiorna GitHub Pages ed esegue tutti i test con GitHub Actions
+(`.github/workflows/test.yml`, risultato nella scheda *Actions*). `docs/ci/test.yml` ne è la copia di riferimento:
+gli strumenti remoti di Claude non possono scrivere in `.github/workflows/`, quindi una modifica al workflow va
+ricopiata a mano da `docs/ci/`.
 
 ## Licenza
 

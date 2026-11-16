@@ -182,4 +182,44 @@ eq([cci.h.lo, cci.h.hi], [0, 0], "IC click orizzontali (±3 mm = 0)");
 const cross0 = Calc.correctionCI(5, 0, 20, 0, ctx);
 ok(cross0.h.lo < 0 && cross0.h.hi > 0, "IC che comprende lo zero");
 
+// --- correzione prospettica (omografia da 4 punti)
+// «fotocamera» sintetica: omografia nota dal piano del bersaglio (mm) ai pixel della foto, con forte prospettiva
+const Htrue = [9.2, 1.1, 610, -0.6, 7.4, 420, 0.00055, 0.00031, 1];
+const rectMm = [{ x: 0, y: 0 }, { x: 297, y: 0 }, { x: 297, y: 210 }, { x: 0, y: 210 }];
+const srcPx = rectMm.map(p => Calc.applyH(Htrue, p));
+const Hs = Calc.homography(rectMm, srcPx);
+ok(Hs && Hs.every((v, i) => Math.abs(v - Htrue[i]) <= 1e-9 * Math.max(1, Math.abs(Htrue[i]))), "omografia ricostruita da 4 punti");
+const Hinv = Calc.invertH(Htrue), pt = { x: 123.4, y: 56.7 }, back = Calc.applyH(Hinv, Calc.applyH(Htrue, pt));
+near(Math.hypot(back.x - pt.x, back.y - pt.y), 0, 1e-9, "inversa dell'omografia");
+// ordine degli angoli: cliccati in ordine sparso → [alto-sx, alto-dx, basso-dx, basso-sx]
+const shuffled = [srcPx[2], srcPx[0], srcPx[3], srcPx[1]];
+eq(Calc.orderQuad(shuffled), srcPx, "ordine degli angoli");
+eq(Calc.orderQuad([{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 30, y: 30 }, { x: 0, y: 100 }]), null, "quadrilatero concavo rifiutato");
+eq(Calc.orderQuad([{ x: 0, y: 0 }, { x: 100, y: 0 }, { x: 200, y: 1 }, { x: 300, y: 0 }]), null, "punti quasi allineati rifiutati");
+// rettifica: i fori misurati sulla foto rettificata tornano alle coordinate reali in mm
+const R = Calc.rectify(srcPx, 297, 210, 6000, 4000);
+ok(R && R.k > 0 && R.W > 0 && R.Hpx > 0, "rettifica calcolata");
+const toMmR = p => { const q = Calc.applyH(R.H, Calc.applyH(Htrue, p)); return { x: (q.x - R.ox) / R.k, y: (q.y - R.oy) / R.k }; };
+for (const h of [{ x: 100, y: 50 }, { x: 250.5, y: 190.2 }, { x: 10, y: 205 }]) {
+  const m = toMmR(h);
+  near(Math.hypot(m.x - h.x, m.y - h.y), 0, 1e-6, `foro (${h.x}; ${h.y}) mm dopo la rettifica`);
+}
+const hA = toMmR({ x: 140, y: 100 }), hB = toMmR({ x: 152, y: 109 });
+near(Math.hypot(hB.x - hA.x, hB.y - hA.y), 15, 1e-6, "distanza tra due fori conservata (15 mm)");
+near(R.k, Math.sqrt(Math.abs(Calc.polyArea(srcPx)) / (297 * 210)), 1e-9, "risoluzione = risoluzione media nel rettangolo");
+// caso senza prospettiva: rettangolo ripreso di fronte a 5 px/mm → k = 5 e solo traslazione
+const flat = rectMm.map(p => ({ x: 200 + p.x * 5, y: 100 + p.y * 5 }));
+const Rf = Calc.rectify(flat, 297, 210, 2000, 1400);
+near(Rf.k, 5, 1e-9, "foto frontale: k invariato");
+const fq = Calc.applyH(Rf.H, { x: 700, y: 600 });
+near(Math.hypot(fq.x - (700 - 200 + Rf.ox), fq.y - (600 - 100 + Rf.oy)), 0, 1e-6, "foto frontale: solo traslazione");
+ok(Math.abs(Rf.ox - 200) < 1e-6 && Math.abs(Rf.oy - 100) < 1e-6 && Rf.W === 2000 && Rf.Hpx === 1400, "foto frontale: stessa estensione della foto");
+// limite di pixel: la risoluzione si riduce per stare sotto maxPx
+const Rs = Calc.rectify(srcPx, 297, 210, 6000, 4000, { maxPx: 1e6 });
+ok(Rs.reduced && Rs.W * Rs.Hpx <= 1.01e6 + Rs.W + Rs.Hpx, "limite di pixel rispettato");
+// angoli della foto oltre l'orizzonte: estensione limitata al margine, rettifica comunque valida
+const Rh = Calc.rectify(srcPx, 297, 210, 60000, 40000);
+ok(Rh && Rh.W <= Math.ceil(3 * 297 * Rh.k) + 1 && Rh.Hpx <= Math.ceil(3 * 210 * Rh.k) + 1, "estensione limitata se la foto supera l'orizzonte");
+eq(Calc.rectify(srcPx, 0, 210, 6000, 4000), null, "dimensioni non valide");
+
 console.log(`OK — ${passed} verifiche superate`);

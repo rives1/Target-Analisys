@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.1.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.2.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -11,6 +11,9 @@
 <!-- Nessuna risorsa esterna: tutto è inline per garantire il funzionamento offline. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' data: blob:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'">
 <title>Shoot Analyzer</title>
+<!-- icona della scheda: SVG (mirino con rosata) + PNG 32 px per i browser che non usano le icone SVG; data: URI = nessun file esterno -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232563eb'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23fff' stroke-width='4.5'/%3E%3Cpath d='M32 5v15M32 44v15M5 32h15M44 32h15' stroke='%23fff' stroke-width='4.5' stroke-linecap='round'/%3E%3Cg fill='%23f59e0b' stroke='%237c2d12' stroke-width='1.5'%3E%3Ccircle cx='38' cy='24' r='6'/%3E%3Ccircle cx='46' cy='31' r='6'/%3E%3Ccircle cx='37' cy='36' r='6'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAGUElEQVR4AbxWC1BUZRT+7l1wl911YZkN5KEZok5qY6OJ2MPGGYHEVzo+8E3AOKOppVGKmgmiNpPYNPjKyEflBCq+SgmwMTNtMjXT0KQgEEUeyi4Ly3v39p+77N1duTyaady5597zn/Od75z9/3P///Jw+fWPNfqExlcnh8ZV5TKpHBhfLfwfQlxMcombcrikhFTAgLiqCZ58WwEHbOA4LpKJnytQTo8a2QtRI3rJudxsxMUkkrgpB+VyAMQCQt94FMVz3BlwCHQ4unvqtRzSl+iQvlQHHw2j7i7A4Wc5KJejCL7fXJOe4237Hf6ePtVKZ1KNyqn3NJ4HlxEcX+vL91K1LmJBAUye7MVmQiW0LGSFILynmfs+xSM2wgs72LQfeMdbCtu/yltcikXjvRBs4CV7twqHcEJ3WwCt96aFWuRt9sXa2RpEssZ72k8h8ff3V4jNuC5Gg/wtvkhZoO1pX4TzbPWelphkFCLPXq/H7LEqKFi5VhtQUNqGY5eaJTTpZCMfYWJeVeHwWh/QjEkgGYVyM0oZT7uJCLKSfKRp/fZyM15JfIRpm0xIP2lpR0HUF7+biynxOSAMOajwo+v06NvNknRagIZ1ecbb3qDpf1BjQ2xaLVbtrcNDs0D8kvzz8xlMuBaGxN4JSODjcDNpCFauPoJKk02M/XSFN7x6SfAOSqcFrJ6lwTNsbW0s39KdZly63eoWTAkqjDbkbl2OZXMrEPVynShvza+E/9U1WLrDDIHFhgYqkDhD6xbrOpAtYCALonUk4N6cBnHNSXeVNiswf9l3CPIzu5pFfWh/MypuXERGbqM4njdOhZA+zqYVje032QKmjlGJ7qIHVnxyokHU5W6NrewvPuZoawPMtVZEmDfibno0zn62HbaWJkwJVz6GtA9lCxj7nH3RMs83gTrbDu14r9aNRkGJzs1x/qICQX1asfi121gS8Ss8byQjL3UBHJxuYDaQLWBwkH26yqrZPDNQV9cPfqn4+KABmafUOJqjgamOR9gIAT5snyIZNcKK+tJfEKgol6URC5j+khI3dxtQmGEXjr2ghN6zXCfZvtmoB20aZHcIb2vG8IYs+BmAZ0PbQNOv4ATx6cDQc0BwPcoLrkpclGvai0pyQSzAgzErPcVxpzetFwdeREP6vVD/OSb0PYd5Ex9i+JAWxEy2IDjQilt32v9BO7LonhZBw0a2jwDK5angxLFIefhCEyZ9YMT8j2pFodeHvPvyGsUx2SdtMII6n+wOCbGcxaAB7ssUGiLg9h0FTLUAyZXrCmj7hUEX0M/JxXJRTuIRCyCl8L4Vl++0inLrLmtlZqQj12GzNHfseAaRvapaA7Arf5QoxQHrEfn+V/iDbd8OLsrlCJQKcBjoeaGghR6IHqUUdzNxIHMr1oxHYbHCzVNYpMBN3RwcDjiCvNCjmL4iER5KFS62c7qB2UC2gOyfmkE7oE7NYfUsLYPJX1e08ThTOg6HThvw+58q8ZlTNg5kp4h1MVoQB3Fl/dhEpg4iW0BplRU5V+yn3XTWraMHe3YI9GB//NSmPojfmY3d6hNY/9d27PQ6geOGDNh4JcJYzNQx9k4/zQ4xOk86kDCDbAHMjrRsC2rq7Ou+LaE3hod4kFkSfx8eg9h+MThYAW/WYGW+0WhQBov+5xk2jcXQwFgvIO2Y8+Qkm6t0WsC9hzYs3GYCEfjredCxvGKqWvwmcCVw1elbYOU0NTKTfEAxFDvnQxPKH7GPCFegi95pAYShbp291YQyVgzbKrBsshq0Ib03U4Oxw5zLQvoadnqeTtFjyUQ1CHu3yoaZW4wornB/TYnXVXgBQqWr4XG9pNKKGalGOM4FOl4ToryQvKC3BCU9LtJLPPHo7Dh0rgkzNhtBRUggGYVy8xBwHd38aCo3fFmPiLU12JJlQf5vLai12PuDQknPvdaCzZkWjE+qQfKhephc/ISRFZablqDbAhzB1BcH8hvxJvtAeT3F6DCD9OW7zDh4thH3u1hvKcCpXOfbbJ572NZrctqejEY5KTdfckBfIoCL+69pG1y2Zle9xzwCF0u5aQlQtM9w3CYI0awfyntKQH2R+rUFJKT3NI5yUK6/9xtOUoxYAClF+/xyWm0eQwUgRRCEPCZVZO9Kvvi+ESRdYchHXEzyiJtyUC6yk/wLAAD//2WIf/kAAAAGSURBVAMAb3uTSzbhSksAAAAASUVORK5CYII=">
 <style>
   :root {
     --bg: #f4f5f7; --panel: #ffffff; --ink: #1d2330; --muted: #6b7280; --line: #e3e6eb;
@@ -211,6 +214,7 @@
         <button data-mode="poa"   title="Punto di mira del gruppo attivo (3)"><span class="sw" style="background:var(--poa)"></span>Mira</button>
         <button data-mode="shot"  title="Aggiungi foro al gruppo attivo (4)"><span class="sw" id="shotSw"></span>Foro</button>
         <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)">📐 Raddrizza</button>
+        <button data-mode="persp" title="Correzione prospettica: clicca i 4 angoli di un rettangolo di dimensioni note (6)">⬚ Prospettiva</button>
       </div>
       <div class="grp">
         <button id="bUndo" title="Annulla (Ctrl+Z)">↶ Undo</button>
@@ -253,7 +257,7 @@
     </div>
 
     <section>
-      <h2>Orientamento immagine</h2>
+      <h2>Orientamento e prospettiva</h2>
       <div id="rotStatus" class="status">Immagine non ruotata.</div>
       <div class="rotrow">
         <label for="rotDeg" style="flex:1 1 auto;font-size:13px" title="Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.">Rotazione (° , + = orario)</label>
@@ -265,6 +269,28 @@
         <button class="btn" id="bAlign" title="Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)">📐 Raddrizza con 2 punti</button>
         <button class="btn" id="bRot0" title="Riporta la foto all'orientamento originale">Azzera</button>
       </div>
+      <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Correzione prospettica (foto di sbieco)</div>
+      <div id="perspStatus" class="status">Nessuna correzione prospettica.</div>
+      <div class="rotrow">
+        <label for="perspPreset" style="flex:1 1 auto;font-size:13px">Rettangolo di riferimento</label>
+        <select id="perspPreset" title="Dimensioni reali del rettangolo di cui clicchi i 4 angoli (es. il foglio del bersaglio)">
+          <option value="210x297">A4 verticale · 210 × 297 mm</option>
+          <option value="297x210">A4 orizzontale · 297 × 210 mm</option>
+          <option value="297x420">A3 verticale · 297 × 420 mm</option>
+          <option value="420x297">A3 orizzontale · 420 × 297 mm</option>
+          <option value="custom">Personalizzato</option>
+        </select>
+      </div>
+      <div class="rotrow">
+        <label for="perspW" style="flex:1 1 auto;font-size:13px" title="Larghezza = lato in alto del rettangolo così come appare nella foto">Larghezza × altezza (mm)</label>
+        <input id="perspW" type="number" min="1" step="any" value="210"> ×
+        <input id="perspH" type="number" min="1" step="any" value="297" title="Altezza = lato verticale del rettangolo">
+      </div>
+      <div class="btns">
+        <button class="btn" id="bPersp" title="Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6)">⬚ Correggi con 4 punti</button>
+        <button class="btn" id="bPerspOff" title="Torna alla foto originale (i punti vengono riportati su di essa)" disabled>Rimuovi correzione</button>
+      </div>
+      <div class="muted" style="font-size:12px;margin-top:4px">Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».</div>
     </section>
 
     <section>
@@ -380,6 +406,10 @@
       <div class="btns">
         <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
       </div>
+      <div class="btns">
+        <button class="btn" id="bCsvShots" title="Una riga per foro, tutti i gruppi: coordinate, distanze, direzione, click, escluso, flyer. Separatore «;» e virgola decimale (Excel/LibreOffice in italiano)">📄 CSV fori</button>
+        <button class="btn" id="bCsvGroups" title="Una riga per gruppo: misure in mm/MOA/MIL, statistiche, correzione, dati di ricarica. Separatore «;» e virgola decimale">📄 CSV gruppi</button>
+      </div>
       <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
     </section>
 
@@ -387,14 +417,15 @@
       <details>
         <summary>Guida rapida e scorciatoie</summary>
         <div class="help">
-          <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure). Se è storta, <b>📐 Raddrizza</b> (<kbd>5</kbd>): clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale; per la regolazione fine usa il campo «Rotazione», per le foto girate i pulsanti ⟲/⟳ 90°. Ruotano anche i punti già inseriti e tutte le direzioni (correzione, bussola, orologio, ellisse, griglia) si riferiscono all'alto del bersaglio raddrizzato.</p>
+          <p><b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure). Se è storta, <b>📐 Raddrizza</b> (<kbd>5</kbd>): clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale; per la regolazione fine usa il campo «Rotazione», per le foto girate i pulsanti ⟲/⟳ 90°. Foto <b>di sbieco</b>: <b>⬚ Prospettiva</b> (<kbd>6</kbd>): scegli le dimensioni reali di un rettangolo visibile (es. il foglio A4) e clicca i suoi 4 angoli in qualsiasi ordine; la foto viene «appiattita» e la scala è già impostata dal rettangolo (la puoi rifare con «Scala»); «Rimuovi correzione» torna alla foto originale. Ruotano anche i punti già inseriti e tutte le direzioni (correzione, bussola, orologio, ellisse, griglia) si riferiscono all'alto del bersaglio raddrizzato.</p>
           <p><b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.</p>
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p><b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.</p>
           <p><b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.</p>
+          <p><b>📄 CSV fori / CSV gruppi</b> (sezione Dati): tabelle per Excel o LibreOffice, separatore «;» e virgola decimale; una riga per foro (tutti i gruppi) o una per gruppo (misure, statistiche, correzione, ricarica).</p>
           <p><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.</p>
-          <p><kbd>1</kbd>–<kbd>5</kbd> strumenti (5 = raddrizza) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>Ctrl+S</kbd> salva.</p>
+          <p><kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>Ctrl+S</kbd> salva.</p>
           <p class="muted">Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
           <p class="muted">I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
@@ -769,9 +800,126 @@ const Calc = (() => {
     return r;
   }
 
+  /* ---------------- correzione prospettica (omografia da 4 punti) ----------------
+     H è una matrice 3×3 in un array di 9 elementi (riga per riga) con H[8] = 1:
+     (x', y') = ((h0·x + h1·y + h2) / w, (h3·x + h4·y + h5) / w),  w = h6·x + h7·y + 1. */
+  /** Risolve A·x = b (eliminazione di Gauss con pivot parziale). null se il sistema è singolare. */
+  function solveLinear(A, b) {
+    const n = b.length, M = A.map((r, i) => [...r, b[i]]);
+    for (let c = 0; c < n; c++) {
+      let piv = c;
+      for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+      if (Math.abs(M[piv][c]) < 1e-12) return null;
+      [M[c], M[piv]] = [M[piv], M[c]];
+      for (let r = c + 1; r < n; r++) {
+        const f = M[r][c] / M[c][c];
+        for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+      }
+    }
+    const x = new Array(n);
+    for (let r = n - 1; r >= 0; r--) {
+      let v = M[r][n];
+      for (let k = r + 1; k < n; k++) v -= M[r][k] * x[k];
+      x[r] = v / M[r][r];
+    }
+    return x;
+  }
+  /** Normalizzazione di Hartley (centro nell'origine, distanza media √2): rende il sistema ben condizionato. */
+  function normT(pts) {
+    const c = centroid(pts), d = pts.reduce((a, p) => a + Math.hypot(p.x - c.x, p.y - c.y), 0) / pts.length || 1;
+    const s = Math.SQRT2 / d;
+    return [s, 0, -s * c.x, 0, s, -s * c.y, 0, 0, 1];
+  }
+  function mul3(A, B) {
+    const C = new Array(9);
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) C[i * 3 + j] = A[i * 3] * B[j] + A[i * 3 + 1] * B[3 + j] + A[i * 3 + 2] * B[6 + j];
+    return C;
+  }
+  /** Inversa di una matrice 3×3 (normalizzata con [8] = 1 se possibile). null se singolare. */
+  function invertH(H) {
+    const [a, b, c, d, e, f, g, h, i] = H;
+    const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+    const det = a * A + b * B + c * C;
+    if (!isFinite(det) || Math.abs(det) < 1e-300) return null;
+    const R = [A, -(b * i - c * h), b * f - c * e, B, a * i - c * g, -(a * f - c * d), C, -(a * h - b * g), a * e - b * d].map(v => v / det);
+    return Math.abs(R[8]) > 1e-300 ? R.map(v => v / R[8]) : R;
+  }
+  /** Omografia che porta src[i] in dst[i] (4 coppie di punti, nessuna terna allineata). null se degenere. */
+  function homography(src, dst) {
+    const Ts = normT(src), Td = normT(dst), ap = (T, p) => ({ x: T[0] * p.x + T[1] * p.y + T[2], y: T[3] * p.x + T[4] * p.y + T[5] });
+    const s = src.map(p => ap(Ts, p)), d = dst.map(p => ap(Td, p));
+    const A = [], b = [];
+    for (let i = 0; i < 4; i++) {
+      const { x, y } = s[i], { x: u, y: v } = d[i];
+      A.push([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.push(u);
+      A.push([0, 0, 0, x, y, 1, -v * x, -v * y]); b.push(v);
+    }
+    const h = solveLinear(A, b);
+    if (!h) return null;
+    const Tdi = invertH(Td);
+    const H = mul3(mul3(Tdi, [...h, 1]), Ts);
+    return Math.abs(H[8]) > 1e-300 ? H.map(v => v / H[8]) : null;
+  }
+  function applyH(H, p) {
+    const w = H[6] * p.x + H[7] * p.y + H[8];
+    return { x: (H[0] * p.x + H[1] * p.y + H[2]) / w, y: (H[3] * p.x + H[4] * p.y + H[5]) / w };
+  }
+  /** Area con segno (formula di Gauss); > 0 in senso orario sullo schermo (y verso il basso). */
+  function polyArea(q) { let a = 0; for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length]; a += p.x * n.y - n.x * p.y; } return a / 2; }
+  /**
+   * Ordina 4 punti cliccati in qualsiasi ordine come [alto-sx, alto-dx, basso-dx, basso-sx] (y verso il basso):
+   * ordine angolare attorno al baricentro, poi parte dal punto con x + y minima. null se il quadrilatero non è
+   * convesso o è troppo piccolo/schiacciato (area < 2% di quella del rettangolo che lo contiene).
+   */
+  function orderQuad(pts) {
+    if (!pts || pts.length !== 4) return null;
+    const c = centroid(pts);
+    const q = [...pts].sort((a, b) => Math.atan2(a.y - c.y, a.x - c.x) - Math.atan2(b.y - c.y, b.x - c.x));
+    const i0 = q.reduce((best, p, i) => p.x + p.y < q[best].x + q[best].y ? i : best, 0);
+    const o = [0, 1, 2, 3].map(i => q[(i0 + i) % 4]);
+    for (let i = 0; i < 4; i++) {   // convessità: tutte le svolte nello stesso verso (orario)
+      const a = o[i], b = o[(i + 1) % 4], d = o[(i + 2) % 4];
+      if ((b.x - a.x) * (d.y - b.y) - (b.y - a.y) * (d.x - b.x) <= 0) return null;
+    }
+    const xs = o.map(p => p.x), ys = o.map(p => p.y);
+    const box = (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys));
+    return polyArea(o) > 0.02 * box ? o : null;
+  }
+  /**
+   * Geometria della foto rettificata. src = 4 angoli [alto-sx, alto-dx, basso-dx, basso-sx] in pixel della foto
+   * originale di un rettangolo reale wMm × hMm. Risoluzione k (px/mm) = √(area del quadrilatero in px / area in mm²),
+   * cioè la risoluzione media della foto dentro il rettangolo. Estensione = foto intera proiettata, limitata a
+   * `margin` × lato del rettangolo per parte (default 1) e ad almeno il rettangolo; px totali ≤ maxPx (k ridotto).
+   * Restituisce { H (originale → rettificata), Hi (inversa), k, ox, oy (angolo alto-sx del rettangolo), W, Hpx } o null.
+   */
+  function rectify(src, wMm, hMm, imgW, imgH, opts = {}) {
+    if (!(wMm > 0 && hMm > 0) || !src || src.length !== 4) return null;
+    const margin = opts.margin ?? 1, maxPx = opts.maxPx ?? 36e6, maxSide = opts.maxSide ?? 16384;
+    const toMm = homography(src, [{ x: 0, y: 0 }, { x: wMm, y: 0 }, { x: wMm, y: hMm }, { x: 0, y: hMm }]);
+    if (!toMm) return null;
+    // angoli della foto in mm; se uno è oltre l'orizzonte (w ≤ 0, segno diverso dal centro del rettangolo) si usa solo il limite
+    const cc = centroid(src), sgn = Math.sign(toMm[6] * cc.x + toMm[7] * cc.y + toMm[8]);
+    let x0 = -margin * wMm, x1 = (1 + margin) * wMm, y0 = -margin * hMm, y1 = (1 + margin) * hMm;
+    const corners = [{ x: 0, y: 0 }, { x: imgW, y: 0 }, { x: imgW, y: imgH }, { x: 0, y: imgH }];
+    if (corners.every(p => Math.sign(toMm[6] * p.x + toMm[7] * p.y + toMm[8]) === sgn)) {
+      const m = corners.map(p => applyH(toMm, p)), xs = m.map(p => p.x), ys = m.map(p => p.y);
+      x0 = Math.min(0, Math.max(x0, Math.min(...xs))); x1 = Math.max(wMm, Math.min(x1, Math.max(...xs)));
+      y0 = Math.min(0, Math.max(y0, Math.min(...ys))); y1 = Math.max(hMm, Math.min(y1, Math.max(...ys)));
+    }
+    let k = Math.sqrt(Math.abs(polyArea(src)) / (wMm * hMm));
+    const fit = Math.min(1, Math.sqrt(maxPx / ((x1 - x0) * (y1 - y0) * k * k)), maxSide / ((x1 - x0) * k), maxSide / ((y1 - y0) * k));
+    k *= fit;
+    const W = Math.ceil((x1 - x0) * k - 1e-6), Hpx = Math.ceil((y1 - y0) * k - 1e-6), ox = -x0 * k, oy = -y0 * k;   // tolleranza: errori di arrotondamento
+    const H = homography(src, [{ x: ox, y: oy }, { x: ox + wMm * k, y: oy }, { x: ox + wMm * k, y: oy + hMm * k }, { x: ox, y: oy + hMm * k }]);
+    const Hi = H && invertH(H);
+    if (!Hi) return null;
+    return { H, Hi, k, ox, oy, W, Hpx, wMm, hMm, reduced: fit < 1 };
+  }
+
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
-    chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI };
+    chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
+    solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -781,8 +929,10 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.1.0";
-const SESSION_FORMAT = 2;   // 2 = coordinate nel sistema della foto ruotata (campo «rotation»); scritto solo se la foto è ruotata
+const APP_VERSION = "1.2.0";
+// formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
+// Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
+const SESSION_FORMAT = 3;
 const GROUP_COLORS = ["#2563eb", "#f59e0b", "#9333ea", "#0891b2", "#db2777", "#65a30d", "#ea580c", "#4f46e5"];
 const COL_POA = "#e11d48", COL_CAL = "#16a34a";
 const HIT_PX = 11;          // raggio di presa dei punti in pixel schermo
@@ -809,7 +959,12 @@ const state = {
   loupeZoom: 4,         // ingrandimento della lente rispetto alla vista
   rot: 0,               // rotazione della foto in gradi, + = orario (vedi «ROTAZIONE»)
   alignP1: null,        // primo punto dello strumento «Raddrizza» (temporaneo, non nella storia)
-  prevMode: "pan",      // modalità a cui tornare dopo «Raddrizza»
+  prevMode: "pan",      // modalità a cui tornare dopo «Raddrizza» / «Prospettiva»
+  base: null,           // foto su cui si lavora: {w, h, bitmap} = originale o rettificata (vedi «PROSPETTIVA»)
+  baseKey: "",          // chiave della correzione a cui corrisponde base
+  persp: null,          // correzione prospettica {src: 4 angoli in px della foto ORIGINALE, wMm, hMm} o null
+  perspPts: [],         // angoli già cliccati con lo strumento «Prospettiva» (temporanei, non nella storia)
+  busy: false,          // rettifica in corso: niente disegno né input
 };
 
 function makeGroup() {
@@ -852,7 +1007,7 @@ const activeGroup = () => state.groups.find(g => g.id === state.activeGroupId) |
 // La rotazione è nella storia perché ruota anche i punti: punti e angolo devono tornare indietro insieme.
 const undoStack = { stack: [], idx: -1, max: 300 };   // («history» è già un oggetto del browser)
 function snapshot() {
-  return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId, rot: state.rot });
+  return JSON.stringify({ calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId, rot: state.rot, persp: state.persp });
 }
 function commit() {
   const s = snapshot();
@@ -867,9 +1022,11 @@ function restore(s) {
   const o = JSON.parse(s);
   state.calib = o.calib; state.groups = o.groups; state.activeGroupId = o.activeGroupId;
   state.rot = o.rot || 0; state.alignP1 = null;
+  state.persp = o.persp || null; state.perspPts = [];
   state.selected = null;
   uid = Math.max(uid, ...allIds()) + 1;
   refresh();
+  ensureBase();   // la correzione prospettica può essere cambiata: la foto rettificata è in cache o si ricalcola
 }
 function undo() { if (undoStack.idx > 0) restore(undoStack.stack[--undoStack.idx]); }
 function redo() { if (undoStack.idx < undoStack.stack.length - 1) restore(undoStack.stack[++undoStack.idx]); }
@@ -925,11 +1082,12 @@ function params() {
     ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95,
     ciLevel: parseFloat($("ciLevel").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
+    perspW: num("perspW"), perspH: num("perspH"), perspPreset: $("perspPreset").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN", perspW: "perspW", perspH: "perspH", perspPreset: "perspPreset" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
@@ -940,7 +1098,8 @@ function setParams(p) {
 function calcContext() {
   const p = params();
   return {
-    pxPerMm: Calc.scale(state.calib.p1, state.calib.p2, p.calDist, p.calUnit),
+    // scala manuale (2 punti) se c'è, altrimenti quella del rettangolo della correzione prospettica
+    pxPerMm: Calc.scale(state.calib.p1, state.calib.p2, p.calDist, p.calUnit) || (state.persp && perspR() ? perspR().k : null),
     distMm: p.shotDist * Calc.DIST[p.shotDistUnit],
     caliberMm: p.caliber * Calc.LEN[p.caliberUnit],
     clickValue: p.clickVal, clickUnit: p.clickUnit,
@@ -980,7 +1139,7 @@ function fitView() {
    le distanze (scala, group size…), ma rende «alto» e «destra» quelli del bersaglio raddrizzato. Quindi il motore di
    calcolo, la griglia, i grafici e la Result Card non sanno nulla della rotazione: la conoscono solo il disegno della
    foto (paintImage) e i controlli «il punto è dentro la foto». Ruotando, si ruotano anche tutti i punti (rotateBy). */
-const imgCenter = () => ({ x: state.image.w / 2, y: state.image.h / 2 });
+const imgCenter = () => ({ x: state.base.w / 2, y: state.base.h / 2 });
 function rotPoint(p, deg, c) {
   const a = deg * Math.PI / 180, co = Math.cos(a), si = Math.sin(a), dx = p.x - c.x, dy = p.y - c.y;
   return { x: c.x + dx * co - dy * si, y: c.y + dx * si + dy * co };
@@ -989,7 +1148,7 @@ const imgToWorld = p => state.rot ? rotPoint(p, state.rot, imgCenter()) : { x: p
 const worldToImg = p => state.rot ? rotPoint(p, -state.rot, imgCenter()) : { x: p.x, y: p.y };
 /** Angoli della foto in coordinate mondo (in senso orario dall'angolo in alto a sinistra). */
 function imageCorners() {
-  const { w, h } = state.image;
+  const { w, h } = state.base;
   return [{ x: 0, y: 0 }, { x: w, y: 0 }, { x: w, y: h }, { x: 0, y: h }].map(imgToWorld);
 }
 function worldBBox() {
@@ -999,7 +1158,7 @@ function worldBBox() {
 /** Riporta un punto mondo dentro la foto (per il trascinamento). */
 function clampToImage(p) {
   const q = worldToImg(p);
-  return imgToWorld({ x: clamp(q.x, 0, state.image.w), y: clamp(q.y, 0, state.image.h) });
+  return imgToWorld({ x: clamp(q.x, 0, state.base.w), y: clamp(q.y, 0, state.base.h) });
 }
 /** Percorso (non riempito) del contorno della foto nelle coordinate di destinazione T. */
 function imagePath(g, T) {
@@ -1011,7 +1170,7 @@ function imagePath(g, T) {
  *            (veloce anche con immagini da 20 MP nella lente).
  */
 function paintImage(g, s, tx, ty, vis) {
-  const W = state.image.w, H = state.image.h;
+  const W = state.base.w, H = state.base.h;
   let sx0 = 0, sy0 = 0, sx1 = W, sy1 = H;
   if (vis) {
     const q = [{ x: vis.x0, y: vis.y0 }, { x: vis.x1, y: vis.y0 }, { x: vis.x1, y: vis.y1 }, { x: vis.x0, y: vis.y1 }].map(worldToImg);
@@ -1022,7 +1181,7 @@ function paintImage(g, s, tx, ty, vis) {
   g.save();
   g.transform(s, 0, 0, s, tx, ty);
   if (state.rot) { const c = imgCenter(); g.translate(c.x, c.y); g.rotate(state.rot * Math.PI / 180); g.translate(-c.x, -c.y); }
-  g.drawImage(state.image.bitmap, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
+  g.drawImage(state.base.bitmap, sx0, sy0, sx1 - sx0, sy1 - sy0, sx0, sy0, sx1 - sx0, sy1 - sy0);
   g.restore();
 }
 /** Angolo normalizzato in (−180, 180], arrotondato al milionesimo di grado. */
@@ -1034,7 +1193,7 @@ function normDeg(d) {
 function rotateBy(delta, opts = {}) {
   if (!state.image || !isFinite(delta) || Math.abs(delta) < 1e-9) return;
   const c = imgCenter(), R = p => { if (!p) return p; const q = rotPoint(p, delta, c); p.x = q.x; p.y = q.y; return p; };
-  R(state.calib.p1); R(state.calib.p2); R(state.alignP1);
+  R(state.calib.p1); R(state.calib.p2); R(state.alignP1); state.perspPts.forEach(R);
   for (const g of state.groups) { R(g.poa); g.shots.forEach(R); }
   state.rot = normDeg(state.rot + delta);
   if (opts.fit) fitView();
@@ -1060,6 +1219,170 @@ function alignFromLine(p1, p2) {
   toast(`Foto raddrizzata di ${fmt(Math.abs(delta), 2)}° in senso ${delta > 0 ? "orario" : "antiorario"} (linea ${horiz ? "orizzontale" : "verticale"}).`);
   return true;
 }
+
+/* ------------------------------ PROSPETTIVA ------------------------------
+   Correzione prospettica con omografia da 4 punti: l'utente clicca i 4 angoli di un rettangolo reale di dimensioni
+   note (wMm × hMm). Si calcola una NUOVA foto «rettificata» (Calc.rectify + ricampionamento bilineare) che diventa
+   state.base: da lì in poi tutto (rotazione, punti, calcoli) lavora sulla foto rettificata come prima sulla foto
+   originale. state.persp = {src, wMm, hMm} con src in pixel della foto ORIGINALE (la correzione si può rifare o togliere
+   senza accumulare errori). È nella storia undo/redo e nella sessione; la foto rettificata è in una piccola cache.
+   Scala: se non c'è una scala manuale (2 punti), pxPerMm = k della rettifica (px/mm della foto rettificata). */
+const baseCache = new Map();               // chiave → {w, h, bitmap}; "orig" = foto originale
+const perspKey = p => p ? JSON.stringify([p.src.map(q => [+q.x.toFixed(4), +q.y.toFixed(4)]), p.wMm, p.hMm]) : "orig";
+const perspMemo = { key: "", R: null };
+/** Geometria della correzione corrente (memorizzata), o null. */
+function perspR(p = state.persp) {
+  if (!p || !state.image) return null;
+  const key = perspKey(p) + `|${state.image.w}x${state.image.h}`;
+  if (perspMemo.key !== key) { perspMemo.key = key; perspMemo.R = Calc.rectify(p.src, p.wMm, p.hMm, state.image.w, state.image.h); }
+  return perspMemo.R;
+}
+/** Ricampiona la foto originale nella foto rettificata R (bilineare). Asincrona a blocchi di righe, con avanzamento. */
+async function warpImage(R) {
+  const sw = state.image.w, sh = state.image.h;
+  const sc = document.createElement("canvas"); sc.width = sw; sc.height = sh;
+  const sg = sc.getContext("2d"); sg.drawImage(state.image.bitmap, 0, 0);
+  const S = sg.getImageData(0, 0, sw, sh).data;
+  const oc = document.createElement("canvas"); oc.width = R.W; oc.height = R.Hpx;
+  const og = oc.getContext("2d");
+  if (!og) throw new Error("canvas troppo grande");
+  const out = og.createImageData(R.W, R.Hpx), D = out.data, M = R.Hi;
+  let t0 = performance.now();
+  for (let y = 0; y < R.Hpx; y++) {
+    // coordinate omogenee della sorgente per il centro del pixel (x + 0,5; y + 0,5): lineari lungo la riga
+    const yc = y + 0.5;
+    let X = M[0] * 0.5 + M[1] * yc + M[2], Y = M[3] * 0.5 + M[4] * yc + M[5], Wh = M[6] * 0.5 + M[7] * yc + M[8];
+    let o = y * R.W * 4;
+    for (let x = 0; x < R.W; x++, o += 4, X += M[0], Y += M[3], Wh += M[6]) {
+      if (Wh <= 0) continue;
+      const sx = X / Wh - 0.5, sy = Y / Wh - 0.5;
+      if (sx < -0.5 || sy < -0.5 || sx > sw - 0.5 || sy > sh - 0.5) continue;   // fuori dalla foto: trasparente
+      const x0 = Math.max(0, Math.floor(sx)), y0 = Math.max(0, Math.floor(sy));
+      const x1 = Math.min(sw - 1, x0 + 1), y1 = Math.min(sh - 1, y0 + 1);
+      const fx = Math.min(1, Math.max(0, sx - x0)), fy = Math.min(1, Math.max(0, sy - y0));
+      const i00 = (y0 * sw + x0) * 4, i10 = (y0 * sw + x1) * 4, i01 = (y1 * sw + x0) * 4, i11 = (y1 * sw + x1) * 4;
+      const w00 = (1 - fx) * (1 - fy), w10 = fx * (1 - fy), w01 = (1 - fx) * fy, w11 = fx * fy;
+      D[o] = S[i00] * w00 + S[i10] * w10 + S[i01] * w01 + S[i11] * w11;
+      D[o + 1] = S[i00 + 1] * w00 + S[i10 + 1] * w10 + S[i01 + 1] * w01 + S[i11 + 1] * w11;
+      D[o + 2] = S[i00 + 2] * w00 + S[i10 + 2] * w10 + S[i01 + 2] * w01 + S[i11 + 2] * w11;
+      D[o + 3] = S[i00 + 3] * w00 + S[i10 + 3] * w10 + S[i01 + 3] * w01 + S[i11 + 3] * w11;
+    }
+    if (performance.now() - t0 > 120) {   // lascia respirare l'interfaccia e mostra l'avanzamento
+      toast(`Correzione prospettica… ${Math.round((y + 1) / R.Hpx * 100)}%`);
+      await new Promise(r => setTimeout(r, 0)); t0 = performance.now();
+    }
+  }
+  og.putImageData(out, 0, 0);
+  const bitmap = await createImageBitmap(oc);
+  return { w: R.W, h: R.Hpx, bitmap };
+}
+/** Allinea state.base alla correzione corrente (dalla cache o ricalcolando). */
+let baseJob = null;
+async function ensureBase() {
+  if (!state.image) return;
+  const key = perspKey(state.persp);
+  if (state.baseKey === key && state.base) return;
+  if (key === "orig") { state.base = { w: state.image.w, h: state.image.h, bitmap: state.image.bitmap }; state.baseKey = key; refresh(); return; }
+  if (baseCache.has(key)) { state.base = baseCache.get(key); state.baseKey = key; refresh(); return; }
+  if (baseJob && baseJob.key === key) return baseJob.promise;
+  const R = perspR();
+  if (!R) return;
+  state.busy = true; requestDraw();
+  const job = { key };
+  job.promise = (async () => {
+    try {
+      const b = await warpImage(R);
+      if (baseCache.size >= 3) baseCache.delete(baseCache.keys().next().value);   // tiene le ultime correzioni (undo/redo veloci)
+      baseCache.set(key, b);
+      if (perspKey(state.persp) === key) { state.base = b; state.baseKey = key; }
+      toast(`Correzione prospettica applicata: ${R.W}×${R.Hpx} px, ${fmt(R.k, 2)} px/mm${R.reduced ? " (risoluzione ridotta per limiti del browser)" : ""}`);
+    } catch (e) {
+      toast("Correzione prospettica non riuscita: " + (e && e.message || e));
+    } finally {
+      if (baseJob === job) baseJob = null;
+      state.busy = !!baseJob;
+      refresh();
+    }
+  })();
+  baseJob = job;
+  return job.promise;
+}
+/** Porta un punto dal sistema mondo corrente ai pixel della foto ORIGINALE. */
+function worldToOrig(p) {
+  const b = worldToImg(p), R = state.persp ? perspR() : null;
+  return R ? Calc.applyH(R.Hi, b) : b;
+}
+/** Sposta tutti i punti (scala, mire, fori) con la funzione f (mondo → nuovo mondo). */
+function mapAllPoints(f) {
+  const M = p => { if (!p) return p; const q = f(p); p.x = q.x; p.y = q.y; return p; };
+  M(state.calib.p1); M(state.calib.p2);
+  for (const g of state.groups) { M(g.poa); g.shots.forEach(M); }
+}
+/** Applica la correzione prospettica ai 4 angoli cliccati (coordinate mondo). */
+async function applyPersp(worldPts) {
+  const wMm = parseFloat($("perspW").value), hMm = parseFloat($("perspH").value);
+  if (!(wMm > 0 && hMm > 0)) { toast("Prospettiva: inserisci larghezza e altezza del rettangolo in mm."); return false; }
+  const src = Calc.orderQuad(worldPts.map(worldToOrig));
+  if (!src) { toast("Prospettiva: i 4 punti non formano un quadrilatero convesso. Clicca i 4 angoli del rettangolo."); return false; }
+  const P = { src, wMm, hMm }, R = perspR(P);
+  if (!R) { toast("Prospettiva: impossibile calcolare la correzione con questi punti."); return false; }
+  // controllo larghezza/altezza: rapporto dei lati nella foto vs rapporto inserito (la prospettiva raramente supera 1,4×)
+  const L = (a, b) => Calc.dist(a, b), ratioPhoto = (L(src[0], src[1]) + L(src[3], src[2])) / (L(src[0], src[3]) + L(src[1], src[2]));
+  const mismatch = ratioPhoto / (wMm / hMm);
+  // tutti i punti: mondo corrente → foto originale → foto rettificata (rotazione azzerata)
+  const toNew = p => Calc.applyH(R.H, worldToOrig(p));
+  mapAllPoints(toNew);
+  state.calib = { p1: null, p2: null };   // la scala viene dal rettangolo (scelta: scala automatica)
+  state.persp = P; state.rot = 0; state.perspPts = []; state.alignP1 = null;
+  commit();
+  await ensureBase();
+  fitView();
+  if (mismatch > 1.4 || mismatch < 1 / 1.4)
+    toast(`⚠ Nella foto il rettangolo è ${ratioPhoto > 1 ? "più largo che alto" : "più alto che largo"}: controlla di non aver invertito larghezza e altezza (${fmt(wMm, 0)} × ${fmt(hMm, 0)} mm).`);
+  return true;
+}
+/** Toglie la correzione prospettica: i punti tornano sulla foto originale. */
+async function removePersp() {
+  if (!state.persp) return;
+  mapAllPoints(worldToOrig);
+  const hadManual = !!(state.calib.p1 && state.calib.p2);
+  state.persp = null; state.rot = 0; state.perspPts = [];
+  commit();
+  await ensureBase();
+  fitView();
+  toast(hadManual ? "Correzione prospettica rimossa." : "Correzione prospettica rimossa: la scala veniva dal rettangolo, rifai la calibrazione.");
+}
+function refreshPersp() {
+  const el = $("perspStatus"), R = perspR();
+  $("bPerspOff").disabled = !state.persp;
+  if (!state.persp || !R) { el.className = "status"; el.textContent = "Nessuna correzione prospettica."; return; }
+  el.className = "status ok";
+  el.textContent = `Correzione attiva: rettangolo ${fmt(state.persp.wMm, 1)} × ${fmt(state.persp.hMm, 1)} mm · foto rettificata ${R.W}×${R.Hpx} px · ${fmt(R.k, 2)} px/mm` +
+    (state.calib.p1 && state.calib.p2 ? " · scala: manuale (2 punti)" : " · scala: dal rettangolo");
+}
+/** Strumento «Prospettiva»: angoli già cliccati, poligono e linea elastica verso il cursore. */
+function drawPerspGuide() {
+  if (state.mode !== "persp" || !state.perspPts.length) return;
+  const g = ctx2d, P = state.perspPts.map(toScreen), h = state.hover;
+  g.save();
+  g.strokeStyle = "#facc15"; g.lineWidth = 2; g.setLineDash([8, 5]);
+  g.beginPath(); P.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
+  if (h) g.lineTo(h.x, h.y);
+  if (h && P.length === 3) g.lineTo(P[0].x, P[0].y);
+  g.stroke(); g.setLineDash([]);
+  P.forEach((p, i) => { crossMarker(g, p, "#facc15", true); label(g, p.x + 9, p.y - 9, String(i + 1), "#a16207", 12); });
+  g.restore();
+}
+/** Contorno del rettangolo di riferimento (verde tratteggiato) sulla foto rettificata. */
+function drawPerspRect(g, T) {
+  const R = state.persp && state.baseKey !== "orig" ? perspR() : null;
+  if (!R) return;
+  const c = [{ x: R.ox, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy + R.hMm * R.k }, { x: R.ox, y: R.oy + R.hMm * R.k }]
+    .map(imgToWorld).map(T);
+  g.save(); g.strokeStyle = COL_CAL; g.lineWidth = 1.5; g.setLineDash([6, 4]);
+  g.beginPath(); c.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); g.stroke();
+  g.restore();
+}
 function zoomAt(sx, sy, factor) {
   const v = state.view;
   const ns = Math.min(60, Math.max(0.01, v.scale * factor));
@@ -1082,6 +1405,11 @@ function draw() {
   ctx2d.clearRect(0, 0, W, H);
   $("zoomlbl").textContent = state.image ? Math.round(state.view.scale * 100) + "%" : "";
   if (!state.image) return;
+  if (state.busy || !state.base) {   // rettifica in corso: foto e punti non sono ancora allineati
+    ctx2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+    label(ctx2d, 20, 80, "Correzione prospettica in corso…", "#0f172a", 14);
+    return;
+  }
 
   const v = state.view;
   const tl = toImage(0, 0), br = toImage(canvas.width / dpr, canvas.height / dpr);
@@ -1094,8 +1422,10 @@ function draw() {
   // Overlay disegnato in pixel CSS dello schermo: marcatori di dimensione costante.
   const cc = calcContext();
   drawGrid(ctx2d, toScreen, v.scale, cc, vis);
+  drawPerspRect(ctx2d, toScreen);
   drawOverlay(ctx2d, toScreen, v.scale, cc);
   drawAlignGuide();
+  drawPerspGuide();
   if (loupeActive()) drawLoupe(cc);
 }
 /** Strumento «Raddrizza»: primo punto e linea elastica verso il cursore. */
@@ -1120,7 +1450,7 @@ function gridSpec(cc) {
   const p = params();
   if (!p.gridOn || !state.image || !cc.pxPerMm || !(cc.distMm > 0) || !(p.gridStep > 0)) return null;
   const g = activeGroup();
-  const center = g && g.poa ? g.poa : g && inc(g).length ? Calc.centroid(inc(g)) : { x: state.image.w / 2, y: state.image.h / 2 };
+  const center = g && g.poa ? g.poa : g && inc(g).length ? Calc.centroid(inc(g)) : imgCenter();
   const rad = p.gridStep * (p.gridUnit === "MOA" ? Math.PI / 10800 : 0.001);
   // linea marcata ogni unità intera (passo < 1) oppure ogni 5 linee
   const major = p.gridStep < 1 ? Math.max(1, Math.round(1 / p.gridStep)) : 5;
@@ -1453,16 +1783,16 @@ function deleteRef(ref) {
 let ptr = null;  // { id, button, sx, sy, lastX, lastY, moved, target, mode:'point'|'pan' }
 function localXY(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 /** Il punto (coordinate mondo) cade dentro la foto? (con la foto ruotata il contorno non è allineato agli assi) */
-const inImage = p => { if (!state.image) return false; const q = worldToImg(p); return q.x >= 0 && q.y >= 0 && q.x <= state.image.w && q.y <= state.image.h; };
+const inImage = p => { if (!state.base) return false; const q = worldToImg(p); return q.x >= 0 && q.y >= 0 && q.x <= state.base.w && q.y <= state.base.h; };
 
 canvas.addEventListener("pointerdown", e => {
-  if (!state.image) return;
+  if (!state.image || state.busy) return;
   // Toglie il focus dai campi del pannello: altrimenti le scorciatoie (Ctrl+Z, Canc…) verrebbero ignorate.
   if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
   const { x, y } = localXY(e);
   canvas.setPointerCapture(e.pointerId);
   // Alt+clic ignora i punti esistenti: serve per marcare fori sovrapposti (colpi nello stesso foro).
-  const hit = e.button === 0 && !e.altKey && state.mode !== "align" ? hitTest(x, y) : null;   // «Raddrizza»: i punti non si prendono
+  const hit = e.button === 0 && !e.altKey && state.mode !== "align" && state.mode !== "persp" ? hitTest(x, y) : null;   // «Raddrizza»/«Prospettiva»: i punti non si prendono
   ptr = { id: e.pointerId, button: e.button, sx: x, sy: y, lastX: x, lastY: y, moved: false,
           target: hit, kind: hit ? "point" : "pan" };
   if (hit) { state.selected = hit; refreshLists(); requestDraw(); }
@@ -1471,7 +1801,7 @@ canvas.addEventListener("pointerdown", e => {
 canvas.addEventListener("pointermove", e => {
   const { x, y } = localXY(e);
   state.hover = { x, y };
-  if (!ptr) { updateCursor(x, y); if ((state.loupe && state.mode !== "pan" || state.alignP1) && state.image) requestDraw(); return; }
+  if (!ptr) { updateCursor(x, y); if ((state.loupe && state.mode !== "pan" || state.alignP1 || state.perspPts.length) && state.image) requestDraw(); return; }
   if (!ptr.moved && Math.hypot(x - ptr.sx, y - ptr.sy) > DRAG_THRESHOLD) ptr.moved = true;
   if (ptr.moved) {
     if (ptr.kind === "point") {
@@ -1513,7 +1843,7 @@ canvas.addEventListener("wheel", e => {
 
 function updateCursor(x, y) {
   if (!state.image) { canvas.style.cursor = "default"; return; }
-  if (state.mode !== "align" && hitTest(x, y)) canvas.style.cursor = "move";
+  if (state.mode !== "align" && state.mode !== "persp" && hitTest(x, y)) canvas.style.cursor = "move";
   else canvas.style.cursor = state.mode === "pan" ? "grab" : "crosshair";
 }
 
@@ -1536,6 +1866,11 @@ function handleClick(ip) {
     const p1 = state.alignP1;
     state.alignP1 = null;
     if (alignFromLine(p1, pt)) setMode(state.prevMode); else { updateHint(); requestDraw(); }
+  } else if (state.mode === "persp") {
+    state.perspPts.push(pt); updateHint(); requestDraw();
+    if (state.perspPts.length < 4) return;
+    const pts = state.perspPts; state.perspPts = [];
+    applyPersp(pts).then(ok => { if (ok) setMode(state.prevMode); else { updateHint(); requestDraw(); } });
   }
 }
 function ensureGroup() {
@@ -1546,11 +1881,14 @@ function ensureGroup() {
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 function setMode(m) {
-  if (m === "align" && !state.image) { toast("Carica prima un'immagine."); return; }
-  if (m === "align" && state.mode !== "align") state.prevMode = state.mode;
+  const tool = m === "align" || m === "persp";   // strumenti temporanei: alla fine si torna alla modalità precedente
+  if (tool && !state.image) { toast("Carica prima un'immagine."); return; }
+  if (tool && state.mode !== "align" && state.mode !== "persp") state.prevMode = state.mode;
   if (m !== "align") state.alignP1 = null;
+  if (m !== "persp") state.perspPts = [];
   state.mode = m;
   $("bAlign").classList.toggle("primary", m === "align");
+  $("bPersp").classList.toggle("primary", m === "persp");
   document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
   updateHint();
   canvas.style.cursor = m === "pan" ? "grab" : "crosshair";
@@ -1566,6 +1904,7 @@ function updateHint() {
     shot: `Foro: clicca il centro di ogni foro di «${g ? g.name : "Gruppo 1"}». Tasto destro su un punto = elimina.`,
     align: !state.alignP1 ? "Raddrizza: clicca il PRIMO punto di una linea del bersaglio che deve risultare orizzontale o verticale (bordo, riga della griglia). Esc = annulla."
       : "Raddrizza: clicca il SECONDO punto sulla stessa linea, il più lontano possibile dal primo. Esc = annulla.",
+    persp: `Prospettiva: clicca i 4 angoli del rettangolo di ${fmt(parseFloat($("perspW").value), 0)} × ${fmt(parseFloat($("perspH").value), 0)} mm, in qualsiasi ordine (${state.perspPts.length}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.`,
   };
   h.textContent = msgs[state.mode];
 }
@@ -1576,6 +1915,7 @@ document.addEventListener("keydown", e => {
   const k = e.key.toLowerCase();
   if ((e.ctrlKey || e.metaKey) && k === "s") { e.preventDefault(); saveSession(); return; }
   // Vista grafici/confronto aperta: Esc chiude; le scorciatoie dell'immagine sono disattivate (agirebbero «alla cieca»).
+  if (state.busy) { e.preventDefault(); return; }   // rettifica in corso
   if (anaOpen()) {
     if (k === "escape") { e.preventDefault(); closeAnalysis(); }
     else if (!typing && k === "t") toggleTheme();
@@ -1583,7 +1923,8 @@ document.addEventListener("keydown", e => {
   }
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
   if (typing) return;
-  if (k === "escape") { if (state.mode === "align") setMode(state.prevMode); return; }
+  if (k === "escape") { if (state.mode === "align" || state.mode === "persp") setMode(state.prevMode); return; }
+  if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); updateHint(); requestDraw(); return; }
   if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
   else if ((e.ctrlKey || e.metaKey) && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
   else if (k === "delete") { if (state.selected) deleteRef(state.selected); }
@@ -1598,6 +1939,7 @@ document.addEventListener("keydown", e => {
   else if (k === "3") setMode("poa");
   else if (k === "4") setMode("shot");
   else if (k === "5") setMode("align");
+  else if (k === "6") setMode("persp");
   else if (k === "a" && !e.ctrlKey && !e.metaKey) openAnalysis();
 });
 
@@ -1634,6 +1976,9 @@ async function setImage(name, dataUrl) {
   const bitmap = await createImageBitmap(img);
   if (state.image && state.image.bitmap.close) state.image.bitmap.close();
   state.image = { name, w: bitmap.width, h: bitmap.height, dataUrl, bitmap };
+  baseCache.clear(); perspMemo.key = "";
+  state.persp = null; state.perspPts = [];
+  state.base = { w: bitmap.width, h: bitmap.height, bitmap }; state.baseKey = "orig";
   $("drop").style.display = "none";
   fitView();
 }
@@ -1654,6 +1999,7 @@ const FILE_TYPES = {
   "application/json": { description: "Sessione Shoot Analyzer", ext: ".json" },
   "image/png": { description: "Immagine PNG", ext: ".png" },
   "text/plain": { description: "Testo", ext: ".txt" },
+  "text/csv": { description: "CSV per fogli di calcolo", ext: ".csv" },
 };
 const FileStore = {
   async saveBlob(filename, blob) {
@@ -1686,10 +2032,11 @@ function downloadBlob(blob, filename) {
 function buildSession() {
   const embed = $("embedImg").checked;
   return {
-    // formato 1 se la foto non è ruotata: la sessione resta leggibile dalle versioni precedenti
-    app: "ShootAnalyzer", format: state.rot ? SESSION_FORMAT : 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
+    // il formato più basso che basta: la sessione resta leggibile dalle versioni precedenti quando possibile
+    app: "ShootAnalyzer", format: state.persp ? 3 : state.rot ? 2 : 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
     image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, dataUrl: embed ? state.image.dataUrl : null } : null,
     rotation: state.rot,   // gradi, + = orario; i punti sono nel sistema della foto ruotata
+    persp: state.persp,    // correzione prospettica {src (px foto originale), wMm, hMm}: i punti sono sulla foto rettificata
     params: params(),
     calib: state.calib,
     groups: state.groups.map(g => ({ id: g.id, name: g.name, color: g.color, poa: g.poa, shots: g.shots, load: g.load })),
@@ -1715,6 +2062,8 @@ async function loadSessionText(text) {
   }
   setParams(s.params || {});
   state.rot = normDeg(+s.rotation || 0); state.alignP1 = null;
+  state.persp = s.persp && Array.isArray(s.persp.src) && s.persp.src.length === 4 ? s.persp : null; state.perspPts = [];
+  await ensureBase();
   fitView();
   cmpState.history = Array.isArray(s.history) ? s.history : [];
   state.calib = s.calib || { p1: null, p2: null };
@@ -1742,14 +2091,20 @@ const fmtLen = mm => `${fmt(mm, 1)} mm · ${fmt(mm / 25.4, 3)}"`;
  * - risoluzione: diametro del foro in pixel; sotto 8 px il centro del foro è difficile da individuare.
  */
 function calibQuality(cc) {
-  const dPx = Calc.dist(state.calib.p1, state.calib.p2), relErr = Math.SQRT2 / dPx;
-  const fovW = state.image.w / cc.pxPerMm, fovH = state.image.h / cc.pxPerMm, holePx = cc.caliberMm * cc.pxPerMm;
+  // scala manuale: segmento fra i 2 punti; scala dalla prospettiva: lato più corto del rettangolo nella foto originale
+  // (stessa ipotesi di ±1 px per punto cliccato, applicata al lato peggiore: stima prudente)
+  const manual = !!(state.calib.p1 && state.calib.p2), src = !manual && state.persp ? state.persp.src : null;
+  const dPx = manual ? Calc.dist(state.calib.p1, state.calib.p2) : src ? Math.min(...src.map((p, i) => Calc.dist(p, src[(i + 1) % 4]))) : NaN;
+  const relErr = Math.SQRT2 / dPx;
+  const desc = manual ? `Segmento di scala ${fmt(dPx, 0)} px` : `Scala dal rettangolo della correzione prospettica (lato più corto ${fmt(dPx, 0)} px nella foto)`;
+  const fovW = state.base.w / cc.pxPerMm, fovH = state.base.h / cc.pxPerMm, holePx = cc.caliberMm * cc.pxPerMm;
   const warn = [];
-  if (relErr > 0.01) warn.push(`Segmento di scala corto (${fmt(dPx, 0)} px): errore di scala fino a ±${fmt(relErr * 100, 1)}%. Usa due punti più lontani (almeno 150 px).`);
+  if (relErr > 0.01 && !manual) warn.push(`Rettangolo di riferimento piccolo nella foto (lato più corto ${fmt(dPx, 0)} px): errore di scala fino a ±${fmt(relErr * 100, 1)}%. Usa un rettangolo più grande.`);
+  if (relErr > 0.01 && manual) warn.push(`Segmento di scala corto (${fmt(dPx, 0)} px): errore di scala fino a ±${fmt(relErr * 100, 1)}%. Usa due punti più lontani (almeno 150 px).`);
   if (Math.max(fovW, fovH) < 20 || Math.max(fovW, fovH) > 3000)
     warn.push(`La foto risulterebbe larga ${fmtSpan(fovW)}: valore insolito per un bersaglio, controlla la distanza nota e la sua unità (mm / cm / in).`);
   if (cc.caliberMm > 0 && holePx < 8) warn.push(`Risoluzione bassa: un foro misura solo ${fmt(holePx, 1)} px, il centro è difficile da individuare con precisione.`);
-  return { dPx, relErr, fovW, fovH, holePx, warn };
+  return { dPx, relErr, desc, fovW, fovH, holePx, warn };
 }
 const fmtSpan = mm => mm >= 1000 ? `${fmt(mm / 1000, 2)} m` : mm >= 100 ? `${fmt(mm / 10, 0)} cm` : `${fmt(mm, 0)} mm`;
 /** Avviso sul numero di colpi del gruppo (null se ≥ 5). */
@@ -1816,7 +2171,7 @@ function caliberLabel(p) {
 const clickTxt = (n, dir) => n === 0 ? "0" : `${n} ${DIR_SHORT[dir]}`;
 
 /* ----------------------------- UI PANNELLO ----------------------------- */
-function refresh() { refreshLists(); refreshResults(); refreshRotation(); updateHint(); updateButtons(); requestDraw(); }
+function refresh() { refreshLists(); refreshResults(); refreshRotation(); refreshPersp(); updateHint(); updateButtons(); requestDraw(); }
 function updateButtons() {
   $("bUndo").disabled = undoStack.idx <= 0;
   $("bRedo").disabled = undoStack.idx >= undoStack.stack.length - 1;
@@ -1931,7 +2286,7 @@ function refreshResults() {
     const q = calibQuality(cc);
     cs.className = "status " + (q.warn.length ? "warn" : "ok");
     cs.innerHTML = `Calibrato: ${fmt(cc.pxPerMm, 2)} px/mm (${fmt(1 / cc.pxPerMm, 3)} mm/px · ≈ ${fmt(cc.pxPerMm * 25.4, 0)} DPI)` +
-      `<div class="qinfo">Segmento di scala ${fmt(q.dPx, 0)} px → incertezza di scala ≈ ±${fmt(q.relErr * 100, 1)}% · inquadratura ${fmtSpan(q.fovW)} × ${fmtSpan(q.fovH)}` +
+      `<div class="qinfo">${q.desc} → incertezza di scala ≈ ±${fmt(q.relErr * 100, 1)}% · inquadratura ${fmtSpan(q.fovW)} × ${fmtSpan(q.fovH)}` +
       `${cc.caliberMm > 0 ? ` · foro ⌀ ${fmt(q.holePx, 0)} px` : ""}</div>` +
       q.warn.map(w => `<div class="qwarn">⚠ ${w}</div>`).join("");
   }
@@ -2635,7 +2990,8 @@ async function importHistory(files) {
     if (s.app !== "ShootAnalyzer" || !s.groups) { skipped++; continue; }
     const p = s.params || {};
     const ctx = {
-      pxPerMm: Calc.scale(s.calib && s.calib.p1, s.calib && s.calib.p2, +p.calDist, p.calUnit || "mm"),
+      pxPerMm: Calc.scale(s.calib && s.calib.p1, s.calib && s.calib.p2, +p.calDist, p.calUnit || "mm") ||
+        (s.persp && s.image ? (Calc.rectify(s.persp.src, s.persp.wMm, s.persp.hMm, s.image.w, s.image.h) || {}).k : null),   // scala dal rettangolo
       distMm: (+p.shotDist || 0) * (Calc.DIST[p.shotDistUnit] || 1000), caliberMm: (+p.caliber || 0) * (Calc.LEN[p.caliberUnit] || 1),
       clickValue: +p.clickVal || 0, clickUnit: p.clickUnit || "MIL", ellipseP: 0.95,
     };
@@ -2651,6 +3007,79 @@ async function importHistory(files) {
   }
   drawCompare();
   toast(`Storico: ${added} gruppi aggiunti${skipped ? `, ${skipped} saltati (meno di 2 fori, scala o distanza mancanti)` : ""}.`);
+}
+
+/* ------------------------------ ESPORTAZIONE CSV ------------------------------
+   Formato «italiano»: separatore «;», virgola decimale, nessun separatore delle migliaia, UTF-8 con BOM (accenti
+   corretti in Excel), righe CRLF. Celle con ; " o a capo tra virgolette (RFC 4180). Due tabelle «pulite»:
+   fori (una riga per foro, tutti i gruppi) e gruppi (una riga per gruppo con fori). Valori numerici grezzi, non
+   arrotondati per la lettura: 3 decimali per mm e angoli, 1 per i gradi. */
+const csvNum = (v, d = 3) => v == null || !isFinite(v) ? "" : (+v.toFixed(d)).toFixed(d).replace(".", ",");
+const csvCell = v => { const t = v == null ? "" : String(v); return /[;"\r\n]|^\s|\s$/.test(t) ? `"${t.replace(/"/g, '""')}"` : t; };
+const csvDoc = (head, rows) => "\uFEFF" + [head, ...rows].map(r => r.map(csvCell).join(";")).join("\r\n") + "\r\n";
+/** Campo di testo dei dati di ricarica: se è un numero scritto col punto, lo riporta con la virgola (lo legge come numero). */
+const csvLoadVal = v => /^-?\d+(\.\d+)?$/.test(String(v || "").trim()) ? String(v).trim().replace(".", ",") : (v || "");
+const yesNo = b => b ? "sì" : "no";
+function csvShots() {
+  const cc = calcContext(), k = cc.pxPerMm ? 1 / cc.pxPerMm : null, img = state.image ? state.image.name : "";
+  const head = ["Immagine", "Gruppo", "Data", "Foro", "Escluso", "Flyer", "X dal punto di mira (mm)", "Y dal punto di mira (mm, + = alto)",
+    "Distanza dal punto di mira (mm)", "Distanza dal centro gruppo (mm)", "Direzione dal centro gruppo (°)", "Direzione",
+    "Click verticali", "Verso verticale", "Click orizzontali", "Verso orizzontale", "Unità click", "X (px)", "Y (px)"];
+  const rows = [];
+  for (const g of state.groups) {
+    const shotsIn = inc(g), c = shotsIn.length ? Calc.centroid(shotsIn) : null, fl = flyerMap(g), ref = g.poa;
+    g.shots.forEach((p, i) => {
+      const f = fl.get(p.id), cp = c ? Calc.compass(p.x - c.x, c.y - p.y) : null;
+      const cr = k && ref ? Calc.correction((p.x - ref.x) * k, (ref.y - p.y) * k, cc) : null;
+      rows.push([img, g.name, (g.load && g.load.date) || "", i + 1, yesNo(p.excluded), f ? yesNo(f.flagged) : "",
+        k && ref ? csvNum((p.x - ref.x) * k) : "", k && ref ? csvNum((ref.y - p.y) * k) : "",
+        k && ref ? csvNum(Calc.dist(p, ref) * k) : "", k && c ? csvNum(Calc.dist(p, c) * k) : "",
+        cp && (p.x !== c.x || p.y !== c.y) ? csvNum(cp.deg, 1) : "", cp && (p.x !== c.x || p.y !== c.y) ? cp.label : "",
+        cr ? cr.vClicks : "", cr ? cr.vDir : "", cr ? cr.hClicks : "", cr ? cr.hDir : "", cr ? cc.clickUnit : "",
+        csvNum(p.x, 2), csvNum(p.y, 2)]);
+    });
+  }
+  return csvDoc(head, rows);
+}
+function csvGroups() {
+  const cc = calcContext(), img = state.image ? state.image.name : "";
+  const M = ["MOA", "MIL"];
+  const head = ["Immagine", "Gruppo", "Data", "Colpi", "Esclusi", "Distanza di tiro (m)", "Calibro (mm)", "Valore click", "Unità click",
+    "Group size c-c (mm)", ...M.map(u => `Group size c-c (${u})`), "Group size bordo-bordo (mm)",
+    "Raggio medio (mm)", ...M.map(u => `Raggio medio (${u})`), "H-spread (mm)", "V-spread (mm)",
+    "FOM (mm)", ...M.map(u => `FOM (${u})`), "SD distanze dal centro (mm)", "SD radiale (mm)",
+    "CEP (mm)", ...M.map(u => `CEP (${u})`), "R95 (mm)", "R99 (mm)",
+    "Asse maggiore (° dalla verticale)", "Rapporto d'aspetto", "Centro gruppo X dalla mira (mm)", "Centro gruppo Y dalla mira (mm, + = alto)",
+    "Distanza centro-mira (mm)", "Click verticali", "Verso verticale", "Click orizzontali", "Verso orizzontale",
+    "Bossolo", "Polvere", "Carica (gr)", "Palla", "Innesco", "Meteo", "Temperatura (°C)", "Umidità (%)", "Pressione (hPa)",
+    "Vento", "Unità vento", "Direzione vento (ore)", "Colpi sparati", "Scaldacanna", "Note"];
+  const rows = [];
+  for (const g of state.groups) {
+    if (!g.shots.length) continue;
+    const r = Calc.analyze(inc(g), g.poa, cc), mm = r.n >= 2 && r.mm ? r.mm : null, ang = r.n >= 2 ? r.ang : null;
+    const A = key => M.map(u => ang && ang[key] ? csvNum(ang[key][u]) : ""), L = g.load || {};
+    rows.push([img, g.name, L.date || "", r.n, g.shots.length - r.n, cc.distMm > 0 ? csvNum(cc.distMm / 1000, 1) : "",
+      csvNum(cc.caliberMm, 2), csvNum(cc.clickValue, 3), cc.clickUnit,
+      mm ? csvNum(mm.es) : "", ...A("es"), mm ? csvNum(mm.esEdge) : "",
+      mm ? csvNum(mm.mr) : "", ...A("mr"), mm ? csvNum(mm.w) : "", mm ? csvNum(mm.h) : "",
+      mm ? csvNum(mm.fom) : "", ...A("fom"), mm ? csvNum(mm.sdRadii) : "", mm ? csvNum(mm.rsd) : "",
+      mm ? csvNum(mm.cep) : "", ...A("cep"), mm ? csvNum(mm.r95) : "", mm ? csvNum(mm.r99) : "",
+      r.shape ? csvNum(r.shape.bearing, 1) : "", r.shape ? csvNum(r.shape.ratio, 3) : "",
+      r.offset ? csvNum(r.offset.dx) : "", r.offset ? csvNum(r.offset.dy) : "", r.offset ? csvNum(r.offset.d) : "",
+      r.correction ? r.correction.vClicks : "", r.correction ? r.correction.vDir : "",
+      r.correction ? r.correction.hClicks : "", r.correction ? r.correction.hDir : "",
+      L.case || "", L.powder || "", csvLoadVal(L.charge), L.bullet || "", L.primer || "", L.weather || "", csvLoadVal(L.temp),
+      csvLoadVal(L.humidity), csvLoadVal(L.pressure), csvLoadVal(L.wind), L.wind ? L.windUnit || "" : "", L.windDir || "",
+      csvLoadVal(L.shotsTotal), csvLoadVal(L.foulers), L.notes || ""]);
+  }
+  return csvDoc(head, rows);
+}
+async function exportCsv(kind) {
+  if (!state.image || !state.groups.some(g => g.shots.length)) { toast("Niente da esportare: inserisci prima dei fori."); return; }
+  const base = (state.image.name || "bersaglio").replace(/\.[^.]+$/, "");
+  const text = kind === "shots" ? csvShots() : csvGroups();
+  if (await FileStore.saveText(`${base}_${kind === "shots" ? "fori" : "gruppi"}_${stamp()}.csv`, text, "text/csv"))
+    toast(`CSV ${kind === "shots" ? "dei fori" : "dei gruppi"} salvato`);
 }
 
 /* -------------------- VISTA A SCHERMO INTERO: GRAFICI E CONFRONTO -------------------- */
@@ -2732,6 +3161,21 @@ document.querySelectorAll("#ldForm [data-k]").forEach(el => el.addEventListener(
   g.load[el.dataset.k] = el.value; commit();
 }));
 $("bCardTxt").onclick = copyText;
+$("bCsvShots").onclick = () => exportCsv("shots");
+$("bCsvGroups").onclick = () => exportCsv("groups");
+// correzione prospettica
+$("bPersp").onclick = () => setMode(state.mode === "persp" ? state.prevMode : "persp");
+$("bPerspOff").onclick = () => removePersp();
+$("perspPreset").addEventListener("change", () => {
+  const v = $("perspPreset").value;
+  if (v !== "custom") { const [w, h] = v.split("x"); $("perspW").value = w; $("perspH").value = h; }
+  updateHint();
+});
+for (const id of ["perspW", "perspH"]) $(id).addEventListener("input", () => {
+  const key = `${parseFloat($("perspW").value)}x${parseFloat($("perspH").value)}`;
+  $("perspPreset").value = [...$("perspPreset").options].some(o => o.value === key) ? key : "custom";
+  updateHint();
+});
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("caliberPreset").addEventListener("change", () => {
   const id = $("caliberPreset").value;
@@ -2776,8 +3220,8 @@ state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack,
-  rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView };
+window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+  rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext };
 </script>
 </body>
 </html>

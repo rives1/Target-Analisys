@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.2.0] - 2026-11-16
+### Aggiunto
+- **Correzione prospettica a 4 punti** (omografia) per le foto scattate di sbieco: strumento **⬚ Prospettiva** (tasto `6`,
+  anche nella sezione «Orientamento e prospettiva»). Si scelgono le dimensioni reali di un rettangolo visibile nella foto
+  (A4/A3 verticale o orizzontale, oppure larghezza × altezza libere in mm) e si cliccano i suoi 4 angoli in qualsiasi ordine
+  (`Backspace` toglie l'ultimo, `Esc` annulla). La foto viene ricampionata (interpolazione bilineare) in una foto
+  «appiattita» in cui il rettangolo è un rettangolo esatto:
+  - tutti i punti già inseriti vengono riportati sulla foto appiattita; rotazione e raddrizzamento restano disponibili;
+  - **scala automatica** dal rettangolo (px/mm della foto appiattita), con incertezza stimata dal lato più corto;
+    una scala manuale a 2 punti, se inserita dopo, ha la precedenza;
+  - risoluzione = risoluzione media della foto dentro il rettangolo; estensione = tutta la foto, limitata a un lato
+    del rettangolo per parte e a 36 milioni di pixel;
+  - avviso se il rapporto dei lati nella foto fa pensare a larghezza e altezza invertite;
+  - «Rimuovi correzione» riporta foto e punti all'originale; la correzione è nella storia undo/redo e nella sessione.
+- **Export CSV** per fogli di calcolo (sezione Dati): **CSV fori** (una riga per foro di tutti i gruppi: escluso, flyer,
+  coordinate dal punto di mira, distanze da mira e centro, direzione, click, coordinate in pixel) e **CSV gruppi** (una riga
+  per gruppo: group size, raggio medio, H/V-spread, FOM, SD, CEP/R95/R99 in mm, MOA e MIL, forma, centro gruppo,
+  correzione e tutti i dati di ricarica). Formato italiano: separatore `;`, virgola decimale, UTF-8 con BOM, righe CRLF,
+  testi con `;` o virgolette racchiusi tra virgolette (RFC 4180).
+- **Icona** nella scheda del browser (mirino con rosata): SVG incorporato più PNG 32 px per i browser senza icone SVG;
+  anche nella pagina iniziale di GitHub Pages.
+- Funzioni `Calc`: `solveLinear`, `invertH`, `homography` (con normalizzazione di Hartley), `applyH`, `polyArea`,
+  `orderQuad`, `rectify`; 17 nuovi test del calcolo (107 in totale) con una «fotocamera» sintetica a prospettiva nota.
+- 4 nuovi test dell'interfaccia (15 in totale): icona, CSV (formato, numeri, virgolette), correzione prospettica su una foto
+  sintetica di sbieco (fori in mm entro 1 mm, foto ricampionata, scala automatica, undo/redo, rimozione), sessione con
+  prospettiva, `Esc` e `Backspace`.
+### Modificato
+- Sessione JSON: campo `persp`; formato `3` solo se c'è la correzione prospettica (altrimenti 2 se la foto è ruotata, 1 se no),
+  così le versioni precedenti non mostrano punti nel posto sbagliato.
+- Lo storico importato usa la scala del rettangolo per le sessioni con correzione prospettica e senza scala manuale.
+
 ## [1.1.0] - 2026-11-15
 ### Aggiunto
 - **Rotazione della foto** (sezione «Orientamento immagine» e strumento 📐 **Raddrizza**, tasto `5`):
