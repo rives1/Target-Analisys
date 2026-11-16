@@ -222,4 +222,43 @@ const Rh = Calc.rectify(srcPx, 297, 210, 60000, 40000);
 ok(Rh && Rh.W <= Math.ceil(3 * 297 * Rh.k) + 1 && Rh.Hpx <= Math.ceil(3 * 210 * Rh.k) + 1, "estensione limitata se la foto supera l'orizzonte");
 eq(Calc.rectify(srcPx, 0, 210, 6000, 4000), null, "dimensioni non valide");
 
+// --- probabilità di colpire un bersaglio
+near(Calc.normcdf(1.959964), 0.975, 2e-7, "Φ(1,96) = 0,975");
+near(Calc.normcdf(0), 0.5, 1e-9, "Φ(0) = 0,5");
+near(Calc.normcdf(-1), 0.158655254, 2e-7, "Φ(−1)");
+// cerchio centrato: distribuzione di Rayleigh, P = 1 − e^(−R²/2σ²); al raggio CEP la probabilità è 50%
+near(Calc.hitCircle(0, 2, 1), 1 - Math.exp(-2), 1e-12, "cerchio centrato (Rayleigh)");
+near(Calc.hitCircle(0, Math.sqrt(2 * Math.LN2), 1), 0.5, 1e-12, "raggio CEP = 50%");
+// cerchio spostato: confronto con integrazione numerica 2D (griglia fine, regola del punto medio)
+const integ = (d, R, sg) => { const N = 1200, h = 2 * R / N; let acc = 0;
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const x = -R + (i + 0.5) * h, y = -R + (j + 0.5) * h;
+    if (x * x + y * y <= R * R) acc += Math.exp(-((x - d) ** 2 + y * y) / (2 * sg * sg)); }
+  return acc * h * h / (2 * Math.PI * sg * sg); };
+for (const [d, R, sg] of [[1, 1, 1], [2.5, 1.5, 1], [0.7, 3, 1.3], [6, 2, 1]])
+  near(Calc.hitCircle(d, R, sg), integ(d, R, sg), 2e-4, `cerchio spostato d=${d} R=${R} σ=${sg}`);
+near(Calc.hitCircle(1, 1, 1), 0.2671202, 2e-6, "1 − Q₁(1,1) di Marcum (Q₁(1,1) = 0,7328798)");
+near(Calc.hitCircle(60, 2, 1), 0, 1e-12, "bersaglio lontanissimo dal gruppo");
+// rettangolo: prodotto per asse
+near(Calc.hitRect(0, 0, 2, 4, 1), (2 * Calc.normcdf(1) - 1) * (2 * Calc.normcdf(2) - 1), 1e-12, "rettangolo centrato");
+near(Calc.hitRect(1, 0, 2, 2, 1), (Calc.normcdf(0) - Calc.normcdf(-2)) * (2 * Calc.normcdf(1) - 1), 1e-12, "rettangolo spostato");
+// distanza: a distanza doppia con bersaglio doppio la probabilità non cambia (dispersione angolare costante)
+const hp = o => Calc.hitProbability({ n: 5, s2: 4, sigma: 2.1, dx: 1, dy: -0.5, shape: "circle", R: 3, level: 0.95, sims: 2000, ...o });
+const h1 = hp({}), h2 = hp({ s2: 16, sigma: 4.2, dx: 2, dy: -1, R: 6 });
+near(h2.p, h1.p, 1e-12, "scala con la distanza: stima"); near(h2.lo, h1.lo, 1e-12, "scala con la distanza: IC");
+eq(hp({}), hp({}), "simulazione riproducibile (seme fisso)");
+ok(h1.lo <= h1.p && h1.p <= h1.hi && h1.lo < h1.hi, "stima dentro l'intervallo");
+eq(Calc.hitProbability({ n: 1, s2: 0, sigma: 0, dx: 0, dy: 0, shape: "circle", R: 1 }), null, "servono almeno 2 colpi");
+// copertura simulata nel caso «con correzione applicata»: lo scostamento vero dopo la correzione è μ − x̄
+{
+  const gg = Calc.rng(99); let hit = 0; const TT = 400;
+  for (let t = 0; t < TT; t++) {
+    const pts = Array.from({ length: 5 }, () => ({ x: gg.gauss() * 2, y: gg.gauss() * 2 }));
+    const d = Calc.dispersion(pts), c = Calc.centroid(pts);
+    const r = Calc.hitProbability({ n: 5, s2: (d.sx ** 2 + d.sy ** 2) / 2, sigma: d.sigma, dx: 0, dy: 0, shape: "circle", R: 3, level: 0.95, sims: 800, seed: t + 1 });
+    const truth = Calc.hitCircle(Math.hypot(c.x, c.y), 3, 2);
+    if (truth >= r.lo && truth <= r.hi) hit++;
+  }
+  ok(Math.abs(hit / TT - 0.95) < 0.035, `copertura IC probabilità ≈ 95% (simulata ${(hit / TT * 100).toFixed(1)}%)`);
+}
+
 console.log(`OK — ${passed} verifiche superate`);

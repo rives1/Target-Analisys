@@ -441,6 +441,49 @@ test("prospettiva: sessione salvata e ricaricata, Esc e Backspace", async page =
   near(await page.evaluate(() => window.__SA.calcContext().pxPerMm), await page.evaluate(() => window.__SA.perspR().k), 1e-12, "scala dopo il ricaricamento");
 });
 
+test("probabilità di colpire: cerchio, rettangolo, altra distanza, testo e sessione", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await page.selectOption("#hitShape", "circle"); await setField(page, "#hitD", 2); await page.selectOption("#hitUnit", "cm");   // ⌀ 20 mm con σ ≈ 3,4 mm: probabilità intermedie
+  const h = await page.evaluate(() => { const { state, hitInfo, calcContext } = window.__SA; return hitInfo(state.groups[0], calcContext()); });
+  // controllo indipendente della stima «con correzione»: residuo dell'arrotondamento al click e probabilità del cerchio
+  const r = await analyzeActive(page);
+  const resX = Math.sign(r.offset.dx) * 100000 * Math.tan(Math.atan(Math.abs(r.offset.dx) / 100000) - r.correction.hClicks * 0.0001);
+  near(h.rx, resX, 1e-6, "residuo orizzontale dell'arrotondamento al click (mm)");
+  const pExp = await page.evaluate(([rx, ry, s]) => window.__SA.Calc.hitCircle(Math.hypot(rx, ry), 10, s), [h.rx, h.ry, r.mm.sigma]);
+  near(h.corr.p, pExp, 1e-12, "probabilità con correzione = cerchio ⌀ 20 mm spostato del residuo");
+  ok2(h.now && h.now.p < h.corr.p, "con la taratura attuale (gruppo a ~31 mm) la probabilità è minore");
+  ok2(h.corr.lo <= h.corr.p && h.corr.p <= h.corr.hi, "stima dentro l'intervallo");
+  const cells = await page.$$eval("#hitOut table.hit tbody tr", trs => trs.map(tr => [...tr.cells].map(td => td.textContent.trim())));
+  assert.strictEqual(cells[1][1], String(Math.round(h.corr.p * 100)), "colpi su 100");
+  assert.match(cells[0][1], /^([<>] )?\d+(,\d)?%$/);
+  // a 200 m: probabilità minore, taratura attuale non calcolabile
+  await setField(page, "#hitDist", 200);
+  const h2 = await page.evaluate(() => { const { state, hitInfo, calcContext } = window.__SA; return hitInfo(state.groups[0], calcContext()); });
+  ok2(!h2.sameDist && h2.now === null && h2.corr.p < h.corr.p, "a 200 m: probabilità minore, «taratura attuale» non calcolata");
+  assert.match(await page.textContent("#hitOut"), /limite superiore/);
+  // rettangolo
+  await page.selectOption("#hitShape", "rect");
+  ok2(await page.isVisible("#hitW") && await page.isHidden("#hitD"), "campi del rettangolo");
+  await setField(page, "#hitW", 10); await setField(page, "#hitH", 10);
+  const h3 = await page.evaluate(() => { const { state, hitInfo, calcContext } = window.__SA; return hitInfo(state.groups[0], calcContext()); });
+  assert.strictEqual(h3.shape, "rect");
+  assert.match(await page.evaluate(() => window.__SA.resultText()), /Prob\. di colpire: rettangolo 10,0 × 10,0 cm a 200 m: ([<>] )?\d/);
+  // parametri nella sessione
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  assert.strictEqual(await page.inputValue("#hitShape"), "rect");
+  assert.strictEqual(await page.inputValue("#hitDist"), "200");
+  // preset 10 × 10 e 30 × 30 mm del rettangolo di riferimento
+  await page.selectOption("#perspPreset", "10x10");
+  assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH")], ["10", "10"]);
+  await page.selectOption("#perspPreset", "30x30");
+  assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH")], ["30", "30"]);
+});
+const ok2 = (c, msg) => assert.ok(c, msg);
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };

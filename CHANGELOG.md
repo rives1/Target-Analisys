@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.3.0] - 2026-11-16
+### Aggiunto
+- **Probabilità di colpire** un bersaglio noto (sezione del pannello, gruppo attivo): cerchio (diametro) o rettangolo
+  (larghezza × altezza) in mm, cm o pollici, alla distanza del gruppo o a un'altra distanza.
+  - Risultato: probabilità per colpo, «colpi a segno su 100» e intervallo di confidenza (livello dei parametri, default 95%),
+    in due casi affiancati: **con la correzione applicata** (gruppo sul centro del bersaglio, salvo lo scostamento residuo
+    dell'arrotondamento al click) e **con la taratura attuale** (bersaglio sul punto di mira, con lo scostamento misurato).
+  - Calcolo esatto nel modello normale circolare di CEP/R95/R99: cerchio con la distribuzione χ² non centrale a 2 gradi
+    di libertà (1 − Q₁ di Marcum), rettangolo come prodotto delle probabilità per asse.
+  - Intervallo con **simulazione parametrica** (4000 estrazioni di σ dalla distribuzione χ² e del centro gruppo da quella
+    normale/t, seme fisso): stesso modello degli altri intervalli. Il bootstrap classico (ricampionamento dei fori) è stato
+    scartato perché con 3–10 colpi dà intervalli troppo stretti. Copertura verificata con simulazioni: ≈ 95% con la
+    correzione applicata; con la taratura attuale e uno scostamento piccolo può scendere fino a ~83% con 3 colpi
+    (segnalato nell'app).
+  - A un'altra distanza la dispersione angolare è supposta costante (esatto nel modello, ottimista nella realtà per vento e
+    velocità: segnalato come limite superiore); la «taratura attuale» non è calcolata perché dipende dalla balistica.
+  - Anche nella Result Card del gruppo attivo e nel testo copiato; parametri salvati nella sessione.
+  - Percentuali estreme scritte «< 0,1%» / «> 99,9%», mai 0% o 100%.
+- **Preset 10 × 10 mm e 30 × 30 mm** del rettangolo di riferimento della correzione prospettica (con un riferimento così
+  piccolo la scala è poco precisa: l'app lo segnala).
+- Funzioni `Calc`: `erfc` (errore ≈ 10⁻¹³), `normcdf`, `hitCircle`, `hitRect`, `rng` (generatore con seme),
+  `hitProbability`; 19 nuovi test del calcolo (126 in totale: confronti con integrazione numerica, Rayleigh, Marcum,
+  scala con la distanza, copertura simulata dell'intervallo) e 1 nuovo test dell'interfaccia (16 in totale).
+
 ## [1.2.0] - 2026-11-16
 ### Aggiunto
 - **Correzione prospettica a 4 punti** (omografia) per le foto scattate di sbieco: strumento **⬚ Prospettiva** (tasto `6`,

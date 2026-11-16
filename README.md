@@ -6,7 +6,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.2.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.3.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -34,6 +34,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 - **Misure**: group size centro-centro e bordo-bordo, raggio medio, H-spread, V-spread, FOM, in mm, pollici, MOA e MIL.
 - **Statistiche** (modello normale circolare): SD delle distanze dal centro, SD radiale √(σx²+σy²), CEP, R95, R99, con **intervalli di confidenza** (90/95/99%).
 - **Forma del gruppo**: angolo dell'asse maggiore, rapporto d'aspetto, **ellisse di dispersione** (50–99%).
+- **Probabilità di colpire** un cerchio o un rettangolo, anche a un'altra distanza: probabilità per colpo e «colpi su 100» con intervallo di confidenza, con la correzione applicata e con la taratura attuale.
 - **Correzione**: click per asse dal centro gruppo al punto di mira, con intervallo di confidenza; click anche per ogni foro nella tabella punti.
 - **Flyer**: segnalati automaticamente (⚠, da 5 fori) ed escludibili dal calcolo.
 - **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
@@ -87,6 +88,9 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 | Asse maggiore | autovettore maggiore della matrice di covarianza campionaria dei fori; angolo dalla verticale, senso orario, 0–180° |
 | Rapporto d'aspetto | √(λ1/λ2) = asse maggiore / asse minore dell'ellisse |
 | Correzione prospettica | omografia H dai 4 angoli cliccati al rettangolo wMm × hMm (sistema 8×8, normalizzazione di Hartley); foto ricampionata con interpolazione bilineare; k = √(area del quadrilatero in px / (wMm·hMm)) px/mm |
+| Probabilità di colpire un cerchio | 1 − Q₁(d/σ, R/σ) (χ² non centrale a 2 g.d.l.): d = distanza centro colpi – centro bersaglio, R = raggio |
+| Probabilità di colpire un rettangolo | [Φ((W/2−dx)/σ) − Φ((−W/2−dx)/σ)] · [Φ((H/2−dy)/σ) − Φ((−H/2−dy)/σ)] |
+| IC della probabilità | percentili di 4000 simulazioni: σ² = ν·s²/χ²_ν, centro ± (σ/√n)·N(0,1) per asse |
 | Ellisse di dispersione p | semiassi k·√λ1, k·√λ2 con k = √(−2 ln(1−p)) (χ² con 2 gradi di libertà): 1,1774 (50%), 2,1460 (90%), 2,4477 (95%), 3,0349 (99%) |
 
 Riferimenti: 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m.
@@ -108,9 +112,9 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (107 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (126 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
-L'interfaccia è collaudata end-to-end con Playwright (15 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (16 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

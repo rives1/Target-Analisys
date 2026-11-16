@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.2.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.3.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -146,6 +146,12 @@
   table.pts tr.excl td { opacity: .55; }
   table.pts tr.excl td:first-child { text-decoration: line-through; }
   table.pts th, table.pts td { white-space: nowrap; }
+  table.hit { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; margin: 6px 0 4px; }
+  table.hit th { color: var(--muted); font-weight: 600; text-align: right; padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: bottom; }
+  table.hit th:first-child, table.hit td:first-child { text-align: left; }
+  table.hit td { text-align: right; padding: 4px; border-bottom: 1px solid var(--row-line); }
+  table.hit td.big { font-size: 17px; font-weight: 700; }
+  .hitnote { font-size: 12px; color: var(--muted); margin: 3px 0; }
   table.pts input[type=checkbox] { margin: 0; vertical-align: middle; }
   .flyer { color: #ea580c; font-weight: 700; text-decoration: none; display: inline-block; }
   .tscroll { overflow-x: auto; }
@@ -278,6 +284,8 @@
           <option value="297x210">A4 orizzontale · 297 × 210 mm</option>
           <option value="297x420">A3 verticale · 297 × 420 mm</option>
           <option value="420x297">A3 orizzontale · 420 × 297 mm</option>
+          <option value="10x10">Quadrato · 10 × 10 mm (scala poco precisa)</option>
+          <option value="30x30">Quadrato · 30 × 30 mm</option>
           <option value="custom">Personalizzato</option>
         </select>
       </div>
@@ -392,6 +400,27 @@
     </section>
 
     <section>
+      <h2>Probabilità di colpire</h2>
+      <div id="hitGroup" class="pgroup"></div>
+      <div class="row">
+        <label for="hitShape">Bersaglio</label>
+        <select id="hitShape"><option value="circle">Cerchio (diametro)</option><option value="rect">Rettangolo (largh. × alt.)</option></select>
+      </div>
+      <div class="row">
+        <label for="hitD" id="hitSizeLbl">Diametro</label>
+        <span id="hitCircleIn"><input id="hitD" type="number" min="0" step="any" value="12"></span>
+        <span id="hitRectIn" hidden><input id="hitW" type="number" min="0" step="any" value="20" title="Larghezza"> × <input id="hitH" type="number" min="0" step="any" value="30" title="Altezza"></span>
+        <select id="hitUnit"><option value="mm">mm</option><option value="cm" selected>cm</option><option value="in">in</option></select>
+      </div>
+      <div class="row">
+        <label for="hitDist" title="Vuoto = distanza a cui è stato sparato il gruppo">Distanza del bersaglio</label>
+        <input id="hitDist" type="number" min="0" step="any" placeholder="= di tiro">
+        <select id="hitDistUnit"><option value="m">m</option><option value="yd">yd</option></select>
+      </div>
+      <div id="hitOut"></div>
+    </section>
+
+    <section>
       <h2>Punti del gruppo attivo</h2>
       <div id="pointsGroup" class="pgroup"></div>
       <div id="points"></div>
@@ -422,6 +451,7 @@
           <p><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro.</p>
           <p><b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.</p>
           <p><b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.</p>
+          <p><b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.</p>
           <p><b>📄 CSV fori / CSV gruppi</b> (sezione Dati): tabelle per Excel o LibreOffice, separatore «;» e virgola decimale; una riga per foro (tutti i gruppi) o una per gruppo (misure, statistiche, correzione, ricarica).</p>
           <p><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
           <p>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.</p>
@@ -800,6 +830,103 @@ const Calc = (() => {
     return r;
   }
 
+  /* ---------------- probabilità di colpire un bersaglio ----------------
+     Modello: colpi normali circolari, centro μ, deviazione σ per asse (lo stesso modello di CEP/R95/R99).
+     Tutte le lunghezze nella stessa unità (mm alla distanza del gruppo). */
+  /**
+   * erfc(x) con errore ≈ 10⁻¹³: serie di Taylor di erf per |x| < 3, frazione continua di Laplace (algoritmo di
+   * Lentz) per |x| ≥ 3.
+   */
+  function erfc(x) {
+    const z = Math.abs(x);
+    let r;
+    if (z < 3) {
+      let term = z, sum = z;                          // erf(z) = 2/√π · Σ (−1)^k z^(2k+1) / (k!(2k+1))
+      for (let k = 1; k < 200; k++) { term *= -z * z / k; const t = term / (2 * k + 1); sum += t; if (Math.abs(t) < 1e-17 * Math.abs(sum)) break; }
+      r = 1 - 2 / Math.sqrt(Math.PI) * sum;
+    } else {                                          // erfc(z) = e^(−z²)/√π · 1/(z + (1/2)/(z + 1/(z + (3/2)/(z + …))))
+      const tiny = 1e-300; let f = z, C = z, D = 0;
+      for (let k = 1; k < 300; k++) {
+        const a = k / 2; D = z + a * D; D = Math.abs(D) < tiny ? tiny : D; C = z + a / C; C = Math.abs(C) < tiny ? tiny : C;
+        D = 1 / D; const delta = C * D; f *= delta; if (Math.abs(delta - 1) < 1e-16) break;
+      }
+      r = Math.exp(-z * z) / Math.sqrt(Math.PI) / f;
+    }
+    return x >= 0 ? r : 2 - r;
+  }
+  const normcdf = x => 0.5 * erfc(-x / Math.SQRT2);
+  /**
+   * P(colpo entro un cerchio di raggio R il cui centro dista d dal centro dei colpi), σ per asse.
+   * |colpo − centro|²/σ² è χ² non centrale con 2 gradi di libertà (= 1 − Q₁ di Marcum):
+   * P = Σ_j Poisson(j; λ) · P(Gamma(j+1) ≤ y), λ = d²/2σ², y = R²/2σ² (serie in scala logaritmica, senza underflow).
+   */
+  function hitCircle(d, R, s) {
+    if (!(R > 0)) return 0;
+    if (!(s > 0)) return d < R ? 1 : 0;
+    const lam = d * d / (2 * s * s), y = R * R / (2 * s * s);
+    const jmax = Math.ceil(lam + 12 * Math.sqrt(lam) + 40);
+    let lw = -lam;                       // log peso di Poisson per j = 0
+    let lt = -y;                         // log del termine e^(−y)·y^j/j! per j = 0
+    let G = -Math.expm1(-y);             // P(Gamma(1) ≤ y) = 1 − e^(−y)
+    let P = 0;
+    for (let j = 0; j <= jmax; j++) {
+      P += Math.exp(lw) * G;
+      // passo a j + 1: G(j+2) = G(j+1) − e^(−y)·y^(j+1)/(j+1)!
+      lt += Math.log(y) - Math.log(j + 1);
+      G = Math.max(0, G - Math.exp(lt));
+      lw += (lam > 0 ? Math.log(lam) : -Infinity) - Math.log(j + 1);
+      if (lam === 0) break;
+    }
+    return Math.min(1, Math.max(0, P));
+  }
+  /** P(colpo entro un rettangolo W×H centrato) con centro dei colpi spostato di (dx, dy): prodotto per asse. */
+  function hitRect(dx, dy, W, H, s) {
+    if (!(W > 0 && H > 0)) return 0;
+    if (!(s > 0)) return Math.abs(dx) < W / 2 && Math.abs(dy) < H / 2 ? 1 : 0;
+    const ax = normcdf((W / 2 - dx) / s) - normcdf((-W / 2 - dx) / s);
+    const ay = normcdf((H / 2 - dy) / s) - normcdf((-H / 2 - dy) / s);
+    return Math.max(0, ax) * Math.max(0, ay);
+  }
+  /** Generatore pseudo-casuale con seme (mulberry32): risultati riproducibili, nessuno «sfarfallio» a ogni ridisegno. */
+  function rng(seed) {
+    let a = seed >>> 0;
+    const u = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    let spare = null;
+    const gauss = () => {
+      if (spare !== null) { const g = spare; spare = null; return g; }
+      let v1 = 0; while (v1 === 0) v1 = u();
+      const r = Math.sqrt(-2 * Math.log(v1)), th = 2 * Math.PI * u();
+      spare = r * Math.sin(th); return r * Math.cos(th);
+    };
+    return { u, gauss };
+  }
+  /**
+   * Probabilità di colpire con intervallo di confidenza (simulazione parametrica dal modello normale circolare).
+   * @param o.n       colpi del gruppo (≥ 2)
+   * @param o.s2      varianza combinata (sx² + sy²)/2 (non distorta, ν = 2(n−1) gradi di libertà)
+   * @param o.sigma   σ puntuale (quello di CEP/R95/R99)
+   * @param o.dx,o.dy scostamento stimato del centro dei colpi dal centro del bersaglio
+   * @param o.shape   "circle" (o.R = raggio) | "rect" (o.W, o.H)
+   * @param o.level   livello dell'intervallo (es. 0,95); o.sims simulazioni (default 4000); o.seed
+   * Ogni simulazione estrae σ² = ν·s2/χ²_ν e l'errore del centro (σ/√n)·N(0,1) per asse — le stesse distribuzioni
+   * (χ² e, al margine, t) degli intervalli di σ e del centro gruppo — e calcola la probabilità esatta.
+   * Intervallo = percentili (1−level)/2 e (1+level)/2. Restituisce {p, lo, hi} o null.
+   */
+  function hitProbability(o) {
+    const n = o.n; if (!(n >= 2) || !(o.s2 >= 0)) return null;
+    const P = (dx, dy, s) => o.shape === "rect" ? hitRect(dx, dy, o.W, o.H, s) : hitCircle(Math.hypot(dx, dy), o.R, s);
+    const p = P(o.dx, o.dy, o.sigma);
+    const nu = 2 * (n - 1), N = o.sims || 4000, g = rng(o.seed ?? 20261116), v = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      let chi = 0; for (let k = 0; k < nu; k++) { const z = g.gauss(); chi += z * z; }
+      const s = Math.sqrt(nu * o.s2 / chi), se = s / Math.sqrt(n);
+      v[i] = P(o.dx + se * g.gauss(), o.dy + se * g.gauss(), s);
+    }
+    v.sort();
+    const a = (1 - (o.level || 0.95)) / 2, q = f => v[Math.min(N - 1, Math.max(0, Math.round(f * (N - 1))))];
+    return { p, lo: q(a), hi: q(1 - a), median: q(0.5) };
+  }
+
   /* ---------------- correzione prospettica (omografia da 4 punti) ----------------
      H è una matrice 3×3 in un array di 9 elementi (riga per riga) con H[8] = 1:
      (x', y') = ((h0·x + h1·y + h2) / w, (h3·x + h4·y + h5) / w),  w = h6·x + h7·y + 1. */
@@ -919,7 +1046,8 @@ const Calc = (() => {
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
-    solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify };
+    solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
+    erfc, normcdf, hitCircle, hitRect, rng, hitProbability };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -929,7 +1057,7 @@ if (typeof module !== "undefined") module.exports = Calc;
      ================================================================== -->
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.2.0";
+const APP_VERSION = "1.3.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 3;
@@ -1083,14 +1211,18 @@ function params() {
     ciLevel: parseFloat($("ciLevel").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
     perspW: num("perspW"), perspH: num("perspH"), perspPreset: $("perspPreset").value,
+    hitShape: $("hitShape").value, hitD: num("hitD"), hitW: num("hitW"), hitH: num("hitH"), hitUnit: $("hitUnit").value,
+    hitDist: num("hitDist"), hitDistUnit: $("hitDistUnit").value,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
-    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN", perspW: "perspW", perspH: "perspH", perspPreset: "perspPreset" }))
+    caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN", perspW: "perspW", perspH: "perspH", perspPreset: "perspPreset",
+    hitShape: "hitShape", hitD: "hitD", hitW: "hitW", hitH: "hitH", hitUnit: "hitUnit", hitDistUnit: "hitDistUnit" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
+  if (p.hitDist !== undefined) $("hitDist").value = p.hitDist > 0 ? p.hitDist : "";   // 0 = distanza di tiro (campo vuoto)
   syncGridButton();
   if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
   syncCaliberPreset();
@@ -2279,6 +2411,7 @@ function pointTable(g, cc) {
   return { rows, k, ref, unit: cc.clickUnit, coordUnit: k && ref ? "mm dal punto di mira (Y↑)" : "pixel immagine", flyerNote };
 }
 function refreshResults() {
+  refreshHit();
   const cc = calcContext();
   // stato calibrazione
   const cs = $("calStatus");
@@ -2420,6 +2553,7 @@ function resultText() {
     if (r.offset) L.push(`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? "destra" : "sinistra"}`);
     if (r.correction) L.push(`  Correzione:     ${correctionText(r.correction)}`);
     { const cic = correctionCIText(r); if (cic) L.push(`                  ${cic.text}${cic.unsure ? " (asse non significativo)" : ""}`); }
+    { const ht = hitText(hitInfo(g, cc)); if (ht) L.push(`  Prob. di colpire: ${ht}`); }
     { const nw = shotsWarning(r.n); if (nw && r.n > 0) L.push(`  ⚠ ${nw}`); }
   }
   const rows = compareRows();
@@ -2520,6 +2654,16 @@ async function exportCard(scope = "active") {
         const cic = correctionCIText(r);
         if (cic) add(cic.text + (cic.unsure ? " (un asse non è significativo)" : ""), 13, "#374151", 400, 4);
         add(`${fmt(r.correction.clickValue, 3)} ${r.correction.unit}/click`, 13, "#6b7280", 400, 18);
+      }
+      { // probabilità di colpire il bersaglio impostato nel pannello
+        const h = hitInfo(g, cc);
+        if (h) {
+          const ic = x => `IC ${fmt(h.level * 100, 0)}% ${fmtPR(x)}`;
+          add(`PROBABILITÀ DI COLPIRE · ${h.sizeText} a ${h.distText}`, 12, "#6b7280", 700, 4);
+          add(`Con correzione applicata: ${fmtP(h.corr.p)} (${ic(h.corr)})`, 14, "#111827", 600, 4);
+          if (h.now) add(`Con la taratura attuale: ${fmtP(h.now.p)} (${ic(h.now)})`, 14, "#111827", 600, 4);
+          add(h.sameDist ? "Modello normale circolare; per colpo" : "Dispersione angolare supposta costante: limite superiore", 12, "#6b7280", 400, 18);
+        }
       }
       // Tabella punti (dal centro gruppo in giù): solo con scala e punto di mira.
       if (cc.pxPerMm && g.poa) {
@@ -3009,6 +3153,100 @@ async function importHistory(files) {
   toast(`Storico: ${added} gruppi aggiunti${skipped ? `, ${skipped} saltati (meno di 2 fori, scala o distanza mancanti)` : ""}.`);
 }
 
+/* ------------------------------ PROBABILITÀ DI COLPIRE ------------------------------
+   Con il gruppo misurato (modello normale circolare, σ di CEP/R95/R99) si calcola la probabilità che UN colpo entri in un
+   bersaglio a cerchio o rettangolo, in due casi:
+   - «con correzione applicata»: centro dei colpi sul centro del bersaglio, salvo l'arrotondamento al click (alla distanza
+     del gruppo) e l'incertezza del centro gruppo (la correzione è stimata da pochi colpi);
+   - «con la taratura attuale»: bersaglio sul punto di mira, scostamento misurato del centro gruppo (solo alla distanza
+     del gruppo: altrove lo scostamento verticale dipende dalla caduta del proiettile, cioè dalla balistica).
+   A un'altra distanza la dispersione angolare si suppone costante: il bersaglio viene riportato alla distanza del gruppo
+   (dimensione × D_gruppo / D_bersaglio), il che è esatto nel modello. IC: Calc.hitProbability (simulazione χ² + t). */
+const HIT_UNITS = { mm: 1, cm: 10, in: 25.4 };
+const toRad = (v, unit) => v / Calc.fromRad(1, unit);
+function hitInfo(g, cc) {
+  const pts = inc(g), n = pts.length;
+  if (n < 2 || !cc.pxPerMm || !(cc.distMm > 0)) return null;
+  const p = params(), u = HIT_UNITS[p.hitUnit] || 10, k = 1 / cc.pxPerMm, d = Calc.dispersion(pts);
+  const D2 = p.hitDist > 0 ? p.hitDist * Calc.DIST[p.hitDistUnit] : cc.distMm, f = cc.distMm / D2;
+  const shape = p.hitShape === "rect" ? "rect" : "circle";
+  const R = p.hitD * u / 2 * f, W = p.hitW * u * f, H = p.hitH * u * f;
+  if (shape === "circle" ? !(R > 0) : !(W > 0 && H > 0)) return null;
+  const base = { n, s2: (d.sx * d.sx + d.sy * d.sy) / 2 * k * k, sigma: d.sigma * k, shape, R, W, H, level: cc.ciLevel || 0.95 };
+  const sameDist = Math.abs(D2 - cc.distMm) <= 1e-6 * cc.distMm;
+  const r = Calc.analyze(pts, g.poa, cc);
+  // residuo dell'arrotondamento al click: scostamento angolare − correzione applicata (stesso verso), in mm
+  let rx = 0, ry = 0, rounding = false;
+  if (sameDist && r.offset && r.correction) {
+    const res = (o, clicks) => {
+      const a = Math.atan(Math.abs(o) / cc.distMm) - toRad(clicks * cc.clickValue, cc.clickUnit);
+      return Math.sign(o) * cc.distMm * Math.tan(a);
+    };
+    rx = res(r.offset.dx, r.correction.hClicks); ry = res(r.offset.dy, r.correction.vClicks); rounding = true;
+  }
+  const seed = 20261116;   // stesso seme: stessi numeri a ogni ridisegno
+  return {
+    D2, sameDist, shape, sizeText: shape === "rect" ? `rettangolo ${fmt(p.hitW, 1)} × ${fmt(p.hitH, 1)} ${p.hitUnit}` : `cerchio ⌀ ${fmt(p.hitD, 1)} ${p.hitUnit}`,
+    distText: `${fmt(D2 / Calc.DIST[p.hitDistUnit], 0)} ${p.hitDistUnit}`, sigmaMm: base.sigma / f, rounding, rx: rx / f, ry: ry / f,
+    corr: Calc.hitProbability({ ...base, dx: rx, dy: ry, seed }),
+    now: sameDist && r.offset ? Calc.hitProbability({ ...base, dx: r.offset.dx, dy: r.offset.dy, seed }) : null,
+    noPoa: !r.offset, level: base.level,
+  };
+}
+/** Percentuale: «87%», 1 decimale sotto l'1% e sopra il 99%, «< 0,1%» / «> 99,9%» agli estremi (mai «0%» o «100%»). */
+const pct = v => v == null ? "–" : v < 0.0005 ? "< 0,1" : v > 0.9995 ? "> 99,9" : fmt(v * 100, v < 0.01 || v > 0.99 ? 1 : 0);
+const fmtP = v => v == null ? "–" : `${pct(v)}%`;
+/** Intervallo: «60–96%»; con un estremo vicino a 0 o 100 «≤ 5%» / «≥ 60%»; «< 0,1%» / «> 99,9%» se tutto l'intervallo è estremo. */
+const fmtPR = x => {
+  const lo0 = x.lo < 0.0005, hi1 = x.hi > 0.9995;
+  if (x.hi < 0.0005) return "< 0,1%";
+  if (x.lo > 0.9995) return "> 99,9%";
+  if (lo0 && hi1) return "0–100% (indeterminato)";
+  if (lo0) return `≤ ${pct(x.hi)}%`;
+  if (hi1) return `≥ ${pct(x.lo)}%`;
+  return `${pct(x.lo)}–${pct(x.hi)}%`;
+};
+const hitShots = v => v == null ? "–" : String(Math.round(v * 100));
+/** Riga di testo per l'esportazione: «cerchio ⌀ 12 cm a 100 m: 87% (IC 95% 70–96%) con correzione · 34% (…) taratura attuale». */
+function hitText(h) {
+  if (!h) return null;
+  const ic = x => `IC ${fmt(h.level * 100, 0)}% ${fmtPR(x)}`;
+  return `${h.sizeText} a ${h.distText}: ${fmtP(h.corr.p)} (${ic(h.corr)}) con correzione applicata` +
+    (h.now ? ` · ${fmtP(h.now.p)} (${ic(h.now)}) con la taratura attuale` : "");
+}
+function refreshHit() {
+  const g = activeGroup(), out = $("hitOut"), rect = $("hitShape").value === "rect";
+  $("hitCircleIn").hidden = rect; $("hitRectIn").hidden = !rect;
+  $("hitSizeLbl").textContent = rect ? "Larghezza × altezza" : "Diametro";
+  $("hitSizeLbl").htmlFor = rect ? "hitW" : "hitD";
+  $("hitGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)} · ${inc(g).length} colpi` : "";
+  const cc = calcContext();
+  if (!g || inc(g).length < 2) { out.innerHTML = `<div class="muted">Servono almeno 2 fori nel gruppo attivo.</div>`; return; }
+  if (!cc.pxPerMm) { out.innerHTML = `<div class="muted">Calibra la scala per calcolare la probabilità.</div>`; return; }
+  if (!(cc.distMm > 0)) { out.innerHTML = `<div class="muted">Inserisci la distanza di tiro.</div>`; return; }
+  const h = hitInfo(g, cc);
+  if (!h) { out.innerHTML = `<div class="muted">Inserisci le dimensioni del bersaglio.</div>`; return; }
+  const lv = fmt(h.level * 100, 0), ic = x => x ? fmtPR(x) : "–";
+  const nowCell = v => h.now ? v : `<span class="muted">–</span>`;
+  let html = `<table class="hit"><thead><tr><th>${esc(h.sizeText)} a ${esc(h.distText)}</th><th>Con correzione applicata</th><th>Con la taratura attuale</th></tr></thead><tbody>` +
+    `<tr><td>Probabilità per colpo</td><td class="big">${fmtP(h.corr.p)}</td><td class="big">${nowCell(fmtP(h.now && h.now.p))}</td></tr>` +
+    `<tr><td>Colpi a segno su 100</td><td>${hitShots(h.corr.p)}</td><td>${nowCell(hitShots(h.now && h.now.p))}</td></tr>` +
+    `<tr><td>IC ${lv}%</td><td>${ic(h.corr)}</td><td>${nowCell(ic(h.now))}</td></tr>` +
+    `<tr><td>IC ${lv}% (colpi su 100)</td><td>${hitShots(h.corr.lo)}–${hitShots(h.corr.hi)}</td><td>${nowCell(h.now ? `${hitShots(h.now.lo)}–${hitShots(h.now.hi)}` : "")}</td></tr>` +
+    `</tbody></table>`;
+  const notes = [];
+  const nw = shotsWarning(inc(g).length); if (nw) notes.push(`⚠ ${nw}`);
+  notes.push(`Modello normale circolare: σ = ${fmt(h.sigmaMm * h.D2 / cc.distMm, 1)} mm per asse a ${esc(h.distText)}${h.sameDist ? "" : ` (${fmt(h.sigmaMm, 1)} mm alla distanza del gruppo)`}. Flyer esclusi non contano.`);
+  if (h.rounding) notes.push(`Con correzione: resta lo scostamento dovuto all'arrotondamento al click (${fmt(Math.abs(h.ry), 1)} mm ${h.ry >= 0 ? "alto" : "basso"}, ${fmt(Math.abs(h.rx), 1)} mm ${h.rx >= 0 ? "destra" : "sinistra"}); l'intervallo comprende anche l'incertezza del centro gruppo.`);
+  else notes.push(h.sameDist ? "Con correzione: gruppo supposto centrato sul bersaglio (manca il punto di mira: arrotondamento al click non considerato); l'intervallo comprende l'incertezza del centro gruppo."
+    : "Con correzione: alzo e deriva supposti corretti per questa distanza; arrotondamento al click non considerato.");
+  if (!h.sameDist) notes.push(`⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante. In realtà vento e differenze di velocità la fanno crescere con la distanza: ${h.D2 > cc.distMm ? "considera il valore un limite superiore" : "valore indicativo"}. «Taratura attuale» non calcolabile: lo scostamento a un'altra distanza dipende dalla balistica.`);
+  else if (h.noPoa) notes.push("«Taratura attuale»: inserisci il punto di mira del gruppo.");
+  else notes.push("«Taratura attuale»: con pochi colpi e scostamento piccolo l'intervallo è approssimato e può risultare troppo stretto.");
+  notes.push("L'incertezza della scala non è inclusa.");
+  out.innerHTML = html + notes.map(t => `<div class="hitnote">${t}</div>`).join("");
+}
+
 /* ------------------------------ ESPORTAZIONE CSV ------------------------------
    Formato «italiano»: separatore «;», virgola decimale, nessun separatore delle migliaia, UTF-8 con BOM (accenti
    corretti in Excel), righe CRLF. Celle con ; " o a capo tra virgolette (RFC 4180). Due tabelle «pulite»:
@@ -3220,7 +3458,7 @@ state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext };
 </script>
 </body>
