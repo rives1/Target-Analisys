@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.8.0] - 2026-11-17
+### Aggiunto
+- **Salto dalle righe** (profondità di seduta) nei dati di ricarica, con unità pollici/mm; nella card, nel testo, nel CSV
+  dei gruppi e copiato nel nuovo gruppo.
+- **Precisione e ricarica** (vista grafici, al posto di «Carica e precisione»): variabile **carica** (a parità di palla e
+  polvere) o **salto dalle righe** (a parità di palla, polvere e carica), metrica **CEP** o **raggio medio atteso**
+  (σ·√(π/2)), livelli combinati con intervallo χ² e criterio prudente. Scelta concordata al posto del «nodo di
+  precisione» richiesto: con gruppi piccoli non è dimostrabile (help tecnico).
+- **Report PDF** (📑 accanto alla Result Card, stessa scelta gruppo attivo / tutti): pagine A4 a 150 dpi con intestazione,
+  foto ritagliata con i punti, per ogni gruppo misure con IC, forma, convex hull, correzione, dope, punteggio,
+  probabilità di colpire, ricarica e note, grafici e tabella dei fori; poi confronto tra gruppi, dope card e precisione e
+  ricarica se ci sono dati. Scrittore PDF interno (`makePdf`, JPEG per pagina, xref verificata dai test); palette chiara
+  anche con il tema scuro. Testo non selezionabile (scelta concordata: file diretto invece della stampa del browser).
+- **Glossario contestuale**: nei risultati le etichette (group size, raggio medio, H/V-spread, FOM, SD, CEP, R95/R99,
+  asse, rapporto, ellisse, scostamento, convex hull, punteggio, dope, IC) sono link con spiegazione al passaggio del mouse;
+  il clic apre l'help tecnico sulla voce del glossario e la evidenzia. Voci nuove: convex hull, dope, salto dalle righe.
+- **Convex hull** (`Calc.convexHull`, `Calc.polygonAreaPerim`): area (mm²) e perimetro nei risultati, nel testo, nel
+  report e nel CSV dei gruppi; disegno sull'immagine e nel grafico a dispersione (Parametri di tiro, spento all'avvio,
+  salvato nella sessione). Voronoi non realizzato (scelta concordata: con 5–10 colpi non dà indicazioni affidabili).
+- Help tecnico: sezioni «Convex hull» e «Report PDF», «Carica, seduta e precisione»; guida rapida aggiornata.
+- Test: +8 verifiche del motore (178), 4 test UI nuovi (33): convex hull, seduta, glossario, report PDF.
+
 ## [1.7.0] - 2026-11-17
 ### Aggiunto
 - **Click di alzo e brandeggio per foro**: colonne «Alzo» e «Brand.» nella tabella dei punti (+ = in alto / a destra).

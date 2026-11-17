@@ -759,6 +759,9 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   ok2(names.includes("README.txt") && names.includes("groups_summary.csv"), "file alla radice in inglese");
   ok2(names.some(n => /\/session\.json$/.test(n)) && names.some(n => /\/shots\.csv$/.test(n)) && names.some(n => /\/groups\.csv$/.test(n)), "file di sessione in inglese");
   ok2(/CSV in English format/.test(Z["README.txt"].toString("utf8")), "LEGGIMI in inglese");
+  // report PDF in inglese (le chiavi del report passano dal dizionario)
+  const [pdf] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  assert.match(pdf.suggestedFilename(), /_report_.*\.pdf$/);
   // help tecnico: resta in italiano, con avviso
   await key(page, "h");
   await page.waitForFunction(() => window.__SA.helpOpen());
@@ -1009,6 +1012,124 @@ test("snap al centro del foro, Alt+clic senza snap, tasto M, cerchio del calibro
   near(r.r, 7 / 2 * 4 * r.sc, 0.05, "raggio del cerchio del calibro");
   await key(page, "1");
   assert.strictEqual(await page.evaluate(() => window.__SA.caliberCursorR()), 0, "solo in modalità «Foro»");
+});
+
+
+/* ------------------------------ 1.8.0 ------------------------------ */
+/** Controlla la struttura di un PDF: intestazione, xref coerente (ogni offset punta al suo oggetto), pagine e immagini. */
+function checkPdf(buf) {
+  const t = buf.toString("latin1");
+  assert.ok(t.startsWith("%PDF-1.4\n"), "intestazione PDF");
+  assert.ok(/%%EOF\n$/.test(t), "fine del file");
+  const sx = +t.match(/startxref\n(\d+)\n%%EOF/)[1];
+  assert.ok(t.slice(sx).startsWith("xref\n"), "startxref punta alla tabella xref");
+  const m = t.slice(sx).match(/^xref\n0 (\d+)\n/), n = +m[1];
+  const lines = t.slice(sx + m[0].length).split("\n").slice(0, n);
+  lines.slice(1).forEach((l, i) => { const off = +l.slice(0, 10); assert.ok(t.startsWith(`${i + 1} 0 obj`, off), `offset dell'oggetto ${i + 1}`); });
+  const pages = (t.match(/\/Type \/Page /g) || []).length;
+  assert.strictEqual((t.match(/\/Filter \/DCTDecode/g) || []).length, pages, "un'immagine JPEG per pagina");
+  assert.ok(t.includes(`/Count ${pages}`), "conteggio delle pagine");
+  return pages;
+}
+test("convex hull: area e perimetro nei risultati, sull'immagine, nei CSV", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const exp = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[0];
+    const k = 1 / calcContext(g).pxPerMm, h = Calc.convexHull(g.shots), ap = Calc.polygonAreaPerim(h);
+    return { area: ap.area * k * k, perim: ap.perim * k, n: h.length }; });
+  // verifica indipendente dell'area: fori del test, formula del laccio sul poligono atteso
+  ok2(exp.n >= 3 && exp.n <= 5, "vertici del poligono");
+  const res = await page.textContent("#results");
+  const m = res.match(/Convex hull\s*([\d.]+) mm² · perimetro ([\d,]+) mm/);
+  ok2(m, "riga del convex hull nei risultati");
+  near(parseFloat(m[1].replace(".", "")), exp.area, 0.6, "area (mm²)"); near(parseFloat(m[2].replace(",", ".")), exp.perim, 0.06, "perimetro (mm)");
+  assert.strictEqual(await page.isChecked("#hullOn"), false, "disegno spento all'avvio");
+  await page.check("#hullOn"); await page.dispatchEvent("#hullOn", "change");
+  const ses = await page.evaluate(() => window.__SA.buildSession(false));
+  assert.strictEqual(ses.params.hullOn, true, "scelta salvata nella sessione");
+  ok2(/Convex hull: +[\d.]+ mm²/.test(await page.evaluate(() => window.__SA.resultText())), "nel testo copiato");
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const G = parseCsv((await download(page, "#bCsvGroups")).text.slice(1));
+  near(parseFloat(G[1][G[0].indexOf("Convex hull area (mm²)")].replace(",", ".")), exp.area, 0.06, "CSV: area");
+});
+
+test("precisione e seduta: salto dalle righe nei dati, livelli combinati, raggio medio", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await setField(page, "#ld-bullet", "SMK 168"); await setField(page, "#ld-powder", "N140"); await setField(page, "#ld-charge", "44.5");
+  await setField(page, "#ld-jump", "0.020");
+  assert.strictEqual(await page.inputValue("#ld-jumpUnit"), "in", "unità predefinita: pollici");
+  const add = async (jump, unit, base) => {
+    await page.click("#bAddGroup"); await setField(page, "#ld-jump", jump);
+    if (unit) { await page.selectOption("#ld-jumpUnit", unit); await page.dispatchEvent("#ld-jumpUnit", "change"); }
+    await key(page, "3"); await clickAt(page, base);
+    for (const d of [[20, -15], [35, 0], [25, 12], [40, -5]]) await clickAt(page, { x: base.x + d[0], y: base.y + d[1] });
+  };
+  await add("0.508", "mm", { x: 200, y: 100 });   // 0,508 mm = 0,020 in: stesso livello
+  await add("0.040", "in", { x: 560, y: 120 });
+  assert.strictEqual((await S(page)).g.load.jump, "0.040", "il nuovo gruppo copia il salto e lo si corregge");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await page.selectOption("#chgVar", "jump"); await page.selectOption("#chgMetric", "mr");
+  const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
+  assert.strictEqual(L.v, "jump"); assert.strictEqual(L.metric, "mr");
+  assert.deepStrictEqual(L.levels.map(x => [+(x.x / 25.4).toFixed(3), x.groups.length]), [[0.02, 2], [0.04, 1]], "0,020 in e 0,508 mm combinati");
+  const lv = L.levels[0];
+  near(lv.pool.val, lv.pool.sigma * Math.sqrt(Math.PI / 2), 1e-12, "raggio medio atteso = σ·√(π/2)");
+  const body = await page.textContent("#chgBody");
+  ok2(/0,020 in/.test(body) && /0,040 in/.test(body) && /Raggio medio atteso/.test(body), "tabella per salto dalle righe");
+  ok2(/non si può dire/.test(body), "verdetto prudente");
+  assert.strictEqual(await page.inputValue("#chgLoad"), "SMK 168 · N140 · 44.5 gr", "seduta: munizione con la carica");
+  // il salto è nel testo copiato e nella sessione
+  await key(page, "Escape");
+  ok2(/Salto dalle righe: *0,040 in/.test(await page.evaluate(() => window.__SA.resultText())), "salto nel testo copiato");
+});
+
+test("termini dei risultati collegati al glossario dell'help tecnico", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const links = await page.$$eval("#results [data-gl]", a => a.map(x => [x.textContent.trim(), x.dataset.gl]));
+  const has = (t, id) => links.some(([a, b]) => a.startsWith(t) && b === id);
+  ok2(has("CEP (50%)", "gl-cep") && has("FOM", "gl-fom") && has("Raggio medio", "gl-mr") && has("Asse maggiore", "gl-asse"), "link dei termini principali");
+  ok2(links.some(([, b]) => b === "gl-ic"), "anche gli intervalli di confidenza");
+  const title = await page.getAttribute('#results a[data-gl="gl-cep"]', "title");
+  ok2(/50% dei colpi/.test(title) && /clic: spiegazione/.test(title), "spiegazione breve al passaggio del mouse");
+  await page.click('#results a[data-gl="gl-cep"]');
+  await page.waitForFunction(() => window.__SA.helpOpen());
+  ok2(await page.evaluate(() => document.getElementById("gl-cep").classList.contains("hl")), "voce del glossario evidenziata");
+  const vis = await page.evaluate(() => { const r = document.getElementById("gl-cep").getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
+  ok2(vis, "voce del glossario visibile");
+  await key(page, "Escape");
+  // ogni destinazione esiste nell'help
+  const missing = await page.evaluate(() => [...document.querySelectorAll("#results [data-gl]")].map(a => a.dataset.gl).filter(id => !document.getElementById(id)));
+  assert.deepStrictEqual(missing, [], "destinazioni esistenti");
+});
+
+test("report PDF: file valido, una o più pagine, nome e contenuto", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#ld-charge", "44.5"); await setField(page, "#ld-notes", "nota per il report");
+  const [d1] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  assert.match(d1.suggestedFilename(), /^bersaglio_report_\d{4}-\d\d-\d\d--\d\d-\d\d\.pdf$/);
+  const b1 = require("fs").readFileSync(await d1.path());
+  const p1 = checkPdf(b1);
+  ok2(p1 >= 1 && p1 <= 3, `gruppo attivo: ${p1} pagine`);
+  // tutti i gruppi, con confronto e dope card: più pagine
+  await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
+  for (const q of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, q);
+  await page.selectOption("#cardScope", "all");
+  const theme0 = await page.evaluate(() => document.documentElement.dataset.theme);
+  await key(page, "t");   // tema cambiato: il report usa comunque la palette chiara e poi ripristina il tema
+  const theme1 = await page.evaluate(() => document.documentElement.dataset.theme);
+  assert.notStrictEqual(theme1, theme0);
+  const [d2] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  const p2 = checkPdf(require("fs").readFileSync(await d2.path()));
+  ok2(p2 > p1, `tutti i gruppi: ${p2} pagine`);
+  assert.match(await page.textContent("#toast"), /Report PDF salvato/);
+  assert.strictEqual(await page.evaluate(() => document.documentElement.dataset.theme), theme1, "tema ripristinato dopo il report");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

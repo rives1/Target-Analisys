@@ -344,4 +344,19 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.snapHole(Ln, W, H, 40, 40, { rSearch: 9, expArea: exp }), null, "linea della griglia: nessuno snap");
 }
 
+// --- 1.8.0: convex hull
+{
+  const sq = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }, { x: 5, y: 5 }, { x: 5, y: 0 }, { x: 3, y: 7 }];
+  const h = Calc.convexHull(sq);
+  eq(h.length, 4, "hull del quadrato: 4 vertici (interni e allineati esclusi)");
+  const ap = Calc.polygonAreaPerim(h);
+  near(ap.area, 100, 1e-12, "area del quadrato"); near(ap.perim, 40, 1e-12, "perimetro del quadrato");
+  eq(Calc.convexHull([{ x: 0, y: 0 }, { x: 1, y: 1 }]).length, 2, "meno di 3 punti: restituiti tali e quali");
+  eq(Calc.convexHull([{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 2, y: 0 }]).length, 2, "punti coincidenti e allineati: nessun poligono");
+  // triangolo 3-4-5 in px, scala 2 px/mm → area 6/4 mm², perimetro 12/2 mm
+  const r = Calc.analyze([{ x: 0, y: 0 }, { x: 4, y: 0 }, { x: 0, y: 3 }], null, { pxPerMm: 2, distMm: 100000 });
+  near(r.mm.hullArea, 1.5, 1e-12, "area del hull in mm² (scala al quadrato)"); near(r.mm.hullPerim, 6, 1e-12, "perimetro del hull in mm");
+  eq(Calc.analyze([{ x: 0, y: 0 }, { x: 4, y: 0 }], null, { pxPerMm: 2 }).hull, undefined, "con 2 fori nessun hull");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

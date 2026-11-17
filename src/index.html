@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.7.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.8.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -105,6 +105,8 @@
   #restoreBar .btns { margin: 8px 0 0; }
   .pts input.dial { width: 54px; padding: 1px 3px; font-size: 12px; text-align: right; }
   .dope { margin-top: 6px; font-size: 12.5px; }
+  a.gl, .glc { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }
+  .help-body .hl { background: var(--warn-bg) !important; outline: 2px solid var(--warn-ink); transition: background .3s; }
   .tb-right { display: flex; gap: 6px; align-items: flex-start; }
   #langSel { font-size: 12px; padding: 3px 4px; }
   #helpLangNote { font-size: 12px; font-weight: 600; color: var(--warn-ink); }
@@ -326,6 +328,7 @@
     </div>
     <div class="btns" id="exportBar">
       <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
+      <button class="btn" id="bPdf" title="Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta">📑 Report PDF</button>
       <select id="cardScope" title="Contenuto della Result Card">
         <option value="active" selected>Gruppo attivo</option>
         <option value="all">Tutti i gruppi</option>
@@ -419,6 +422,9 @@
           <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
         </div>
         <div class="row">
+          <label for="hullOn" title="Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)"><input type="checkbox" id="hullOn"> Convex hull (poligono attorno ai fori)</label>
+        </div>
+        <div class="row">
           <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
           <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
         </div>
@@ -448,6 +454,8 @@
           <label for="ld-powder">Polvere</label>
           <div class="pair"><input id="ld-powder" data-k="powder" placeholder="tipo" style="flex:2"><input id="ld-charge" data-k="charge" type="number" min="0" step="any" placeholder="grani" title="Carica in grani (gr)" style="flex:1"></div>
           <label for="ld-bullet">Palla</label><input id="ld-bullet" data-k="bullet" placeholder="marca, peso gr, tipo (il calibro è nei parametri)">
+          <label for="ld-jump" title="Distanza dell'ogiva della palla dall'inizio delle righe (jump), con la cartuccia camerata: profondità di seduta">Salto dalle righe</label>
+          <div class="pair"><input id="ld-jump" data-k="jump" type="number" min="0" step="any" placeholder="es. 0,020" title="Salto dalle righe (jump): distanza della palla dall'inizio delle righe" style="flex:2"><select id="ld-jumpUnit" data-k="jumpUnit" style="flex:1"><option value="in">in</option><option value="mm">mm</option></select></div>
           <label for="ld-primer">Innesco</label><input id="ld-primer" data-k="primer">
           <label for="ld-weather">Meteo</label><input id="ld-weather" data-k="weather" list="weatherList" placeholder="condizioni atmosferiche">
           <label for="ld-temp">Temperatura</label>
@@ -570,7 +578,8 @@
           <p data-i18n><b>3. Mira:</b> clicca il punto mirato. <b>Foro:</b> clicca il <b>centro</b> di ciascun foro: con lo <b>🧲 Snap</b> (<kbd>M</kbd>, serve scala e calibro) il punto si aggancia al centro della macchia del foro; <kbd>Alt</kbd>+clic = senza snap. Il cerchio tratteggiato sul cursore è grande quanto il calibro: verifica a colpo d'occhio la scala.</p>
           <p data-i18n><b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.</p>
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
-          <p data-i18n><b>Dope card</b> e <b>Carica e precisione</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP per carica di polvere con il suo intervallo di confidenza.</p>
+          <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
+          <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
           <p data-i18n><b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.</p>
           <p data-i18n><b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.</p>
           <p data-i18n><b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.</p>
@@ -646,16 +655,19 @@
         </div>
     </section>
     <section class="ana-panel" id="chgBox">
-      <h3>Carica e precisione</h3>
+      <h3>Precisione e ricarica · carica o seduta</h3>
         <div class="row" style="flex-wrap:wrap">
-          <label for="chgLoad" style="flex:0 0 auto">Palla e polvere</label>
+          <label for="chgVar" style="flex:0 0 auto">Variabile</label>
+          <select id="chgVar" title="Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica"><option value="charge" selected>Carica (gr)</option><option value="jump">Salto dalle righe (seduta)</option></select>
+          <select id="chgMetric"><option value="cep" selected>CEP</option><option value="mr">Raggio medio</option></select>
+          <label for="chgLoad" style="flex:0 0 auto">Munizione</label>
           <select id="chgLoad"></select>
           <select id="chgUnit"><option value="MOA" selected>MOA</option><option value="MIL">MIL</option></select>
           <label style="flex:0 0 auto"><input type="checkbox" id="chgHist" checked> anche lo storico</label>
         </div>
         <div id="chgBody"></div>
-        <div class="chart" id="chgChartWrap"><div class="ctitle">CEP per carica, con intervallo di confidenza</div>
-          <canvas id="chCharge" aria-label="CEP in funzione della carica di polvere"></canvas><div class="cnote" id="chgNote"></div></div>
+        <div class="chart" id="chgChartWrap"><div class="ctitle">Precisione per livello, con intervallo di confidenza</div>
+          <canvas id="chCharge" aria-label="Precisione in funzione della carica o del salto dalle righe"></canvas><div class="cnote" id="chgNote"></div></div>
     </section>
   </div>
 </div>
@@ -692,7 +704,9 @@
       <a data-to="h-prob">Probabilità di colpire</a>
       <a data-to="h-punti">Zone di punteggio e punteggio</a>
       <a data-to="h-dope">Click impostati e dope card</a>
-      <a data-to="h-carica">Carica e precisione («nodi»)</a>
+      <a data-to="h-carica">Carica, seduta e precisione («nodi»)</a>
+      <a data-to="h-hull">Convex hull</a>
+      <a data-to="h-pdf">Report PDF</a>
       <a data-to="h-snap">Snap al centro del foro</a>
       <a data-to="h-grafici">Come leggere i grafici</a>
       <a data-to="h-qualita">Qualità della misura</a>
@@ -718,35 +732,38 @@
 <table class="help-tab">
 <thead><tr><th>Sigla / termine</th><th>Significato</th><th>Dove nell'app</th></tr></thead>
 <tbody>
-<tr><td>Asse maggiore</td><td>Direzione lungo cui il gruppo è più allungato, in gradi dalla verticale (senso orario) e in «ore».</td><td>Forma del gruppo</td></tr>
-<tr><td>Bordo-bordo</td><td>Group size misurato fra i bordi esterni dei due fori più lontani = c-c + calibro.</td><td>Risultati</td></tr>
-<tr><td>c-c (centro-centro)</td><td>Distanza misurata tra i centri dei fori. È la misura standard del group size.</td><td>Risultati, card</td></tr>
-<tr><td>CEP</td><td><i>Circular Error Probable</i>: raggio del cerchio, centrato sul centro gruppo, che contiene il 50% dei colpi previsti dal modello.</td><td>Statistiche, grafici, confronto</td></tr>
-<tr><td>Centro gruppo (POI)</td><td>Media delle posizioni dei fori inclusi: dove l'arma «manda» mediamente i colpi.</td><td>Tabella punti, correzione</td></tr>
-<tr><td>χ² (chi quadrato)</td><td>Distribuzione statistica usata per l'incertezza di una deviazione standard stimata da pochi colpi.</td><td>IC di σ, CEP, R95, R99</td></tr>
-<tr><td>10 interno</td><td>Cerchio più piccolo dentro il 10 (o, nella carabina ad aria, il punto del 10 asportato del tutto): conta solo per gli spareggi.</td><td>Punteggio (*)</td></tr>
-<tr><td>Click</td><td>Scatto della torretta dell'ottica; il suo valore (es. 0,1 MIL o 1/4 MOA) è un parametro.</td><td>Correzione</td></tr>
-<tr><td>ES / Group size</td><td><i>Extreme Spread</i>: distanza massima tra due fori del gruppo.</td><td>Risultati, confronto</td></tr>
-<tr><td>Ellisse di concentrazione</td><td>Ellisse che, nel modello, contiene la percentuale scelta (50/90/95/99%) dei colpi; mostra forma e orientamento.</td><td>Immagine, grafici, card</td></tr>
-<tr><td>FOM</td><td><i>Figure Of Merit</i>: media tra H-spread e V-spread.</td><td>Risultati, confronto</td></tr>
-<tr><td>Flyer</td><td>Colpo anomalo, molto più lontano degli altri dal centro del gruppo.</td><td>Tabella punti (⚠)</td></tr>
-<tr><td>H-spread / V-spread</td><td>Estensione orizzontale / verticale del gruppo (dal foro più a sinistra al più a destra; dal più basso al più alto).</td><td>Risultati</td></tr>
-<tr><td>IC</td><td><i>Intervallo di confidenza</i>: intervallo di valori compatibili con i colpi sparati, al livello scelto (90, 95 o 99%).</td><td>Statistiche, correzione, probabilità</td></tr>
-<tr><td>IPHY / SMOA</td><td><i>Inch Per Hundred Yards</i> (o <i>Shooter's MOA</i>): 1 pollice a 100 iarde. Vicino al MOA ma non uguale.</td><td>Unità click</td></tr>
-<tr><td>MIL (mrad)</td><td>Milliradiante: 1/1000 di radiante; 1 MIL = 10 cm a 100 m.</td><td>Ovunque</td></tr>
-<tr><td>MOA</td><td><i>Minute Of Angle</i>: 1/60 di grado; 1 MOA ≈ 2,91 cm a 100 m.</td><td>Ovunque</td></tr>
-<tr><td>MR / Raggio medio</td><td><i>Mean Radius</i>: distanza media dei fori dal centro gruppo.</td><td>Risultati, confronto</td></tr>
-<tr><td>n</td><td>Numero di colpi (inclusi) del gruppo.</td><td>Ovunque</td></tr>
-<tr><td>POA (punto di mira)</td><td><i>Point Of Aim</i>: dove si mirava. Riferimento per lo scostamento e la correzione.</td><td>Mira</td></tr>
-<tr><td>Punteggio</td><td>Valore dell'anello del bersaglio da gara toccato dal bordo del foro (regola ISSF dei bersagli di carta).</td><td>Zone di punteggio, tabella punti, card, CSV</td></tr>
-<tr><td>R95 / R99</td><td>Raggi che contengono il 95% / 99% dei colpi previsti dal modello.</td><td>Statistiche</td></tr>
-<tr><td>Rapporto d'aspetto</td><td>Quanto il gruppo è allungato: 1 = rotondo; 2 = lungo il doppio in una direzione.</td><td>Forma del gruppo</td></tr>
-<tr><td>Rayleigh</td><td>Distribuzione delle distanze dal centro nel modello normale circolare: da essa derivano CEP, R95, R99.</td><td>Statistiche</td></tr>
-<tr><td>Sulla linea (≈)</td><td>Colpo il cui bordo è vicino a un limite di anello meno dell'incertezza di posizione: il valore potrebbe essere quello adiacente.</td><td>Punteggio</td></tr>
-<tr><td>SD</td><td><i>Standard Deviation</i>, deviazione standard: misura «media» della variabilità attorno alla media.</td><td>Statistiche</td></tr>
-<tr><td>SEP</td><td><i>Spherical Error Probable</i>: versione <b>tridimensionale</b> del CEP (sfera che contiene il 50% dei punti). <b>Non è usato</b>: su un bersaglio piano la misura corretta è il CEP.</td><td>—</td></tr>
-<tr><td>σ (sigma)</td><td>Deviazione standard per asse del modello normale circolare, stimata dai fori.</td><td>Statistiche, probabilità</td></tr>
-<tr><td>t di Student</td><td>Distribuzione usata per l'incertezza di una media (il centro gruppo) stimata da pochi colpi.</td><td>IC del centro e della correzione</td></tr>
+<tr id="gl-asse"><td>Asse maggiore</td><td>Direzione lungo cui il gruppo è più allungato, in gradi dalla verticale (senso orario) e in «ore».</td><td>Forma del gruppo</td></tr>
+<tr id="gl-bordo"><td>Bordo-bordo</td><td>Group size misurato fra i bordi esterni dei due fori più lontani = c-c + calibro.</td><td>Risultati</td></tr>
+<tr id="gl-cc"><td>c-c (centro-centro)</td><td>Distanza misurata tra i centri dei fori. È la misura standard del group size.</td><td>Risultati, card</td></tr>
+<tr id="gl-cep"><td>CEP</td><td><i>Circular Error Probable</i>: raggio del cerchio, centrato sul centro gruppo, che contiene il 50% dei colpi previsti dal modello.</td><td>Statistiche, grafici, confronto</td></tr>
+<tr id="gl-centro"><td>Centro gruppo (POI)</td><td>Media delle posizioni dei fori inclusi: dove l'arma «manda» mediamente i colpi.</td><td>Tabella punti, correzione</td></tr>
+<tr id="gl-chi2"><td>χ² (chi quadrato)</td><td>Distribuzione statistica usata per l'incertezza di una deviazione standard stimata da pochi colpi.</td><td>IC di σ, CEP, R95, R99</td></tr>
+<tr id="gl-interno"><td>10 interno</td><td>Cerchio più piccolo dentro il 10 (o, nella carabina ad aria, il punto del 10 asportato del tutto): conta solo per gli spareggi.</td><td>Punteggio (*)</td></tr>
+<tr id="gl-click"><td>Click</td><td>Scatto della torretta dell'ottica; il suo valore (es. 0,1 MIL o 1/4 MOA) è un parametro.</td><td>Correzione</td></tr>
+<tr id="gl-es"><td>ES / Group size</td><td><i>Extreme Spread</i>: distanza massima tra due fori del gruppo.</td><td>Risultati, confronto</td></tr>
+<tr id="gl-ellisse"><td>Ellisse di concentrazione</td><td>Ellisse che, nel modello, contiene la percentuale scelta (50/90/95/99%) dei colpi; mostra forma e orientamento.</td><td>Immagine, grafici, card</td></tr>
+<tr id="gl-fom"><td>FOM</td><td><i>Figure Of Merit</i>: media tra H-spread e V-spread.</td><td>Risultati, confronto</td></tr>
+<tr id="gl-flyer"><td>Flyer</td><td>Colpo anomalo, molto più lontano degli altri dal centro del gruppo.</td><td>Tabella punti (⚠)</td></tr>
+<tr id="gl-spread"><td>H-spread / V-spread</td><td>Estensione orizzontale / verticale del gruppo (dal foro più a sinistra al più a destra; dal più basso al più alto).</td><td>Risultati</td></tr>
+<tr id="gl-ic"><td>IC</td><td><i>Intervallo di confidenza</i>: intervallo di valori compatibili con i colpi sparati, al livello scelto (90, 95 o 99%).</td><td>Statistiche, correzione, probabilità</td></tr>
+<tr id="gl-iphy"><td>IPHY / SMOA</td><td><i>Inch Per Hundred Yards</i> (o <i>Shooter's MOA</i>): 1 pollice a 100 iarde. Vicino al MOA ma non uguale.</td><td>Unità click</td></tr>
+<tr id="gl-mil"><td>MIL (mrad)</td><td>Milliradiante: 1/1000 di radiante; 1 MIL = 10 cm a 100 m.</td><td>Ovunque</td></tr>
+<tr id="gl-moa"><td>MOA</td><td><i>Minute Of Angle</i>: 1/60 di grado; 1 MOA ≈ 2,91 cm a 100 m.</td><td>Ovunque</td></tr>
+<tr id="gl-mr"><td>MR / Raggio medio</td><td><i>Mean Radius</i>: distanza media dei fori dal centro gruppo.</td><td>Risultati, confronto</td></tr>
+<tr id="gl-n"><td>n</td><td>Numero di colpi (inclusi) del gruppo.</td><td>Ovunque</td></tr>
+<tr id="gl-poa"><td>POA (punto di mira)</td><td><i>Point Of Aim</i>: dove si mirava. Riferimento per lo scostamento e la correzione.</td><td>Mira</td></tr>
+<tr id="gl-punteggio"><td>Punteggio</td><td>Valore dell'anello del bersaglio da gara toccato dal bordo del foro (regola ISSF dei bersagli di carta).</td><td>Zone di punteggio, tabella punti, card, CSV</td></tr>
+<tr id="gl-r95"><td>R95 / R99</td><td>Raggi che contengono il 95% / 99% dei colpi previsti dal modello.</td><td>Statistiche</td></tr>
+<tr id="gl-rapporto"><td>Rapporto d'aspetto</td><td>Quanto il gruppo è allungato: 1 = rotondo; 2 = lungo il doppio in una direzione.</td><td>Forma del gruppo</td></tr>
+<tr id="gl-rayleigh"><td>Rayleigh</td><td>Distribuzione delle distanze dal centro nel modello normale circolare: da essa derivano CEP, R95, R99.</td><td>Statistiche</td></tr>
+<tr id="gl-linea"><td>Sulla linea (≈)</td><td>Colpo il cui bordo è vicino a un limite di anello meno dell'incertezza di posizione: il valore potrebbe essere quello adiacente.</td><td>Punteggio</td></tr>
+<tr id="gl-sd"><td>SD</td><td><i>Standard Deviation</i>, deviazione standard: misura «media» della variabilità attorno alla media.</td><td>Statistiche</td></tr>
+<tr id="gl-sep"><td>SEP</td><td><i>Spherical Error Probable</i>: versione <b>tridimensionale</b> del CEP (sfera che contiene il 50% dei punti). <b>Non è usato</b>: su un bersaglio piano la misura corretta è il CEP.</td><td>—</td></tr>
+<tr id="gl-sigma"><td>σ (sigma)</td><td>Deviazione standard per asse del modello normale circolare, stimata dai fori.</td><td>Statistiche, probabilità</td></tr>
+<tr id="gl-t"><td>t di Student</td><td>Distribuzione usata per l'incertezza di una media (il centro gruppo) stimata da pochi colpi.</td><td>IC del centro e della correzione</td></tr>
+<tr id="gl-hull"><td>Convex hull</td><td>Involucro convesso: il poligono convesso più piccolo che racchiude tutti i fori inclusi; l'app ne dà area e perimetro.</td><td>Risultati, immagine, grafico a dispersione</td></tr>
+<tr id="gl-dope"><td>Dope</td><td>Click da impostare sulla torretta per colpire il punto di mira a una certa distanza: click impostati + correzione di ogni foro, mediati.</td><td>Risultati, dope card</td></tr>
+<tr id="gl-salto"><td>Salto dalle righe (jump)</td><td>Distanza dell'ogiva della palla dall'inizio delle righe con la cartuccia camerata: misura della profondità di seduta.</td><td>Dati di ricarica, precisione e ricarica</td></tr>
 </tbody></table>
 </section>
 
@@ -928,16 +945,32 @@ Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 
 </section>
 
 <section id="h-carica">
-<h3>Carica e precisione: perché l'app non indica un «nodo armonico»</h3>
-<p>La vista grafici confronta il <b>CEP angolare</b> per carica di polvere, a parità di palla e polvere. I gruppi della stessa carica sono combinati: le loro varianze si sommano pesate per i gradi di libertà, così più gruppi danno una stima più precisa.</p>
+<h3>Carica, seduta e precisione: perché l'app non indica un «nodo»</h3>
+<p>La vista grafici confronta una misura angolare di precisione (<b>CEP</b> o <b>raggio medio atteso</b> = σ·√(π/2)) in funzione di una variabile di ricarica: la <b>carica</b> di polvere (a parità di palla e polvere) o il <b>salto dalle righe</b>, cioè la profondità di seduta (a parità di palla, polvere e carica). I gruppi dello stesso livello sono combinati: le loro varianze si sommano pesate per i gradi di libertà, così più gruppi danno una stima più precisa.</p>
 <p class="formula">s² = Σ ν<sub>i</sub>·s<sub>i</sub>² / Σ ν<sub>i</sub>, &nbsp; s<sub>i</sub>² = (s<sub>x</sub>² + s<sub>y</sub>²)/2, &nbsp; ν<sub>i</sub> = 2(n<sub>i</sub> − 1); &nbsp; CEP = σ·√(2 ln 2), intervallo con χ²(Σν)</p>
-<p>La teoria del «nodo» (la canna vibra in modo più coerente a una certa carica, e lì i gruppi si stringono) è diffusa, ma <b>non c'è consenso</b> che i test usuali (scale di cariche, OCW, 3–5 colpi per carica) la dimostrino: ripetendo le prove con più colpi i «nodi» di solito spariscono, perché le differenze tra gruppi piccoli sono in gran parte casuali. Per questo l'app:</p>
+<p>La teoria del «nodo» (la canna vibra in modo più coerente a una certa carica o con un certo salto dalle righe, e lì i gruppi si stringono) è diffusa, ma <b>non c'è consenso</b> che i test usuali (scale di cariche, OCW, 3–5 colpi per carica) la dimostrino: ripetendo le prove con più colpi i «nodi» di solito spariscono, perché le differenze tra gruppi piccoli sono in gran parte casuali. Per questo l'app:</p>
 <ul>
   <li>mostra il CEP di ogni carica <b>con il suo intervallo di confidenza</b>;</li>
   <li>dichiara una carica migliore solo se il suo intervallo <b>non si sovrappone</b> a quello di nessun'altra (criterio prudente: può non vedere una differenza vera, ma raramente ne inventa una);</li>
   <li>non usa la parola «nodo» e non interpola una curva «a valle» tra le cariche.</li>
 </ul>
 <p><b>Esempio</b>: 5 colpi per carica danno ν = 8; l'intervallo 95% di σ va da circa 0,68·s a 1,92·s. Due cariche con CEP 0,6 e 0,9 MOA hanno intervalli che si sovrappongono largamente: la differenza non è dimostrata. Con 3 gruppi da 10 colpi (ν = 54) l'intervallo va da circa 0,84·s a 1,23·s.</p>
+</section>
+
+<section id="h-hull">
+<h3>Convex hull (involucro convesso)</h3>
+<p>Il <b>convex hull</b> è il poligono convesso più piccolo che contiene tutti i fori inclusi: come un elastico teso attorno ai fori. L'app ne calcola <b>area</b> (formula del laccio, in mm²) e <b>perimetro</b>, e lo disegna sull'immagine e nel grafico a dispersione se attivato nei Parametri di tiro.</p>
+<ul>
+  <li>È una misura <b>geometrica</b> dei fori sparati, come il group size: dipende dai colpi più esterni e cresce con il numero di colpi; per confrontare gruppi con n diverso il CEP (con IC) è più adatto.</li>
+  <li>Area grande rispetto al group size: i fori sono distribuiti in tutte le direzioni; area piccola con group size grande: gruppo allungato (vedi anche asse maggiore e rapporto d'aspetto).</li>
+  <li>L'app <b>non</b> usa il poligono (né celle di Voronoi) per diagnosticare cause come alimentazione o scatto: con 5–10 colpi la disposizione dei fori non permette conclusioni di questo tipo.</li>
+</ul>
+</section>
+
+<section id="h-pdf">
+<h3>Report PDF</h3>
+<p>Il pulsante <b>📑 Report PDF</b> (accanto alla Result Card, stessa scelta «gruppo attivo / tutti i gruppi») crea un file PDF A4: intestazione con distanza, calibro, click e scala; foto ritagliata con i punti; per ogni gruppo misure con IC, forma, convex hull, correzione, dope, punteggio, probabilità di colpire, dati di ricarica e note, grafici e tabella dei fori; poi, se ci sono dati, confronto tra gruppi, dope card e precisione per carica o seduta (con le scelte attuali della vista grafici).</p>
+<p>Le pagine sono immagini a 150 dpi: il PDF si stampa bene ma il testo non è selezionabile né ricercabile (scelta per avere un file identico in tutti i browser, senza librerie). I colori sono sempre quelli chiari, anche con il tema scuro.</p>
 </section>
 
 <section id="h-snap">
@@ -1328,10 +1361,15 @@ const Calc = (() => {
     if (el) { r.shape = { bearing: el.bearing, ratio: el.ratio, k: el.k, p: el.p }; r.px.ellA = el.a; r.px.ellB = el.b; }
     const ci = confidence(shots, ctx.ciLevel || 0.95);
     if (ci) r.ciPx = ci;
+    if (n >= 3) {   // convex hull: area in px² (non va moltiplicata per k come le lunghezze)
+      const hull = convexHull(shots), ap = polygonAreaPerim(hull);
+      if (hull.length >= 3) r.hull = { pts: hull, areaPx: ap.area, perimPx: ap.perim };
+    }
     if (!k) return r;
 
     const mm = {};
     for (const [key, v] of Object.entries(r.px)) mm[key] = v * k;
+    if (r.hull) { mm.hullArea = r.hull.areaPx * k * k; mm.hullPerim = r.hull.perimPx * k; }
     mm.esEdge = n >= 2 ? mm.es + (ctx.caliberMm || 0) : null;   // bordo-bordo esterno
     r.mm = mm;
 
@@ -1712,13 +1750,31 @@ const Calc = (() => {
     return { x: sx / area + 0.5, y: sy / area + 0.5, area, contrast, dark };
   }
 
+  /* ---------------- convex hull (dalla 1.8.0) ---------------- */
+  /** Involucro convesso (catena monotona di Andrew): vertici in senso antiorario (y verso l'alto), senza punti allineati. */
+  function convexHull(pts) {
+    const P = [...new Map(pts.map(p => [`${p.x},${p.y}`, { x: p.x, y: p.y }])).values()].sort((a, b) => a.x - b.x || a.y - b.y);
+    if (P.length < 3) return P;
+    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const lo = [], up = [];
+    for (const p of P) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    return lo.slice(0, -1).concat(up.slice(0, -1));
+  }
+  /** Area (formula del laccio) e perimetro di un poligono. */
+  function polygonAreaPerim(q) {
+    let a = 0, per = 0;
+    for (let i = 0; i < q.length; i++) { const p = q[i], n = q[(i + 1) % q.length]; a += p.x * n.y - n.x * p.y; per += dist(p, n); }
+    return { area: Math.abs(a) / 2, perim: q.length > 1 ? per : 0 };
+  }
+
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
     solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
     erfc, normcdf, hitCircle, hitRect, rng, hitProbability,
     SCORE_TARGETS, ringDiameters, shotScore,
-    toRad, dope, milToClicks, pooledSigma, snapHole };
+    toRad, dope, milToClicks, pooledSigma, snapHole, convexHull, polygonAreaPerim };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -1738,6 +1794,7 @@ const I18N = (() => {
    "  Asse maggiore:  {0}  [gradi dalla verticale, senso orario]": "  Major axis:     {0}  [degrees from vertical, clockwise]",
    "  Bordo-bordo:    {0}": "  Edge-to-edge:   {0}",
    "  CEP / R95 / R99: {0} / {1} / {2} mm  [previsti, modello circolare normale]": "  CEP / R95 / R99: {0} / {1} / {2} mm  [predicted, circular normal model]",
+   "  Convex hull:    {0} mm² · perimetro {1} mm": "  Convex hull:    {0} mm² · perimeter {1} mm",
    "  Correzione:     {0}": "  Correction:     {0}",
    "  Dope:           alzo {0} click ({1} MIL) · brandeggio {2} click ({3} MIL)": "  Dope:           elevation {0} clicks ({1} MIL) · windage {2} clicks ({3} MIL)",
    "  Ellisse {0}%:    semiassi {1} × {2} mm": "  Ellipse {0}%:    semi-axes {1} × {2} mm",
@@ -1798,7 +1855,7 @@ const I18N = (() => {
    " · ⚠ meno dei fori marcati": " · ⚠ fewer than the marked shots",
    " · ⚠ poco affidabile con meno di 5 colpi": " · ⚠ unreliable with fewer than 5 shots",
    " · ⚠ poco affidabili con meno di 5 colpi": " · ⚠ unreliable with fewer than 5 shots",
-   " ⚠ Sono mescolate palle o polveri diverse: scegli una munizione.": " ⚠ Different bullets or powders are mixed: choose one ammunition.",
+   " ⚠ Sono mescolate munizioni diverse: scegline una.": " ⚠ Different ammunition is mixed: choose one.",
    "(munizione non indicata)": "(ammunition not specified)",
    "), poi la sessione.": "), then the session.",
    ", {0} file non validi": ", {0} invalid files",
@@ -1821,21 +1878,22 @@ const I18N = (() => {
    "<b>4.</b> Compila calibro, distanza e valore click; per ogni gruppo puoi registrare <b>ricarica e condizioni</b>. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>.": "<b>4.</b> Fill in caliber, distance and click value; for each group you can record <b>load and conditions</b>. Several groups on the same photo: <b>＋ New group</b>.",
    "<b>Archivio</b> (sezione Dati): ogni «Salva sessione» archivia anche la sessione nel browser; «🗜 Esporta archivio (ZIP)» crea un unico file con, per ogni sessione, JSON, foto originale, CSV fori e gruppi, più un riepilogo di tutti i gruppi. Con «＋ Aggiungi sessioni» porti nell'archivio sessioni salvate in precedenza.": "<b>Archive</b> (Data section): every «Save session» also archives the session in the browser; «🗜 Export archive (ZIP)» creates a single file with, for each session, JSON, original photo, shots and groups CSV, plus a summary of all groups. With «＋ Add sessions» you bring previously saved sessions into the archive.",
    "<b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.": "<b>Elevation and windage clicks</b> (points table, «Elev.» and «Wind.» columns): the clicks set on the turret for each shot; a new shot takes those of the previous one. Each group has its own <b>distance</b>. With aim, scale and clicks the results show the <b>dope</b>: the clicks to set to hit the aim at that distance.",
-   "<b>Dope card</b> e <b>Carica e precisione</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP per carica di polvere con il suo intervallo di confidenza.": "<b>Dope card</b> and <b>Charge and precision</b> (charts view): the groups of this session and of the history lined up by distance (elevation and windage clicks, CSV and printable PNG) and the CEP per powder charge with its confidence interval.",
+   "<b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.": "<b>Dope card</b> and <b>Precision and reloading</b> (charts view): the groups of this session and of the history lined up by distance (elevation and windage clicks, CSV and printable PNG) and the CEP or mean radius per powder charge or per <b>jump to the lands</b> (seating depth), with their confidence interval.",
    "<b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.": "<b>Flyers</b> (⚠): flagged from 5 shots up; tick «Excl.» (or <kbd>X</kbd>) to remove them from the statistics. <b>Comparison</b>: with several groups, or by importing other sessions into the <b>history</b>.",
    "<b>Lavoro non salvato trovato</b> del {0} alle {1}: ": "<b>Unsaved work found</b> from {0} at {1}: ",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
    "<b>Zone di punteggio</b>: scegli il bersaglio da gara; gli anelli compaiono attorno al punto di mira di ogni gruppo e la tabella punti mostra il valore di ogni foro (* = 10 interno, ≈ = sulla linea).": "<b>Scoring zones</b>: choose the competition target; the rings appear around the point of aim of each group and the points table shows the value of each shot (* = inner 10, ≈ = on the line).",
-   "<b>{0} gr</b> ha il CEP più piccolo e il suo intervallo non si sovrappone a quello delle altre cariche: la differenza è probabilmente reale (criterio prudente).": "<b>{0} gr</b> has the smallest CEP and its interval does not overlap those of the other charges: the difference is probably real (conservative criterion).",
+   "<b>{0}</b> ha il {1} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).": "<b>{0}</b> has the smallest {1} and its interval does not overlap those of the other levels: the difference is probably real (conservative criterion).",
    "<b>📄 CSV fori / CSV gruppi</b> (sezione Dati): tabelle per Excel o LibreOffice, separatore «;» e virgola decimale; una riga per foro (tutti i gruppi) o una per gruppo (misure, statistiche, correzione, ricarica).": "<b>📄 Shots CSV / Groups CSV</b> (Data section): tables for Excel or LibreOffice; in English: comma separator and decimal point (in Italian: «;» and decimal comma); one row per shot (all groups) or one per group (measurements, statistics, correction, load).",
    "<b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.": "<b>📊 Charts and group comparison</b> (at the bottom of the panel, key <kbd>A</kbd>): full-screen view with scatter plot, histogram, clock of the active group, comparison table, trend over time and history. <kbd>Esc</kbd> or «← Back to analysis» to return to the image.",
+   "<b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.": "<b>📑 PDF report</b> (next to the Result Card): A4 file with photo, measurements, charts, shots table, load and notes, comparison, dope card and precision. In the results the underlined terms (CEP, FOM, σ…) show a short explanation and, with a click, open the glossary of the technical help. <b>Convex hull</b>: turn it on in the Shooting parameters.",
    "<br><span class=\"civ\" title=\"Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))\">IC {0}% atteso: {1}</span>": "<br><span class=\"civ\" title=\"Confidence interval of the expected mean radius from the circular normal model (σ·√(π/2))\">CI {0}% expected: {1}</span>",
    "<br><span class=\"civ\">IC {0}%: {1}</span>": "<br><span class=\"civ\">CI {0}%: {1}</span>",
    "<br><span class=\"civ\">IC {0}%: ±{1} mm vert. · ±{2} mm orizz.</span>": "<br><span class=\"civ\">CI {0}%: ±{1} mm vert. · ±{2} mm horiz.</span>",
    "<div class=\"cmpsum muted\">Il gruppo attivo è il primo in ordine di data: nessun precedente.</div>": "<div class=\"cmpsum muted\">The active group is the first in date order: no previous group.</div>",
    "<div class=\"cmpsum\">Gruppo attivo «{0}» rispetto al precedente «{1}»: <b>{2}{3} {4}</b> di {5} ({6}).</div>": "<div class=\"cmpsum\">Active group «{0}» compared with the previous «{1}»: <b>{2}{3} {4}</b> of {5} ({6}).</div>",
-   "<div class=\"cmpsum\">{0}</div><div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Carica</th><th class=\"x\">Gruppi</th><th class=\"x\">Colpi</th>\n      <th class=\"x\" title=\"CEP dalla σ combinata dei gruppi della stessa carica\">CEP ({1})</th><th class=\"x\">IC {2}%</th></tr></thead><tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">CEP angolare (gruppi a distanze diverse confrontabili), gruppi della stessa carica combinati. Non è la ricerca di un «nodo armonico»: è la precisione misurata per carica con la sua incertezza; con 3–5 colpi per carica le differenze sono quasi sempre casuali.{4}</div>": "<div class=\"cmpsum\">{0}</div><div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Charge</th><th class=\"x\">Groups</th><th class=\"x\">Shots</th>\n      <th class=\"x\" title=\"CEP from the pooled σ of the groups with the same charge\">CEP ({1})</th><th class=\"x\">CI {2}%</th></tr></thead><tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Angular CEP (groups at different distances are comparable), groups with the same charge pooled. This is not a search for a «harmonic node»: it is the measured precision per charge with its uncertainty; with 3–5 shots per charge the differences are almost always due to chance.{4}</div>",
+   "<div class=\"cmpsum\">{0}</div><div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">{1}</th><th class=\"x\">Gruppi</th><th class=\"x\">Colpi</th>\n      <th class=\"x\" title=\"Dalla σ combinata dei gruppi dello stesso livello\">{2} ({3})</th><th class=\"x\">IC {4}%</th></tr></thead><tbody>{5}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Metrica angolare (gruppi a distanze diverse confrontabili), gruppi dello stesso livello combinati. Non è la ricerca di un «nodo» di carica o di seduta: è la precisione misurata con la sua incertezza; con 3–5 colpi per livello le differenze sono quasi sempre casuali.{6}</div>": "<div class=\"cmpsum\">{0}</div><div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">{1}</th><th class=\"x\">Groups</th><th class=\"x\">Shots</th>\n      <th class=\"x\" title=\"From the pooled σ of the groups at the same level\">{2} ({3})</th><th class=\"x\">CI {4}%</th></tr></thead><tbody>{5}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Angular metric (groups at different distances are comparable), groups at the same level pooled. This is not a search for a charge or seating «node»: it is the measured precision with its uncertainty; with 3–5 shots per level the differences are almost always due to chance.{6}</div>",
    "<div class=\"corr\">↻ {0}</div>\n            {1}\n            <div class=\"muted\" style=\"font-size:11.5px;margin-top:3px\">Esatto: {2} {3} {4} / {5} {6} {7} · {8} {9}/click</div>": "<div class=\"corr\">↻ {0}</div>\n            {1}\n            <div class=\"muted\" style=\"font-size:11.5px;margin-top:3px\">Exact: {2} {3} {4} / {5} {6} {7} · {8} {9}/click</div>",
    "<div class=\"dope\" title=\"Click da impostare sulla torretta per portare i colpi sul punto di mira a questa distanza: click impostati sui fori + correzione di ogni foro, mediati (+ = in alto / a destra)\">🎯 <b>Dope a {0}</b>: {1} · {2}</div>": "<div class=\"dope\" title=\"Clicks to set on the turret to bring the shots onto the point of aim at this distance: clicks set for the shots + correction of each shot, averaged (+ = up / right)\">🎯 <b>Dope at {0}</b>: {1} · {2}</div>",
    "<div class=\"muted\" style=\"margin-top:6px\">Aggiungi il punto di mira per la correzione.</div>": "<div class=\"muted\" style=\"margin-top:6px\">Add the point of aim to get the correction.</div>",
@@ -1850,6 +1908,7 @@ const I18N = (() => {
    "<div class=\"muted\">Servono almeno 2 fori.</div>": "<div class=\"muted\">At least 2 shots needed.</div>",
    "<div class=\"muted\">Servono almeno 2 gruppi con fori (in questa sessione o importati nello storico).</div>": "<div class=\"muted\">At least 2 groups with shots are needed (in this session or imported into the history).</div>",
    "<div class=\"muted\">Servono gruppi da almeno 3 colpi con scala, distanza e carica (gr) indicata nei dati di ricarica, in questa sessione o nello storico.</div>": "<div class=\"muted\">Groups of at least 3 shots are needed, with scale, distance and charge (gr) entered in the load data, in this session or in the history.</div>",
+   "<div class=\"muted\">Servono gruppi da almeno 3 colpi con scala, distanza e salto dalle righe indicato nei dati di ricarica, in questa sessione o nello storico.</div>": "<div class=\"muted\">Groups of at least 3 shots are needed, with scale, distance and jump to the lands entered in the load data, in this session or in the history.</div>",
    "<div class=\"nwarn\">⚠ Click diversi tra i fori: la dope compensa i click di ogni foro, ma dispersione e correzione sono calcolate sui fori come sono sul bersaglio.</div>": "<div class=\"nwarn\">⚠ Different clicks between shots: the dope compensates the clicks of each shot, but dispersion and correction are computed on the shots as they are on the target.</div>",
    "<div class=\"qinfo\">{0} → incertezza di scala ≈ ±{1}% · inquadratura {2} × {3}": "<div class=\"qinfo\">{0} → scale uncertainty ≈ ±{1}% · field of view {2} × {3}",
    "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Punteggio</b> ({0}): <b>{1}</b></div>": "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Score</b> ({0}): <b>{1}</b></div>",
@@ -1862,12 +1921,13 @@ const I18N = (() => {
    "<span class=\"dot\" style=\"background:{0}\"></span><input value=\"{1}\" aria-label=\"Nome gruppo\">\n      <span class=\"n\">{2}{3} colpi{4}</span><button title=\"Elimina gruppo\">✕</button>": "<span class=\"dot\" style=\"background:{0}\"></span><input value=\"{1}\" aria-label=\"Group name\">\n      <span class=\"n\">{2}{3} shots{4}</span><button title=\"Delete group\">✕</button>",
    "<span class=\"dot\" style=\"background:{0}\"></span>{1} · {2} colpi": "<span class=\"dot\" style=\"background:{0}\"></span>{1} · {2} shots",
    "<span class=\"dot\" style=\"background:{0}\"></span>{1}<span class=\"muted\" style=\"font-weight:400\">· {2} colpi{3}</span>": "<span class=\"dot\" style=\"background:{0}\"></span>{1}<span class=\"muted\" style=\"font-weight:400\">· {2} shots{3}</span>",
-   "<span class=\"key\" style=\"border-color:{0}\"></span>raggio medio {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6} · ✕ centro gruppo{7}": "<span class=\"key\" style=\"border-color:{0}\"></span>mean radius {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6} · ✕ group centre{7}",
+   "<span class=\"key\" style=\"border-color:{0}\"></span>raggio medio {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6}{7} · ✕ centro gruppo{8}": "<span class=\"key\" style=\"border-color:{0}\"></span>mean radius {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6}{7} · ✕ group centre{8}",
    "<span class=\"key\" style=\"border-color:{0}\"></span>{1} per gruppo · <span class=\"key dash\" style=\"border-color:{2}\"></span>media mobile su {3} gruppi · ○ = gruppo dallo storico · asse orizzontale: gruppi in ordine di data, a distanza uniforme": "<span class=\"key\" style=\"border-color:{0}\"></span>{1} per group · <span class=\"key dash\" style=\"border-color:{2}\"></span>moving average over {3} groups · ○ = group from the history · horizontal axis: groups in date order, evenly spaced",
    "<span class=\"muted\">Se lo ignori resta disponibile finché non inizi un nuovo lavoro.</span>": "<span class=\"muted\">If you ignore it, it stays available until you start a new job.</span>",
    "<table class=\"hit\"><thead><tr><th>{0} a {1}</th><th>Con correzione applicata</th><th>Con la taratura attuale</th></tr></thead><tbody>": "<table class=\"hit\"><thead><tr><th>{0} at {1}</th><th>With correction applied</th><th>With current zero</th></tr></thead><tbody>",
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo</td></tr><tr><td colspan=\"2\" class=\"muted\">Servono almeno 3 fori.</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape</td></tr><tr><td colspan=\"2\" class=\"muted\">At least 3 shots needed.</td></tr></table>",
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo{0}</td></tr>\n    <tr><td title=\"Orientamento dell'asse maggiore dell'ellisse di dispersione: gradi dalla verticale in senso orario (0° = verticale, 90° = orizzontale)\">Asse maggiore</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Rapporto tra asse maggiore e asse minore dell'ellisse (√ del rapporto tra le varianze principali): 1 = gruppo circolare\">Rapporto d'aspetto</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Ellisse di concentrazione: contiene la percentuale indicata dei colpi se la dispersione è normale\">Ellisse {4}% (semiassi)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">Con pochi colpi il rapporto d'aspetto tende a risultare più alto del reale; con un gruppo quasi circolare l'angolo non è significativo.</div>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape{0}</td></tr>\n    <tr><td title=\"Orientation of the major axis of the dispersion ellipse: degrees from vertical, clockwise (0° = vertical, 90° = horizontal)\">Major axis</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Ratio between major and minor axis of the ellipse (√ of the ratio of the principal variances): 1 = circular group\">Aspect ratio</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Concentration ellipse: contains the stated percentage of shots if the dispersion is normal\">Ellipse {4}% (semi-axes)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">With few shots the aspect ratio tends to come out higher than the true one; with an almost circular group the angle is not significant.</div>",
+   "<table style=\"margin-top:4px\"><tr><td title=\"Convex hull: poligono convesso più piccolo che racchiude tutti i fori inclusi. Un'area grande rispetto al CEP indica fori lontani dal centro in più direzioni\">Convex hull</td><td class=\"v\">{0} mm² · {1} {2} mm</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td title=\"Convex hull: smallest convex polygon enclosing all included shots. A large area compared with the CEP means shots far from the centre in several directions\">Convex hull</td><td class=\"v\">{0} mm² · {1} {2} mm</td></tr></table>",
    "<table style=\"margin-top:4px\"><tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td>Group centre offset</td><td class=\"v\">{0}{1}</td></tr></table>",
    "<table>\n        <tr><td>Group size (c-c)</td><td class=\"v\"><b>{0}</b><br>{1}</td></tr>\n        <tr><td>Bordo-bordo esterno</td><td class=\"v\">{2}</td></tr>\n        <tr><td>Raggio medio</td><td class=\"v\">{3}<br>{4}{5}</td></tr>\n        <tr><td title=\"Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)\">H-spread (orizz.)</td><td class=\"v\">{6}</td></tr>\n        <tr><td title=\"Dispersione verticale: dal colpo più basso al più alto (c-c)\">V-spread (vert.)</td><td class=\"v\">{7}</td></tr>\n        <tr><td title=\"Figure of Merit: media tra H-spread e V-spread\">FOM</td><td class=\"v\">{8}</td></tr>\n        <tr><td colspan=\"2\" class=\"sub2\">Statistiche{9}</td></tr>\n        <tr><td title=\"Deviazione standard delle distanze dei fori dal centro gruppo\">SD distanze dal centro</td><td class=\"v\">{10}</td></tr>\n        <tr><td title=\"Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale\">SD radiale √(σx²+σy²)</td><td class=\"v\">{11}</td></tr>\n        <tr><td title=\"Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)\">CEP (50%)</td><td class=\"v\">{12}{13}</td></tr>\n        <tr><td title=\"Raggio previsto che contiene il 95% dei colpi\">R95</td><td class=\"v\">{14}{15}</td></tr>\n        <tr><td title=\"Raggio previsto che contiene il 99% dei colpi\">R99</td><td class=\"v\">{16}{17}</td></tr>\n      </table>\n      <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = {18} mm, stima corretta per pochi colpi{19}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.</div>\n      {20}": "<table>\n        <tr><td>Group size (c-c)</td><td class=\"v\"><b>{0}</b><br>{1}</td></tr>\n        <tr><td>Outside edge-to-edge</td><td class=\"v\">{2}</td></tr>\n        <tr><td>Mean radius</td><td class=\"v\">{3}<br>{4}{5}</td></tr>\n        <tr><td title=\"Horizontal dispersion: from the leftmost to the rightmost shot (c-c)\">H-spread (horiz.)</td><td class=\"v\">{6}</td></tr>\n        <tr><td title=\"Vertical dispersion: from the lowest to the highest shot (c-c)\">V-spread (vert.)</td><td class=\"v\">{7}</td></tr>\n        <tr><td title=\"Figure of Merit: average of H-spread and V-spread\">FOM</td><td class=\"v\">{8}</td></tr>\n        <tr><td colspan=\"2\" class=\"sub2\">Statistics{9}</td></tr>\n        <tr><td title=\"Standard deviation of the distances of the shots from the group centre\">SD of distances from centre</td><td class=\"v\">{10}</td></tr>\n        <tr><td title=\"Radial standard deviation: √(σx² + σy²), with σx and σy the horizontal and vertical standard deviations\">Radial SD √(σx²+σy²)</td><td class=\"v\">{11}</td></tr>\n        <tr><td title=\"Circular Error Probable: predicted radius containing 50% of the shots (circular normal model, σ estimated from the shots)\">CEP (50%)</td><td class=\"v\">{12}{13}</td></tr>\n        <tr><td title=\"Predicted radius containing 95% of the shots\">R95</td><td class=\"v\">{14}{15}</td></tr>\n        <tr><td title=\"Predicted radius containing 99% of the shots\">R99</td><td class=\"v\">{16}{17}</td></tr>\n      </table>\n      <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: predicted radii around the group centre, circular normal model (σ = {18} mm, estimate corrected for few shots{19}). The confidence intervals (χ²) are asymmetric, so they are given as «min–max» and not as «±». The group size (ES) has no exact interval and is not estimated.</div>\n      {20}",
    "<th class=\"x\" title=\"Punteggio ({0}): anello toccato dal bordo del foro; * = 10 interno; ≈ = sulla linea\">Punti</th>": "<th class=\"x\" title=\"Score ({0}): ring touched by the edge of the hole; * = inner 10; ≈ = on the line\">Points</th>",
@@ -1913,12 +1973,14 @@ const I18N = (() => {
    "Archivio: 1 sessione aggiunta": "Archive: 1 session added",
    "Archivio: {0} sessioni aggiunte": "Archive: {0} sessions added",
    "Aria compressa": "Air gun",
+   "Asse maggiore": "Major axis",
    "Asse maggiore (° dalla verticale)": "Major axis (° from vertical)",
    "Asse maggiore: {0}": "Major axis: {0}",
    "Asse {0}° · rapporto {1}:1": "Axis {0}° · ratio {1}:1",
    "Azzera": "Reset",
    "Bersaglio": "Target",
    "Bersaglio da gara": "Competition target",
+   "Bordo-bordo esterno": "Outside edge-to-edge",
    "Bordo-bordo: {0}": "Edge-to-edge: {0}",
    "Bossolo": "Case",
    "Brand.": "Wind.",
@@ -1928,9 +1990,9 @@ const I18N = (() => {
    "Brandeggio IC ± (click)": "Windage CI ± (clicks)",
    "Brandeggio impostato (click)": "Windage set (clicks)",
    "CEP": "CEP",
+   "CEP (50%)": "CEP (50%)",
    "CEP (mm)": "CEP (mm)",
-   "CEP in funzione della carica di polvere": "CEP as a function of the powder charge",
-   "CEP per carica, con intervallo di confidenza": "CEP per charge, with confidence interval",
+   "CEP {0} · R95 {1} · R99 {2}": "CEP {0} · R95 {1} · R99 {2}",
    "CEP {0} · R95 {1} · R99 {2} mm (previsti)": "CEP {0} · R95 {1} · R99 {2} mm (predicted)",
    "CONFRONTO ({0}; Δ e media su {1} riferiti a {2})": "COMPARISON ({0}; Δ and average over {1} refer to {2})",
    "CORREZIONE": "CORRECTION",
@@ -1942,16 +2004,18 @@ const I18N = (() => {
    "Calibrazione scala": "Scale calibration",
    "Calibrazione scala: 2 punti (2)": "Scale calibration: 2 points (2)",
    "Calibri comuni: imposta il diametro della palla. Per un calibro non in elenco scrivi il diametro nel campo sopra.": "Common calibers: sets the bullet diameter. For a caliber not in the list, type the diameter in the field above.",
+   "Calibro": "Caliber",
    "Calibro (diametro proiettile)": "Caliber (bullet diameter)",
    "Calibro (mm)": "Caliber (mm)",
    "Carabina": "Rifle",
+   "Carica": "Charge",
    "Carica (gr)": "Charge (gr)",
-   "Carica e precisione": "Charge and precision",
    "Carica foto (Ctrl+O)": "Load photo (Ctrl+O)",
    "Carica in grani (gr)": "Charge in grains (gr)",
    "Carica la foto di un bersaglio": "Load a photo of a target",
    "Carica prima un'immagine.": "Load an image first.",
    "Carica una foto per iniziare.": "Load a photo to start.",
+   "Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica": "Charge: compared with the same bullet and powder. Jump to the lands (seating): with the same bullet, powder and charge",
    "Centro gruppo X dalla mira (mm)": "Group centre X from aim (mm)",
    "Centro gruppo Y dalla mira (mm, + = alto)": "Group centre Y from aim (mm, + = up)",
    "Cerchio (diametro)": "Circle (diameter)",
@@ -1972,6 +2036,12 @@ const I18N = (() => {
    "Condizioni": "Conditions",
    "Confronto tra gruppi": "Group comparison",
    "Contenuto della Result Card": "Result Card content",
+   "Convex hull": "Convex hull",
+   "Convex hull (poligono attorno ai fori)": "Convex hull (polygon around the shots)",
+   "Convex hull area (mm²)": "Convex hull area (mm²)",
+   "Convex hull perimetro (mm)": "Convex hull perimeter (mm)",
+   "Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)": "Convex hull: the smallest convex polygon enclosing all included shots (area and perimeter in the results; at least 3 shots needed)",
+   "Correzione": "Correction",
    "Correzione attiva: rettangolo {0} × {1} mm · foto rettificata {2}×{3} px · {4} px/mm": "Correction active: rectangle {0} × {1} mm · rectified photo {2}×{3} px · {4} px/mm",
    "Correzione prospettica (foto di sbieco)": "Perspective correction (photo taken at an angle)",
    "Correzione prospettica applicata: {0}×{1} px, {2} px/mm{3}": "Perspective correction applied: {0}×{1} px, {2} px/mm{3}",
@@ -2006,6 +2076,7 @@ const I18N = (() => {
    "Distanza dal centro gruppo (mm)": "Distance from the group centre (mm)",
    "Distanza dal punto di mira (mm)": "Distance from the point of aim (mm)",
    "Distanza del bersaglio": "Target distance",
+   "Distanza dell'ogiva della palla dall'inizio delle righe (jump), con la cartuccia camerata: profondità di seduta": "Distance of the bullet ogive from the start of the rifling (jump), with the cartridge chambered: seating depth",
    "Distanza di tiro (m)": "Shooting distance (m)",
    "Distanza di tiro · gruppo attivo": "Shooting distance · active group",
    "Distanza nota tra i 2 punti": "Known distance between the 2 points",
@@ -2018,6 +2089,7 @@ const I18N = (() => {
    "Dope brandeggio (MIL)": "Dope windage (MIL)",
    "Dope brandeggio (click)": "Dope windage (clicks)",
    "Dope brandeggio IC ± (click)": "Dope windage CI ± (clicks)",
+   "Dope card": "Dope card",
    "Dope card da stampare o tenere sul telefono": "Dope card to print or keep on your phone",
    "Dope card esportata (PNG)": "Dope card exported (PNG)",
    "Dope card salvata (CSV)": "Dope card saved (CSV)",
@@ -2037,6 +2109,7 @@ const I18N = (() => {
    "File JSON non valido": "Invalid JSON file",
    "Flyer: confronto di ogni foro con gli altri, soglia {0} SD.": "Flyers: each shot compared with the others, threshold {0} SD.",
    "Fonte": "Source",
+   "Fori · X, Y in {0}": "Shots · X, Y in {0}",
    "Formato non supportato": "Unsupported format",
    "Foro": "Shot",
    "Foro {0}": "Shot {0}",
@@ -2047,7 +2120,9 @@ const I18N = (() => {
    "GIÙ": "DOWN",
    "GROUP SIZE (centro-centro)": "GROUP SIZE (centre-to-centre)",
    "Gli esempi numerici sono calcolati dal motore dell'app": "The numerical examples are computed by the app's engine",
-   "Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale carica sia più precisa. Servono più colpi per carica (meglio 2–3 gruppi da 5–10 colpi ciascuno).": "The intervals overlap: with these shots it is <b>not possible to say</b> which charge is more precise. More shots per charge are needed (better 2–3 groups of 5–10 shots each).",
+   "Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale livello sia più preciso. Servono più colpi per livello (meglio 2–3 gruppi da 5–10 colpi ciascuno).": "The intervals overlap: with these shots it is <b>not possible to say</b> which level is more precise. More shots per level are needed (better 2–3 groups of 5–10 shots each).",
+   "Gli intervalli si sovrappongono: con questi colpi non si può dire quale livello sia più preciso.": "The intervals overlap: with these shots it is not possible to say which level is more precise.",
+   "Grafici": "Charts",
    "Grafici e confronto tra gruppi": "Charts and group comparison",
    "Grafici ·": "Charts ·",
    "Grafico a dispersione dei fori": "Scatter plot of the shots",
@@ -2068,9 +2143,11 @@ const I18N = (() => {
    "Gruppo {0}": "Group {0}",
    "Guida rapida e scorciatoie": "Quick guide and shortcuts",
    "H-spread (mm)": "H-spread (mm)",
+   "H-spread (orizz.)": "H-spread (horiz.)",
    "Help tecnico · termini, misure e grafici": "Technical help · terms, measurements and charts",
    "I colpi tendono a <b>ore {0}</b> rispetto alla mira: centro gruppo a {1} {2}, {3}° {4}. Spicchi = direzione di ogni colpo dalla mira.": "Shots tend to <b>{0} o'clock</b> relative to the aim: group centre at {1} {2}, {3}° {4}. Wedges = direction of each shot from the aim.",
    "I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.": "Your data stays on your device: the page makes no network connection at all.",
+   "IC {0}%": "CI {0}%",
    "IC {0}% {1}": "CI {0}% {1}",
    "IC {0}%: CEP {1} · R95 {2} · R99 {3}": "CI {0}%: CEP {1} · R95 {2} · R99 {3}",
    "IC {0}%: verticale {1} · orizzontale {2}": "CI {0}%: vertical {1} · horizontal {2}",
@@ -2122,15 +2199,19 @@ const I18N = (() => {
    "Media dei fori inclusi": "Average of the included shots",
    "Media punti": "Average points",
    "Media su": "Average over",
+   "Media {0}": "Avg {0}",
    "Meno di 3 colpi: le statistiche non sono significative.": "Fewer than 3 shots: the statistics are not significant.",
    "Meteo": "Weather",
    "Metrica": "Metric",
    "Migliore (più stretto)": "Better (tighter)",
    "Mira": "Aim",
    "Mira: clicca il punto mirato per «{0}».": "Aim: click the point you aimed at for «{0}».",
+   "Misure": "Measurements",
+   "Misure e correzione": "Measurements and correction",
    "Modello normale circolare: σ = {0} mm per asse a {1}{2}. Flyer esclusi non contano.": "Circular normal model: σ = {0} mm per axis at {1}{2}. Excluded flyers do not count.",
    "Modello normale circolare; per colpo": "Circular normal model; per shot",
    "Munizione": "Ammunition",
+   "Munizione: {0} · click {1} {2} · + = in alto / a destra · solo distanze tirate": "Ammunition: {0} · click {1} {2} · + = up / right · only distances actually shot",
    "Nessun gruppo ha fori.": "No group has shots.",
    "Nessun gruppo.": "No group.",
    "Nessun valore: servono scala calibrata e distanza.": "No values: a calibrated scale and the distance are needed.",
@@ -2145,13 +2226,13 @@ const I18N = (() => {
    "Numero di gruppi per la media mobile": "Number of groups for the moving average",
    "Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.": "Each group has its own data. A new group copies all the data of the active group (shots, foulers and notes included): correct the ones that change. Everything appears in the Result Card.",
    "Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo": "Each group has its own distance: a new group starts from that of the active group",
+   "Orientamento": "Orientation",
    "Orientamento e prospettiva": "Orientation and perspective",
    "Orologio": "Clock",
    "PROBABILITÀ DI COLPIRE · {0} a {1}": "HIT PROBABILITY · {0} at {1}",
    "PUNTEGGIO · {0}": "SCORE · {0}",
    "PUNTI (mm; X, Y dal punto di mira, Y↑; direzione dal centro gruppo)": "SHOTS (mm; X, Y from the point of aim, Y↑; direction from the group centre)",
    "Palla": "Bullet",
-   "Palla e polvere": "Bullet and powder",
    "Parametri di tiro": "Shooting parameters",
    "Passo tra gli anelli (mm, sul diametro)": "Ring step (mm, on the diameter)",
    "Peggiore (più largo)": "Worse (wider)",
@@ -2159,11 +2240,18 @@ const I18N = (() => {
    "Personalizzato": "Custom",
    "Pistola / revolver": "Pistol / revolver",
    "Polvere": "Powder",
+   "Precisione e carica": "Precision and charge",
+   "Precisione e ricarica · carica o seduta": "Precision and reloading · charge or seating",
+   "Precisione e salto dalle righe": "Precision and jump to the lands",
+   "Precisione in funzione della carica o del salto dalle righe": "Precision as a function of charge or jump to the lands",
+   "Precisione per livello, con intervallo di confidenza": "Precision per level, with confidence interval",
+   "Preparazione del report PDF…": "Preparing the PDF report…",
    "Preparazione dello ZIP ({0} sessioni)…": "Preparing the ZIP ({0} sessions)…",
    "Pressione": "Pressure",
    "Pressione (hPa)": "Pressure (hPa)",
    "Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)": "Atmospheric pressure in hPa (= mbar), as shown by your instrument (absolute or sea-level)",
    "Probabilità di colpire": "Hit probability",
+   "Prospettiva": "Perspective",
    "Prospettiva: clicca i 4 angoli del rettangolo di {0} × {1} mm, in qualsiasi ordine ({2}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.": "Perspective: click the 4 corners of the {0} × {1} mm rectangle, in any order ({2}/4). The width is the top side. Backspace = remove the last one · Esc = cancel.",
    "Prospettiva: i 4 punti non formano un quadrilatero convesso. Clicca i 4 angoli del rettangolo.": "Perspective: the 4 points do not form a convex quadrilateral. Click the 4 corners of the rectangle.",
    "Prospettiva: impossibile calcolare la correzione con questi punti.": "Perspective: the correction cannot be computed with these points.",
@@ -2180,6 +2268,8 @@ const I18N = (() => {
    "Quadrato · 30 × 30 mm": "Square · 30 × 30 mm",
    "R. medio": "Mean r.",
    "R. medio {0} mm · {1}": "Mean r. {0} mm · {1}",
+   "R95": "R95",
+   "R99": "R99",
    "RAGGIO MEDIO": "MEAN RADIUS",
    "RICARICA E CONDIZIONI": "LOAD AND CONDITIONS",
    "Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)": "Level the photo: click 2 points on a target line that should be horizontal or vertical (5)",
@@ -2189,12 +2279,17 @@ const I18N = (() => {
    "Raggio medio": "Mean radius",
    "Raggio medio (mm)": "Mean radius (mm)",
    "Raggio medio ({0})": "Mean radius ({0})",
+   "Raggio medio atteso": "Expected mean radius",
    "Rapporto d'aspetto": "Aspect ratio",
    "Rapporto d'aspetto {0} : 1 · ellisse {1}% {2} × {3} mm": "Aspect ratio {0} : 1 · ellipse {1}% {2} × {3} mm",
+   "Report PDF salvato: {0} pagine": "PDF report saved: {0} pages",
+   "Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta": "Printable PDF report (A4): image, metrics, charts, shots table, load data and notes; with several groups also comparison, dope card and precision per charge/seating",
+   "Report {0}": "Report {0}",
    "Result Card esportata": "Result Card exported",
    "Rettangolo (largh. × alt.)": "Rectangle (width × height)",
    "Rettangolo di riferimento": "Reference rectangle",
    "Rettangolo di riferimento piccolo nella foto (lato più corto {0} px): errore di scala fino a ±{1}%. Usa un rettangolo più grande.": "Small reference rectangle in the photo (shortest side {0} px): scale error up to ±{1}%. Use a larger rectangle.",
+   "Ricarica e condizioni": "Load and conditions",
    "Ricarica e condizioni · gruppo attivo": "Load and conditions · active group",
    "Riconoscimento flyer da 5 fori in su.": "Flyer detection from 5 shots up.",
    "Ridimensiona il pannello": "Resize the panel",
@@ -2209,15 +2304,20 @@ const I18N = (() => {
    "Rotazione (° , + = orario)": "Rotation (° , + = clockwise)",
    "Ruota di 90° in senso antiorario": "Rotate 90° counter-clockwise",
    "Ruota di 90° in senso orario": "Rotate 90° clockwise",
+   "SD distanze dal centro": "SD of distances from centre",
    "SD distanze dal centro (mm)": "SD of distances from centre (mm)",
    "SD distanze dal centro: {0}": "SD of distances from centre: {0}",
    "SD radiale (mm)": "Radial SD (mm)",
+   "SD radiale √(σx²+σy²)": "Radial SD √(σx²+σy²)",
    "SD radiale √(σx²+σy²): {0}": "Radial SD √(σx²+σy²): {0}",
    "SHOOT ANALYZER — {0}": "SHOOT ANALYZER — {0}",
    "SINISTRA": "LEFT",
    "STATISTICHE{0}": "STATISTICS{0}",
    "SU": "UP",
    "SX": "L",
+   "Salto dalle righe": "Jump to the lands",
+   "Salto dalle righe (jump): distanza della palla dall'inizio delle righe": "Jump to the lands: distance of the bullet from the start of the rifling",
+   "Salto dalle righe (seduta)": "Jump to the lands (seating)",
    "Salvata il": "Saved on",
    "Salvataggio automatico nel browser (IndexedDB): alla riapertura puoi ripristinare il lavoro": "Autosave in the browser (IndexedDB): when you reopen you can restore your work",
    "Salvataggio automatico non disponibile": "Autosave not available",
@@ -2232,8 +2332,10 @@ const I18N = (() => {
    "Scala: clicca il SECONDO punto.": "Scale: click the SECOND point.",
    "Scaldacanna": "Foulers",
    "Scegli un bersaglio per disegnare gli anelli attorno al punto di mira di ogni gruppo e calcolare il punteggio.": "Choose a target to draw the rings around the point of aim of each group and compute the score.",
+   "Scostamento centro gruppo": "Group centre offset",
    "Segmento di scala corto ({0} px): errore di scala fino a ±{1}%. Usa due punti più lontani (almeno 150 px).": "Short scale segment ({0} px): scale error up to ±{1}%. Use two points farther apart (at least 150 px).",
    "Segmento di scala {0} px": "Scale segment {0} px",
+   "Serve almeno un secondo salto dalle righe per un confronto.": "At least a second jump value is needed for a comparison.",
    "Serve almeno una seconda carica per un confronto.": "At least a second charge is needed for a comparison.",
    "Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».": "You need a REAL rectangle of known size (sheet edge, printed frame). After the correction the scale is already set from the rectangle; you can redo it by hand with «Scale».",
    "Servono almeno 2 fori": "At least 2 shots needed",
@@ -2245,6 +2347,7 @@ const I18N = (() => {
    "Sessione creata con una versione più recente": "Session created with a newer version",
    "Sessione salvata (e archiviata)": "Session saved (and archived)",
    "Shoot Analyzer": "Shoot Analyzer",
+   "Shoot Analyzer {0} · {1} · {2}": "Shoot Analyzer {0} · {1} · {2}",
    "Shoot Analyzer {0} — archivio esportato il {1}": "Shoot Analyzer {0} — archive exported on {1}",
    "Significato di termini, misure e grafici, con formule ed esempi (tasto H)": "Meaning of terms, measurements and charts, with formulas and examples (key H; in Italian)",
    "Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap.": "Snap: the clicked shot locks onto the centre of the hole (M). Needs a calibrated scale and the caliber. Alt+click = no snap.",
@@ -2276,15 +2379,20 @@ const I18N = (() => {
    "Umidità (%)": "Humidity (%)",
    "Un colpo è segnalato come flyer se la sua distanza dal centro degli altri colpi supera la loro distanza media di più di k deviazioni standard (servono almeno 5 colpi)": "A shot is flagged as a flyer if its distance from the centre of the other shots exceeds their mean distance by more than k standard deviations (at least 5 shots needed)",
    "Un punto per gruppo; barre = intervallo di confidenza della media. Le linee uniscono solo i punti misurati: non sono una traiettoria.": "One point per group; bars = confidence interval of the mean. The lines only join the measured points: they are not a trajectory.",
+   "Un solo livello: nessun confronto possibile.": "Only one level: no comparison possible.",
    "Un unico ZIP con tutte le sessioni archiviate: per ognuna sessione JSON, foto originale, CSV fori e gruppi; in più un CSV riepilogativo di tutti i gruppi": "A single ZIP with all archived sessions: for each one JSON session, original photo, shots and groups CSV; plus a summary CSV of all groups",
    "Una riga per foro, tutti i gruppi: coordinate, distanze, direzione, click, escluso, flyer. Separatore «;» e virgola decimale (Excel/LibreOffice in italiano)": "One row per shot, all groups: coordinates, distances, direction, clicks, excluded, flyer. Comma separator and decimal point (English format)",
    "Una riga per gruppo: misure in mm/MOA/MIL, statistiche, correzione, dati di ricarica. Separatore «;» e virgola decimale": "One row per group: measurements in mm/MOA/MIL, statistics, correction, load data. Comma separator and decimal point",
    "Unità click": "Click unit",
+   "Unità salto": "Jump unit",
    "Unità vento": "Wind unit",
    "Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .json).": "Use the «Load photo» button or drop a JPG/PNG file here (or a .json session).",
    "V-spread (mm)": "V-spread (mm)",
+   "V-spread (vert.)": "V-spread (vert.)",
    "Valore click": "Click value",
    "Valore click mirino": "Sight click value",
+   "Valori in {0}; media mobile su {1} gruppi riferita a «{2}».": "Values in {0}; moving average over {1} groups, for «{2}».",
+   "Variabile": "Variable",
    "Vento": "Wind",
    "Verso orizzontale": "Horizontal direction",
    "Verso verticale": "Vertical direction",
@@ -2296,6 +2404,7 @@ const I18N = (() => {
    "[{0}] {1} colpi{2}{3}": "[{0}] {1} shots{2}{3}",
    "alto": "high",
    "alzo": "elevation",
+   "alzo {0} · brandeggio {1} click (+ = alto / destra)": "elevation {0} · windage {1} clicks (+ = up / right)",
    "anche lo storico": "include history",
    "anelli: {0}": "rings: {0}",
    "antiorario": "counter-clockwise",
@@ -2306,6 +2415,7 @@ const I18N = (() => {
    "canvas troppo grande": "canvas too large",
    "centro gruppo": "group centre",
    "cerchio ⌀ {0} {1}": "circle ⌀ {0} {1}",
+   "clic: spiegazione nell'help tecnico": "click: explanation in the technical help",
    "click di alzo": "elevation clicks",
    "cm": "cm",
    "colpi": "shots",
@@ -2314,6 +2424,7 @@ const I18N = (() => {
    "come indicata dallo strumento": "as shown by the instrument",
    "condizioni atmosferiche": "weather conditions",
    "considera il valore un limite superiore": "treat the value as an upper bound",
+   "corretta con un rettangolo di {0} × {1} mm": "corrected with a {0} × {1} mm rectangle",
    "da ore {0}": "from {0} o'clock",
    "da {0} a {1}": "from {0} to {1}",
    "dal centro gruppo": "from the group centre",
@@ -2328,6 +2439,7 @@ const I18N = (() => {
    "diversa per gruppo": "different for each group",
    "dope_card_{0}.csv": "dope_card_{0}.csv",
    "dope_card_{0}.png": "dope_card_{0}.png",
+   "es. 0,020": "e.g. 0.020",
    "fori": "shots",
    "fori.csv": "shots.csv",
    "foto": "photo",
@@ -2347,10 +2459,13 @@ const I18N = (() => {
    "mph": "mph",
    "nessun gruppo": "no group",
    "no": "no",
+   "non calibrata": "not calibrated",
    "orario": "clockwise",
    "ore {0}": "{0} o'clock",
    "ore {0}: {1} {2}": "{0} o'clock: {1} {2}",
    "orizzontale": "horizontal",
+   "pagina {0} di {1}": "page {0} of {1}",
+   "perimetro": "perimeter",
    "personalizzato (10 ⌀ {0} mm, passo {1} mm)": "custom (10 ⌀ {0} mm, step {1} mm)",
    "pixel": "pixels",
    "pixel immagine": "image pixels",
@@ -2359,6 +2474,8 @@ const I18N = (() => {
    "più largo che alto": "wider than it is tall",
    "più stretto": "tighter",
    "punto di mira": "point of aim",
+   "raggio medio": "mean radius",
+   "raggio medio atteso": "expected mean radius",
    "rettangolo {0} × {1} {2}": "rectangle {0} × {1} {2}",
    "riepilogo_gruppi.csv": "groups_summary.csv",
    "riepilogo_gruppi.csv: tutti i gruppi di tutte le sessioni in un'unica tabella.": "groups_summary.csv: all groups of all sessions in a single table.",
@@ -2396,25 +2513,31 @@ const I18N = (() => {
    "{0} esclusi": "{0} excluded",
    "{0} escluso": "{0} excluded",
    "{0} fori": "{0} shots",
-   "{0} gr · {1} gruppi, {2} colpi · CEP {3} {4} (IC {5}–{6})": "{0} gr · {1} groups, {2} shots · CEP {3} {4} (CI {5}–{6})",
    "{0} gruppi": "{0} groups",
    "{0} gruppi · {1} colpi": "{0} groups · {1} shots",
    "{0} mm a {1}": "{0} mm {1}",
    "{0} mm a {1} e {2} mm in {3}": "{0} mm {1} and {2} mm {3}",
    "{0} mm in {1}": "{0} mm {1}",
+   "{0} mm orizz. · {1} mm vert. (+ = destra / alto)": "{0} mm horiz. · {1} mm vert. (+ = right / up)",
+   "{0} mm² · perimetro {1} mm": "{0} mm² · perimeter {1} mm",
    "{0} nel gruppo ({1} dal calcolo)": "{0} in the group ({1} by calculation)",
    "{0} nel gruppo su {1} sparati{2}": "{0} in the group out of {1} fired{2}",
    "{0} nel gruppo{1}": "{0} in the group{1}",
    "{0} nel gruppo{1}{2}": "{0} in the group{1}{2}",
+   "{0} px/mm · incertezza ≈ ±{1}%": "{0} px/mm · uncertainty ≈ ±{1}%",
    "{0} scaldacanna": "{0} foulers",
    "{0} sessioni archiviate": "{0} sessions archived",
    "{0} sessioni, una cartella ciascuna (numero_nome-foto_data-salvataggio):": "{0} sessions, one folder each (number_photo-name_save-date):",
    "{0} · cal. {1}": "{0} · cal. {1}",
    "{0} · {1} colpi": "{0} · {1} shots",
+   "{0} · {1} colpi · {2}": "{0} · {1} shots · {2}",
    "{0} · {1} fori. Ogni «Salva sessione» aggiorna l'archivio.": "{0} · {1} shots. Every «Save session» updates the archive.",
+   "{0} · {1} gruppi, {2} colpi · {3} {4} {5} (IC {6}–{7})": "{0} · {1} groups, {2} shots · {3} {4} {5} (CI {6}–{7})",
    "{0}, {1}, {2}. ": "{0}, {1}, {2}. ",
    "{0}: anelli 10 → 1 da ⌀ {1} a ⌀ {2} mm attorno al punto di mira. Punteggio: vale l'anello toccato dal bordo del foro (calibro {3} mm); * = 10 interno, ≈ = sulla linea entro l'incertezza di posizione. Contano tutti i fori, anche quelli esclusi dalle statistiche.": "{0}: rings 10 → 1 from ⌀ {1} to ⌀ {2} mm around the point of aim. Scoring: a shot scores the ring touched by the edge of the hole (caliber {3} mm); * = inner 10, ≈ = on the line within the position uncertainty. All shots count, including those excluded from the statistics.",
+   "{0}: valore più piccolo con intervallo che non si sovrappone agli altri (criterio prudente).": "{0}: smallest value, with an interval that does not overlap the others (conservative criterion).",
    "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Data</th><th>Gruppo</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Differenza della metrica scelta rispetto al gruppo precedente\">Δ prec.</th><th class=\"x\" title=\"Media della metrica scelta sugli ultimi N gruppi\">Media {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Valori in {4}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «{5}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>": "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Date</th><th>Group</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Difference of the chosen metric from the previous group\">Δ prev.</th><th class=\"x\" title=\"Average of the chosen metric over the last N groups\">Avg {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Values in {4}; ordered by the date of the load data. In bold the best (smallest) value of each column. Δ and moving average refer to «{5}». With few shots per group, small differences may be just chance.</div>",
+   "{0}° dalla verticale · rapporto {1} : 1": "{0}° from vertical · ratio {1} : 1",
    "{0}° · ore {1}–{2} · {3}": "{0}° · {1}–{2} o'clock · {3}",
    "«Taratura attuale»: con pochi colpi e scostamento piccolo l'intervallo è approssimato e può risultare troppo stretto.": "«Current zero»: with few shots and a small offset the interval is approximate and may be too narrow.",
    "«Taratura attuale»: inserisci il punto di mira del gruppo.": "«Current zero»: enter the point of aim of the group.",
@@ -2425,7 +2548,7 @@ const I18N = (() => {
    "⊕ Centro gruppo": "⊕ Group centre",
    "⌫ Elimina ultimo": "⌫ Delete last",
    "▦ Griglia": "▦ Grid",
-   "● = cariche (gruppi combinati) con intervallo di confidenza; ○ = singoli gruppi.": "● = charges (pooled groups) with confidence interval; ○ = single groups.",
+   "● = livelli (gruppi combinati) con intervallo di confidenza; ○ = singoli gruppi.": "● = levels (pooled groups) with confidence interval; ○ = single groups.",
    "● {0} · {1} colpi{2}{3}": "● {0} · {1} shots{2}{3}",
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante. In realtà vento e differenze di velocità la fanno crescere con la distanza: {0}. «Taratura attuale» non calcolabile: lo scostamento a un'altra distanza dipende dalla balistica.": "⚠ Distance different from that of the group: angular dispersion assumed constant. In reality wind and velocity spread make it grow with distance: {0}. «Current zero» cannot be computed: the offset at another distance depends on ballistics.",
    "⚠ Nella foto il rettangolo è {0}: controlla di non aver invertito larghezza e altezza ({1} × {2} mm).": "⚠ In the photo the rectangle is {0}: check that you have not swapped width and height ({1} × {2} mm).",
@@ -2446,6 +2569,7 @@ const I18N = (() => {
    "📋 Copia risultati (testo)": "📋 Copy results (text)",
    "📐 Raddrizza": "📐 Level",
    "📐 Raddrizza con 2 punti": "📐 Level with 2 points",
+   "📑 Report PDF": "📑 PDF report",
    "📘 Help tecnico": "📘 Technical help",
    "🔍 Lente": "🔍 Loupe",
    "🖼 Dope card (PNG)": "🖼 Dope card (PNG)",
@@ -2504,7 +2628,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.7.0";
+const APP_VERSION = "1.8.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 3;
@@ -2563,11 +2687,11 @@ function makeGroup() {
   return { id: newId(), name: _T`Gruppo ${Math.max(0, ...nums) + 1}`, color, dist, poa: null, shots: [], load };
 }
 /* Dati di ricarica e condizioni (per gruppo). Tutti stringhe: come scritti dall'utente. */
-const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "primer", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
+const LOAD_KEYS = ["date", "case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
 // Dalla 1.6.0 un nuovo gruppo copia TUTTI i dati del gruppo attivo (richiesta utente), anche colpi, scaldacanna e note.
 const LOAD_INHERIT = LOAD_KEYS;
 function todayISO() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
-function defaultLoad() { const o = Object.fromEntries(LOAD_KEYS.map(k => [k, ""])); o.date = todayISO(); o.windUnit = "m/s"; return o; }
+function defaultLoad() { const o = Object.fromEntries(LOAD_KEYS.map(k => [k, ""])); o.date = todayISO(); o.windUnit = "m/s"; o.jumpUnit = "in"; return o; }
 /** Colpi che entrano nelle statistiche (esclusi i colpi marcati «escludi dal gruppo»). */
 /** «1 escluso» / «3 esclusi» */
 const esclusi = n => n === 1 ? _T`${n} escluso` : _T`${n} esclusi`;
@@ -2664,7 +2788,7 @@ function params() {
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
     flyerK: num("flyerK") || 2,
     cmpMetric: $("cmpMetric").value, cmpUnit: $("cmpUnit").value, cmpN: num("cmpN") || 3,
-    ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95,
+    ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95, hullOn: $("hullOn").checked,
     ciLevel: parseFloat($("ciLevel").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
     perspW: num("perspW"), perspH: num("perspH"), perspPreset: $("perspPreset").value,
@@ -2681,6 +2805,7 @@ function setParams(p) {
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
+  if (p.hullOn !== undefined) $("hullOn").checked = !!p.hullOn;
   if (p.hitDist !== undefined) $("hitDist").value = p.hitDist > 0 ? p.hitDist : "";   // 0 = distanza di tiro (campo vuoto)
   syncGridButton();
   if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
@@ -3354,6 +3479,12 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       g.save(); g.strokeStyle = grp.color; g.globalAlpha = 0.85; g.lineWidth = 1.5; g.setLineDash([5, 4]);
       g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.restore();
     }
+    // convex hull (dalla 1.8.0): poligono tratteggiato fine attorno ai fori inclusi
+    if (r.hull && params().hullOn && !opts.light) {
+      g.save(); g.strokeStyle = grp.color; g.lineWidth = 1.4; g.setLineDash([2, 3]); g.globalAlpha = 0.95; g.fillStyle = hexA(grp.color, 0.05);
+      g.beginPath(); r.hull.pts.forEach((q, i) => { const t = T(q); if (i) g.lineTo(t.x, t.y); else g.moveTo(t.x, t.y); }); g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
     // ellisse di dispersione (orientata sull'asse maggiore)
     if (r.shape && params().ellipseOn && !opts.light) {
       const c = T(r.centroid), rot = Math.atan2(-Math.cos(r.shape.bearing * Math.PI / 180), Math.sin(r.shape.bearing * Math.PI / 180));
@@ -3887,6 +4018,45 @@ function summarize(g) {
   const r = Calc.analyze(inc(g), g.poa, calcContext(g));
   return { n: r.n, mm: r.mm || null, ang: r.ang || null, offset: r.offset || null, correction: r.correction || null };
 }
+/** Riga del convex hull nei risultati (dalla 1.8.0). */
+function hullRow(r) {
+  if (!r.mm || r.mm.hullArea == null) return "";
+  return _T`<table style="margin-top:4px"><tr><td title="Convex hull: poligono convesso più piccolo che racchiude tutti i fori inclusi. Un'area grande rispetto al CEP indica fori lontani dal centro in più direzioni">Convex hull</td><td class="v">${fmt(r.mm.hullArea, 0)} mm² · ${_t("perimetro")} ${fmt(r.mm.hullPerim, 1)} mm</td></tr></table>`;
+}
+/* ---- termini dei risultati collegati al glossario dell'help tecnico (dalla 1.8.0) ----
+   Le etichette della prima colonna dei risultati diventano link: il passaggio del mouse mostra la spiegazione breve
+   (title), il clic apre l'help tecnico sulla voce del glossario. Abbinamento per testo tradotto (_t), così vale in
+   entrambe le lingue senza toccare i modelli dei risultati. */
+const TERM_LINKS = [["Group size (c-c)", "gl-es"], ["Bordo-bordo esterno", "gl-bordo"], ["Raggio medio", "gl-mr"], ["H-spread (orizz.)", "gl-spread"],
+  ["V-spread (vert.)", "gl-spread"], ["FOM", "gl-fom"], ["SD distanze dal centro", "gl-sd"], ["SD radiale √(σx²+σy²)", "gl-sd"], ["CEP (50%)", "gl-cep"],
+  ["R95", "gl-r95"], ["R99", "gl-r95"], ["Asse maggiore", "gl-asse"], ["Rapporto d'aspetto", "gl-rapporto"], ["Scostamento centro gruppo", "gl-centro"],
+  ["Convex hull", "gl-hull"]];
+function linkTerms(box) {
+  const map = new Map(TERM_LINKS.map(([l, id]) => [_t(l), id])), hint = _t("clic: spiegazione nell'help tecnico");
+  const wrap = (el, id) => {
+    if (el.querySelector("[data-gl]")) return;
+    const a = document.createElement("a");
+    a.className = "gl"; a.href = "#"; a.dataset.gl = id; a.title = (el.title ? el.title + " — " : "") + hint;
+    while (el.firstChild) a.appendChild(el.firstChild);
+    el.appendChild(a);
+  };
+  box.querySelectorAll("td:first-child").forEach(td => {
+    const t = td.textContent.trim();
+    const id = map.get(t) || (/^(Ellisse|Ellipse) /.test(t) ? "gl-ellisse" : null);
+    if (id && !td.hasAttribute("colspan")) wrap(td, id);
+  });
+  box.querySelectorAll(".scoreline > b:first-child").forEach(b => wrap(b, "gl-punteggio"));
+  box.querySelectorAll(".dope > b:first-of-type").forEach(b => wrap(b, "gl-dope"));
+  box.querySelectorAll(".civ").forEach(sp => { if (!sp.dataset.gl) { sp.dataset.gl = "gl-ic"; sp.classList.add("glc"); sp.title = (sp.title ? sp.title + " — " : "") + hint; } });
+}
+/** Apre l'help tecnico sulla voce indicata (riga del glossario o sezione) e la evidenzia per un momento. */
+function openHelpAt(id) {
+  openHelp();
+  const el = $(id); if (!el) return;
+  el.scrollIntoView({ block: "center" });
+  el.classList.remove("hl"); void el.offsetWidth; el.classList.add("hl");
+  setTimeout(() => el.classList.remove("hl"), 2500);
+}
 function correctionText(c) {
   if (!c) return null;
   const part = (n, dir) => n === 0 ? null : n === 1 ? _T`1 click ${_t(dir)}` : _T`${n} click ${_t(dir)}`;
@@ -4066,6 +4236,7 @@ function refreshResults() {
       </table>
       <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi${r.ci ? _T`; IC ${fmt(r.ci.level * 100, 0)}% di σ: ${fmtCI(r.ci.sigma, 2)}` : ""}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.</div>
       ${shapeRows(r)}`;
+      html += hullRow(r);
     }
     { const si = scoreHere(g); if (si) html += _T`<div class="scoreline" style="margin-top:6px"><b>Punteggio</b> (${esc(si.t.name)}): <b>${scoreSummaryText(si)}</b></div>`; }
     if (r.mm && r.n >= 1) {
@@ -4087,6 +4258,7 @@ function refreshResults() {
     }
     box.innerHTML = html; out.appendChild(box);
   }
+  linkTerms(out);
   updateButtons();
   drawCharts();
   drawCompare();
@@ -4104,6 +4276,8 @@ function loadLines(g) {
   if (pw) out.push([_t("Polvere"), pw]);
   const p = params();
   if (v("bullet")) out.push([_t("Palla"), _T`${v("bullet")} · cal. ${caliberLabel(p)}`]);
+  if (v("jump")) { const d = v("jumpUnit") === "mm" ? 2 : 3, x = parseFloat(v("jump"));
+    out.push([_t("Salto dalle righe"), `${isFinite(x) ? x.toLocaleString(I18N.locale(), { minimumFractionDigits: d, maximumFractionDigits: d }) : v("jump")} ${v("jumpUnit") || "in"}`]); }
   if (v("primer")) out.push([_t("Innesco"), v("primer")]);
   const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : "", v("humidity") ? _T`UR ${num("humidity", 0)}%` : "",
     v("pressure") ? `${num("pressure", 1)} hPa` : ""].filter(Boolean).join(" · ");
@@ -4167,6 +4341,7 @@ function resultText() {
       }
     }
     if (r.offset) L.push(_T`  Scostamento:    ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy >= 0 ? _t("alto") : _t("basso")}, ${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? _t("destra") : _t("sinistra")}`);
+    if (r.mm && r.mm.hullArea != null) L.push(_T`  Convex hull:    ${fmt(r.mm.hullArea, 0)} mm² · perimetro ${fmt(r.mm.hullPerim, 1)} mm`);
     if (r.correction) L.push(_T`  Correzione:     ${correctionText(r.correction)}`);
     { const d = dialUsed(g) ? dopeOf(g, gcc) : null; if (d) L.push(_T`  Dope:           alzo ${sgn(milClk(d.v.mil, gcc), 1)} click (${sgn(d.v.mil, 2)} MIL) · brandeggio ${sgn(milClk(d.h.mil, gcc), 1)} click (${sgn(d.h.mil, 2)} MIL)`); }
     { const cic = correctionCIText(r); if (cic) L.push(`                  ${cic.text}${cic.unsure ? _t(" (asse non significativo)") : ""}`); }
@@ -4365,13 +4540,306 @@ async function exportCard(scope = "active") {
   if (await FileStore.saveBlob(`${base}_${suffix}_card_${stamp()}.png`, blob)) toast(_t("Result Card esportata"));
 }
 
+/* ------------------------------ REPORT PDF (dalla 1.8.0) ------------------------------
+   Pagine A4 disegnate su canvas a 150 dpi (palette chiara, indipendente dal tema), convertite in JPEG e impaginate
+   da un piccolo scrittore PDF (makePdf): nessuna libreria, funziona offline. Il testo non è selezionabile (scelta
+   concordata: file diretto invece della stampa del browser). Contenuto: intestazione, foto ritagliata con i punti,
+   per ogni gruppo metriche, correzione, dope, punteggio, probabilità, dati di ricarica e note, grafici, tabella dei
+   fori; poi confronto tra gruppi, dope card e precisione per carica/seduta se ci sono dati. */
+/** PDF 1.4 con una immagine JPEG a pagina intera per pagina. pages: [{ jpeg: Uint8Array, w, h }] (px). */
+function makePdf(pages, info = {}) {
+  const enc = new TextEncoder(), parts = [], offs = [];
+  let len = 0;
+  const push = b => { const u = typeof b === "string" ? enc.encode(b) : b; parts.push(u); len += u.length; };
+  const PW = 595.28, PH = 841.89;
+  const pdfStr = t => "<FEFF" + [...String(t)].map(ch => { const c = ch.codePointAt(0); return c > 0xffff ? "003F" : c.toString(16).padStart(4, "0"); }).join("").toUpperCase() + ">";
+  const n = pages.length, kids = [];
+  // numerazione: 1 catalogo, 2 pagine, 3 info, poi per pagina: pagina, contenuto, immagine
+  const objs = [];
+  for (let i = 0; i < n; i++) kids.push(4 + i * 3);
+  objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objs[2] = `<< /Type /Pages /Kids [${kids.map(k => `${k} 0 R`).join(" ")}] /Count ${n} >>`;
+  const d = new Date(), z = v => String(v).padStart(2, "0");
+  objs[3] = `<< /Title ${pdfStr(info.title || "Shoot Analyzer")} /Producer ${pdfStr("Shoot Analyzer " + APP_VERSION)} /CreationDate (D:${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}) >>`;
+  push("%PDF-1.4\n");
+  push(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));   // commento binario: segnala un file non di solo testo
+  const writeObj = (num, body, stream) => {
+    offs[num] = len;
+    push(`${num} 0 obj\n${body}\n`);
+    if (stream) { push("stream\n"); push(stream); push("\nendstream\n"); }
+    push("endobj\n");
+  };
+  for (const k of [1, 2, 3]) writeObj(k, objs[k]);
+  pages.forEach((pg, i) => {
+    const pn = 4 + i * 3, cn = pn + 1, im = pn + 2;
+    const content = enc.encode(`q ${PW} 0 0 ${PH} 0 0 cm /Im0 Do Q`);
+    writeObj(pn, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PW} ${PH}] /Resources << /XObject << /Im0 ${im} 0 R >> >> /Contents ${cn} 0 R >>`);
+    writeObj(cn, `<< /Length ${content.length} >>`, content);
+    writeObj(im, `<< /Type /XObject /Subtype /Image /Width ${pg.w} /Height ${pg.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${pg.jpeg.length} >>`, pg.jpeg);
+  });
+  const size = 4 + n * 3, xref = len;
+  push(`xref\n0 ${size}\n0000000000 65535 f \n`);
+  for (let k = 1; k < size; k++) push(`${String(offs[k]).padStart(10, "0")} 00000 n \n`);
+  push(`trailer\n<< /Size ${size} /Root 1 0 R /Info 3 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(parts, { type: "application/pdf" });
+}
+
+/** Impaginatore a flusso su pagine A4 (canvas 1240×1754 px = 150 dpi). */
+class ReportDoc {
+  constructor(title) {
+    this.W = 1240; this.H = 1754; this.M = 70; this.pages = []; this.title = title; this.page();
+  }
+  page() {
+    const c = document.createElement("canvas"); c.width = this.W; c.height = this.H;
+    const k = c.getContext("2d"); k.fillStyle = "#fff"; k.fillRect(0, 0, this.W, this.H); k.textBaseline = "top";
+    this.pages.push(c); this.k = k; this.y = this.M;
+    return this;
+  }
+  get bottom() { return this.H - this.M - 30; }
+  get cw() { return this.W - 2 * this.M; }
+  ensure(h) { if (this.y + h > this.bottom) this.page(); }
+  font(size, weight = 400) { this.k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; }
+  /** Righe di testo con a capo entro maxW. */
+  wrap(t, maxW) {
+    const out = [];
+    for (const para of String(t).split("\n")) {
+      let line = "";
+      for (const w of para.split(" ")) {
+        const tryL = line ? line + " " + w : w;
+        if (this.k.measureText(tryL).width <= maxW || !line) line = tryL; else { out.push(line); line = w; }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+  text(t, { size = 20, weight = 400, color = "#1d2330", gap = 8, x = this.M, maxW = this.cw } = {}) {
+    this.font(size, weight);
+    const lines = this.wrap(t, maxW), lh = Math.round(size * 1.3);
+    for (const l of lines) { this.ensure(lh); this.k.fillStyle = color; this.k.fillText(l, x, this.y); this.y += lh; }
+    this.y += gap;
+  }
+  heading(t, color = "#1d2330") {
+    this.ensure(90);
+    this.y += 8; this.font(28, 700); this.k.fillStyle = color; this.k.fillText(t, this.M, this.y); this.y += 38;
+    this.k.fillStyle = "#e3e6eb"; this.k.fillRect(this.M, this.y, this.cw, 2); this.y += 14;
+  }
+  sub(t) { this.ensure(60); this.y += 6; this.text(t.toUpperCase(), { size: 17, weight: 700, color: "#6b7280", gap: 6 }); }
+  /** Tabella a due colonne etichetta → valore (valori con a capo). */
+  kv(rows, labelW = 330) {
+    for (const [l, v] of rows) {
+      this.font(19, 400);
+      const lines = this.wrap(v, this.cw - labelW - 10), h = lines.length * 25 + 6;
+      this.ensure(h);
+      this.k.fillStyle = "#4b5563"; this.font(19, 400); this.k.fillText(l, this.M, this.y);
+      this.k.fillStyle = "#1d2330"; this.font(19, 600);
+      lines.forEach((ln, i) => this.k.fillText(ln, this.M + labelW, this.y + i * 25));
+      this.y += h;
+      this.k.fillStyle = "#eef0f3"; this.k.fillRect(this.M, this.y - 3, this.cw, 1);
+    }
+    this.y += 10;
+  }
+  /** Tabella con intestazione (ripetuta a ogni pagina); cols = [{ w (frazione), align }]. */
+  table(head, rows, cols, size = 16) {
+    const xs = []; let acc = this.M;
+    for (const c of cols) { xs.push(acc); acc += c.w * this.cw; }
+    const rh = Math.round(size * 1.6);
+    const cell = (t, i, bold) => {
+      const c = cols[i], w = c.w * this.cw - 8; this.font(size, bold ? 700 : 400);
+      let s2 = String(t ?? ""); while (s2.length > 1 && this.k.measureText(s2).width > w) s2 = s2.slice(0, -2) + "…";
+      this.k.textAlign = c.align === "right" ? "right" : "left";
+      this.k.fillText(s2, c.align === "right" ? xs[i] + c.w * this.cw - 4 : xs[i] + 4, this.y + 4);
+      this.k.textAlign = "left";
+    };
+    const header = () => { this.ensure(rh * 2); this.k.fillStyle = "#6b7280"; head.forEach((h, i) => cell(h, i, true)); this.y += rh; this.k.fillStyle = "#d1d5db"; this.k.fillRect(this.M, this.y - 2, this.cw, 1); };
+    header();
+    rows.forEach((r, j) => {
+      if (this.y + rh > this.bottom) { this.page(); header(); }
+      if (r.bg || j % 2) { this.k.fillStyle = r.bg || "#f6f7f9"; this.k.fillRect(this.M, this.y, this.cw, rh); }
+      this.k.fillStyle = r.color || "#1d2330"; (r.cells || r).forEach((t, i) => cell(t, i, r.bold));
+      this.y += rh;
+    });
+    this.y += 14;
+  }
+  /** Immagine (canvas) larga al massimo maxW, centrata se più stretta. */
+  image(cv, maxW = this.cw, maxH = this.bottom - this.M) {
+    const s = Math.min(maxW / cv.width, maxH / cv.height), w = cv.width * s, h = cv.height * s;
+    this.ensure(h + 10);
+    this.k.drawImage(cv, this.M + (this.cw - w) / 2, this.y, w, h);
+    this.k.strokeStyle = "#e3e6eb"; this.k.strokeRect(this.M + (this.cw - w) / 2, this.y, w, h);
+    this.y += h + 16;
+  }
+  /** Più immagini affiancate alla stessa altezza. */
+  images(list, gap = 20) {
+    if (!list.length) return;
+    const ratio = list.reduce((a, c) => a + c.width / c.height, 0), h = (this.cw - gap * (list.length - 1)) / ratio;
+    this.ensure(h + 10);
+    let x = this.M;
+    for (const c of list) { const w = h * c.width / c.height; this.k.drawImage(c, x, this.y, w, h); x += w + gap; }
+    this.y += h + 16;
+  }
+  /** Piè di pagina su tutte le pagine (con il totale) e conversione in JPEG. */
+  async finish() {
+    const n = this.pages.length, out = [];
+    for (let i = 0; i < n; i++) {
+      const k = this.pages[i].getContext("2d");
+      k.textBaseline = "top"; k.font = `400 15px "Segoe UI", system-ui, sans-serif`; k.fillStyle = "#9ca3af";
+      k.fillText(this.title, this.M, this.H - this.M + 5);
+      k.textAlign = "right"; k.fillText(_T`pagina ${i + 1} di ${n}`, this.W - this.M, this.H - this.M + 5); k.textAlign = "left";
+      const blob = await new Promise(res => this.pages[i].toBlob(res, "image/jpeg", 0.9));
+      out.push({ jpeg: new Uint8Array(await blob.arrayBuffer()), w: this.W, h: this.H });
+      this.pages[i].width = 1; this.pages[i].height = 1;   // libera la memoria
+    }
+    return out;
+  }
+}
+/** Ritaglio della foto attorno ai punti dei gruppi, con griglia, anelli e punti (come nella Result Card). */
+function cropCanvas(groups, side) {
+  const cc = calcContext();
+  const pts = groups.flatMap(g => [...g.shots, ...(g.poa ? [g.poa] : [])]);
+  let x0 = Math.min(...pts.map(q => q.x)), x1 = Math.max(...pts.map(q => q.x));
+  let y0 = Math.min(...pts.map(q => q.y)), y1 = Math.max(...pts.map(q => q.y));
+  const pad = Math.max(40, 0.2 * Math.max(x1 - x0, y1 - y0), cc.pxPerMm ? cc.caliberMm * cc.pxPerMm * 2 : 0);
+  const wb = worldBBox();
+  x0 = Math.max(wb.x0, x0 - pad); y0 = Math.max(wb.y0, y0 - pad); x1 = Math.min(wb.x1, x1 + pad); y1 = Math.min(wb.y1, y1 + pad);
+  const s = side / Math.max(x1 - x0, y1 - y0), iw = Math.round((x1 - x0) * s), ih = Math.round((y1 - y0) * s);
+  const c = document.createElement("canvas"); c.width = iw; c.height = ih;
+  const k = c.getContext("2d"), T = q => ({ x: (q.x - x0) * s, y: (q.y - y0) * s });
+  k.fillStyle = "#f3f4f6"; k.fillRect(0, 0, iw, ih); k.imageSmoothingQuality = "high";
+  paintImage(k, s, -x0 * s, -y0 * s, { x0, y0, x1, y1 });
+  drawGrid(k, T, s, cc, { x0, y0, x1, y1 });
+  drawRings(k, T, s, cc, { onlyGroupIds: groups.map(g => g.id) });
+  drawOverlay(k, T, s, cc, { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
+  return c;
+}
+/** Disegna un grafico su un canvas fuori schermo ad alta risoluzione (2×) con la palette chiara. */
+function chartCanvas(draw, W, H) {
+  const cv = document.createElement("canvas");
+  CH.dpr = 2;
+  try { draw(cv, W, H); } finally { CH.dpr = 0; }
+  return cv;
+}
+/** Esegue fn con il tema chiaro (colori dei grafici leggibili sulla carta), poi ripristina. */
+function withLightTheme(fn) {
+  const root = document.documentElement, t = root.dataset.theme;
+  root.dataset.theme = "light";
+  try { return fn(); } finally { root.dataset.theme = t; }
+}
+async function exportReportPdf(scope = "active") {
+  if (!state.image) { toast(_t("Carica prima un'immagine.")); return; }
+  const groups = scope === "all" ? state.groups.filter(g => g.shots.length) : [activeGroup()].filter(g => g && g.shots.length);
+  if (!groups.length) { toast(scope === "all" ? _t("Nessun gruppo ha fori.") : _t("Il gruppo attivo non ha fori.")); return; }
+  toast(_t("Preparazione del report PDF…"));
+  await new Promise(r => setTimeout(r, 30));
+  const p = params(), cc = calcContext(), base = (state.image.name || _t("bersaglio")).replace(/\.[^.]+$/, "");
+  const now = new Date().toLocaleString(I18N.locale());
+  const R = new ReportDoc(_T`Shoot Analyzer ${APP_VERSION} · ${state.image.name || ""} · ${now}`);
+  withLightTheme(() => buildReport(R, groups, p, cc, now));
+  if (anaOpen()) { drawCharts(); drawCompare(); }   // i grafici a schermo erano stati usati per il report
+  const pages = await R.finish();
+  const blob = makePdf(pages, { title: _T`Report ${base}` });
+  if (await FileStore.saveBlob(`${base}_report_${stamp()}.pdf`, blob)) toast(_T`Report PDF salvato: ${pages.length} pagine`);
+}
+function buildReport(R, groups, p, cc, now) {
+  R.text("SHOOT ANALYZER · REPORT", { size: 18, weight: 700, color: "#6b7280", gap: 2 });
+  R.text(groups.length === 1 ? _T`${groups[0].name} · ${inc(groups[0]).length} colpi` : _T`${groups.length} gruppi · ${groups.reduce((a, g) => a + inc(g).length, 0)} colpi`,
+    { size: 40, weight: 700, color: groups.length === 1 ? groups[0].color : "#1d2330", gap: 4 });
+  R.text(`${state.image.name || ""} · ${now}`, { size: 18, color: "#6b7280", gap: 10 });
+  const head = [[_t("Distanza"), distText(groups) || _t("diversa per gruppo")], [_t("Calibro"), caliberLabel(p)],
+    [_t("Valore click"), `${fmt(cc.clickValue, 3)} ${cc.clickUnit}`],
+    [_t("Scala"), cc.pxPerMm ? _T`${fmt(cc.pxPerMm, 2)} px/mm · incertezza ≈ ±${fmt(calibQuality(cc).relErr * 100, 1)}%` : _t("non calibrata")]];
+  if (state.rot) head.push([_t("Orientamento"), rotationNote()]);
+  if (state.persp) head.push([_t("Prospettiva"), _T`corretta con un rettangolo di ${fmt(state.persp.wMm, 0)} × ${fmt(state.persp.hMm, 0)} mm`]);
+  R.kv(head, 240);
+  if (cc.pxPerMm) for (const w of calibQuality(cc).warn) R.text("⚠ " + w, { size: 17, color: "#9a3412", gap: 2 });
+  R.image(cropCanvas(groups, 1500), R.cw, 900);
+
+  for (const g of groups) {
+    const gcc = ccG(cc, g), r = Calc.analyze(inc(g), g.poa, gcc);
+    R.heading(_T`${g.name} · ${r.n} colpi · ${distText([g])}`, g.color);
+    const nw = shotsWarning(r.n); if (nw && r.n) R.text("⚠ " + nw, { size: 17, color: "#9a3412" });
+    const rows = [];
+    const ang = a => a ? ` · ${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : "";
+    if (r.mm && r.n >= 2) {
+      rows.push(["Group size (c-c)", `${fmtLen(r.mm.es)}${ang(r.ang && r.ang.es)}`], [_t("Bordo-bordo esterno"), fmtLen(r.mm.esEdge)],
+        [_t("Raggio medio"), `${fmtLen(r.mm.mr)}${ang(r.ang && r.ang.mr)}`], ["H-spread / V-spread", `${fmt(r.mm.w, 1)} / ${fmt(r.mm.h, 1)} mm`],
+        ["FOM", `${fmt(r.mm.fom, 1)} mm${ang(r.ang && r.ang.fom)}`], [_t("SD distanze dal centro"), `${fmt(r.mm.sdRadii, 2)} mm`],
+        ["CEP / R95 / R99", `${fmt(r.mm.cep, 1)} / ${fmt(r.mm.r95, 1)} / ${fmt(r.mm.r99, 1)} mm`]);
+      if (r.ci) rows.push([_T`IC ${fmt(r.ci.level * 100, 0)}%`, _T`CEP ${fmtCI(r.ci.cep)} · R95 ${fmtCI(r.ci.r95)} · R99 ${fmtCI(r.ci.r99)}`]);
+      if (r.shape) rows.push([_t("Asse maggiore"), _T`${fmt(r.shape.bearing, 0)}° dalla verticale · rapporto ${fmt(r.shape.ratio, 2)} : 1`]);
+      if (r.mm.hullArea != null) rows.push(["Convex hull", _T`${fmt(r.mm.hullArea, 0)} mm² · perimetro ${fmt(r.mm.hullPerim, 1)} mm`]);
+    } else rows.push([_t("Misure"), r.n < 2 ? _t("Servono almeno 2 fori") : _t("Scala non calibrata")]);
+    if (r.offset) rows.push([_t("Scostamento centro gruppo"), _T`${fmt(r.offset.dx, 1)} mm orizz. · ${fmt(r.offset.dy, 1)} mm vert. (+ = destra / alto)`]);
+    if (r.correction) { const cic = correctionCIText(r); rows.push([_t("Correzione"), correctionText(r.correction) + (cic ? ` · ${cic.text}` : "")]); }
+    { const d = dialUsed(g) ? dopeOf(g, gcc) : null; if (d) rows.push(["Dope", _T`alzo ${sgn(milClk(d.v.mil, gcc), 1)} · brandeggio ${sgn(milClk(d.h.mil, gcc), 1)} click (+ = alto / destra)`]); }
+    { const si = scoreHere(g); if (si) rows.push([_t("Punteggio"), `${si.t.name}: ${scoreSummaryText(si)}`]); }
+    { const h = hitInfo(g, gcc), ht = h ? hitText(h) : null; if (ht) rows.push([_t("Probabilità di colpire"), ht]); }
+    R.sub(_t("Misure e correzione")); R.kv(rows);
+    const ll = loadLines(g);
+    if (ll.length) { R.sub(_t("Ricarica e condizioni")); R.kv(ll.map(([a, b]) => [a, b])); }
+    const D = chartData(g);
+    if (D && !D.few) {
+      R.sub(_t("Grafici"));
+      R.images([chartCanvas((cv, W, H) => drawScatter(cv, W, H, D), 420, 420), chartCanvas((cv, W, H) => drawHistogram(cv, W, H, D), 420, 260),
+        chartCanvas((cv, W, H) => drawClock(cv, W, H, D), 360, 340)]);
+    }
+    const PT = pointTable(g, gcc);
+    const shotRows = PT.rows.filter(x => x.kind === "shot" || x.kind === "centroid" || x.kind === "poa");
+    if (shotRows.length) {
+      R.sub(_T`Fori · X, Y in ${PT.coordUnit}`);
+      const SI = scoreHere(g);
+      R.table([_t("Foro"), "X", "Y", _t("Da mira"), _t("Da centro"), _t("Direz."), "Click ↕", "Click ↔", _t("Alzo"), _t("Brand."), ...(SI ? [_t("Punti")] : [])],
+        shotRows.map(x => ({ bold: x.kind !== "shot", color: x.excluded ? "#9ca3af" : null,
+          cells: [x.label + (x.excluded ? _t(" (escl.)") : "") + (x.flag ? " ⚠" : ""), x.x, x.y, x.dPoa, x.dC, x.dir,
+            x.cv == null ? "" : clickTxt(x.cv, x.cvDir), x.ch == null ? "" : clickTxt(x.ch, x.chDir),
+            x.kind === "shot" ? sgn(x.dv, 0) : "", x.kind === "shot" ? sgn(x.dh, 0) : "",
+            ...(SI ? [x.kind === "shot" ? scoreCell(SI.byId.get(x.ref.id)).replace(/<[^>]+>/g, "") : x.kind === "centroid" ? `Σ ${SI.total}` : ""] : [])] })),
+        [{ w: .16 }, { w: .08, align: "right" }, { w: .08, align: "right" }, { w: .09, align: "right" }, { w: .09, align: "right" }, { w: .12, align: "right" },
+          { w: .1, align: "right" }, { w: .1, align: "right" }, { w: .06, align: "right" }, { w: .06, align: "right" }, ...(SI ? [{ w: .06, align: "right" }] : [])].map(c => SI ? c : { ...c, w: c.w / 0.94 }), 15);
+    }
+  }
+  // sezioni d'insieme (se ci sono dati)
+  const rows = compareRows();
+  if (rows.length >= 2) {
+    R.heading(_t("Confronto tra gruppi"));
+    const unit = $("cmpUnit").value, metric = $("cmpMetric").value, N = Math.max(2, parseInt($("cmpN").value, 10) || 3);
+    const val = r => r[unit] && r[unit][metric] != null ? r[unit][metric] : null, vals = rows.map(val), ma = movingAverage(vals, N);
+    R.table([_t("Data"), _t("Gruppo"), "n", "ES", _t("R. medio"), "FOM", "CEP", _T`Media ${N}`],
+      rows.map((r, i) => [dIT(r.date), r.name + (r.hist ? ` (${r.source})` : ""), r.n, ...["es", "mr", "fom", "cep"].map(m => r[unit] && r[unit][m] != null ? fmtA(r[unit][m]) : "–"), ma[i] == null ? "–" : fmtA(ma[i])]),
+      [{ w: .12 }, { w: .36 }, { w: .06, align: "right" }, { w: .09, align: "right" }, { w: .1, align: "right" }, { w: .09, align: "right" }, { w: .09, align: "right" }, { w: .09, align: "right" }]);
+    R.text(_T`Valori in ${unit}; media mobile su ${N} gruppi riferita a «${_t(CMP_METRICS[metric])}».`, { size: 16, color: "#6b7280" });
+    R.image(chartCanvas((cv, W, H) => drawTrend(cv, W, H, rows, vals, ma, N, unit, metric), 760, 260), R.cw, 460);
+  }
+  const dr = dopeRows();
+  if (dr.length) {
+    const u = dopeUnitD();
+    R.heading(_t("Dope card"));
+    R.text(_T`Munizione: ${$("dopeLoad").value === "*" ? _t("tutte le munizioni") : $("dopeLoad").value} · click ${fmt(cc.clickValue, 3)} ${cc.clickUnit} · + = in alto / a destra · solo distanze tirate`, { size: 17, color: "#4b5563" });
+    R.table([_t("Distanza"), _t("Alzo (click)"), "MIL", _t("Brand. (click)"), "MIL", "n", _t("Gruppo"), _t("Condizioni")],
+      dr.map(r => { const d = r.dope; return [`${fmt(distIn(r.distM, u), 0)} ${u}`, `${sgn(milClk(d.vMil, cc), 1)}${d.ciV != null ? ` ±${fmt(milClk(d.ciV, cc), 1)}` : ""}`, sgn(d.vMil, 2),
+        `${sgn(milClk(d.hMil, cc), 1)}${d.ciH != null ? ` ±${fmt(milClk(d.ciH, cc), 1)}` : ""}`, sgn(d.hMil, 2), d.n, r.name, condText(r.load)]; }),
+      [{ w: .1 }, { w: .14, align: "right" }, { w: .08, align: "right" }, { w: .14, align: "right" }, { w: .08, align: "right" }, { w: .05, align: "right" }, { w: .19 }, { w: .22 }]);
+    R.image(chartCanvas((cv, W, H) => drawDopeChart(cv, W, H, dr, cc, u), 760, 260), R.cw, 460);
+  }
+  const PL = chargeLevels();
+  if (PL.levels.length) {
+    R.heading(PL.v === "jump" ? _t("Precisione e salto dalle righe") : _t("Precisione e carica"));
+    const best = PL.levels.reduce((a, b) => b.pool.val < a.pool.val ? b : a), distinct = PL.levels.length > 1 && PL.levels.every(L => L === best || best.pool.hi < L.pool.lo);
+    R.table([PL.v === "jump" ? _t("Salto dalle righe") : _t("Carica"), _t("Gruppi"), _t("Colpi"), `${PL.metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${PL.unit})`, _T`IC ${fmt(PL.lvl * 100, 0)}%`],
+      PL.levels.map(L => ({ bold: L === best && distinct, cells: [precLabel(L.x, PL.v), L.groups.length, L.shots, fmtA(L.pool.val), `${fmtA(L.pool.lo)}–${fmtA(L.pool.hi)}`] })),
+      [{ w: .24 }, { w: .14, align: "right" }, { w: .14, align: "right" }, { w: .24, align: "right" }, { w: .24, align: "right" }]);
+    R.text(PL.levels.length < 2 ? _t("Un solo livello: nessun confronto possibile.") : distinct ? _T`${precLabel(best.x, PL.v)}: valore più piccolo con intervallo che non si sovrappone agli altri (criterio prudente).`
+      : _t("Gli intervalli si sovrappongono: con questi colpi non si può dire quale livello sia più preciso."), { size: 17, color: "#4b5563" });
+    R.image(chartCanvas((cv, W, H) => drawChargeChart(cv, W, H, PL.levels, PL.unit, best, distinct, PL.metric, PL.v), 760, 260), R.cw, 460);
+  }
+}
+
 /* ------------------------------ GRAFICI ------------------------------ */
 /* Tre grafici del gruppo attivo, disegnati su <canvas> (nessuna libreria):
    dispersione senza immagine, istogramma delle distanze dal centro, diagramma a orologio. */
 const CH = { hits: { scatter: [], hist: [], clock: [], trend: [], dope: [], charge: [] } };
 function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function setupCanvas(cv, w, h) {
-  const d = window.devicePixelRatio || 1;
+  const d = CH.dpr || window.devicePixelRatio || 1;   // CH.dpr: risoluzione forzata per il report PDF
   cv.width = Math.round(w * d); cv.height = Math.round(h * d);
   cv.style.width = w + "px"; cv.style.height = h + "px";
   const g = cv.getContext("2d"); g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, h);
@@ -4386,9 +4854,9 @@ function niceStep(raw) {
 }
 const nfmt = (v, d = 1) => v.toLocaleString(I18N.locale(), { maximumFractionDigits: d });
 /** Dati comuni dei grafici: coordinate rispetto al centro gruppo, Y verso l'alto, in mm (o px senza scala). */
-function chartData() {
-  const g = activeGroup(); if (!g) return null;
-  const cc = calcContext(), k = cc.pxPerMm ? 1 / cc.pxPerMm : 1, unit = cc.pxPerMm ? "mm" : "px";
+function chartData(g = activeGroup()) {
+  if (!g) return null;
+  const cc = calcContext(g), k = cc.pxPerMm ? 1 / cc.pxPerMm : 1, unit = cc.pxPerMm ? "mm" : "px";
   const shotsIn = inc(g); if (shotsIn.length < 2) return { g, few: true };
   const c = Calc.centroid(shotsIn), fl = flyerMap(g);
   const P = q => ({ x: (q.x - c.x) * k, y: (c.y - q.y) * k });
@@ -4396,7 +4864,8 @@ function chartData() {
   const r = Calc.analyze(shotsIn, g.poa, cc), u = k;
   return { g, cc, unit, pts, inPts: pts.filter(p => !p.excluded), poa: g.poa ? P(g.poa) : null,
     mr: r.px.mr * u, cep: r.px.cep * u,
-    ell: r.shape && params().ellipseOn ? { bearing: r.shape.bearing, a: r.px.ellA * u, b: r.px.ellB * u, p: r.shape.p } : null };
+    ell: r.shape && params().ellipseOn ? { bearing: r.shape.bearing, a: r.px.ellA * u, b: r.px.ellB * u, p: r.shape.p } : null,
+    hull: r.hull && params().hullOn ? Calc.convexHull(pts.filter(p => !p.excluded)) : null };
 }
 function drawCharts() {
   if (!anaOpen()) return;   // i grafici sono nella vista a schermo intero: si disegnano solo se è aperta
@@ -4438,6 +4907,11 @@ function drawScatter(cv, W, H, D) {
   g.beginPath(); g.arc(ox, oy, D.mr * s, 0, Math.PI * 2); g.stroke();
   if (D.cep) { g.setLineDash([5, 4]); g.beginPath(); g.arc(ox, oy, D.cep * s, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); }
   g.globalAlpha = 1;
+  // convex hull
+  if (D.hull && D.hull.length >= 3) {
+    g.strokeStyle = col; g.lineWidth = 1.4; g.setLineDash([2, 3]); g.fillStyle = hexA(col, 0.06);
+    g.beginPath(); D.hull.forEach((q, i) => i ? g.lineTo(X(q.x), Y(q.y)) : g.moveTo(X(q.x), Y(q.y))); g.closePath(); g.fill(); g.stroke(); g.setLineDash([]);
+  }
   // ellisse di dispersione e asse maggiore
   if (D.ell) {
     const rot = Math.atan2(-Math.cos(D.ell.bearing * Math.PI / 180), Math.sin(D.ell.bearing * Math.PI / 180));
@@ -4483,7 +4957,7 @@ function drawScatter(cv, W, H, D) {
     const cp = compassL(p.x, p.y), d = Math.hypot(p.x, p.y);
     hits.push({ x: px, y: py, r: 10, tip: _T`Foro ${p.n}${p.excluded ? _t(" (escluso)") : ""}${p.flag ? " · ⚠ flyer" : ""} · ${nfmt(d)} ${D.unit} dal centro${cp ? ` · ${fmt(cp.deg, 0)}° ${cp.label}` : ""}` });
   }
-  $("chScatterNote").innerHTML = _T`<span class="key" style="border-color:${col}"></span>raggio medio ${nfmt(D.mr)} ${D.unit} · <span class="key dash" style="border-color:${col}"></span>CEP ${nfmt(D.cep)} ${D.unit}${D.ell ? _T` · <span class="key dashdot" style="border-color:${col}"></span>ellisse ${nfmt(D.ell.p * 100, 0)}%` : ""} · ✕ centro gruppo${D.poa ? _T` · <span style='color:${COL_POA}'>⊕</span> mira` : ""}`;
+  $("chScatterNote").innerHTML = _T`<span class="key" style="border-color:${col}"></span>raggio medio ${nfmt(D.mr)} ${D.unit} · <span class="key dash" style="border-color:${col}"></span>CEP ${nfmt(D.cep)} ${D.unit}${D.ell ? _T` · <span class="key dashdot" style="border-color:${col}"></span>ellisse ${nfmt(D.ell.p * 100, 0)}%` : ""}${D.hull ? ` · <span class="key dashdot" style="border-color:${col}"></span>convex hull` : ""} · ✕ centro gruppo${D.poa ? _T` · <span style='color:${COL_POA}'>⊕</span> mira` : ""}`;
 }
 
 /* ---- 2. Istogramma delle distanze dal centro gruppo (solo fori inclusi) ---- */
@@ -4851,78 +5325,103 @@ async function exportDopePng() {
   if (await FileStore.saveBlob(_T`dope_card_${stamp()}.png`, blob)) toast(_t("Dope card esportata (PNG)"));
 }
 
-/* ------------------------------ CARICA E PRECISIONE (dalla 1.7.0) ------------------------------
-   CEP angolare per carica di polvere, a parità di palla e polvere. Gruppi della stessa carica combinati (σ «pooled»,
-   Calc.pooledSigma) con intervallo χ². Un minimo è dichiarato solo se il suo intervallo non si sovrappone a quello di
-   NESSUNA altra carica (criterio prudente). Non si cerca un «nodo armonico»: con gruppi piccoli i «nodi» sono quasi
-   sempre rumore statistico (vedi help tecnico). */
+/* ------------------------------ PRECISIONE E RICARICA (1.7.0 carica; dalla 1.8.0 anche seduta) ------------------------------
+   Metrica angolare (CEP o raggio medio atteso) in funzione di una variabile di ricarica: carica di polvere (a parità di
+   palla e polvere) o salto dalle righe (a parità di palla, polvere e carica). Gruppi dello stesso livello combinati
+   (σ «pooled», Calc.pooledSigma) con intervallo χ². Un livello è dichiarato migliore solo se il suo intervallo non si
+   sovrappone a quello di NESSUN altro (criterio prudente). Non si cerca un «nodo» (di carica o di seduta): con gruppi
+   piccoli i «nodi» sono quasi sempre rumore statistico (vedi help tecnico). */
 const chargeNum = v => { const x = parseFloat(String(v || "").replace(",", ".")); return isFinite(x) && x > 0 ? x : null; };
+/** Salto dalle righe in mm (null se non indicato). */
+const jumpMm = L => { const x = parseFloat(String((L && L.jump) ?? "").replace(",", ".")); return isFinite(x) && x >= 0 && String(L.jump).trim() !== "" ? x * (L.jumpUnit === "mm" ? 1 : 25.4) : null; };
+/** Unità di visualizzazione del salto: quella del gruppo attivo (predefinito pollici). */
+const jumpUnitShown = () => { const g = activeGroup(); return g && g.load && g.load.jumpUnit === "mm" ? "mm" : "in"; };
+const PREC_F = { cep: Math.sqrt(2 * Math.LN2), mr: Math.sqrt(Math.PI / 2) };   // σ → CEP, σ → raggio medio atteso
+function precVar() { return $("chgVar").value === "jump" ? "jump" : "charge"; }
+/** Etichetta di un livello della variabile (es. «44,50 gr», «0,020 in»). */
+function precLabel(x, v = precVar()) {
+  if (v === "charge") return `${fmt(x, 2)} gr`;
+  const u = jumpUnitShown();
+  return u === "mm" ? `${fmt(x, 2)} mm` : `${fmt(x / 25.4, 3)} in`;
+}
 function chargeLevels() {
-  const all = compareRows().filter(r => r.s2mm != null && r.nu >= 4 && r.distM > 0 && chargeNum(r.load && r.load.charge) && (!r.hist || $("chgHist").checked));
-  const keys = [...new Set(all.map(r => loadKey(r.load, false)))].sort();
+  const v = precVar(), metric = $("chgMetric").value === "mr" ? "mr" : "cep", F = PREC_F[metric];
+  const xOf = r => v === "jump" ? jumpMm(r.load) : chargeNum(r.load && r.load.charge);
+  const all = compareRows().filter(r => r.s2mm != null && r.nu >= 4 && r.distM > 0 && xOf(r) != null && (!r.hist || $("chgHist").checked));
+  const kOf = r => loadKey(r.load, v === "jump");   // seduta: a parità di palla, polvere e carica
+  const keys = [...new Set(all.map(kOf))].sort();
   const g = activeGroup();
-  fillLoadSelect($("chgLoad"), keys, g ? loadKey(g.load, false) : "");
+  fillLoadSelect($("chgLoad"), keys, g ? loadKey(g.load, v === "jump") : "");
   const key = $("chgLoad").value, unit = $("chgUnit").value, lvl = (params().ciLevel || 95) / 100;
-  const rows = all.filter(r => key === "*" || loadKey(r.load, false) === key);
+  const rows = all.filter(r => key === "*" || kOf(r) === key);
   const by = new Map();
   for (const r of rows) {
-    const s = Calc.fromRad(Calc.angleOfSize(Math.sqrt(r.s2mm), r.distM * 1000), unit), q = chargeNum(r.load.charge), k = q.toFixed(2);
-    const e = { r, s2: s * s, nu: r.nu, own: Calc.pooledSigma([{ s2: s * s, nu: r.nu }], lvl) };
-    if (!by.has(k)) by.set(k, { charge: q, groups: [] });
+    const s = Calc.fromRad(Calc.angleOfSize(Math.sqrt(r.s2mm), r.distM * 1000), unit), x = xOf(r), k = x.toFixed(v === "jump" ? 3 : 2);
+    const own = Calc.pooledSigma([{ s2: s * s, nu: r.nu }], lvl);
+    const e = { r, s2: s * s, nu: r.nu, own: own ? { val: own.sigma * F, lo: own.lo * F, hi: own.hi * F } : null };
+    if (!by.has(k)) by.set(k, { x, groups: [] });
     by.get(k).groups.push(e);
   }
-  const levels = [...by.values()].sort((a, b) => a.charge - b.charge);
-  for (const L of levels) { L.pool = Calc.pooledSigma(L.groups, lvl); L.shots = L.groups.reduce((a, e) => a + e.r.n, 0); }
-  return { levels, unit, mixed: key === "*" && keys.length > 1, lvl };
+  const levels = [...by.values()].sort((a, b) => a.x - b.x);
+  for (const L of levels) {
+    const P = Calc.pooledSigma(L.groups, lvl);
+    L.pool = { ...P, val: P.sigma * F, lo: P.lo * F, hi: P.hi * F };
+    L.shots = L.groups.reduce((a, e) => a + e.r.n, 0);
+    L.charge = L.x;   // compatibilità con i test della 1.7.0 (carica in gr)
+  }
+  return { levels, unit, metric, v, mixed: key === "*" && keys.length > 1, lvl };
 }
 function drawCharge() {
   const box = $("chgBody"); if (!box || !anaOpen()) return;
-  const { levels, unit, mixed, lvl } = chargeLevels();
+  const { levels, unit, metric, v, mixed, lvl } = chargeLevels();
+  const mName = metric === "mr" ? _t("raggio medio atteso") : "CEP";
   if (!levels.length) {
-    box.innerHTML = _T`<div class="muted">Servono gruppi da almeno 3 colpi con scala, distanza e carica (gr) indicata nei dati di ricarica, in questa sessione o nello storico.</div>`;
+    box.innerHTML = v === "jump" ? _T`<div class="muted">Servono gruppi da almeno 3 colpi con scala, distanza e salto dalle righe indicato nei dati di ricarica, in questa sessione o nello storico.</div>`
+      : _T`<div class="muted">Servono gruppi da almeno 3 colpi con scala, distanza e carica (gr) indicata nei dati di ricarica, in questa sessione o nello storico.</div>`;
     $("chgChartWrap").style.display = "none"; return;
   }
-  const best = levels.reduce((a, b) => b.pool.cep < a.pool.cep ? b : a);
-  const distinct = levels.length > 1 && levels.every(L => L === best || best.pool.cepHi < L.pool.cepLo);
-  const trs = levels.map(L => `<tr class="${L === best && levels.length > 1 ? "active" : ""}"><td class="x"><b>${fmt(L.charge, 2)} gr</b></td><td class="x">${L.groups.length}</td><td class="x">${L.shots}</td>
-      <td class="x"><b>${fmtA(L.pool.cep)}</b></td><td class="x">${fmtA(L.pool.cepLo)}–${fmtA(L.pool.cepHi)}</td></tr>`).join("");
-  const verdict = levels.length < 2 ? _t("Serve almeno una seconda carica per un confronto.")
-    : distinct ? _T`<b>${fmt(best.charge, 2)} gr</b> ha il CEP più piccolo e il suo intervallo non si sovrappone a quello delle altre cariche: la differenza è probabilmente reale (criterio prudente).`
-    : _T`Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale carica sia più precisa. Servono più colpi per carica (meglio 2–3 gruppi da 5–10 colpi ciascuno).`;
-  box.innerHTML = _T`<div class="cmpsum">${verdict}</div><div class="tscroll"><table class="cmp"><thead><tr><th class="x">Carica</th><th class="x">Gruppi</th><th class="x">Colpi</th>
-      <th class="x" title="CEP dalla σ combinata dei gruppi della stessa carica">CEP (${unit})</th><th class="x">IC ${fmt(lvl * 100, 0)}%</th></tr></thead><tbody>${trs}</tbody></table></div>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">CEP angolare (gruppi a distanze diverse confrontabili), gruppi della stessa carica combinati. Non è la ricerca di un «nodo armonico»: è la precisione misurata per carica con la sua incertezza; con 3–5 colpi per carica le differenze sono quasi sempre casuali.${mixed ? _t(" ⚠ Sono mescolate palle o polveri diverse: scegli una munizione.") : ""}</div>`;
+  const best = levels.reduce((a, b) => b.pool.val < a.pool.val ? b : a);
+  const distinct = levels.length > 1 && levels.every(L => L === best || best.pool.hi < L.pool.lo);
+  const trs = levels.map(L => `<tr class="${L === best && levels.length > 1 ? "active" : ""}"><td class="x"><b>${precLabel(L.x, v)}</b></td><td class="x">${L.groups.length}</td><td class="x">${L.shots}</td>
+      <td class="x"><b>${fmtA(L.pool.val)}</b></td><td class="x">${fmtA(L.pool.lo)}–${fmtA(L.pool.hi)}</td></tr>`).join("");
+  const verdict = levels.length < 2 ? (v === "jump" ? _t("Serve almeno un secondo salto dalle righe per un confronto.") : _t("Serve almeno una seconda carica per un confronto."))
+    : distinct ? _T`<b>${precLabel(best.x, v)}</b> ha il ${mName} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).`
+    : _T`Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale livello sia più preciso. Servono più colpi per livello (meglio 2–3 gruppi da 5–10 colpi ciascuno).`;
+  box.innerHTML = _T`<div class="cmpsum">${verdict}</div><div class="tscroll"><table class="cmp"><thead><tr><th class="x">${v === "jump" ? _t("Salto dalle righe") : _t("Carica")}</th><th class="x">Gruppi</th><th class="x">Colpi</th>
+      <th class="x" title="Dalla σ combinata dei gruppi dello stesso livello">${metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${unit})</th><th class="x">IC ${fmt(lvl * 100, 0)}%</th></tr></thead><tbody>${trs}</tbody></table></div>
+    <div class="muted" style="font-size:11.5px;margin-top:4px">Metrica angolare (gruppi a distanze diverse confrontabili), gruppi dello stesso livello combinati. Non è la ricerca di un «nodo» di carica o di seduta: è la precisione misurata con la sua incertezza; con 3–5 colpi per livello le differenze sono quasi sempre casuali.${mixed ? _t(" ⚠ Sono mescolate munizioni diverse: scegline una.") : ""}</div>`;
   $("chgChartWrap").style.display = "";
-  drawChargeChart($("chCharge"), Math.max(220, Math.floor($("chgChartWrap").clientWidth)), 240, levels, unit, best, distinct);
+  drawChargeChart($("chCharge"), Math.max(220, Math.floor($("chgChartWrap").clientWidth)), 240, levels, unit, best, distinct, metric, v);
 }
-function drawChargeChart(cv, W, H, levels, unit, best, distinct) {
+function drawChargeChart(cv, W, H, levels, unit, best, distinct, metric = "cep", v = "charge") {
   const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), acc = cssVar("--accent"), surf = cssVar("--panel"), good = cssVar("--ok-ink") || acc;
   const hits = CH.hits.charge = [];
-  const xs0 = levels[0].charge, xs1 = levels[levels.length - 1].charge, dx = (xs1 - xs0) || 1;
+  const mLbl = metric === "mr" ? _t("raggio medio") : "CEP";
+  const xs0 = levels[0].x, xs1 = levels[levels.length - 1].x, dx = (xs1 - xs0) || 1;
   const xa = xs0 - dx * 0.12, xb = xs1 + dx * 0.12;
-  const yMax0 = Math.max(...levels.map(L => Math.max(L.pool.cepHi, ...L.groups.map(e => e.own ? e.own.cep : 0))));
+  const yMax0 = Math.max(...levels.map(L => Math.max(L.pool.hi, ...L.groups.map(e => e.own ? e.own.val : 0))));
   const ys = niceStep(yMax0 / 4), yMax = Math.ceil(yMax0 * 1.05 / ys) * ys;
   const padL = 46, padR = 12, padT = 12, padB = 34, pw = W - padL - padR, ph = H - padT - padB;
-  const X = v => padL + (v - xa) / (xb - xa) * pw, Y = v => padT + ph - v / yMax * ph;
+  const X = q => padL + (q - xa) / (xb - xa) * pw, Y = q => padT + ph - q / yMax * ph;
   g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
-  for (let v = 0; v <= yMax + 1e-9; v += ys) { g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(W - padR, Y(v)); g.stroke();
-    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(v, 2), padL - 5, Y(v)); }
+  for (let q = 0; q <= yMax + 1e-9; q += ys) { g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(q)); g.lineTo(W - padR, Y(q)); g.stroke();
+    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(q, 2), padL - 5, Y(q)); }
   g.textAlign = "center"; g.textBaseline = "top"; g.fillStyle = muted;
-  levels.forEach(L => g.fillText(nfmt(L.charge, 2), X(L.charge), padT + ph + 6));
-  g.fillText("gr", W - padR - 8, padT + ph + 20);
-  g.save(); g.translate(10, padT + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = "top"; g.fillText(`CEP (${unit})`, 0, 0); g.restore();
-  g.strokeStyle = acc; g.lineWidth = 1.5; g.beginPath(); levels.forEach((L, i) => i ? g.lineTo(X(L.charge), Y(L.pool.cep)) : g.moveTo(X(L.charge), Y(L.pool.cep))); g.stroke();
+  levels.forEach(L => g.fillText(precLabel(L.x, v).replace(/ (gr|in|mm)$/, ""), X(L.x), padT + ph + 6));
+  g.fillText(v === "jump" ? jumpUnitShown() : "gr", W - padR - 8, padT + ph + 20);
+  g.save(); g.translate(10, padT + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = "top"; g.fillText(`${mLbl} (${unit})`, 0, 0); g.restore();
+  g.strokeStyle = acc; g.lineWidth = 1.5; g.beginPath(); levels.forEach((L, i) => i ? g.lineTo(X(L.x), Y(L.pool.val)) : g.moveTo(X(L.x), Y(L.pool.val))); g.stroke();
   for (const L of levels) {
-    const x = X(L.charge);
+    const x = X(L.x);
     L.groups.forEach((e, j) => { if (!e.own) return; const gx = x + (j - (L.groups.length - 1) / 2) * 7 + 12;
-      g.strokeStyle = muted; g.lineWidth = 1; g.beginPath(); g.arc(gx, Y(e.own.cep), 3, 0, Math.PI * 2); g.stroke();
-      hits.push({ x: gx, y: Y(e.own.cep), r: 6, tip: `${e.r.name} · ${fmt(L.charge, 2)} gr · n=${e.r.n} · CEP ${fmtA(e.own.cep)} ${unit}${e.r.hist ? ` · ${e.r.source}` : ""}` }); });
+      g.strokeStyle = muted; g.lineWidth = 1; g.beginPath(); g.arc(gx, Y(e.own.val), 3, 0, Math.PI * 2); g.stroke();
+      hits.push({ x: gx, y: Y(e.own.val), r: 6, tip: `${e.r.name} · ${precLabel(L.x, v)} · n=${e.r.n} · ${mLbl} ${fmtA(e.own.val)} ${unit}${e.r.hist ? ` · ${e.r.source}` : ""}` }); });
     g.strokeStyle = L === best && distinct ? good : muted; g.lineWidth = 2;
-    g.beginPath(); g.moveTo(x, Y(L.pool.cepLo)); g.lineTo(x, Y(L.pool.cepHi)); g.moveTo(x - 5, Y(L.pool.cepLo)); g.lineTo(x + 5, Y(L.pool.cepLo)); g.moveTo(x - 5, Y(L.pool.cepHi)); g.lineTo(x + 5, Y(L.pool.cepHi)); g.stroke();
-    g.fillStyle = L === best && distinct ? good : acc; g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(x, Y(L.pool.cep), 5, 0, Math.PI * 2); g.fill(); g.stroke();
-    hits.push({ x, y: Y(L.pool.cep), r: 10, tip: _T`${fmt(L.charge, 2)} gr · ${L.groups.length} gruppi, ${L.shots} colpi · CEP ${fmtA(L.pool.cep)} ${unit} (IC ${fmtA(L.pool.cepLo)}–${fmtA(L.pool.cepHi)})` });
+    g.beginPath(); g.moveTo(x, Y(L.pool.lo)); g.lineTo(x, Y(L.pool.hi)); g.moveTo(x - 5, Y(L.pool.lo)); g.lineTo(x + 5, Y(L.pool.lo)); g.moveTo(x - 5, Y(L.pool.hi)); g.lineTo(x + 5, Y(L.pool.hi)); g.stroke();
+    g.fillStyle = L === best && distinct ? good : acc; g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(x, Y(L.pool.val), 5, 0, Math.PI * 2); g.fill(); g.stroke();
+    hits.push({ x, y: Y(L.pool.val), r: 10, tip: _T`${precLabel(L.x, v)} · ${L.groups.length} gruppi, ${L.shots} colpi · ${mLbl} ${fmtA(L.pool.val)} ${unit} (IC ${fmtA(L.pool.lo)}–${fmtA(L.pool.hi)})` });
   }
-  $("chgNote").textContent = _t("● = cariche (gruppi combinati) con intervallo di confidenza; ○ = singoli gruppi.");
+  $("chgNote").textContent = _t("● = livelli (gruppi combinati) con intervallo di confidenza; ○ = singoli gruppi.");
 }
 
 /** Grafico dell'andamento: un punto per gruppo (in ordine di data) e la media mobile. */
@@ -5223,7 +5722,8 @@ function csvGroupsTable(src) {
     _t("Bossolo"), _t("Polvere"), _t("Carica (gr)"), _t("Palla"), _t("Innesco"), _t("Meteo"), _t("Temperatura (°C)"), _t("Umidità (%)"), _t("Pressione (hPa)"),
     _t("Vento"), _t("Unità vento"), _t("Direzione vento (ore)"), _t("Colpi sparati"), _t("Scaldacanna"), _t("Note"),
     _t("Bersaglio da gara"), _t("Punteggio"), _t("Punteggio massimo"), _t("Media punti"), _t("10 interni"),
-    _t("Dope alzo (click)"), _t("Dope alzo IC ± (click)"), _t("Dope alzo (MIL)"), _t("Dope brandeggio (click)"), _t("Dope brandeggio IC ± (click)"), _t("Dope brandeggio (MIL)")];
+    _t("Dope alzo (click)"), _t("Dope alzo IC ± (click)"), _t("Dope alzo (MIL)"), _t("Dope brandeggio (click)"), _t("Dope brandeggio IC ± (click)"), _t("Dope brandeggio (MIL)"),
+    _t("Convex hull area (mm²)"), _t("Convex hull perimetro (mm)"), _t("Salto dalle righe"), _t("Unità salto")];
   const rows = [];
   for (const g of src.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
@@ -5245,7 +5745,8 @@ function csvGroupsTable(src) {
       csvLoadVal(L.humidity), csvLoadVal(L.pressure), csvLoadVal(L.wind), L.wind ? L.windUnit || "" : "", L.windDir || "",
       csvLoadVal(L.shotsTotal), csvLoadVal(L.foulers), L.notes || "",
       si ? si.t.name : "", si ? si.total : "", si ? si.max : "", si ? csvNum(si.mean, 2) : "", si ? si.inners : "",
-      ...dopeCsv(g.poa ? Calc.dope(inc(g), g.poa, gcc) : null, gcc)]);
+      ...dopeCsv(g.poa ? Calc.dope(inc(g), g.poa, gcc) : null, gcc),
+      mm && mm.hullArea != null ? csvNum(mm.hullArea, 1) : "", mm && mm.hullArea != null ? csvNum(mm.hullPerim, 2) : "", csvLoadVal(L.jump), L.jump ? L.jumpUnit || "in" : ""]);
   }
   return { head, rows };
 }
@@ -5694,6 +6195,7 @@ $("gridUnit").addEventListener("change", () => {
   requestDraw();
 });
 $("ellipseOn").addEventListener("change", () => { requestDraw(); drawCharts(); });
+$("hullOn").addEventListener("change", () => { requestDraw(); drawCharts(); scheduleAutosave(); });
 $("gridOn").addEventListener("change", () => { syncGridButton(); requestDraw(); if ($("gridOn").checked && !gridSpec(calcContext())) toast(_t("Griglia: servono scala calibrata e distanza di tiro.")); });
 $("bTheme").onclick = toggleTheme;
 // dati di ricarica: scrittura nel gruppo attivo (con undo) al termine della modifica del campo
@@ -5784,6 +6286,11 @@ $("dopeHist").onchange = $("chgHist").onchange = () => drawCompare();
 // scelta dell'utente da mantenere (capture: prima del ricalcolo generico registrato sullo stesso menu)
 for (const id of ["dopeLoad", "chgLoad"]) for (const ev of ["input", "change"]) $(id).addEventListener(ev, e => { e.target.dataset.user = "1"; }, { capture: true });
 $("bDopeCsv").onclick = () => exportDopeCsv();
+$("bPdf").onclick = () => exportReportPdf($("cardScope").value);
+// termini dei risultati → glossario dell'help tecnico
+$("results").addEventListener("click", e => { const a = e.target.closest("[data-gl]"); if (!a) return; e.preventDefault(); openHelpAt(a.dataset.gl); });
+// cambiando variabile (carica / seduta) cambia anche lo schema della munizione: si riparte dal gruppo attivo
+$("chgVar").addEventListener("input", () => { delete $("chgLoad").dataset.user; }, { capture: true });
 $("bDopePng").onclick = () => exportDopePng();
 { let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawDope(); drawCharge(); } }).observe($("dopeBox")); }
 $("clockRef").addEventListener("change", drawCharts);

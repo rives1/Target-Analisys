@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.7.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.8.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -52,7 +52,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Lingua**: italiano (predefinito) o inglese, scelta ricordata; in inglese anche testo copiato, Result Card, CSV (`,` e punto decimale) e ZIP.
 - **Pannello a sezioni comprimibili**: all'apertura è aperta solo Calibrazione scala; Gruppi e Risultati si aprono da sole al primo punto inserito.
 - **Click di alzo e brandeggio per foro** (ripresi dal foro precedente) e **dope card**: click da impostare per distanza, dai gruppi della sessione e dello storico, filtrati per munizione; CSV e PNG da stampare. Solo le distanze tirate (niente interpolazione senza modello balistico).
-- **Carica e precisione**: CEP angolare per carica di polvere con gruppi combinati e intervallo di confidenza; una carica è indicata come migliore solo se il suo intervallo non si sovrappone alle altre (nessun «nodo armonico» dichiarato su gruppi piccoli).
+- **Precisione e ricarica**: CEP o raggio medio angolare per **carica di polvere** o per **salto dalle righe** (profondità di seduta), con gruppi combinati e intervallo di confidenza; un livello è indicato come migliore solo se il suo intervallo non si sovrappone agli altri (nessun «nodo» dichiarato su gruppi piccoli).
+- **Report PDF** A4 (pulsante accanto alla Result Card): foto, misure con IC, grafici, tabella dei fori, ricarica e note, confronto, dope card, precisione; generato offline, senza librerie.
+- **Convex hull** dei fori (sull'immagine e nel grafico, area e perimetro nei risultati e nei CSV).
+- **Glossario contestuale**: nei risultati i termini (CEP, FOM, σ…) mostrano una spiegazione breve e con un clic aprono la voce dell'help tecnico.
 - **Snap al centro del foro** (riconoscimento della macchia vicino al clic, con controlli di plausibilità) e **cerchio del calibro** sul cursore per verificare la scala.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
@@ -124,11 +127,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (170 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (178 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (29 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (33 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```
