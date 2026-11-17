@@ -281,4 +281,67 @@ ok(Calc.shotScore(15.33, 5.66, T.issf25p).inner, "10 interno pistola (bordo a 12
 near(Calc.shotScore(52.0, 5.66, T.issf25p).margin, 0.83, 1e-9, "distanza dalla linea più vicina");
 eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio personalizzato senza 10 interno");
 
+// --- 1.7.0: dope card (click impostati + correzione), σ combinata per carica, snap al centro del foro
+{
+  near(Calc.toRad(Calc.fromRad(0.0123, "MOA"), "MOA"), 0.0123, 1e-15, "toRad inverso di fromRad (MOA)");
+  near(Calc.toRad(Calc.fromRad(0.0123, "IPHY"), "IPHY"), 0.0123, 1e-15, "toRad inverso di fromRad (IPHY)");
+  // 100 m, 10 px/mm, click 0,1 MIL: torretta a +20 click (2 MIL); fori 10 mm SOTTO la mira (0,1 MIL) → servono 21 click
+  const ctx = { pxPerMm: 10, distMm: 100000, clickValue: 0.1, clickUnit: "MIL", ciLevel: 0.95 };
+  const poa = { x: 0, y: 0 };
+  const S = [{ x: -50, y: 100, dv: 20, dh: 0 }, { x: 50, y: 100, dv: 20, dh: 0 }, { x: 0, y: 80, dv: 20, dh: 0 }, { x: 0, y: 120, dv: 20, dh: 0 }];
+  const d = Calc.dope(S, poa, ctx);
+  near(d.v.mil, 2 + Math.atan(10 / 100000) * 1000, 1e-9, "dope alzo = impostato + scostamento (esatto)");
+  near(Calc.milToClicks(d.v.mil, 0.1, "MIL"), 21, 1e-3, "dope alzo in click");
+  near(d.h.mil, 0, 1e-12, "dope brandeggio: gruppo centrato");
+  eq(d.dialVaries, false, "click uguali per tutti i fori");
+  // intervallo: t(0,975; 3)·sd/√4 con sd delle altezze (2 mm → 0,02 MIL a 100 m, quasi esatto)
+  const sdV = Calc.sampleSD(S.map(q => Math.atan((poa.y - q.y) / 10 / 100000) * 1000));
+  near(d.v.ci, Calc.tinv(0.975, 3) * sdV / 2, 1e-12, "IC della dope (t di Student)");
+  // torretta cambiata a metà gruppo: i fori si spostano ma la dope resta la stessa (ogni foro corretto col suo click)
+  const S2 = [{ x: 0, y: 100, dv: 20 }, { x: 0, y: 0, dv: 21 }];   // con 21 click il secondo è sulla mira
+  const d2 = Calc.dope(S2, poa, ctx);
+  near(d2.v.mil, 2.1, 1e-6, "dope con click diversi tra i fori");
+  near(d2.v.sd, 0, 1e-6, "nessuna dispersione dopo la compensazione dei click");
+  eq(d2.dialVaries, true, "segnala click diversi tra i fori");
+  // brandeggio: foro 20 mm a DESTRA con torretta a 0 → servono −2 click (a sinistra)
+  near(Calc.milToClicks(Calc.dope([{ x: 200, y: 0 }], poa, ctx).h.mil, 0.1, "MIL"), -2, 1e-3, "dope brandeggio negativo = a sinistra");
+  eq(Calc.dope([{ x: 200, y: 0 }], poa, ctx).v.ci, null, "un solo foro: nessun intervallo");
+  eq(Calc.dope(S, null, ctx), null, "senza mira niente dope");
+  // MOA: 1 click 1/4 MOA, 4 click = 1 MOA
+  near(Calc.milToClicks(Calc.toRad(1, "MOA") * 1000, 0.25, "MOA"), 4, 1e-9, "MIL → click MOA");
+
+  // σ combinata: un solo gruppo = stessa stima e stesso intervallo del gruppo
+  const G = [{ x: 0, y: 0 }, { x: 3, y: 1 }, { x: -1, y: 2 }, { x: 1, y: -3 }, { x: 2, y: 2 }];
+  const dg = Calc.dispersion(G), cg = Calc.confidence(G, 0.95), s2 = (dg.sx ** 2 + dg.sy ** 2) / 2;
+  const P1 = Calc.pooledSigma([{ s2, nu: 8 }], 0.95);
+  near(P1.sigma, dg.sigma, 1e-12, "pooled con 1 gruppo = σ del gruppo");
+  near(P1.cepLo, cg.cep.lo, 1e-12, "pooled: IC CEP basso come il gruppo"); near(P1.cepHi, cg.cep.hi, 1e-12, "pooled: IC CEP alto come il gruppo");
+  // due gruppi uguali: stessa s², ν doppio → intervallo più stretto
+  const P2 = Calc.pooledSigma([{ s2, nu: 8 }, { s2, nu: 8 }], 0.95);
+  near(P2.s2, s2, 1e-12, "pooled: media pesata delle varianze");
+  ok(P2.cepHi - P2.cepLo < P1.cepHi - P1.cepLo, "più gruppi → intervallo più stretto");
+  near(Calc.pooledSigma([{ s2: 1, nu: 2 }, { s2: 4, nu: 6 }]).s2, (2 + 24) / 8, 1e-12, "pooled: pesi = gradi di libertà");
+  eq(Calc.pooledSigma([]), null, "pooled senza dati");
+
+  // snap: disco scuro di raggio 10 px centrato in (40,3; 37,8) su fondo chiaro, finestra 80×80
+  const W = 80, H = 80, mk = (cx, cy, r, fg, bgv) => { const L = new Float32Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {   // copertura del pixel per sotto-campionamento 4×4
+      let c = 0; for (let a = 0; a < 4; a++) for (let b = 0; b < 4; b++) c += Math.hypot(x + (a + 0.5) / 4 - cx, y + (b + 0.5) / 4 - cy) <= r ? 1 : 0;
+      L[y * W + x] = bgv + (fg - bgv) * c / 16; }
+    return L; };
+  const exp = Math.PI * 100;
+  const sn = Calc.snapHole(mk(40.3, 37.8, 10, 30, 220), W, H, 45, 33, { rSearch: 9, expArea: exp });
+  ok(sn && Math.abs(sn.x - 40.3) < 0.3 && Math.abs(sn.y - 37.8) < 0.3, `snap al centro del disco (${sn && sn.x.toFixed(2)}, ${sn && sn.y.toFixed(2)})`);
+  eq(sn.dark, true, "foro scuro su fondo chiaro");
+  const sl = Calc.snapHole(mk(40, 40, 10, 240, 25), W, H, 36, 44, { rSearch: 9, expArea: exp });
+  ok(sl && !sl.dark && Math.abs(sl.x - 40) < 0.3 && Math.abs(sl.y - 40) < 0.3, "foro chiaro su visuel nero");
+  eq(Calc.snapHole(mk(40, 40, 10, 200, 210), W, H, 40, 40, { rSearch: 9, expArea: exp }), null, "contrasto troppo basso: nessuno snap");
+  eq(Calc.snapHole(mk(40, 40, 22, 30, 220), W, H, 40, 40, { rSearch: 9, expArea: exp }), null, "macchia troppo grande (es. due fori o visuel): nessuno snap");
+  eq(Calc.snapHole(mk(40, 40, 3, 30, 220), W, H, 40, 40, { rSearch: 9, expArea: exp }), null, "macchia troppo piccola: nessuno snap");
+  eq(Calc.snapHole(mk(20, 20, 10, 30, 220), W, H, 60, 60, { rSearch: 9, expArea: exp }), null, "nessun foro entro il raggio di ricerca");
+  // linea scura che attraversa la finestra (riga della griglia): tocca il bordo → rifiutata
+  const Ln = new Float32Array(W * H).fill(220); for (let y = 0; y < H; y++) for (let x = 38; x < 42; x++) Ln[y * W + x] = 30;
+  eq(Calc.snapHole(Ln, W, H, 40, 40, { rSearch: 9, expArea: exp }), null, "linea della griglia: nessuno snap");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

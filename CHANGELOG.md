@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.7.0] - 2026-11-17
+### Aggiunto
+- **Click di alzo e brandeggio per foro**: colonne «Alzo» e «Brand.» nella tabella dei punti (+ = in alto / a destra).
+  Un nuovo foro riprende i click del precedente (il primo foro di un nuovo gruppo gli ultimi usati); correggendo un foro
+  si aggiornano anche i successivi che avevano lo stesso valore. Salvati nella sessione, nel CSV dei fori e annullabili.
+- **Distanza per gruppo**: il campo «Distanza di tiro · gruppo attivo» vale per il gruppo attivo; un nuovo gruppo parte
+  dalla distanza del gruppo attivo. Le sessioni precedenti usano per tutti i gruppi la distanza della sessione.
+- **Dope** del gruppo nei risultati (se ci sono click impostati): click da impostare per colpire la mira = click
+  impostati + correzione di ogni foro (angolo esatto), mediati, con intervallo t di Student. Avviso se i click cambiano
+  durante il gruppo. Anche nel testo copiato, nella Result Card e nel CSV dei gruppi.
+- **Dope card** nella vista grafici: una riga per gruppo con dope (sessione + storico), ordinata per distanza, filtrata per
+  munizione (palla · polvere · carica); click nell'unità della sessione, MIL, MOA, condizioni; grafico alzo/distanza;
+  **CSV** e **PNG** da stampare. Solo le distanze tirate: nessuna interpolazione (servirebbe un modello balistico).
+- **Carica e precisione** nella vista grafici: CEP angolare per carica di polvere (a parità di palla e polvere), gruppi
+  della stessa carica combinati (varianza pesata per i gradi di libertà) con intervallo χ²; una carica è indicata come
+  migliore solo se il suo intervallo non si sovrappone a quello di nessun'altra. Scelta concordata al posto del «nodo
+  armonico» richiesto: con gruppi piccoli i «nodi» non sono dimostrabili (help tecnico).
+- **Snap al centro del foro** (🧲, tasto M, attivo all'apertura, scelta ricordata): il foro cliccato si aggancia al
+  centroide della macchia vicino al clic (`Calc.snapHole`: sfondo dal bordo della finestra, soglia a metà, regione
+  connessa, controlli di contrasto, area e forma rispetto al calibro). Alt+clic = senza snap (fori sovrapposti). Il
+  suggerimento sotto la barra dice se il foro è stato agganciato.
+- **Cerchio del calibro** sotto il cursore (e nella lente) in modalità «Foro»: verifica visiva immediata della scala.
+- Motore: `Calc.toRad`, `Calc.dope`, `Calc.milToClicks`, `Calc.pooledSigma`, `Calc.snapHole` (+29 verifiche, 170).
+- Help tecnico: sezioni «Click impostati e dope card», «Carica e precisione», «Snap al centro del foro».
+- Test UI: 5 nuovi (29): click e propagazione, distanza per gruppo, dope card, carica e precisione, snap e cerchio del calibro.
+### Modificato
+- **Sezioni del pannello**: all'apertura è aperta solo «Calibrazione scala»; al primo punto inserito su una foto (scala,
+  mira o foro) si aprono «Gruppi» e «Risultati» (una volta per foto; anche caricando una sessione con punti).
+- Colonne nuove nel CSV dei fori (click impostati) e dei gruppi (dope in click e MIL, con intervallo).
+### Corretto
+- CSV in italiano: dalla 1.6.0 i numeri con la virgola decimale venivano messi tra virgolette (la virgola era trattata
+  come separatore anche in italiano). Ora le virgolette servono solo per il separatore della lingua scelta.
+
 ## [1.6.0] - 2026-11-17
 ### Aggiunto
 - **Lingua dell'interfaccia**: selettore «Italiano / English» in alto nel pannello; predefinito italiano, scelta ricordata

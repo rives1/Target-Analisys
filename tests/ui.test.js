@@ -542,7 +542,7 @@ test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione
   assert.match(await page.textContent("#results"), new RegExp(`Punteggio.*${si.total} / 50`));
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Punteggio \(ISSF 10 m pistola ad aria\): \d+ \/ 50/);
   const csvF = await page.evaluate(() => window.__SA.csvShots()), csvG = await page.evaluate(() => window.__SA.csvGroups());
-  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea$/);
+  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\)$/);
   assert.match(csvG, new RegExp(`;ISSF 10 m pistola ad aria;${si.total};50;`));
   // bersaglio personalizzato
   await page.selectOption("#scoreTarget", "custom");
@@ -647,19 +647,32 @@ test("archivio delle sessioni ed esportazione ZIP", async page => {
 
 
 /* ------------------------------ 1.6.0 ------------------------------ */
-test("sezioni comprimibili: stato all'apertura dell'app", async page => {
+test("sezioni: all'apertura solo «Calibrazione scala» aperta; Gruppi e Risultati si aprono al primo punto", async page => {
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
-  const st = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#side details")].map(d => [d.id, d.open])));
-  for (const id of ["sec-params", "sec-orient", "sec-results", "sec-score", "sec-hit"]) assert.strictEqual(st[id], false, `${id} chiusa all'avvio`);
-  for (const id of ["sec-calib", "sec-groups", "sec-load", "sec-points", "sec-data"]) assert.strictEqual(st[id], true, `${id} aperta all'avvio`);
-  assert.strictEqual(st["sec-guide"], false, "guida rapida chiusa");
+  const st = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#side details")].map(d => [d.id, d.open])));
+  const s0 = await st();
+  for (const [id, open] of Object.entries(s0)) assert.strictEqual(open, id === "sec-calib", `${id} ${id === "sec-calib" ? "aperta" : "chiusa"} all'avvio`);
   ok2(await page.isHidden("#shotDist"), "campo nascosto con la sezione chiusa");
   await page.click("#sec-params > summary");
   ok2(await page.isVisible("#shotDist"), "la sezione si apre col clic sul titolo");
-  await page.click("#sec-groups > summary");
-  ok2(await page.isHidden("#bAddGroup"), "anche le sezioni aperte si chiudono");
+  await page.click("#sec-calib > summary");
+  ok2(await page.isHidden("#calDist"), "anche la sezione aperta si chiude");
+  ok2(await page.evaluate(() => document.getElementById("bSnap").classList.contains("on")), "snap attivo all'apertura");
+  // primo punto sulla foto (scala): si aprono Gruppi e Risultati, il resto non cambia
+  await loadTarget(page);
+  await clickAt(page, { x: 100, y: 500 });
+  const s1 = await st();
+  ok2(s1["sec-groups"] && s1["sec-results"], "Gruppi e Risultati aperte al primo punto");
+  ok2(!s1["sec-hit"] && !s1["sec-score"] && !s1["sec-points"] && !s1["sec-load"], "le altre restano come prima");
+  // richiuse dall'utente, non si riaprono a ogni punto
+  await page.click("#sec-results > summary");
+  await clickAt(page, { x: 300, y: 500 });
+  assert.strictEqual((await st())["sec-results"], false, "non si riapre a ogni clic");
+  // nuova foto: alla prima mira si riaprono
+  await loadTarget(page, "secondo.png");
+  await key(page, "3"); await clickAt(page, POA);
+  assert.strictEqual((await st())["sec-results"], true, "nuova foto: di nuovo aperte al primo punto");
 });
-
 test("nuovo gruppo: copia tutti i dati di ricarica e condizioni del gruppo attivo", async page => {
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
@@ -698,8 +711,10 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await page.selectOption("#scoreTarget", "issf50r"); await page.dispatchEvent("#scoreTarget", "change");
   await setField(page, "#ld-charge", "42.5"); await setField(page, "#ld-notes", "test note"); await setField(page, "#ld-humidity", "55");
   await page.selectOption("#ld-windDir", "3"); await page.dispatchEvent("#ld-windDir", "change");
+  await setDialCell(page, 0, "dv", 5);   // click impostati → riga della dope nei risultati
   const s1 = await S(page);
   assert.strictEqual(s1.g.name, "Group 1", "nome automatico del gruppo in inglese");
+  ok2(/Dope at 100 m: elevation/.test(await page.textContent("#results")), "dope in inglese");
   const side = await page.innerText("#sideScroll");
   ok2(/Group size \(c-c\)/.test(side) && /Score/.test(side) && /Probability per shot/.test(side), "risultati in inglese");
   assert.ok(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun testo italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
@@ -788,6 +803,212 @@ test("cambio lingua a lavoro aperto: pannelli e menu ridisegnati", async page =>
   await page.selectOption("#langSel", "it");
   ok2(/Raggio medio/.test(await page.innerText("#results")), "di nuovo in italiano");
   assert.strictEqual((await S(page)).g.name, "Gruppo 1");
+});
+
+
+/* ------------------------------ 1.7.0 ------------------------------ */
+/** Click di un foro nella tabella dei punti (colonna «Alzo» o «Brand.»). */
+async function setDialCell(page, n, key, v) {
+  const sel = `#points input[data-dial="${key}"]`;
+  const h = (await page.$$(sel))[n];
+  await h.fill(String(v)); await h.dispatchEvent("change");
+}
+test("click di alzo e brandeggio: ripresi dal foro precedente, correzione propagata, dope", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS.slice(0, 1));
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await setDialCell(page, 0, "dv", 20); await setDialCell(page, 0, "dh", -3);
+  for (const p of SHOTS.slice(1)) await clickAt(page, p);
+  let g = (await S(page)).g;
+  assert.deepStrictEqual(g.shots.map(q => [q.dv, q.dh]), [[20, -3], [20, -3], [20, -3], [20, -3], [20, -3]], "i nuovi fori riprendono i click del precedente");
+  // correzione del 3° foro: i successivi con lo stesso valore lo seguono, i precedenti no
+  await setDialCell(page, 2, "dv", 22);
+  g = (await S(page)).g;
+  assert.deepStrictEqual(g.shots.map(q => q.dv), [20, 20, 22, 22, 22]);
+  await key(page, "Control+z");
+  assert.deepStrictEqual((await S(page)).g.shots.map(q => q.dv), [20, 20, 20, 20, 20], "annullabile");
+  await key(page, "Control+y");
+  g = (await S(page)).g;
+  // dope attesa calcolata qui (indipendente): media di [click·0,1 − arctan(y/D)·1000] in MIL, y in mm (+ = alto)
+  const k = 1 / (await S(page)).ctxPx, D = 100000;
+  const v = g.shots.reduce((a, q) => a + (q.dv * 0.1 - Math.atan((g.poa.y - q.y) * k / D) * 1000), 0) / 5;
+  const h = g.shots.reduce((a, q) => a + (q.dh * 0.1 - Math.atan((q.x - g.poa.x) * k / D) * 1000), 0) / 5;
+  const res = await page.textContent("#results");
+  const m = res.match(/Dope a 100 m: alzo ([+−-]?[\d,]+) click \(([+−-]?[\d,]+) MIL[^)]*\) · brandeggio ([+−-]?[\d,]+) click \(([+−-]?[\d,]+) MIL/);
+  ok2(m, "riga della dope nei risultati: " + res.slice(res.indexOf("Dope"), res.indexOf("Dope") + 120));
+  const it = t => parseFloat(t.replace(",", ".").replace("−", "-"));
+  near(it(m[2]), v, 0.006, "dope alzo (MIL)"); near(it(m[1]), v / 0.1, 0.06, "dope alzo (click)");
+  near(it(m[4]), h, 0.006, "dope brandeggio (MIL)");
+  ok2(/Click diversi tra i fori/.test(res), "avviso: click cambiati durante il gruppo");
+  // colonne nella tabella, nel testo e nei CSV
+  const txt = await page.evaluate(() => window.__SA.resultText());
+  ok2(/Dope: +alzo/.test(txt), "dope nel testo copiato");
+  const f = await download(page, "#bCsvShots");
+  const R = parseCsv(f.text.slice(1));
+  assert.deepStrictEqual(R.slice(1).map(r => r[R[0].indexOf("Alzo impostato (click)")]), ["20", "20", "22", "22", "22"]);
+  assert.strictEqual(R[1][R[0].indexOf("Brandeggio impostato (click)")], "-3");
+  const gcsv = parseCsv((await download(page, "#bCsvGroups")).text.slice(1));
+  near(it(gcsv[1][gcsv[0].indexOf("Dope alzo (MIL)")]), v, 0.001, "dope nel CSV dei gruppi");
+  // il nuovo gruppo parte dai click dell'ultimo foro
+  await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 300, y: 400 }); await clickAt(page, { x: 330, y: 380 });
+  const ng = (await S(page)).g;
+  assert.deepStrictEqual([ng.shots[0].dv, ng.shots[0].dh], [22, -3], "primo foro di un nuovo gruppo: ultimi click usati");
+  // la sessione salva e ricarica i click
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession(false)));
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  assert.deepStrictEqual((await page.evaluate(() => window.__SA.state.groups[0].shots.map(q => q.dv))), [20, 20, 22, 22, 22]);
+});
+
+test("distanza per gruppo: copiata nel nuovo gruppo, nei calcoli e nella sessione", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const g1 = (await S(page)).g;
+  assert.strictEqual(g1.dist, 100);
+  await page.click("#bAddGroup");
+  assert.strictEqual((await S(page)).g.dist, 100, "il nuovo gruppo parte dalla distanza del gruppo attivo");
+  await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
+  for (const p of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, p);
+  await setField(page, "#shotDist", 200);
+  const st = await page.evaluate(() => window.__SA.state.groups.map(g => g.dist));
+  assert.deepStrictEqual(st, [100, 200]);
+  // tornando al primo gruppo il campo mostra la sua distanza
+  await page.click("#groups .g:first-child .dot");
+  assert.strictEqual(await page.inputValue("#shotDist"), "100");
+  ok2(/· 100 m/.test(await page.textContent("#groups")) && /· 200 m/.test(await page.textContent("#groups")), "distanze nell'elenco dei gruppi");
+  // angoli del secondo gruppo calcolati a 200 m
+  const a = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[1], r = Calc.analyze(g.shots, g.poa, calcContext(g));
+    return { mm: r.mm.es, moa: r.ang.es.MOA }; });
+  near(a.moa, 2 * Math.atan(a.mm / 2 / 200000) * 180 / Math.PI * 60, 1e-9, "group size angolare a 200 m");
+  ok2(/diversa per gruppo/.test(await page.evaluate(() => window.__SA.resultText())), "testo: distanza diversa per gruppo");
+  // sessione: distanze salvate; una sessione senza distanze per gruppo (< 1.7.0) usa quella della sessione
+  const s = await page.evaluate(() => window.__SA.buildSession(false));
+  assert.deepStrictEqual(s.groups.map(g => g.dist), [100, 200]);
+  s.groups.forEach(g => delete g.dist); s.params.shotDist = 50;
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(s));
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.state.groups.map(g => g.dist)), [50, 50], "sessioni precedenti: distanza della sessione");
+});
+
+test("dope card: righe per distanza, filtro munizione, CSV e PNG", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await setField(page, "#ld-bullet", "SMK 168"); await setField(page, "#ld-powder", "N140"); await setField(page, "#ld-charge", "44.5");
+  for (let i = 0; i < 5; i++) await setDialCell(page, i, "dv", 10);
+  // secondo gruppo a 200 m con alzo 25 click (copia munizione e distanza, poi la cambiamo)
+  await page.click("#bAddGroup"); await setField(page, "#shotDist", 200);
+  await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
+  for (const p of [{ x: 300, y: 380 }, { x: 310, y: 395 }, { x: 290, y: 410 }]) await clickAt(page, p);
+  for (let i = 0; i < 3; i++) await setDialCell(page, i, "dv", 25);
+  // terzo gruppo con un'altra carica: non deve finire nella dope della prima munizione
+  await page.click("#bAddGroup"); await setField(page, "#ld-charge", "45.0"); await setField(page, "#shotDist", 300);
+  await key(page, "3"); await clickAt(page, { x: 600, y: 400 });
+  for (const p of [{ x: 600, y: 380 }, { x: 610, y: 395 }]) await clickAt(page, p);
+  await page.click("#groups .g:first-child .dot");   // gruppo attivo = prima munizione
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.inputValue("#dopeLoad"), "SMK 168 · N140 · 44.5 gr", "munizione del gruppo attivo");
+  const rows = await page.$$eval("#dopeBody tbody tr", trs => trs.map(tr => [...tr.querySelectorAll("td")].map(td => td.textContent.trim())));
+  assert.strictEqual(rows.length, 2, "due distanze per questa munizione");
+  assert.deepStrictEqual(rows.map(r => r[0]), ["100 m", "200 m"], "ordinate per distanza");
+  // valori attesi calcolati dallo stato
+  const exp = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA;
+    return state.groups.slice(0, 2).map(g => { const d = Calc.dope(g.shots, g.poa, calcContext(g)); return d.v.mil / 0.1; }); });
+  rows.forEach((r, i) => near(parseFloat(r[1].replace(",", ".").replace("+", "")), exp[i], 0.051, "click di alzo in tabella"));
+  await page.selectOption("#dopeLoad", "*");
+  assert.strictEqual((await page.$$("#dopeBody tbody tr")).length, 3, "«tutte le munizioni»: anche la terza");
+  assert.strictEqual(await page.inputValue("#dopeLoad"), "*", "la scelta dell'utente resta");
+  await page.selectOption("#dopeLoad", "SMK 168 · N140 · 44.5 gr");
+  const f = await download(page, "#bDopeCsv");
+  assert.match(f.name, /^dope_card_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  ok2(!/"-?\d+,\d+"/.test(f.text), "in italiano i numeri con la virgola decimale non hanno virgolette");
+  const C = parseCsv(f.text.slice(1));
+  assert.strictEqual(C.length, 3, "CSV: intestazione + 2 righe " + JSON.stringify(C)); assert.strictEqual(C[0][0], "Distanza (m)");
+  near(parseFloat(C[2][1].replace(",", ".")), exp[1], 0.006, "CSV: click di alzo a 200 m");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bDopePng")]);
+  assert.match(dl.suggestedFilename(), /^dope_card_.*\.png$/);
+  ok2(require("fs").statSync(await dl.path()).size > 3000, "PNG non vuoto");
+  ok2(await page.isVisible("#chDope"), "grafico della dope");
+});
+
+test("carica e precisione: CEP per carica con gruppi combinati e intervallo", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await setField(page, "#ld-bullet", "SMK 168"); await setField(page, "#ld-powder", "N140"); await setField(page, "#ld-charge", "42");
+  const add = async (charge, base) => {
+    await page.click("#bAddGroup"); await setField(page, "#ld-charge", charge);
+    await key(page, "3"); await clickAt(page, base);
+    for (const d of [[20, -15], [35, 0], [25, 12], [40, -5]]) await clickAt(page, { x: base.x + d[0], y: base.y + d[1] });
+  };
+  await add("42.0", { x: 200, y: 100 });
+  await add("43.0", { x: 560, y: 120 });
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
+  assert.deepStrictEqual(L.levels.map(x => [x.charge, x.groups.length]), [[42, 2], [43, 1]], "42 e 42.0 sono la stessa carica; 2 gruppi combinati");
+  // σ combinata = media delle s² pesata per ν (verifica indipendente)
+  const lv = L.levels[0];
+  near(lv.pool.s2, (lv.groups[0].nu * lv.groups[0].s2 + lv.groups[1].nu * lv.groups[1].s2) / (lv.groups[0].nu + lv.groups[1].nu), 1e-12, "s² combinata");
+  const rows = await page.$$eval("#chgBody tbody tr", trs => trs.map(tr => tr.textContent));
+  assert.strictEqual(rows.length, 2);
+  ok2(/non si può dire/.test(await page.textContent("#chgBody")), "intervalli sovrapposti: nessuna carica dichiarata migliore");
+  ok2(!/nodo armonico\b(?!»)/.test(await page.textContent("#chgBody")) || /Non è la ricerca di un «nodo armonico»/.test(await page.textContent("#chgBody")), "nessun «nodo» dichiarato");
+  ok2(await page.isVisible("#chCharge"), "grafico carica-CEP");
+});
+
+/** Foto con fori rotondi scuri (⌀ 7,82 mm a 4 px/mm ≈ 31 px) su carta chiara con griglia. */
+async function loadHoles(page) {
+  const dataUrl = await page.evaluate(() => {
+    const c = document.createElement("canvas"); c.width = 800; c.height = 600;
+    const g = c.getContext("2d");
+    g.fillStyle = "#f4f1ea"; g.fillRect(0, 0, 800, 600);
+    g.strokeStyle = "#bbb"; g.lineWidth = 1;
+    for (let x = 0; x <= 800; x += 20) { g.beginPath(); g.moveTo(x + 0.5, 0); g.lineTo(x + 0.5, 600); g.stroke(); }
+    for (let y = 0; y <= 600; y += 20) { g.beginPath(); g.moveTo(0, y + 0.5); g.lineTo(800, y + 0.5); g.stroke(); }
+    g.fillStyle = "#1a1a1a";
+    for (const [x, y] of [[430.4, 233.7], [520.2, 330.6], [610.8, 150.3]]) { g.beginPath(); g.arc(x, y, 14, 0, Math.PI * 2); g.fill(); }
+    return c.toDataURL("image/png");
+  });
+  await page.setInputFiles("#fImg", { name: "fori.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 800);
+}
+test("snap al centro del foro, Alt+clic senza snap, tasto M, cerchio del calibro", async page => {
+  await loadHoles(page);
+  await key(page, "2"); await clickAt(page, { x: 100, y: 500 }); await clickAt(page, { x: 300, y: 500 });
+  await setField(page, "#calDist", 50); await page.selectOption("#calUnit", "mm");
+  await page.selectOption("#caliberUnit", "mm"); await setField(page, "#caliber", 7);
+  await key(page, "3"); await clickAt(page, { x: 300, y: 240 });
+  // clic a 5–6 px dal centro: il foro si aggancia al centro della macchia
+  await clickAt(page, { x: 434, y: 229 });
+  let g = (await S(page)).g;
+  near(g.shots[0].x, 430.4, 0.5, "x agganciata"); near(g.shots[0].y, 233.7, 0.5, "y agganciata");
+  ok2(/agganciato al centro/.test(await page.textContent("#hint")), "il suggerimento lo dice");
+  // Alt+clic: nessuno snap (fori sovrapposti)
+  const s2 = await screenOf(page, { x: 524, y: 326 });
+  await page.keyboard.down("Alt"); await page.mouse.click(s2.x, s2.y); await page.keyboard.up("Alt");
+  g = (await S(page)).g;
+  near(g.shots[1].x, 524, 1, "Alt+clic: x dove cliccato"); near(g.shots[1].y, 326, 1, "Alt+clic: y dove cliccato");
+  // clic su carta vuota (solo griglia): resta dove si è cliccato
+  await clickAt(page, { x: 250, y: 410 });
+  g = (await S(page)).g;
+  near(g.shots[2].x, 250, 1, "nessun foro: x invariata");
+  ok2(/non agganciato/.test(await page.textContent("#hint")), "suggerimento: non agganciato");
+  // tasto M: snap spento e scelta ricordata
+  await key(page, "m");
+  assert.strictEqual(await page.evaluate(() => localStorage.getItem("shootAnalyzer.snap")), "0");
+  await clickAt(page, { x: 614, y: 146 });
+  g = (await S(page)).g;
+  near(g.shots[3].x, 614, 1, "snap spento: dove cliccato");
+  await key(page, "m");
+  // cerchio del calibro sotto il cursore: ⌀ = calibro alla scala della vista
+  const p = await screenOf(page, { x: 600, y: 300 });
+  await page.mouse.move(p.x, p.y);
+  const r = await page.evaluate(() => ({ r: window.__SA.caliberCursorR(), sc: window.__SA.state.view.scale }));
+  near(r.r, 7 / 2 * 4 * r.sc, 0.05, "raggio del cerchio del calibro");
+  await key(page, "1");
+  assert.strictEqual(await page.evaluate(() => window.__SA.caliberCursorR()), 0, "solo in modalità «Foro»");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

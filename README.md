@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.6.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.7.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -24,11 +24,11 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 
 1. **Carica la foto** (pulsante o trascinamento). Se è storta, **📐 Raddrizza**: clicca due punti su una linea del bersaglio. Se è di sbieco, **⬚ Prospettiva**: clicca i 4 angoli di un rettangolo di dimensioni note (es. il foglio A4): la foto viene appiattita e la scala è già impostata.
 2. **Scala**: clicca due punti a distanza nota, il più lontani possibile, e inserisci il valore.
-3. **Mira**: clicca il punto mirato. **Foro**: clicca il centro di ogni foro (la lente 🔍 aiuta).
-4. Imposta distanza di tiro, calibro (elenco o valore libero) e valore del click del mirino.
+3. **Mira**: clicca il punto mirato. **Foro**: clicca il centro di ogni foro (la lente 🔍 aiuta; con **🧲 Snap** il punto si aggancia al centro del foro). Nella tabella dei punti puoi segnare i **click di alzo e brandeggio** impostati per ogni foro.
+4. Imposta distanza di tiro (ogni gruppo ha la sua), calibro (elenco o valore libero) e valore del click del mirino.
 5. Leggi risultati e correzione; apri **📊 Grafici e confronto tra gruppi** (in fondo al pannello) per i grafici e il confronto; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (JSON).
 
-Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia tutti i dati di ricarica e condizioni del gruppo attivo). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
+Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i dati di ricarica e condizioni del gruppo attivo). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
 
 ### Funzioni
 
@@ -50,7 +50,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia tutti i dati di ricar
 - **Help tecnico** integrato: significato e formula di ogni termine, lettura dei grafici, guida alla correzione ed esempi svolti calcolati dall'app.
 - **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (in italiano `;` e virgola decimale, in inglese `,` e punto), sessione JSON.
 - **Lingua**: italiano (predefinito) o inglese, scelta ricordata; in inglese anche testo copiato, Result Card, CSV (`,` e punto decimale) e ZIP.
-- **Pannello a sezioni comprimibili**: all'apertura sono chiuse Orientamento e prospettiva, Parametri di tiro, Risultati, Zone di punteggio e Probabilità di colpire.
+- **Pannello a sezioni comprimibili**: all'apertura è aperta solo Calibrazione scala; Gruppi e Risultati si aprono da sole al primo punto inserito.
+- **Click di alzo e brandeggio per foro** (ripresi dal foro precedente) e **dope card**: click da impostare per distanza, dai gruppi della sessione e dello storico, filtrati per munizione; CSV e PNG da stampare. Solo le distanze tirate (niente interpolazione senza modello balistico).
+- **Carica e precisione**: CEP angolare per carica di polvere con gruppi combinati e intervallo di confidenza; una carica è indicata come migliore solo se il suo intervallo non si sovrappone alle altre (nessun «nodo armonico» dichiarato su gruppi piccoli).
+- **Snap al centro del foro** (riconoscimento della macchia vicino al clic, con controlli di plausibilità) e **cerchio del calibro** sul cursore per verificare la scala.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -121,11 +124,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (141 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (170 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (24 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (29 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```
