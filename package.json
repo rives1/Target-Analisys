@@ -1,6 +1,6 @@
 {
   "name": "shoot-analyzer",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "private": true,
   "description": "Analisi della dispersione dei colpi da foto di bersagli: un unico file HTML offline (src/index.html).",
   "license": "MIT",
@@ -8,7 +8,7 @@
   "repository": { "type": "git", "url": "https://github.com/rives1/Target-Analisys.git" },
   "scripts": {
     "test": "npm run test:calc && npm run test:ui",
-    "test:calc": "node tests/calc.test.js",
+    "test:calc": "node tests/calc.test.js && node tests/i18n.test.js",
     "test:ui": "node tests/ui.test.js"
   },
   "devDependencies": {

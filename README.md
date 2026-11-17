@@ -3,10 +3,11 @@
 Analisi della dispersione dei colpi da una foto del bersaglio: group size, raggio medio, statistiche, forma del gruppo,
 correzione in click del mirino, confronto tra gruppi e sessioni.
 
+**Italiano e inglese** (selettore in alto nel pannello; l'help tecnico è solo in italiano).
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.5.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.6.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -27,7 +28,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 4. Imposta distanza di tiro, calibro (elenco o valore libero) e valore del click del mirino.
 5. Leggi risultati e correzione; apri **📊 Grafici e confronto tra gruppi** (in fondo al pannello) per i grafici e il confronto; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (JSON).
 
-Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
+Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia tutti i dati di ricarica e condizioni del gruppo attivo). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
 
 ### Funzioni
 
@@ -47,7 +48,9 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo**. Per confrontare sessioni di
 - **Zone di punteggio** ISSF (10 m aria, 50 m carabina, 25/50 m pistola, 300 m) o personalizzate attorno al punto di mira, con **punteggio per foro** (bordo del foro, 10 interni, colpi sulla linea).
 - **Salvataggio automatico** nel browser con ripristino alla riapertura; **archivio** delle sessioni esportabile in un unico **ZIP** (JSON, foto, CSV, riepilogo).
 - **Help tecnico** integrato: significato e formula di ogni termine, lettura dei grafici, guida alla correzione ed esempi svolti calcolati dall'app.
-- **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (`;` e virgola decimale), sessione JSON.
+- **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (in italiano `;` e virgola decimale, in inglese `,` e punto), sessione JSON.
+- **Lingua**: italiano (predefinito) o inglese, scelta ricordata; in inglese anche testo copiato, Result Card, CSV (`,` e punto decimale) e ZIP.
+- **Pannello a sezioni comprimibili**: all'apertura sono chiuse Orientamento e prospettiva, Parametri di tiro, Risultati, Zone di punteggio e Probabilità di colpire.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -109,6 +112,7 @@ La correzione indica dove spostare il punto d'impatto (gruppo basso → click SU
 src/index.html                  l'applicazione (HTML + CSS + JS in un unico file)
 tests/calc.test.js              test del motore di calcolo  →  npm run test:calc
 tests/ui.test.js                test dell'interfaccia (Playwright)  →  npm run test:ui
+tests/i18n.test.js              traduzioni inglesi complete (incluso in npm run test:calc)
 package.json                    script di test (npm test = entrambi)
 .github/workflows/test.yml      GitHub Actions: tutti i test a ogni push (copia di riferimento in docs/ci/)
 index.html, .nojekyll           pagina iniziale di GitHub Pages (reindirizza a src/index.html)
@@ -119,7 +123,9 @@ CHANGELOG.md                    storia delle versioni
 
 Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (141 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
-L'interfaccia è collaudata end-to-end con Playwright (20 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+`tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
+(eseguito da `npm run test:calc`).
+L'interfaccia è collaudata end-to-end con Playwright (24 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

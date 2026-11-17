@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.6.0] - 2026-11-17
+### Aggiunto
+- **Lingua dell'interfaccia**: selettore «Italiano / English» in alto nel pannello; predefinito italiano, scelta ricordata
+  nel browser. Il cambio è immediato, senza ricaricare la pagina e senza perdere il lavoro. In inglese sono tradotti
+  interfaccia, suggerimenti, messaggi, risultati, tabella punti, vista grafici e confronto, Result Card, testo copiato,
+  CSV, nomi dei file esportati, contenuto dello ZIP e guida rapida. L'**help tecnico resta in italiano** (scelta
+  concordata), con un avviso in inglese; i suoi esempi calcolati restano in formato italiano.
+  - Numeri e date seguono la lingua: in inglese punto decimale, date `gg/mm/aaaa` (en-GB), CSV con separatore `,` e punto
+    decimale (formato di Excel in inglese); in italiano invariati (`;` e virgola).
+  - Sigle della bussola in inglese (W al posto di O), direzioni della correzione UP/DOWN/LEFT/RIGHT (nella tabella
+    punti UP, DOWN, L, R).
+  - I nomi automatici dei gruppi («Gruppo 2» / «Group 2») seguono la lingua; quelli scritti dall'utente no.
+- Test: 4 nuovi test dell'interfaccia (24): stato delle sezioni all'apertura, copia dei dati nel nuovo gruppo, percorso
+  completo in inglese (nessun testo senza traduzione, nessuna parola italiana nei pannelli, CSV e ZIP in inglese, help in
+  italiano, lingua ricordata dopo la riapertura), cambio di lingua a lavoro aperto.
+- `tests/i18n.test.js` (eseguito con `npm run test:calc`): ogni testo del codice passato a `_t`/`_T` deve avere la
+  traduzione inglese con gli stessi segnaposto.
+### Modificato
+- **Sezioni del pannello comprimibili** (clic sul titolo). All'apertura dell'app sono **chiuse** Orientamento e
+  prospettiva, Parametri di tiro, Risultati, Zone di punteggio e Probabilità di colpire; aperte Calibrazione scala, Gruppi,
+  Ricarica e condizioni, Punti del gruppo attivo e Dati.
+- **Nuovo gruppo**: copia **tutti** i dati di ricarica e condizioni del gruppo attivo, compresi colpi sparati,
+  scaldacanna e note (prima solo munizione e condizioni).
+
 ## [1.5.0] - 2026-11-16
 ### Aggiunto
 - **Salvataggio automatico** nel browser (IndexedDB) 1,2 s dopo ogni modifica e quando la pagina viene nascosta: sessione

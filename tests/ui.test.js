@@ -33,8 +33,11 @@ async function openApp(context) {
   page.on("request", r => { if (!/^(file|data|blob):/.test(r.url())) page.problems.push("rete: " + r.url()); });
   await page.goto(APP_URL);
   await page.waitForFunction(() => window.__SA && window.__SA.state);
+  await expandAll(page);
   return page;
 }
+/** Dalla 1.6.0 alcune sezioni del pannello partono chiuse: i test le aprono tutte (i comandi devono essere visibili). */
+const expandAll = page => page.evaluate(() => document.querySelectorAll("#side details").forEach(d => { d.open = true; }));
 /** Bersaglio sintetico 800×600: griglia ogni 20 px (= 5 mm con la scala dei test), bordo nero. */
 async function loadTarget(page, name = "bersaglio.png") {
   const dataUrl = await page.evaluate(() => {
@@ -174,7 +177,7 @@ test("lente: ingrandimento dal menu, Shift+rotella, scelta ricordata", async pag
   const scale0 = await page.evaluate(() => window.__SA.state.view.scale);
   await page.mouse.wheel(0, -120);
   assert.ok(await page.evaluate(() => window.__SA.state.view.scale) > scale0, "la rotella senza Shift resta lo zoom");
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   assert.strictEqual((await S(page)).loupeZoom, 12, "ingrandimento ricordato dopo il ricaricamento");
   assert.strictEqual(await page.inputValue("#loupeZoom"), "12");
 });
@@ -233,7 +236,7 @@ test("sessione con foto ruotata: salvataggio e ricaricamento", async page => {
   const o = JSON.parse(sess);
   assert.strictEqual(o.format, 2); assert.strictEqual(o.rotation, 30);
   const before = await S(page);
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.evaluate(t => window.__SA.loadSessionText(t), sess);
   const after = await S(page);
   assert.strictEqual(after.rot, 30);
@@ -282,13 +285,13 @@ test("icona della scheda (SVG e PNG incorporati)", async page => {
 });
 
 /** Legge un CSV «italiano» (; e virgolette RFC 4180) in righe di celle. */
-function parseCsv(t) {
+function parseCsv(t, sep = ";") {
   const rows = []; let row = [], cell = "", q = false;
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
     if (q) { if (ch === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += ch; }
     else if (ch === '"') q = true;
-    else if (ch === ";") { row.push(cell); cell = ""; }
+    else if (ch === sep) { row.push(cell); cell = ""; }
     else if (ch === "\r" && t[i + 1] === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; i++; }
     else cell += ch;
   }
@@ -433,7 +436,7 @@ test("prospettiva: sessione salvata e ricaricata, Esc e Backspace", async page =
   const o = JSON.parse(sess);
   assert.strictEqual(o.format, 3); assert.strictEqual(o.persp.wMm, 297);
   const before = await S(page);
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.evaluate(t => window.__SA.loadSessionText(t), sess);
   await waitBase(page);
   const after = await S(page);
@@ -472,7 +475,7 @@ test("probabilità di colpire: cerchio, rettangolo, altra distanza, testo e sess
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Prob\. di colpire: rettangolo 10,0 × 10,0 cm a 200 m: ([<>] )?\d/);
   // parametri nella sessione
   const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.evaluate(t => window.__SA.loadSessionText(t), sess);
   assert.strictEqual(await page.inputValue("#hitShape"), "rect");
   assert.strictEqual(await page.inputValue("#hitDist"), "200");
@@ -549,7 +552,7 @@ test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione
   assert.match(sc2, /personalizzato/);
   // nella sessione
   const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.evaluate(t => window.__SA.loadSessionText(t), sess);
   assert.strictEqual(await page.inputValue("#scoreTarget"), "custom");
   assert.strictEqual(await page.inputValue("#scoreD10"), "20");
@@ -560,7 +563,7 @@ test("salvataggio automatico (IndexedDB): proposta di ripristino, Ripristina, Ig
   await setupGroup(page, POA, SHOTS);
   await page.waitForFunction(() => /Salvato automaticamente/.test(document.getElementById("autosaveInfo").textContent), null, { timeout: 5000 });
   const before = await S(page);
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.waitForSelector("#restoreBar:not([hidden])");
   assert.match(await page.textContent("#restoreText"), /bersaglio\.png, 1 gruppo, 5 fori/);
   await page.click("#bRestore");
@@ -569,19 +572,19 @@ test("salvataggio automatico (IndexedDB): proposta di ripristino, Ripristina, Ig
   assert.deepStrictEqual(after.g.shots, before.g.shots); assert.deepStrictEqual(after.calib, before.calib);
   // dopo il ripristino il lavoro resta «non salvato»: al prossimo avvio la proposta ricompare; Ignora la chiude
   await page.waitForTimeout(1500);
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.waitForSelector("#restoreBar:not([hidden])");
   await page.click("#bRestoreIgnore");
   ok2(await page.isHidden("#restoreBar") && !(await page.evaluate(() => window.__SA.state.image)), "Ignora: nessun ripristino");
   // con la sessione salvata su file, al riavvio non c'è niente da ripristinare
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.waitForSelector("#restoreBar:not([hidden])");
   await page.click("#bRestore");
   await page.waitForFunction(() => window.__SA.state.image);
   await page.evaluate(() => { window.showSaveFilePicker = undefined; });
   await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
   await page.waitForFunction(() => /sessione salvata su file/.test(document.getElementById("autosaveInfo").textContent), null, { timeout: 5000 });
-  await page.reload(); await page.waitForFunction(() => window.__SA);
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
   await page.waitForTimeout(500);
   ok2(await page.isHidden("#restoreBar"), "nessuna proposta dopo il salvataggio su file");
 });
@@ -642,6 +645,151 @@ test("archivio delle sessioni ed esportazione ZIP", async page => {
   ok2(await page.isDisabled("#bZip"), "ZIP disattivato con archivio vuoto");
 });
 
+
+/* ------------------------------ 1.6.0 ------------------------------ */
+test("sezioni comprimibili: stato all'apertura dell'app", async page => {
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  const st = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#side details")].map(d => [d.id, d.open])));
+  for (const id of ["sec-params", "sec-orient", "sec-results", "sec-score", "sec-hit"]) assert.strictEqual(st[id], false, `${id} chiusa all'avvio`);
+  for (const id of ["sec-calib", "sec-groups", "sec-load", "sec-points", "sec-data"]) assert.strictEqual(st[id], true, `${id} aperta all'avvio`);
+  assert.strictEqual(st["sec-guide"], false, "guida rapida chiusa");
+  ok2(await page.isHidden("#shotDist"), "campo nascosto con la sezione chiusa");
+  await page.click("#sec-params > summary");
+  ok2(await page.isVisible("#shotDist"), "la sezione si apre col clic sul titolo");
+  await page.click("#sec-groups > summary");
+  ok2(await page.isHidden("#bAddGroup"), "anche le sezioni aperte si chiudono");
+});
+
+test("nuovo gruppo: copia tutti i dati di ricarica e condizioni del gruppo attivo", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const vals = { "#ld-date": "2026-11-17", "#ld-case": "Lapua 3x", "#ld-powder": "N140", "#ld-charge": "44.5", "#ld-bullet": "SMK 168",
+    "#ld-primer": "CCI BR2", "#ld-temp": "12", "#ld-wind": "3", "#ld-shotsTotal": "7", "#ld-foulers": "2", "#ld-notes": "nota di prova" };
+  for (const [sel, v] of Object.entries(vals)) await setField(page, sel, v);
+  await page.selectOption("#ld-windDir", "9"); await page.dispatchEvent("#ld-windDir", "change");
+  const g1 = (await S(page)).g;
+  await page.click("#bAddGroup");
+  const s2 = await S(page);
+  assert.strictEqual(s2.ngroups, 2);
+  assert.notStrictEqual(s2.g.id, g1.id);
+  assert.deepStrictEqual(s2.g.load, g1.load, "tutti i campi copiati, anche colpi, scaldacanna e note");
+  assert.strictEqual(s2.g.load.notes, "nota di prova"); assert.strictEqual(s2.g.load.shotsTotal, "7"); assert.strictEqual(s2.g.load.foulers, "2");
+  assert.strictEqual(await page.inputValue("#ld-notes"), "nota di prova", "il form mostra i dati copiati");
+  // copia, non riferimento: cambiare il nuovo gruppo non tocca il primo
+  await setField(page, "#ld-notes", "solo nel secondo");
+  const all = await page.evaluate(() => window.__SA.state.groups.map(g => g.load.notes));
+  assert.deepStrictEqual(all, ["nota di prova", "solo nel secondo"]);
+});
+
+const ITALIAN = /\b(il|lo|della|delle|dei|degli|del|gruppo|gruppi|[Cc]olpi|[Cc]olpo|[Ff]ori|[Ff]oro|non|sono|con|che|[Nn]essun[ao]?|[Cc]licca|[Cc]arica|[Ss]alva|[Ss]essione|[Pp]unteggio|Gruppo|Punti|Mira|mira|ore \d|Raggio|Distanza|Bersaglio|bersaglio da)\b/;
+test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, scelta ricordata", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  assert.strictEqual(await page.inputValue("#langSel"), "it", "italiano predefinito");
+  await page.selectOption("#langSel", "en");
+  assert.strictEqual(await page.evaluate(() => document.documentElement.lang), "en");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Results");
+  assert.strictEqual((await page.textContent("#bLoad")).trim(), "📂 Load photo");
+  assert.strictEqual(await page.getAttribute("#bUndo", "title"), "Undo (Ctrl+Z)");
+  // lavoro completo in inglese
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await page.selectOption("#scoreTarget", "issf50r"); await page.dispatchEvent("#scoreTarget", "change");
+  await setField(page, "#ld-charge", "42.5"); await setField(page, "#ld-notes", "test note"); await setField(page, "#ld-humidity", "55");
+  await page.selectOption("#ld-windDir", "3"); await page.dispatchEvent("#ld-windDir", "change");
+  const s1 = await S(page);
+  assert.strictEqual(s1.g.name, "Group 1", "nome automatico del gruppo in inglese");
+  const side = await page.innerText("#sideScroll");
+  ok2(/Group size \(c-c\)/.test(side) && /Score/.test(side) && /Probability per shot/.test(side), "risultati in inglese");
+  assert.ok(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun testo italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
+  ok2(/\b\d+\.\d+ mm\b/.test(side), "punto decimale nei numeri");
+  const txt = await page.evaluate(() => window.__SA.resultText());
+  ok2(/Mean radius:/.test(txt) && /Hit probability:/.test(txt) && /Score \(ISSF 50 m rifle\)/.test(txt), "testo copiato in inglese");
+  assert.ok(!ITALIAN.test(txt.replace(/bersaglio\.png/g, "")), "nessun italiano nel testo: " + (txt.match(ITALIAN) || [""])[0]);
+  // secondo gruppo, vista grafici e confronto
+  await page.click("#bAddGroup");
+  assert.strictEqual((await S(page)).g.name, "Group 2");
+  await clickAt(page, { x: 300, y: 400 });
+  await key(page, "4"); for (const p of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, p);
+  await key(page, "a");
+  await page.waitForFunction(() => window.__SA.anaOpen());
+  const ana = await page.textContent("#anaView");
+  ok2(/Group comparison/.test(ana) && /Trend over time/.test(ana), "vista grafici in inglese");
+  assert.ok(!ITALIAN.test(ana.replace(/bersaglio\.png/g, "")), "nessun italiano nella vista grafici: " + (ana.match(ITALIAN) || [""])[0]);
+  await key(page, "Escape");
+  // Result Card (testo disegnato sul canvas: le chiavi passano comunque dal dizionario)
+  await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
+  // CSV in formato inglese: virgola come separatore, punto decimale
+  const f = await download(page, "#bCsvShots");
+  assert.match(f.name, /^bersaglio_shots_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  const R = parseCsv(f.text.slice(1), ",");
+  ok2(R.length === 9 && R.every(r => r.length === R[0].length), "8 fori + intestazione, colonne allineate");
+  const col = n => R[0].indexOf(n);
+  ok2(col("X from the point of aim (mm)") >= 0 && col("Points") >= 0, "intestazioni in inglese");
+  assert.match(R[1][col("X from the point of aim (mm)")], /^-?\d+\.\d{3}$/, "punto decimale");
+  assert.strictEqual(R[1][col("Horizontal direction")], "LEFT");
+  assert.strictEqual(R[1][col("Excluded")], "no");
+  const g = await download(page, "#bCsvGroups");
+  const G = parseCsv(g.text.slice(1), ",");
+  assert.strictEqual(G[1][G[0].indexOf("Charge (gr)")], "42.5");
+  assert.strictEqual(G[1][G[0].indexOf("Notes")], "test note");
+  // sessione, archivio e ZIP con nomi in inglese
+  await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
+  await page.waitForFunction(() => /^1 session archived/.test(document.getElementById("archiveInfo").textContent), null, { timeout: 5000 });
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bZip")]);
+  assert.match(dl.suggestedFilename(), /^shoot-analyzer_archive_/);
+  const Z = readZip(require("fs").readFileSync(await dl.path()));
+  const names = Object.keys(Z);
+  ok2(names.includes("README.txt") && names.includes("groups_summary.csv"), "file alla radice in inglese");
+  ok2(names.some(n => /\/session\.json$/.test(n)) && names.some(n => /\/shots\.csv$/.test(n)) && names.some(n => /\/groups\.csv$/.test(n)), "file di sessione in inglese");
+  ok2(/CSV in English format/.test(Z["README.txt"].toString("utf8")), "LEGGIMI in inglese");
+  // help tecnico: resta in italiano, con avviso
+  await key(page, "h");
+  await page.waitForFunction(() => window.__SA.helpOpen());
+  ok2(await page.isVisible("#helpLangNote"), "avviso: help solo in italiano");
+  ok2(/Glossario A–Z/.test(await page.innerText("#helpView .help-body")), "corpo dell'help in italiano");
+  assert.strictEqual((await page.textContent("#bHelpClose")).trim(), "← Back to analysis");
+  assert.match(await page.textContent('#helpView [data-ex="c5"]'), /^\d,\d+$/, "esempi dell'help con la virgola decimale (italiano)");
+  await key(page, "Escape");
+  // nessuna chiave senza traduzione incontrata in tutto il percorso
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+  // la scelta resta dopo la riapertura (anche la barra di ripristino è in inglese)
+  await page.evaluate(() => window.__SA.doAutosave());
+  await page.evaluate(() => { const s = window.__SA.state; s.groups[0].shots.push({ id: 999, x: 1, y: 1 }); window.__SA.commit(); });
+  await page.evaluate(() => window.__SA.doAutosave());
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  assert.strictEqual(await page.inputValue("#langSel"), "en", "lingua ricordata");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Results");
+  await page.waitForSelector("#restoreBar:not([hidden])", { timeout: 5000 });
+  assert.match(await page.textContent("#restoreText"), /Unsaved work found/);
+  await page.click("#bRestoreIgnore");
+  // ritorno all'italiano senza ricaricare
+  await page.selectOption("#langSel", "it");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Risultati");
+  assert.strictEqual(await page.getAttribute("#bUndo", "title"), "Annulla (Ctrl+Z)");
+  assert.strictEqual(await page.evaluate(() => localStorage.getItem("shootAnalyzer.lang")), "it");
+});
+
+test("cambio lingua a lavoro aperto: pannelli e menu ridisegnati", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  ok2(/Raggio medio/.test(await page.innerText("#results")), "risultati in italiano");
+  await page.selectOption("#langSel", "en");
+  const res = await page.innerText("#results");
+  ok2(/Mean radius/.test(res) && !/Raggio medio/.test(res), "risultati ridisegnati in inglese");
+  ok2(/From aim/.test(await page.innerText("#points")), "tabella punti in inglese");
+  assert.strictEqual(await page.textContent('#ld-windDir option[value="12"]'), "12 o'clock (headwind)");
+  assert.match(await page.textContent('#caliberPreset optgroup[label="Rifle"] option'), /\.17 HMR/);
+  assert.strictEqual((await S(page)).g.name, "Group 1", "nome automatico del gruppo tradotto");
+  const dir = await page.evaluate(() => [...document.querySelectorAll("#points td")].map(td => td.textContent).find(t => /°/.test(t)));
+  ok2(dir && !/O/.test(dir.replace(/[^A-Z]/g, "")), "sigle della bussola in inglese (W, non O): " + dir);
+  await page.selectOption("#langSel", "it");
+  ok2(/Raggio medio/.test(await page.innerText("#results")), "di nuovo in italiano");
+  assert.strictEqual((await S(page)).g.name, "Gruppo 1");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
@@ -650,6 +798,7 @@ test("archivio delle sessioni ed esportazione ZIP", async page => {
   const browser = await chromium.launch(opts);
   let failed = 0;
   for (const t of tests) {
+    if (process.env.UI_ONLY && !new RegExp(process.env.UI_ONLY).test(t.name)) continue;   // es. UI_ONLY=lingua
     const context = await browser.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true });
     const page = await openApp(context);
     try {
