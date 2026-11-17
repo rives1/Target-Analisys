@@ -359,4 +359,49 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.analyze([{ x: 0, y: 0 }, { x: 4, y: 0 }], null, { pxPerMm: 2 }).hull, undefined, "con 2 fori nessun hull");
 }
 
+// --- 1.9.0: densità normale bivariata, bersaglio di prova, abbinamento dei punti
+{
+  const P = [{ x: 0, y: 0 }, { x: 4, y: 1 }, { x: 1, y: 3 }, { x: 3, y: 4 }, { x: 2, y: 2 }];
+  const C = Calc.covariance(P);
+  near(C.cx, 2, 1e-12, "covarianza: centro x"); near(C.sxx, 2.5, 1e-12, "varianza x (n−1)"); near(C.sxy, 0.75, 1e-12, "covarianza xy");
+  const f = Calc.bvnDensity(C);
+  // integrale numerico della densità ≈ 1 (griglia fine su ±8σ)
+  let I = 0; const h = 0.05; for (let x = -12; x <= 16; x += h) for (let y = -12; y <= 16; y += h) I += f(x, y) * h * h;
+  near(I, 1, 1e-3, "la densità integra a 1");
+  near(f(C.cx, C.cy), f.peak, 1e-15, "massimo al centro");
+  near(f(C.cx, C.cy), 1 / (2 * Math.PI * Math.sqrt(C.sxx * C.syy - C.sxy ** 2)), 1e-15, "valore al centro = 1/(2π√|Σ|)");
+  eq(Calc.bvnDensity(Calc.covariance([{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 2 }])), null, "fori allineati: covarianza singolare");
+  eq(Calc.covariance(P.slice(0, 2)), null, "meno di 3 fori");
+  // bersaglio di prova: deterministico, fori separati e nel riquadro
+  const T1 = Calc.testTarget(4321), T2 = Calc.testTarget(4321), T3 = Calc.testTarget(4322);
+  eq(JSON.stringify(T1.pts), JSON.stringify(T2.pts), "stesso codice, stessi fori");
+  ok(JSON.stringify(T1.pts) !== JSON.stringify(T3.pts), "codice diverso, fori diversi");
+  eq(T1.pts.length, 5, "5 fori");
+  ok(T1.pts.every((p, i) => T1.pts.every((q, j) => i === j || Calc.dist(p, q) >= 15)), "fori separati di almeno 15 mm");
+  let fails = 0;
+  for (let c = 1000; c <= 9999; c += 7) for (const n of [5, 10]) { const T = Calc.testTarget(c, n); if (T.pts.length !== n || T.pts.some(p => Math.hypot(p.x, p.y) > 70 || Math.hypot(p.x, p.y) < 12)) fails++; }
+  eq(fails, 0, "tutti i codici producono 5 e 10 fori validi");
+  ok(T1.pts.every(p => Math.hypot(p.x, p.y) <= 70), "fori entro 70 mm dalla mira");
+  // abbinamento: permutazione nota con piccolo rumore
+  const B = [T1.pts[3], T1.pts[0], T1.pts[4], T1.pts[1], T1.pts[2]].map(p => ({ x: p.x + 0.3, y: p.y - 0.2 }));
+  eq(JSON.stringify(Calc.matchPoints(T1.pts, B)), JSON.stringify([1, 3, 4, 0, 2]), "abbinamento ottimo");
+  eq(Calc.matchPoints([{ x: 0, y: 0 }], []), null, "insiemi di dimensione diversa");
+  // verifica del bersaglio: misura esatta, poi scala +2% e rotazione di 3° attorno al centro gruppo
+  const V0 = Calc.verifyTarget(T1.pts, B.map(p => ({ x: p.x - 0.3, y: p.y + 0.2 })));
+  near(V0.rms, 0, 1e-9, "misura esatta: RMS 0"); near(V0.scale, 1, 1e-12, "misura esatta: scala 1"); near(V0.rotDeg, 0, 1e-9, "misura esatta: rotazione 0");
+  const cT = Calc.centroid(T1.pts), th = 3 * Math.PI / 180;
+  const M2 = T1.pts.map(p => { const x = (p.x - cT.x) * 1.02, y = (p.y - cT.y) * 1.02; return { x: cT.x + x * Math.cos(th) - y * Math.sin(th), y: cT.y + x * Math.sin(th) + y * Math.cos(th) }; });
+  const V2 = Calc.verifyTarget(T1.pts, M2.slice().reverse());
+  near(V2.scale, 1.02, 1e-9, "scala +2% riconosciuta"); near(V2.rotDeg, 3, 1e-9, "rotazione di 3° riconosciuta (antioraria)");
+  near(V2.shift.x, 0, 1e-9, "centro gruppo invariato"); near(V2.es.m / V2.es.t, 1.02, 1e-9, "ES scala con la foto");
+  const V3 = Calc.verifyTarget([{ x: 0, y: 0 }, { x: 10, y: 0 }], [{ x: 1, y: 0 }, { x: 11, y: 0 }]);
+  near(V3.rms, 1, 1e-12, "traslazione di 1 mm: RMS 1"); near(V3.shift.x, 1, 1e-12, "spostamento della mira"); near(V3.scale, 1, 1e-12, "la traslazione non cambia la scala");
+  // holdover: FFP = nominale; SFP a metà ingrandimento = metà lettura; segni delle tacche opposti
+  const H1 = Calc.holdover(2, -0.5, { unit: "MIL", plane: "FFP" });
+  near(H1.v, 2, 1e-12, "FFP: 2 MIL"); near(H1.markY, -2, 1e-12, "serve alzo: tacca sotto"); near(H1.markX, 0.5, 1e-12, "serve sinistra: tacca a destra");
+  const H2 = Calc.holdover(2, 0, { unit: "MIL", plane: "SFP", calibMag: 10, mag: 5 });
+  near(H2.v, 1, 1e-12, "SFP a 5× tarato a 10×: lettura 1 MIL"); near(H2.factor, 0.5, 1e-12, "fattore SFP");
+  near(Calc.holdover(1, 0, { unit: "MOA" }).v, 3.43774677, 1e-6, "1 MIL = 3,4377 MOA");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

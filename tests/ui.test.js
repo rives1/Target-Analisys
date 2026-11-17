@@ -1132,6 +1132,129 @@ test("report PDF: file valido, una o più pagine, nome e contenuto", async page 
   assert.strictEqual(await page.evaluate(() => document.documentElement.dataset.theme), theme1, "tema ripristinato dopo il report");
 });
 
+/* ------------------------------ 1.9.0 ------------------------------ */
+const canvasSig = page => page.evaluate(() => { const c = document.getElementById("canvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
+  let h = 0; for (let i = 0; i < d.length; i += 97) h = (h * 31 + d[i]) >>> 0; return h; });
+test("heatmap di densità, grafico polare e densità 3D ruotabile", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const s0 = await canvasSig(page);
+  await page.check("#heatOn"); await page.waitForTimeout(100);
+  ok2(await canvasSig(page) !== s0, "la heatmap cambia l'immagine");
+  ok2(await page.evaluate(() => { const S = window.__SA; return !!S.heatImage(S.state.groups[0]); }), "immagine della densità");
+  ok2(await page.evaluate(() => window.__SA.buildSession().params.heatOn === true), "scelta salvata nella sessione");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.polar.length), 10, "polare: 5 fori nel cerchio + 5 nello srotolato");
+  // angolo del primo foro: dal centro gruppo, 0° = in alto, senso orario
+  const exp = await page.evaluate(() => { const { state, Calc } = window.__SA, g = state.groups[0], c = Calc.centroid(g.shots), s = g.shots[0];
+    return ((Math.atan2(s.x - c.x, c.y - s.y) * 180 / Math.PI) + 360) % 360; });
+  const tip = await page.evaluate(() => window.__SA.CH.hits.polar[0].tip);
+  ok2(tip.includes(`${Math.round(exp)}°`), `angolo nel tooltip: ${tip} vs ${exp}`);
+  ok2(/R95/.test(await page.textContent("#chPolarNote")), "legenda del polare");
+  await page.locator("#ch3d").scrollIntoViewIfNeeded();
+  const box = await page.locator("#ch3d").boundingBox();
+  const az0 = await page.evaluate(() => window.__SA.VIEW3D.az);
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 4 }); await page.mouse.up();
+  ok2(await page.evaluate(() => window.__SA.VIEW3D.az) !== az0, "trascinando la superficie ruota");
+  await page.dblclick("#ch3d");
+  assert.strictEqual(await page.evaluate(() => window.__SA.VIEW3D.az), az0, "doppio clic: vista iniziale");
+});
+
+test("confronto visivo tra rosate: sovrapposte, affiancate, origine e unità", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
+  for (const q of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, q);
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual((await page.$$("#visList input[type=checkbox]")).length, 2, "un gruppo per riga");
+  assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.vis.length), 5 + 1 + 3 + 1, "fori e centri di entrambi");
+  // origine = mira, mm: il primo foro è 120 px = 30 mm a destra e 2,5 mm sopra la mira
+  let V = await page.evaluate(() => window.__SA.visData());
+  near(V.groups[0].P[0].x, 30, 0.01, "x in mm dalla mira"); near(V.groups[0].P[0].y, 2.5, 0.01, "y in mm dalla mira");
+  const h0 = await page.evaluate(() => document.getElementById("chVis").height);
+  await page.selectOption("#visLayout", "side");
+  ok2(await page.evaluate(() => document.getElementById("chVis").height) !== h0, "affiancate: un riquadro per gruppo");
+  await page.selectOption("#visRef", "c"); await page.selectOption("#visUnit", "MOA");
+  V = await page.evaluate(() => window.__SA.visData());
+  const c = await page.evaluate(() => { const { state, Calc } = window.__SA, g = state.groups[0], k = 4, c = Calc.centroid(g.shots), s = g.shots[0];
+    return Calc.fromRad(Math.atan((s.x - c.x) / k / 100000), "MOA"); });
+  near(V.groups[0].P[0].x, c, 1e-6, "MOA dal centro gruppo con la distanza del gruppo");
+  near(V.groups[0].c.x, 0, 1e-9, "centro gruppo nell'origine");
+  await page.uncheck("#visList input[type=checkbox] >> nth=1");
+  assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.vis.length), 6, "deselezionato: solo il primo gruppo");
+  ok2(await page.evaluate(() => window.__SA.buildSession().params.visRef === "c"), "scelte nella sessione");
+});
+
+test("reticolo e holdover: tacche, torrette, SFP, MOA, direzione e PNG", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  for (let i = 0; i < 5; i++) await setDialCell(page, i, "dv", 10);
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await page.selectOption("#rtSrc", "active");
+  const d = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[0], r = Calc.dope(g.shots, g.poa, calcContext(g)); return { v: r.v.mil, h: r.h.mil }; });
+  const cells = async () => (await page.$$eval("#rtBody tbody tr td", tds => tds.map(t => t.textContent.trim()))).map(t => parseFloat(t.replace(",", ".").replace("+", "")));
+  let r = await cells();
+  near(r[1], d.v, 0.006, "alzo necessario = dope"); near(r[3], Math.abs(d.v), 0.006, "tacca verticale FFP = nominale");
+  near(r[2], d.h, 0.006, "brandeggio = dope");
+  // mira 31 mm a sinistra del gruppo: serve correggere a sinistra → tacca a destra; alzo + → tacca sotto
+  const hit = await page.evaluate(() => { const c = document.getElementById("chReticle"), h = window.__SA.CH.hits.reticle[0]; return { x: h.x, y: h.y, cx: c.clientWidth / 2, cy: c.clientHeight / 2 }; });
+  ok2(d.v > 0 ? hit.y > hit.cy : hit.y < hit.cy, "alzo: tacca dalla parte opposta");
+  ok2(d.h < 0 ? hit.x > hit.cx : hit.x < hit.cx, "brandeggio: tacca dalla parte opposta");
+  await setField(page, "#rtDialV", 5);
+  r = await cells(); near(r[1], d.v - 0.5, 0.006, "5 click già sulla torretta: 0,5 MIL in meno");
+  await page.selectOption("#rtPlane", "SFP"); await setField(page, "#rtCal", 10); await setField(page, "#rtMag", 5);
+  ok2(await page.isVisible("#rtCal"), "campi SFP visibili");
+  r = await cells(); near(r[3], Math.abs(d.v - 0.5) * 0.5, 0.006, "SFP a metà ingrandimento: lettura dimezzata");
+  await page.selectOption("#rtPlane", "FFP"); await page.selectOption("#rtType", "moahash");
+  r = await cells(); near(r[3], Math.abs(d.v - 0.5) * 3.43775, 0.01, "reticolo MOA: tacca in MOA");
+  ok2(!(await page.isVisible("#rtStep")), "campi del personalizzato nascosti");
+  await page.selectOption("#rtType", "custom"); ok2(await page.isVisible("#rtStep"), "personalizzato: passo visibile");
+  await page.uncheck("#rtWind"); r = await cells(); near(r[2], 0, 1e-9, "senza brandeggio");
+  ok2(/sotto il centro|sopra il centro/.test(await page.textContent("#rtBody")), "istruzione a parole");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bRtPng")]);
+  assert.match(dl.suggestedFilename(), /^reticolo_.*\.png$/);
+  ok2(require("fs").statSync(await dl.path()).size > 5000, "PNG non vuoto");
+});
+
+test("bersaglio di autoverifica: PDF, foto del bersaglio stampato, misura e verifica", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await page.selectOption("#ttN", "5");
+  const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bTtPdf")]);
+  const code = +(await page.inputValue("#ttCode"));
+  ok2(code >= 1000 && code <= 9999, "codice nuovo");
+  assert.strictEqual(dl.suggestedFilename(), `bersaglio_prova_SA-${code}.pdf`);
+  const buf = require("fs").readFileSync(await dl.path());
+  assert.strictEqual(checkPdf(buf), 1, "una pagina");
+  ok2(buf.toString("latin1").includes("/Width 2480 /Height 3508"), "A4 a 300 dpi");
+  // «foto» del bersaglio stampato: lo stesso disegno a 100 dpi
+  const DPI = 100, k = DPI / 25.4;
+  const dataUrl = await page.evaluate(([c, d]) => window.__SA.testTargetCanvas(c, 5, 7.62, d).toDataURL("image/png"), [code, DPI]);
+  await page.setInputFiles("#fImg", { name: "prova.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 827);
+  await page.selectOption("#caliberUnit", "mm"); await setField(page, "#caliber", 7.62);
+  await key(page, "2"); await clickAt(page, { x: 55 * k, y: 222 * k }); await clickAt(page, { x: 155 * k, y: 222 * k });
+  await setField(page, "#calDist", 100); await page.selectOption("#calUnit", "mm");
+  const C = await page.evaluate(() => window.__SA.TT_C);
+  await key(page, "3"); await clickAt(page, { x: C.x * k, y: C.y * k });
+  const T = await page.evaluate(c => window.__SA.Calc.testTarget(c, 5).pts, code);
+  for (const q of [...T].reverse()) await clickAt(page, { x: (C.x + q.x) * k + 2, y: (C.y - q.y) * k - 2 });   // clic un po' fuori centro: lo snap li riporta
+  await page.click("#bTtCheck");
+  const txt = await page.textContent("#ttResult");
+  ok2(/Misura coerente/.test(txt), "verifica superata: " + txt.slice(0, 300));
+  const rows = await page.$$eval("#ttResult table.tt:first-of-type tr td.x", tds => tds.map(t => t.textContent));
+  near(parseFloat(rows[0].replace(",", ".")), 1, 0.01, "rapporto di scala ≈ 1");
+  ok2(parseFloat(rows[1].replace(",", ".")) < 0.5, "RMS < 0,5 mm");
+  // codice sbagliato: le posizioni non tornano
+  await page.fill("#ttCode", String(code === 9999 ? 1000 : code + 1)); await page.click("#bTtCheck");
+  ok2(/da rivedere/.test(await page.textContent("#ttResult")), "codice diverso: misura da rivedere");
+  await page.fill("#ttCode", "12"); await page.click("#bTtCheck");
+  ok2(/Inserisci il codice/.test(await page.textContent("#ttResult")), "codice non valido");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
@@ -1146,7 +1269,7 @@ test("report PDF: file valido, una o più pagine, nome e contenuto", async page 
     try {
       await t.fn(page);
       await page.waitForTimeout(50);   // lascia arrivare eventuali errori asincroni (disegno, toast)
-      assert.deepStrictEqual(page.problems, [], "errori o richieste di rete");
+      assert.deepStrictEqual(page.problems, [], "errori o richieste di rete: " + JSON.stringify(page.problems).slice(0, 400));
       console.log("  ✓ " + t.name);
     } catch (e) {
       failed++;

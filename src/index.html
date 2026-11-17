@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.8.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.9.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -237,6 +237,16 @@
   .chart .key { display: inline-block; width: 14px; height: 0; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
   .chart .key.dash { border-top-style: dashed; }
   .chart .key.dashdot { border-top-style: dotted; }
+  .chart .key.dot2 { border-top-style: dotted; border-top-width: 3px; }
+  /* 1.9.0: confronto visivo, autoverifica */
+  .rt-opt { display: inline-flex; } .rt-opt[hidden] { display: none; }
+  #visList { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 6px 0; font-size: 12.5px; }
+  .vis-it { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  .vis-it .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-sizing: border-box; }
+  .tt-msg { margin: 6px 0; padding: 6px 8px; border-radius: 6px; font-size: 12.5px; background: var(--chip, rgba(127,127,127,.12)); }
+  .tt-msg.ok { background: rgba(22,163,74,.14); }
+  .tt-msg.warn { background: rgba(220,38,38,.13); }
+  table.tt { font-size: 12px; margin: 4px 0; }
   #chTip { position: fixed; display: none; pointer-events: none; z-index: 20; background: #111827; color: #fff; font-size: 12px;
     padding: 5px 8px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.3); max-width: 320px; }
   .res .sub2 { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; padding-top: 6px; }
@@ -425,6 +435,9 @@
           <label for="hullOn" title="Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)"><input type="checkbox" id="hullOn"> Convex hull (poligono attorno ai fori)</label>
         </div>
         <div class="row">
+          <label for="heatOn" title="Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati"><input type="checkbox" id="heatOn"> Heatmap della densità</label>
+        </div>
+        <div class="row">
           <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
           <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
         </div>
@@ -566,6 +579,17 @@
           <button class="btn" id="bArchClear">Svuota archivio</button>
         </div>
         <input type="file" id="fArch" accept=".json,application/json" multiple hidden>
+        <div style="margin-top:12px;font-weight:600;font-size:13px">Bersaglio di autoverifica</div>
+        <div class="muted" style="font-size:12px">Un bersaglio da stampare con fori a posizioni note: fotografalo e misuralo come un bersaglio vero (scala sul righello, mira al centro della croce, fori); la verifica confronta le tue misure con i valori esatti e mette alla prova tutta la catena di misura.</div>
+        <div class="row" style="flex-wrap:wrap;margin-top:4px">
+          <label for="ttN" style="flex:0 0 auto">Fori</label><select id="ttN" style="flex:0 0 auto"><option value="5" selected>5</option><option value="10">10</option></select>
+          <label for="ttCode" style="flex:0 0 auto" title="Il codice stampato sul bersaglio (SA-xxxx): identifica le posizioni dei fori">Codice SA-</label><input id="ttCode" type="number" min="1000" max="9999" step="1" placeholder="1000–9999" style="width:90px;flex:0 0 auto">
+        </div>
+        <div class="btns">
+          <button class="btn" id="bTtPdf" title="PDF A4 a 300 dpi con un nuovo codice: stampalo al 100% (senza «adatta alla pagina»)">🎯 Bersaglio di prova (PDF)</button>
+          <button class="btn" id="bTtCheck" title="Confronta i fori del gruppo attivo con quelli veri del codice indicato: servono scala, punto di mira e lo stesso numero di fori">✓ Verifica il gruppo attivo</button>
+        </div>
+        <div id="ttResult"></div>
       </details>
     </section>
 
@@ -580,6 +604,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.</p>
           <p data-i18n><b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.</p>
           <p data-i18n><b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.</p>
           <p data-i18n><b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.</p>
@@ -619,6 +644,10 @@
           <div class="chart"><div class="ctitle">Orologio
               <select id="clockRef" title="Riferimento delle direzioni"><option value="poa">dal punto di mira</option><option value="center">dal centro gruppo</option></select></div>
             <canvas id="chClock" aria-label="Diagramma a orologio delle direzioni dei colpi"></canvas><div class="cnote" id="clockInfo"></div></div>
+          <div class="chart"><div class="ctitle">Coordinate polari (angolo e distanza dal centro gruppo)</div>
+            <canvas id="chPolar" aria-label="Grafico polare dei fori"></canvas><div class="cnote" id="chPolarNote"></div></div>
+          <div class="chart"><div class="ctitle">Densità 3D (modello normale) · trascina per ruotare, doppio clic per tornare alla vista iniziale</div>
+            <canvas id="ch3d" aria-label="Superficie 3D della densità di probabilità degli impatti" style="cursor:grab;touch-action:none"></canvas><div class="cnote" id="ch3dNote"></div></div>
         </div>
     </section>
     <section class="ana-panel" id="cmpBox">
@@ -669,6 +698,48 @@
         <div class="chart" id="chgChartWrap"><div class="ctitle">Precisione per livello, con intervallo di confidenza</div>
           <canvas id="chCharge" aria-label="Precisione in funzione della carica o del salto dalle righe"></canvas><div class="cnote" id="chgNote"></div></div>
     </section>
+    <section class="ana-panel" id="visBox">
+      <h3>Confronto visivo tra rosate</h3>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="visLayout" style="flex:0 0 auto">Vista</label>
+          <select id="visLayout"><option value="over" selected>Sovrapposte</option><option value="side">Affiancate</option></select>
+          <label for="visRef" style="flex:0 0 auto">Origine</label>
+          <select id="visRef" title="Mira: si vede anche dove cade ogni gruppo. Centro gruppo: si confronta solo la forma della rosata"><option value="poa" selected>punto di mira</option><option value="c">centro gruppo</option></select>
+          <select id="visUnit" title="Angoli: confronta gruppi tirati a distanze diverse"><option value="mm" selected>mm</option><option value="MOA">MOA</option><option value="MIL">MIL</option></select>
+        </div>
+        <div id="visList"></div>
+        <div class="chart" id="visChartWrap"><canvas id="chVis" aria-label="Rosate dei gruppi scelti, sovrapposte o affiancate"></canvas><div class="cnote" id="visNote"></div></div>
+    </section>
+    <section class="ana-panel" id="holdBox">
+      <h3>Reticolo e holdover · dove mirare senza toccare le torrette</h3>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="rtType" style="flex:0 0 auto">Reticolo</label>
+          <select id="rtType"><option value="milhash" selected>MIL a tacche (ogni 0,5 MIL)</option><option value="mildot">MIL-DOT (punti ogni 1 MIL)</option><option value="moahash">MOA a tacche (ogni 2 MOA)</option><option value="custom">Personalizzato</option></select>
+          <span id="rtCustom" class="rt-opt" hidden style="gap:6px;align-items:center;flex-wrap:wrap">
+            <label for="rtStep">passo</label><input id="rtStep" type="number" min="0.05" step="any" value="0.2" style="width:70px">
+            <select id="rtUnit"><option value="MIL" selected>MIL</option><option value="MOA">MOA</option></select>
+            <label for="rtLab" title="Tacca lunga e numero ogni quanti passi">numero ogni</label><input id="rtLab" type="number" min="1" step="1" value="5" style="width:56px"><span class="muted">passi</span>
+          </span>
+        </div>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="rtPlane" style="flex:0 0 auto">Piano focale</label>
+          <select id="rtPlane"><option value="FFP" selected>Primo (FFP)</option><option value="SFP">Secondo (SFP)</option></select>
+          <span id="rtSfp" class="rt-opt" hidden style="gap:6px;align-items:center">
+            <label for="rtCal" title="Ingrandimento al quale le tacche valgono il loro valore nominale (dal manuale del cannocchiale)">tarato a</label><input id="rtCal" type="number" min="1" step="any" value="10" style="width:60px">×
+            <label for="rtMag">in uso</label><input id="rtMag" type="number" min="1" step="any" value="10" style="width:60px">×
+          </span>
+        </div>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="rtSrc" style="flex:0 0 auto">Correzioni</label>
+          <select id="rtSrc"><option value="dope" selected>dalla dope card (munizione scelta sopra)</option><option value="active">dal gruppo attivo</option></select>
+          <label for="rtDialV" style="flex:0 0 auto" title="Click già impostati sulle torrette (+ = in alto / a destra): l'holdover copre solo il resto">Torrette: alzo</label><input id="rtDialV" type="number" step="1" value="0" style="width:70px">
+          <label for="rtDialH" style="flex:0 0 auto">brand.</label><input id="rtDialH" type="number" step="1" value="0" style="width:70px"><span class="muted">click</span>
+          <label style="flex:0 0 auto"><input type="checkbox" id="rtWind" checked> anche il brandeggio</label>
+        </div>
+        <div class="chart" id="rtChartWrap"><canvas id="chReticle" aria-label="Reticolo con le tacche da usare per ogni distanza"></canvas><div class="cnote" id="rtNote"></div></div>
+        <div id="rtBody"></div>
+        <div class="btns"><button class="btn" id="bRtPng" title="Il reticolo con le tacche e la tabella, da stampare o tenere sul telefono">🖼 Reticolo (PNG)</button></div>
+    </section>
   </div>
 </div>
 <input type="file" id="fImg" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
@@ -709,6 +780,9 @@
       <a data-to="h-pdf">Report PDF</a>
       <a data-to="h-snap">Snap al centro del foro</a>
       <a data-to="h-grafici">Come leggere i grafici</a>
+      <a data-to="h-densita">Densità: heatmap e superficie 3D</a>
+      <a data-to="h-reticolo">Reticolo e holdover</a>
+      <a data-to="h-autoverifica">Bersaglio di autoverifica</a>
       <a data-to="h-qualita">Qualità della misura</a>
       <a data-to="h-correggersi">Dalla lettura alla correzione</a>
       <a data-to="h-esempi">Esempi svolti</a>
@@ -995,9 +1069,56 @@ Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 
 <dd>Ogni spicchio è un'ora del quadrante (12 = alto, 3 = destra); la lunghezza dice quanti fori stanno in quella direzione rispetto alla mira. La freccia indica dove sta il centro gruppo: «i colpi tendono a ore 2» = alto-destra. <b>Uso</b>: è lo scostamento sistematico, quello che si corregge con i click.</dd>
 <dt>Orologio — «dal centro gruppo»</dt>
 <dd>Rispetto al centro gruppo le direzioni si bilanciano per costruzione, quindi l'informazione utile è <b>lungo quale asse</b> i fori si dispongono: «ore 12–6» = stringatura verticale, «ore 3–9» = orizzontale. Rapporto sotto 1,3 = gruppo sostanzialmente rotondo.</dd>
+<dt>Coordinate polari</dt>
+<dd>Ogni foro è descritto da <b>angolo</b> (0° = in alto, senso orario, come l'orologio: 90° = a destra) e <b>distanza</b> dal centro gruppo. Gli anelli sono quelli attesi dal modello: raggio medio (continuo), CEP (tratteggiato), R95 (punteggiato). Sotto, lo stesso grafico «srotolato»: angolo in ascissa, distanza in ordinata, così gli anelli diventano righe orizzontali. <b>Cosa guardare</b>: quanti fori stanno oltre l'R95 (attesi: 1 su 20) e se le distanze sono simili tra loro. <b>Cosa non concludere</b>: con 5–10 colpi è normale che un settore resti vuoto o che i fori formino un «anello»; l'app non dà diagnosi da queste forme, perché con pochi colpi forme di questo tipo nascono spesso per caso.</dd>
+<dt>Confronto visivo tra rosate</dt>
+<dd>I gruppi scelti (sessione corrente e storico importato con la 1.9.0 o successive) disegnati insieme, alla <b>stessa scala</b>. <b>Origine</b> = punto di mira: si vede anche dove cade ogni gruppo (spostamento sistematico); <b>origine</b> = centro gruppo: si confronta solo la forma e la grandezza della rosata. <b>Sovrapposte</b> per vedere le differenze a colpo d'occhio, <b>affiancate</b> quando i gruppi sono tanti o si coprono. In <b>MOA/MIL</b> ogni foro è convertito con la distanza del suo gruppo (arcotangente per asse): gruppi tirati a distanze diverse diventano confrontabili. Cerchio = raggio medio attorno al centro (✕); lo storico è disegnato con punti vuoti e cerchio tratteggiato. Le stesse cautele del confronto numerico: con pochi colpi rosate «diverse» possono venire dalla stessa arma e munizione.</dd>
 <dt>Confronto tra gruppi e andamento nel tempo</dt>
 <dd>Una riga per gruppo (sessione corrente + storico importato) in ordine di data, con la metrica scelta (ES, raggio medio, FOM, CEP) in MIL o MOA, quindi confrontabile anche a distanze diverse. <b>Δ</b> = differenza rispetto al gruppo precedente; <b>media mobile</b> = media degli ultimi N gruppi, che smorza il caso e mostra la tendenza. Nel grafico, i punti vuoti sono lo storico. <b>Attenzione</b>: tra gruppi di pochi colpi differenze del 20–30% sono normali anche senza cambiare nulla; fidati della tendenza della media mobile più che del singolo Δ, e confronta l'ES solo a parità di colpi.</dd>
 </dl>
+</section>
+
+<section id="h-densita">
+<h3>Densità: heatmap e superficie 3D</h3>
+<p>Entrambe mostrano la stessa cosa: la <b>densità di probabilità</b> degli impatti secondo una <b>normale bivariata</b> stimata dai fori inclusi, cioè dove l'arma tende a mandare il prossimo colpo se nulla cambia.</p>
+<ul>
+  <li>Parametri stimati: centro = media dei fori; matrice di covarianza Σ = [[s<sub>xx</sub>, s<sub>xy</sub>], [s<sub>xy</sub>, s<sub>yy</sub>]] con divisore n−1 (s<sub>xy</sub> = Σ(xᵢ−x̄)(yᵢ−ȳ)/(n−1)). Densità: f(x, y) = exp(−½·dᵀΣ⁻¹d) / (2π√|Σ|), con d = punto − centro. È lo stesso modello dell'<b>ellisse</b>: le curve di livello della densità sono ellissi coassiali a quella disegnata.</li>
+  <li>Differenza con CEP e cerchi: CEP, R95 e probabilità di colpire usano il modello <b>circolare</b> (stessa σ in tutte le direzioni); heatmap e superficie usano la covarianza piena, quindi mostrano anche un gruppo allungato o inclinato.</li>
+  <li><b>Heatmap</b> (Parametri di tiro → «Heatmap della densità»): colore del gruppo, più intenso dove la densità è alta, entro ±3,5 σ; compare anche nella Result Card e nel report. <b>Superficie 3D</b> (vista grafici): altezza proporzionale alla densità; trascina per ruotare, doppio clic per la vista iniziale.</li>
+  <li>Servono almeno <b>3 fori non allineati</b> (con fori allineati Σ è singolare e la densità non esiste). Con pochi colpi la forma è incerta quanto l'ellisse: una «collina» allungata con 5 colpi può essere solo il caso.</li>
+  <li>Perché non una densità «a nucleo» (somma di macchie sui fori)? Con 5–10 colpi la sua forma dipende soprattutto dalla larghezza scelta per le macchie, e mostrerebbe picchi sui fori sparati invece della tendenza dell'arma.</li>
+</ul>
+</section>
+
+<section id="h-reticolo">
+<h3>Reticolo e holdover</h3>
+<p>L'<b>holdover</b> è la correzione data con il reticolo invece che con le torrette: si mira con una tacca diversa dal centro. Nella vista grafici l'app prende le correzioni dalla <b>dope card</b> (per ogni distanza tirata con la munizione scelta) o dal <b>gruppo attivo</b>, toglie i click già impostati sulle torrette e indica la tacca da usare.</p>
+<ul>
+  <li><b>Direzione</b>: la tacca va dalla parte opposta alla correzione. Se servono +1,2 MIL di alzo (colpi bassi), si mette il bersaglio sulla tacca <b>1,2 MIL sotto</b> il centro: l'arma si alza di 1,2 MIL. Se serve correggere a destra, la tacca è a <b>sinistra</b>.</li>
+  <li><b>Correzione residua</b> = dope − click delle torrette (convertiti in MIL con il valore click): con 5 click da 0,1 MIL già impostati, 1,2 MIL diventano 0,7 MIL di holdover.</li>
+  <li><b>Primo piano focale (FFP)</b>: il reticolo si ingrandisce con l'immagine, le tacche valgono il valore nominale a ogni ingrandimento. <b>Secondo piano focale (SFP)</b>: le tacche valgono il nominale solo all'ingrandimento di taratura (dal manuale, spesso il massimo o 10×). A un altro ingrandimento M una tacca copre nominale × M<sub>taratura</sub>/M: per coprire un angolo A serve la lettura A × M/M<sub>taratura</sub>. Esempio: tarato a 10×, usato a 5×, 2 MIL di correzione si leggono sulla tacca «1».</li>
+  <li><b>Unità</b>: MIL o MOA come il reticolo (1 MIL = 3,4377 MOA). Il disegno è <b>generico</b> (tacche ogni 0,5 MIL, MIL-DOT con punti da 0,25 MIL ogni 1 MIL, tacche ogni 2 MOA o passo personalizzato), non la riproduzione di un modello commerciale: confronta le spaziature con il manuale del tuo cannocchiale.</li>
+  <li><b>Limiti</b>: solo le distanze tirate davvero; per quelle intermedie o più lontane serve un calcolatore balistico (l'app non estrapola). Il brandeggio vale per il vento di quel giorno; si può escludere con «anche il brandeggio».</li>
+</ul>
+</section>
+
+<section id="h-autoverifica">
+<h3>Bersaglio di autoverifica</h3>
+<p>Serve a controllare <b>tutta la catena di misura</b> (stampa, foto, prospettiva, scala, posizionamento della mira e dei fori) su un bersaglio di cui l'app conosce i valori esatti. Sezione Dati → «🎯 Bersaglio di prova (PDF)»: un A4 a 300 dpi con un codice SA-xxxx, un riquadro di 150 × 150 mm con tacche ogni 10 mm, la croce del punto di mira, 5 o 10 fori neri del calibro attuale (al massimo 12 mm) e un righello di 100 mm. Le posizioni dei fori sono generate dal codice (generatore pseudo-casuale deterministico): non sono stampate, la verifica le ricalcola.</p>
+<ol>
+  <li>Stampa al <b>100%</b> e controlla con un righello vero che la barra misuri 100 mm: se non è così, la stampante ha ridimensionato la pagina e la verifica misurerà anche quell'errore.</li>
+  <li>Fotografa il foglio come un bersaglio vero; se la foto è di sbieco puoi usare <b>⬚ Prospettiva</b> con un rettangolo personalizzato di 150 × 150 mm sugli angoli del riquadro.</li>
+  <li>Scala sugli estremi 0 e 100 del righello (100 mm), mira al centro della croce, fori nello stesso gruppo (lo snap aiuta).</li>
+  <li>«✓ Verifica il gruppo attivo» con il codice stampato.</li>
+</ol>
+<p>Risultati: i fori misurati sono abbinati a quelli veri (abbinamento con la minima somma dei quadrati degli scarti), poi:</p>
+<ul>
+  <li><b>Rapporto di scala</b> = somma delle distanze tra tutte le coppie di fori misurate / vere: non dipende da dove è la mira né dalla rotazione, solo dalla scala. 1,000 = perfetto; 0,99 = l'app misura l'1% in meno (calibrazione o stampa).</li>
+  <li><b>Errore per foro</b> (distanza tra posizione misurata e vera, rispetto alla mira): RMS e massimo. Include l'errore della mira.</li>
+  <li><b>Spostamento del centro gruppo</b> e <b>rotazione residua</b> (Procrustes: θ = atan2(Σ t×m, Σ t·m) sui vettori dal centro): dicono dove è finita la mira e se la foto è ruotata; non cambiano le misure di dispersione, ma spostamento e rotazione cambiano la correzione.</li>
+  <li><b>ES e raggio medio</b> veri e misurati: l'effetto sui numeri che usi davvero.</li>
+</ul>
+<p>Soglie del giudizio (indicative, scelte dall'app): scala entro ±1% e RMS sotto 0,5 mm = coerente; entro ±2% e sotto 1 mm = accettabile; oltre = da rivedere. Per riferimento: a 100 m 0,5 mm sono circa 0,005 MIL, molto meno di un click.</p>
 </section>
 
 <section id="h-qualita">
@@ -1768,13 +1889,120 @@ const Calc = (() => {
     return { area: Math.abs(a) / 2, perim: q.length > 1 ? per : 0 };
   }
 
+  /* ---------------- densità, bersaglio di prova, abbinamento (dalla 1.9.0) ---------------- */
+  /** Covarianza campionaria (n − 1) dei punti: centro e componenti. null con meno di 3 punti. */
+  function covariance(pts) {
+    const n = pts.length; if (n < 3) return null;
+    const c = centroid(pts); let sxx = 0, syy = 0, sxy = 0;
+    for (const p of pts) { const dx = p.x - c.x, dy = p.y - c.y; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+    return { cx: c.x, cy: c.y, sxx: sxx / (n - 1), syy: syy / (n - 1), sxy: sxy / (n - 1) };
+  }
+  /**
+   * Densità della normale bivariata con media e covarianza date (stesso modello di ellisse, CEP e probabilità):
+   * f(x, y) = exp(−½·dᵀ Σ⁻¹ d) / (2π·√|Σ|). null se la covarianza è singolare (fori allineati).
+   */
+  function bvnDensity(cov) {
+    const det = cov.sxx * cov.syy - cov.sxy * cov.sxy;
+    if (!(det > 1e-12 * (cov.sxx + cov.syy) ** 2)) return null;
+    const ia = cov.syy / det, ib = -cov.sxy / det, ic = cov.sxx / det, k = 1 / (2 * Math.PI * Math.sqrt(det));
+    const f = (x, y) => { const dx = x - cov.cx, dy = y - cov.cy; return k * Math.exp(-0.5 * (ia * dx * dx + 2 * ib * dx * dy + ic * dy * dy)); };
+    f.peak = k;
+    return f;
+  }
+  /** Generatore pseudo-casuale deterministico (mulberry32): stesso seme, stessa sequenza. */
+  function prng(seed) {
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  /**
+   * Bersaglio di prova: posizioni note dei fori (mm, rispetto al punto di mira, Y verso l'alto) generate dal codice.
+   * Gruppo normale con σ 6–10 mm attorno a un centro spostato 10–30 mm dalla mira; centri dei fori distanti almeno
+   * 15 mm (fori stampati fino a 12 mm di diametro restano separati), tra 12 e 70 mm dalla mira (lontani dalla croce). Le posizioni dipendono
+   * solo da codice e numero di fori; se il gruppo non entra con quella σ si riprova allargandola.
+   */
+  const TT_SEP = 15, TT_RMAX = 70, TT_RMIN = 12;
+  function testTarget(code, n = 5) {
+    const r = prng(code * 2654435761);
+    const g = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+    let sigma = 6 + 4 * r();
+    const ang = 2 * Math.PI * r(), off = 10 + 20 * r();
+    const c = { x: off * Math.cos(ang), y: off * Math.sin(ang) };
+    let pts = [];
+    for (let attempt = 0; attempt < 12 && pts.length < n; attempt++, sigma *= 1.2) {
+      pts = [];
+      for (let tries = 0; pts.length < n && tries < 3000; tries++) {
+        const q = { x: +(c.x + sigma * g()).toFixed(2), y: +(c.y + sigma * g()).toFixed(2) };
+        const rq = Math.hypot(q.x, q.y);
+        if (rq > TT_RMAX || rq < TT_RMIN) continue;   // dentro il riquadro, lontano dalla croce della mira
+        if (pts.every(p => dist(p, q) >= TT_SEP)) pts.push(q);
+      }
+    }
+    return { code, n, sep: TT_SEP, pts };
+  }
+  /**
+   * Verifica di un bersaglio di prova: fori veri T e misurati M (mm, rispetto alla mira, Y verso l'alto).
+   * Abbina i fori (matchPoints), poi: errore per foro, RMS e massimo; rapporto di scala = Σ distanze tra coppie
+   * misurate / vere (indipendente da mira e rotazione); rotazione residua attorno ai centri (Procrustes,
+   * θ = atan2(Σ t×m, Σ t·m), + = antioraria); spostamento del centro gruppo; ES e raggio medio veri e misurati.
+   */
+  function verifyTarget(T, M) {
+    const n = T.length; if (!n || n !== M.length) return null;
+    const perm = matchPoints(T, M), m = perm.map(j => M[j]);
+    const err = T.map((t, i) => ({ dx: m[i].x - t.x, dy: m[i].y - t.y, d: dist(t, m[i]) }));
+    const rms = Math.sqrt(err.reduce((a, e) => a + e.d * e.d, 0) / n), max = Math.max(...err.map(e => e.d));
+    let sT = 0, sM = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { sT += dist(T[i], T[j]); sM += dist(m[i], m[j]); }
+    const cT = centroid(T), cM = centroid(m);
+    let cr = 0, dt = 0;
+    for (let i = 0; i < n; i++) { const a = { x: T[i].x - cT.x, y: T[i].y - cT.y }, b = { x: m[i].x - cM.x, y: m[i].y - cM.y };
+      cr += a.x * b.y - a.y * b.x; dt += a.x * b.x + a.y * b.y; }
+    return { n, perm, err, rms, max, scale: sT > 0 ? sM / sT : null, rotDeg: n >= 2 ? Math.atan2(cr, dt) * 180 / Math.PI : 0,
+      shift: { x: cM.x - cT.x, y: cM.y - cT.y }, es: { t: extremeSpread(T).d, m: extremeSpread(m).d }, mr: { t: meanRadius(T, cT), m: meanRadius(m, cM) } };
+  }
+  /**
+   * Holdover sul reticolo: correzione necessaria (MIL, + = in alto / a destra) → posizione della tacca da usare,
+   * nelle unità nominali del reticolo. Il segno della tacca è opposto: serve più alzo → si mira con una tacca SOTTO
+   * il centro; serve correggere a destra → tacca a SINISTRA. FFP: le tacche valgono sempre il nominale. SFP: il
+   * nominale vale solo all'ingrandimento di taratura; a ingrandimento mag una tacca copre nominale × calib/mag,
+   * quindi la lettura nominale è necessario × mag/calib.
+   */
+  function holdover(vMil, hMil, opt = {}) {
+    const u = opt.unit === "MOA" ? "MOA" : "MIL";
+    const k = opt.plane === "SFP" && opt.calibMag > 0 && opt.mag > 0 ? opt.mag / opt.calibMag : 1;
+    const toU = mil => fromRad(mil / 1000, u) * k;
+    const v = toU(vMil), h = toU(hMil);
+    return { unit: u, factor: k, v, h, markX: -h, markY: -v };
+  }
+  /**
+   * Abbinamento ottimo tra due insiemi di punti della stessa dimensione (somma minima dei quadrati delle distanze):
+   * permutazioni complete fino a 8 punti, altrimenti assegnazione golosa. Restituisce perm: a[i] ↔ b[perm[i]].
+   */
+  function matchPoints(a, b) {
+    const n = a.length; if (n !== b.length) return null;
+    const cost = (i, j) => (a[i].x - b[j].x) ** 2 + (a[i].y - b[j].y) ** 2;
+    if (n > 8) {
+      const used = new Set(), perm = [];
+      for (let i = 0; i < n; i++) { let bj = -1, bc = Infinity; for (let j = 0; j < n; j++) if (!used.has(j) && cost(i, j) < bc) { bc = cost(i, j); bj = j; } used.add(bj); perm.push(bj); }
+      return perm;
+    }
+    let best = null, bestC = Infinity;
+    const perm = [], used = new Array(n).fill(false);
+    (function rec(i, acc) {
+      if (acc >= bestC) return;
+      if (i === n) { bestC = acc; best = perm.slice(); return; }
+      for (let j = 0; j < n; j++) if (!used[j]) { used[j] = true; perm.push(j); rec(i + 1, acc + cost(i, j)); perm.pop(); used[j] = false; }
+    })(0, 0);
+    return best;
+  }
+
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
     solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
     erfc, normcdf, hitCircle, hitRect, rng, hitProbability,
     SCORE_TARGETS, ringDiameters, shotScore,
-    toRad, dope, milToClicks, pooledSigma, snapHole, convexHull, polygonAreaPerim };
+    toRad, dope, milToClicks, pooledSigma, snapHole, convexHull, polygonAreaPerim,
+    covariance, bvnDensity, prng, testTarget, matchPoints, verifyTarget, holdover };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -1820,6 +2048,7 @@ const I18N = (() => {
    " (escl.)": " (excl.)",
    " (escluso)": " (excluded)",
    " (mostrate ogni {0})": " (shown every {0})",
+   " (ogni gruppo alla sua distanza)": " (each group at its own distance)",
    " (poco affidabili con meno di 5 colpi)": " (unreliable with fewer than 5 shots)",
    " (risoluzione ridotta per limiti del browser)": " (resolution reduced because of browser limits)",
    " (un asse non è significativo)": " (one axis is not significant)",
@@ -1828,13 +2057,18 @@ const I18N = (() => {
    " <b>1 possibile flyer</b> (⚠): spunta «Escl.» per toglierlo dalle statistiche.": " <b>1 possible flyer</b> (⚠): tick «Excl.» to remove it from the statistics.",
    " <b>{0} possibili flyer</b> (⚠): spunta «Escl.» per toglierli dalle statistiche.": " <b>{0} possible flyers</b> (⚠): tick «Excl.» to remove them from the statistics.",
    " Click ({0} {1}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>.": " Clicks ({0} {1}) to bring the point onto the aim: the correction to apply is the one of the <b>group centre</b>.",
+   " FFP: le tacche valgono il nominale a ogni ingrandimento.": " FFP: the marks have their nominal value at every magnification.",
    " Per i click servono punto di mira e scala calibrata.": " Clicks need a point of aim and a calibrated scale.",
+   " SFP a {0}× (tarato a {1}×): le letture sono moltiplicate per {2}; il disegno è in unità nominali.": " SFP at {0}× (calibrated at {1}×): readings are multiplied by {2}; the drawing is in nominal units.",
+   " SFP all'ingrandimento di taratura ({0}×): le tacche valgono il nominale.": " SFP at the calibration magnification ({0}×): the marks have their nominal value.",
    " Snap attivo (M; Alt+clic = senza snap).": " Snap on (M; Alt+click = no snap).",
    " Snap spento (M).": " Snap off (M).",
    " Snap: foto troppo piccola per riconoscere il foro.": " Snap: photo too small to recognise the hole.",
    " Snap: servono scala calibrata e calibro.": " Snap: a calibrated scale and the caliber are needed.",
+   " Solo le distanze tirate (nessuna estrapolazione balistica); il brandeggio vale per il vento di quel giorno. Il disegno è generico: verifica le spaziature sul manuale del tuo cannocchiale.": " Only the distances shot (no ballistic extrapolation); windage holds for that day's wind. The drawing is generic: check the spacing in your scope manual.",
    " Ultimo foro agganciato al centro (spostato di {0} px).": " Last shot locked onto the centre (moved by {0} px).",
    " Ultimo foro non agganciato: nessun foro riconosciuto vicino al clic (resta dove hai cliccato).": " Last shot not locked: no hole recognised near the click (it stays where you clicked).",
+   " a {0}× (tarato a {1}×)": " at {0}× (calibrated at {1}×)",
    " escl.": " excl.",
    " · <span class=\"key dashdot\" style=\"border-color:{0}\"></span>ellisse {1}%": " · <span class=\"key dashdot\" style=\"border-color:{0}\"></span>ellipse {1}%",
    " · <span style='color:{0}'>⊕</span> mira": " · <span style='color:{0}'>⊕</span> aim",
@@ -1868,9 +2102,13 @@ const I18N = (() => {
    "1 foro": "1 shot",
    "1 gruppo": "1 group",
    "1 sessione archiviata": "1 session archived",
+   "1. Controlla con un righello vero che la barra misuri 100 mm: se no, la stampante ha ridimensionato la pagina.": "1. Check with a real ruler that the bar measures 100 mm: if not, the printer has resized the page.",
    "10 interni": "Inner 10s",
    "10 interno": "Inner 10",
    "10 interno ⌀ (mm, 0 = nessuno)": "Inner 10 ⌀ (mm, 0 = none)",
+   "2. Fotografa il foglio, il più possibile perpendicolare; calibra la scala sugli estremi 0 e 100 del righello (100 mm).": "2. Photograph the sheet as perpendicular as possible; calibrate the scale on the 0 and 100 ends of the ruler (100 mm).",
+   "3. Metti il punto di mira al centro della croce e i fori (snap consigliato), tutti nello stesso gruppo.": "3. Put the aiming point at the centre of the cross and the holes (snap recommended), all in the same group.",
+   "4. Sezione Dati → «Verifica il gruppo attivo» con questo codice: confronta le misure con le posizioni vere.": "4. Data section → «Check the active group» with this code: compares the measurements with the true positions.",
    "; IC {0}% di σ: {1}": "; CI {0}% of σ: {1}",
    "<b>1.</b> Carica la foto, scattata il più possibile <b>perpendicolare</b> al bersaglio (la prospettiva altera le misure). Se è storta, <b>📐 Raddrizza</b> (<kbd>5</kbd>): clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale; per la regolazione fine usa il campo «Rotazione», per le foto girate i pulsanti ⟲/⟳ 90°. Foto <b>di sbieco</b>: <b>⬚ Prospettiva</b> (<kbd>6</kbd>): scegli le dimensioni reali di un rettangolo visibile (es. il foglio A4) e clicca i suoi 4 angoli in qualsiasi ordine; la foto viene «appiattita» e la scala è già impostata dal rettangolo (la puoi rifare con «Scala»); «Rimuovi correzione» torna alla foto originale. Ruotano anche i punti già inseriti e tutte le direzioni (correzione, bussola, orologio, ellisse, griglia) si riferiscono all'alto del bersaglio raddrizzato.": "<b>1.</b> Load the photo, taken as <b>square</b> to the target as possible (perspective distorts the measurements). If it is tilted, use <b>📐 Level</b> (<kbd>5</kbd>): click 2 points on a target line that should be horizontal or vertical; for fine adjustment use the «Rotation» field, for rotated photos the ⟲/⟳ 90° buttons. Photo taken <b>at an angle</b>: <b>⬚ Perspective</b> (<kbd>6</kbd>): choose the real size of a visible rectangle (e.g. the A4 sheet) and click its 4 corners in any order; the photo is «flattened» and the scale is already set from the rectangle (you can redo it with «Scale»); «Remove correction» goes back to the original photo. Points already placed rotate too, and all directions (correction, compass, clock, ellipse, grid) refer to the top of the levelled target.",
    "<b>2. Scala:</b> clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza.": "<b>2. Scale:</b> click two points at a known distance (e.g. two grid lines) and enter the distance.",
@@ -1881,6 +2119,7 @@ const I18N = (() => {
    "<b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.": "<b>Dope card</b> and <b>Precision and reloading</b> (charts view): the groups of this session and of the history lined up by distance (elevation and windage clicks, CSV and printable PNG) and the CEP or mean radius per powder charge or per <b>jump to the lands</b> (seating depth), with their confidence interval.",
    "<b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.": "<b>Flyers</b> (⚠): flagged from 5 shots up; tick «Excl.» (or <kbd>X</kbd>) to remove them from the statistics. <b>Comparison</b>: with several groups, or by importing other sessions into the <b>history</b>.",
    "<b>Lavoro non salvato trovato</b> del {0} alle {1}: ": "<b>Unsaved work found</b> from {0} at {1}: ",
+   "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
    "<b>Zone di punteggio</b>: scegli il bersaglio da gara; gli anelli compaiono attorno al punto di mira di ogni gruppo e la tabella punti mostra il valore di ogni foro (* = 10 interno, ≈ = sulla linea).": "<b>Scoring zones</b>: choose the competition target; the rings appear around the point of aim of each group and the points table shows the value of each shot (* = inner 10, ≈ = on the line).",
@@ -1903,7 +2142,9 @@ const I18N = (() => {
    "<div class=\"muted\">Inserisci la distanza di tiro.</div>": "<div class=\"muted\">Enter the shooting distance.</div>",
    "<div class=\"muted\">Inserisci le dimensioni del bersaglio.</div>": "<div class=\"muted\">Enter the target size.</div>",
    "<div class=\"muted\">Nessun gruppo con dope: servono punto di mira, scala calibrata, distanza e valore click. Inserisci i click di alzo e brandeggio dei fori (tabella dei punti) e tira gruppi a distanze diverse, in questa sessione o importandone altre nello storico.</div>": "<div class=\"muted\">No group with dope: point of aim, calibrated scale, distance and click value are needed. Enter the elevation and windage clicks of the shots (points table) and shoot groups at different distances, in this session or by importing others into the history.</div>",
+   "<div class=\"muted\">Nessun gruppo con fori e scala calibrata. I gruppi dello storico portano le coordinate dei fori solo se importati con la 1.9.0 o successive.</div>": "<div class=\"muted\">No group with holes and calibrated scale. History groups carry hole coordinates only if imported with 1.9.0 or later.</div>",
    "<div class=\"muted\">Nessun punto.</div>": "<div class=\"muted\">No points.</div>",
+   "<div class=\"muted\">Nessuna correzione: servono punto di mira, scala, distanza e valore click (come per la dope card). Il reticolo è comunque disegnato.</div>": "<div class=\"muted\">No corrections: aiming point, scale, distance and click value are needed (as for the dope card). The reticle is drawn anyway.</div>",
    "<div class=\"muted\">Servono almeno 2 fori nel gruppo attivo.</div>": "<div class=\"muted\">At least 2 shots are needed in the active group.</div>",
    "<div class=\"muted\">Servono almeno 2 fori.</div>": "<div class=\"muted\">At least 2 shots needed.</div>",
    "<div class=\"muted\">Servono almeno 2 gruppi con fori (in questa sessione o importati nello storico).</div>": "<div class=\"muted\">At least 2 groups with shots are needed (in this session or imported into the history).</div>",
@@ -1913,7 +2154,9 @@ const I18N = (() => {
    "<div class=\"qinfo\">{0} → incertezza di scala ≈ ±{1}% · inquadratura {2} × {3}": "<div class=\"qinfo\">{0} → scale uncertainty ≈ ±{1}% · field of view {2} × {3}",
    "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Punteggio</b> ({0}): <b>{1}</b></div>": "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Score</b> ({0}): <b>{1}</b></div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th>\n      <th class=\"x\" title=\"Click di alzo da impostare (+ = in alto) e intervallo di confidenza della media\">Alzo (click)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Click di brandeggio da impostare (+ = a destra): vale per il vento di quel giorno\">Brand. (click)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Gruppo</th><th>Data</th><th>Condizioni</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Click da impostare sulla torretta per colpire il punto di mira ({1} {2}/click, + = in alto / a destra), dalla media dei fori: click impostati + correzione di ogni foro; ± = intervallo di confidenza {3}%. Solo le distanze tirate: per quelle intermedie serve un calcolatore balistico. Il brandeggio vale per il vento di quel giorno; alzo e brandeggio dipendono da munizione, temperatura e pressione.</div>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th>\n      <th class=\"x\" title=\"Elevation clicks to set (+ = up) and confidence interval of the mean\">Elev. (clicks)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Windage clicks to set (+ = right): valid for the wind of that day\">Wind. (clicks)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Group</th><th>Date</th><th>Conditions</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Clicks to set on the turret to hit the point of aim ({1} {2}/click, + = up / right), from the average of the shots: clicks set + correction of each shot; ± = {3}% confidence interval. Only the distances actually shot: for intermediate ones you need a ballistic calculator. Windage is valid for the wind of that day; elevation and windage depend on ammunition, temperature and pressure.</div>",
+   "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Distanza</th><th class=\"x\" title=\"Alzo ancora da correggere dopo i click delle torrette (+ = in alto)\">Alzo MIL</th><th class=\"x\" title=\"+ = a destra\">Brand. MIL</th>\n      <th class=\"x\">Tacca vert. ({0})</th><th class=\"x\">Tacca orizz. ({1})</th><th>Dove mettere il bersaglio</th><th>Gruppo</th></tr></thead><tbody>{2}</tbody></table></div>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Distance</th><th class=\"x\" title=\"Elevation still to correct after the turret clicks (+ = up)\">Elev. MIL</th><th class=\"x\" title=\"+ = right\">Wind. MIL</th>\n      <th class=\"x\">Vert. mark ({0})</th><th class=\"x\">Horiz. mark ({1})</th><th>Where to put the target</th><th>Group</th></tr></thead><tbody>{2}</tbody></table></div>",
    "<div class=\"tscroll\"><table class=\"pts\"><thead>{0}</thead><tbody>{1}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">X, Y in {2}. Distanze in {3}; direzione dal centro gruppo (0° = alto, senso orario).\n    {4}\n    {5}{6}</div>": "<div class=\"tscroll\"><table class=\"pts\"><thead>{0}</thead><tbody>{1}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">X, Y in {2}. Distances in {3}; direction from the group centre (0° = up, clockwise).\n    {4}\n    {5}{6}</div>",
+   "<div class=\"tt-msg {0}\">{1}</div>\n    <table class=\"pts tt\"><tbody>\n      <tr><td>Rapporto di scala (misurato / vero)</td><td class=\"x\"><b>{2}</b> ({3}%)</td></tr>\n      <tr><td>Errore per foro: RMS · massimo</td><td class=\"x\"><b>{4}</b> · {5} mm</td></tr>\n      <tr><td>Spostamento del centro gruppo (mira)</td><td class=\"x\">{6}; {7} mm</td></tr>\n      <tr><td>Rotazione residua</td><td class=\"x\">{8}°</td></tr>\n      <tr><td>Group size (ES) vero · misurato</td><td class=\"x\">{9} · {10} mm</td></tr>\n      <tr><td>Raggio medio vero · misurato</td><td class=\"x\">{11} · {12} mm</td></tr>\n    </tbody></table>\n    <details><summary>Fori (vero e misurato, mm rispetto alla mira, + = destra / alto)</summary>\n      <table class=\"pts tt\"><thead><tr><th>Foro</th><th class=\"x\">Vero</th><th class=\"x\">Misurato</th><th class=\"x\">Errore</th></tr></thead><tbody>{13}</tbody></table></details>\n    <div class=\"muted\" style=\"font-size:11.5px\">Spostamento e rotazione dicono dove hai messo la mira e quanto è ruotata la foto: non cambiano le misure di dispersione. Il rapporto di scala include la stampa: se il righello stampato non misura 100 mm, la differenza è della stampante.</div>": "<div class=\"tt-msg {0}\">{1}</div>\n    <table class=\"pts tt\"><tbody>\n      <tr><td>Scale ratio (measured / true)</td><td class=\"x\"><b>{2}</b> ({3}%)</td></tr>\n      <tr><td>Error per hole: RMS · maximum</td><td class=\"x\"><b>{4}</b> · {5} mm</td></tr>\n      <tr><td>Shift of the group centre (aim)</td><td class=\"x\">{6}; {7} mm</td></tr>\n      <tr><td>Residual rotation</td><td class=\"x\">{8}°</td></tr>\n      <tr><td>Group size (ES) true · measured</td><td class=\"x\">{9} · {10} mm</td></tr>\n      <tr><td>Mean radius true · measured</td><td class=\"x\">{11} · {12} mm</td></tr>\n    </tbody></table>\n    <details><summary>Holes (true and measured, mm from the aim, + = right / up)</summary>\n      <table class=\"pts tt\"><thead><tr><th>Hole</th><th class=\"x\">True</th><th class=\"x\">Measured</th><th class=\"x\">Error</th></tr></thead><tbody>{13}</tbody></table></details>\n    <div class=\"muted\" style=\"font-size:11.5px\">Shift and rotation tell where you placed the aim and how much the photo is rotated: they do not change the dispersion measurements. The scale ratio includes the print: if the printed ruler does not measure 100 mm, the difference is the printer's.</div>",
    "<h3><span class=\"dot\" style=\"display:inline-block;width:10px;height:10px;border-radius:50%;background:{0}\"></span>{1} <span class=\"muted\" style=\"font-weight:400\">· {2} colpi{3}</span></h3>": "<h3><span class=\"dot\" style=\"display:inline-block;width:10px;height:10px;border-radius:50%;background:{0}\"></span>{1} <span class=\"muted\" style=\"font-weight:400\">· {2} shots{3}</span></h3>",
    "<kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>M</kbd> snap · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva.": "<kbd>1</kbd>–<kbd>6</kbd> tools (5 = level, 6 = perspective; <kbd>Esc</kbd> cancels) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Del</kbd> deletes the selected point · <kbd>Backspace</kbd> deletes the last one · <kbd>F</kbd> fit · <kbd>L</kbd> loupe · <kbd>M</kbd> snap · <kbd>G</kbd> grid · <kbd>X</kbd> exclude/include the selected shot · <kbd>T</kbd> theme · <kbd>A</kbd> charts and comparison · <kbd>H</kbd> technical help (terms, formulas, examples; in Italian) · <kbd>Ctrl+S</kbd> save.",
    "<option value=\"custom\">✎ Personalizzato (valore inserito sopra)</option>": "<option value=\"custom\">✎ Custom (value entered above)</option>",
@@ -1944,16 +2187,19 @@ const I18N = (() => {
    "ATTENZIONE: ": "WARNING: ",
    "ATTENZIONE: scala non calibrata": "WARNING: scale not calibrated",
    "Adatta allo schermo (F)": "Fit to screen (F)",
+   "Affiancate": "Side by side",
    "Aggiunge all'archivio sessioni salvate in precedenza (.json, meglio con l'immagine incorporata)": "Adds previously saved sessions to the archive (.json, preferably with the embedded image)",
    "Aggiunge i gruppi di altre sessioni salvate (.json) per confrontarli con quelli attuali": "Adds the groups of other saved sessions (.json) to compare them with the current ones",
    "Aggiungi foro al gruppo attivo (4)": "Add a shot to the active group (4)",
    "Altezza": "Height",
+   "Altezza = densità di probabilità degli impatti secondo il modello normale stimato dai fori (lo stesso di ellisse e CEP); punti neri = fori inclusi. Con pochi colpi la forma della superficie è incerta quanto l'ellisse.": "Height = probability density of impacts according to the normal model estimated from the holes (the same as ellipse and CEP); black dots = included holes. With few shots the shape of the surface is as uncertain as the ellipse.",
    "Altezza = lato verticale del rettangolo": "Height = vertical side of the rectangle",
    "Alzo": "Elev.",
    "Alzo (MIL)": "Elevation (MIL)",
    "Alzo (MOA)": "Elevation (MOA)",
    "Alzo (click)": "Elevation (clicks)",
    "Alzo IC ± (click)": "Elevation CI ± (clicks)",
+   "Alzo MIL": "Elev. MIL",
    "Alzo impostato (click)": "Elevation set (clicks)",
    "Alzo necessario in funzione della distanza": "Elevation needed as a function of distance",
    "Alzo necessario per distanza": "Elevation needed by distance",
@@ -1961,6 +2207,7 @@ const I18N = (() => {
    "Andamento della metrica scelta nel tempo": "Trend of the chosen metric over time",
    "Andamento nel tempo": "Trend over time",
    "Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).": "Rings drawn around the point of aim of each group. Scoring follows the paper-target rule: a shot scores the ring touched by the edge of the hole (with the caliber set).",
+   "Angoli: confronta gruppi tirati a distanze diverse": "Angles: compare groups shot at different distances",
    "Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.": "Rotation angle of the photo; positive = clockwise. All points already placed rotate too.",
    "Annulla (Ctrl+Z)": "Undo (Ctrl+Z)",
    "Apre a schermo intero i grafici del gruppo attivo e il confronto tra gruppi (tasto A)": "Opens the charts of the active group and the group comparison full screen (key A)",
@@ -1979,12 +2226,15 @@ const I18N = (() => {
    "Asse {0}° · rapporto {1}:1": "Axis {0}° · ratio {1}:1",
    "Azzera": "Reset",
    "Bersaglio": "Target",
+   "Bersaglio SA-{0} salvato: stampalo al 100%": "Target SA-{0} saved: print it at 100%",
    "Bersaglio da gara": "Competition target",
+   "Bersaglio di autoverifica": "Self-check target",
    "Bordo-bordo esterno": "Outside edge-to-edge",
    "Bordo-bordo: {0}": "Edge-to-edge: {0}",
    "Bossolo": "Case",
    "Brand.": "Wind.",
    "Brand. (click)": "Wind. (clicks)",
+   "Brand. MIL": "Wind. MIL",
    "Brandeggio (MIL)": "Windage (MIL)",
    "Brandeggio (click)": "Windage (clicks)",
    "Brandeggio IC ± (click)": "Windage CI ± (clicks)",
@@ -2023,9 +2273,11 @@ const I18N = (() => {
    "Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6)": "Click the 4 corners of the reference rectangle, in any order (key 6)",
    "Clicca il secondo punto di calibrazione.": "Click the second calibration point.",
    "Click diversi tra i fori del gruppo": "Different clicks between the shots of the group",
+   "Click già impostati sulle torrette (+ = in alto / a destra): l'holdover copre solo il resto": "Clicks already set on the turrets (+ = up / right): the holdover covers only the rest",
    "Click orizzontali": "Horizontal clicks",
    "Click verticali": "Vertical clicks",
    "Click: {0} {1} · + = in alto / a destra · {2}": "Click: {0} {1} · + = up / right · {2}",
+   "Codice SA-": "Code SA-",
    "Colpi": "Shots",
    "Colpi sparati": "Shots fired",
    "Con correzione applicata: {0} ({1})": "With correction applied: {0} ({1})",
@@ -2034,13 +2286,16 @@ const I18N = (() => {
    "Con correzione: resta lo scostamento dovuto all'arrotondamento al click ({0} mm {1}, {2} mm {3}); l'intervallo comprende anche l'incertezza del centro gruppo.": "With correction: what remains is the offset due to rounding to whole clicks ({0} mm {1}, {2} mm {3}); the interval also includes the uncertainty of the group centre.",
    "Con la taratura attuale: {0} ({1})": "With current zero: {0} ({1})",
    "Condizioni": "Conditions",
+   "Confronta i fori del gruppo attivo con quelli veri del codice indicato: servono scala, punto di mira e lo stesso numero di fori": "Compares the holes of the active group with the true ones of the given code: needs scale, aiming point and the same number of holes",
    "Confronto tra gruppi": "Group comparison",
+   "Confronto visivo tra rosate": "Visual comparison of groups",
    "Contenuto della Result Card": "Result Card content",
    "Convex hull": "Convex hull",
    "Convex hull (poligono attorno ai fori)": "Convex hull (polygon around the shots)",
    "Convex hull area (mm²)": "Convex hull area (mm²)",
    "Convex hull perimetro (mm)": "Convex hull perimeter (mm)",
    "Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)": "Convex hull: the smallest convex polygon enclosing all included shots (area and perimeter in the results; at least 3 shots needed)",
+   "Coordinate polari (angolo e distanza dal centro gruppo)": "Polar coordinates (angle and distance from the group centre)",
    "Correzione": "Correction",
    "Correzione attiva: rettangolo {0} × {1} mm · foto rettificata {2}×{3} px · {4} px/mm": "Correction active: rectangle {0} × {1} mm · rectified photo {2}×{3} px · {4} px/mm",
    "Correzione prospettica (foto di sbieco)": "Perspective correction (photo taken at an angle)",
@@ -2051,6 +2306,7 @@ const I18N = (() => {
    "Correzione prospettica rimossa: la scala veniva dal rettangolo, rifai la calibrazione.": "Perspective correction removed: the scale came from the rectangle, redo the calibration.",
    "Correzione prospettica: clicca i 4 angoli di un rettangolo di dimensioni note (6)": "Perspective correction: click the 4 corners of a rectangle of known size (6)",
    "Correzione prospettica… {0}%": "Perspective correction… {0}%",
+   "Correzioni": "Corrections",
    "DESTRA": "RIGHT",
    "DX": "R",
    "Da centro": "From ctr.",
@@ -2058,6 +2314,7 @@ const I18N = (() => {
    "Da mira": "From aim",
    "Data": "Date",
    "Dati": "Data",
+   "Densità 3D (modello normale) · trascina per ruotare, doppio clic per tornare alla vista iniziale": "3D density (normal model) · drag to rotate, double-click to return to the initial view",
    "Di quanto cresce il DIAMETRO da un anello al successivo": "How much the DIAMETER grows from one ring to the next",
    "Diagramma a orologio delle direzioni dei colpi": "Clock diagram of the shot directions",
    "Diametro": "Diameter",
@@ -2083,6 +2340,7 @@ const I18N = (() => {
    "Distanza tra due linee della griglia": "Distance between two grid lines",
    "Distanza {0} · calibro {1}": "Distance {0} · caliber {1}",
    "Distanza: {0} · Calibro: {1} · Click: {2} {3}": "Distance: {0} · Caliber: {1} · Click: {2} {3}",
+   "Distanze in {0} dal centro gruppo, angoli in senso orario da «in alto». <span class=\"key\" style=\"border-color:{1}\"></span>raggio medio · <span class=\"key dash\" style=\"border-color:{2}\"></span>CEP · <span class=\"key dot2\" style=\"border-color:{3}\"></span>R95 attesi dal modello. Sotto, lo stesso grafico «srotolato». Con pochi colpi anelli vuoti o settori senza fori capitano spesso per caso: l'app non ne trae conclusioni.": "Distances in {0} from the group centre, angles clockwise from «up». <span class=\"key\" style=\"border-color:{1}\"></span>mean radius · <span class=\"key dash\" style=\"border-color:{2}\"></span>CEP · <span class=\"key dot2\" style=\"border-color:{3}\"></span>R95 expected from the model. Below, the same plot «unrolled». With few shots, empty rings or sectors without holes often happen by chance: the app draws no conclusions from them.",
    "Dope alzo (MIL)": "Dope elevation (MIL)",
    "Dope alzo (click)": "Dope elevation (clicks)",
    "Dope alzo IC ± (click)": "Dope elevation CI ± (clicks)",
@@ -2109,10 +2367,13 @@ const I18N = (() => {
    "File JSON non valido": "Invalid JSON file",
    "Flyer: confronto di ogni foro con gli altri, soglia {0} SD.": "Flyers: each shot compared with the others, threshold {0} SD.",
    "Fonte": "Source",
+   "Fori": "Holes",
    "Fori · X, Y in {0}": "Shots · X, Y in {0}",
    "Formato non supportato": "Unsupported format",
    "Foro": "Shot",
    "Foro {0}": "Shot {0}",
+   "Foro {0} · {1}° · {2} {3}": "Hole {0} · {1}° · {2} {3}",
+   "Foro {0} · {1}° · {2} {3}{4}": "Hole {0} · {1}° · {2} {3}{4}",
    "Foro {0}{1}{2} · {3} {4} dal centro{5}": "Shot {0}{1}{2} · {3} {4} from the centre{5}",
    "Foro: clicca il centro di ogni foro di «{0}». Tasto destro su un punto = elimina.": "Shot: click the centre of each hole of «{0}». Right-click a point = delete.",
    "Foto raddrizzata di {0}° in senso {1} (linea {2}).": "Photo levelled by {0}° {1} (line {2}).",
@@ -2126,6 +2387,7 @@ const I18N = (() => {
    "Grafici e confronto tra gruppi": "Charts and group comparison",
    "Grafici ·": "Charts ·",
    "Grafico a dispersione dei fori": "Scatter plot of the shots",
+   "Grafico polare dei fori": "Polar plot of the holes",
    "Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)": "MOA/MIL angular grid centred on the point of aim of the active group (G)",
    "Griglia angolare, passo": "Angular grid, step",
    "Griglia {0} {1}/linea{2} · centro: {3}": "Grid {0} {1}/line{2} · centre: {3}",
@@ -2144,6 +2406,7 @@ const I18N = (() => {
    "Guida rapida e scorciatoie": "Quick guide and shortcuts",
    "H-spread (mm)": "H-spread (mm)",
    "H-spread (orizz.)": "H-spread (horiz.)",
+   "Heatmap della densità": "Density heatmap",
    "Help tecnico · termini, misure e grafici": "Technical help · terms, measurements and charts",
    "I colpi tendono a <b>ore {0}</b> rispetto alla mira: centro gruppo a {1} {2}, {3}° {4}. Spicchi = direzione di ogni colpo dalla mira.": "Shots tend to <b>{0} o'clock</b> relative to the aim: group centre at {1} {2}, {3}° {4}. Wedges = direction of each shot from the aim.",
    "I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.": "Your data stays on your device: the page makes no network connection at all.",
@@ -2158,11 +2421,14 @@ const I18N = (() => {
    "ISSF 50 m carabina": "ISSF 50 m rifle",
    "Ignora": "Ignore",
    "Il centro gruppo coincide con il punto di mira.": "The group centre coincides with the point of aim.",
+   "Il codice stampato sul bersaglio (SA-xxxx): identifica le posizioni dei fori": "The code printed on the target (SA-xxxx): it identifies the hole positions",
    "Il file non è una sessione di Shoot Analyzer": "The file is not a Shoot Analyzer session",
    "Il gruppo attivo non ha fori.": "The active group has no shots.",
+   "Il gruppo ha {0} fori: il bersaglio ne ha 5 o 10.": "The group has {0} holes: the target has 5 or 10.",
    "Il gruppo è allungato lungo l'asse <b>ore {0}–{1}</b> ({2}° dalla verticale, {3}; rapporto tra gli assi {4}:1). Spicchi = direzione di ogni colpo dal centro gruppo.": "The group is elongated along the <b>{0}–{1} o'clock</b> axis ({2}° from vertical, {3}; axis ratio {4}:1). Wedges = direction of each shot from the group centre.",
    "Il lavoro salvato non è più disponibile.": "The saved work is no longer available.",
    "Il lavoro salvato resta disponibile finché non ne inizi uno nuovo": "The saved work stays available until you start a new one",
+   "Il reticolo con le tacche e la tabella, da stampare o tenere sul telefono": "The reticle with the marks and the table, to print or keep on your phone",
    "Immagine": "Image",
    "Immagine PNG": "PNG image",
    "Immagine caricata: {0}×{1} px": "Image loaded: {0}×{1} px",
@@ -2172,9 +2438,11 @@ const I18N = (() => {
    "Impossibile aprire l'immagine: ": "Cannot open the image: ",
    "Includi l'immagine nella sessione": "Include the image in the session",
    "IndexedDB non disponibile": "IndexedDB not available",
+   "Ingrandimento al quale le tacche valgono il loro valore nominale (dal manuale del cannocchiale)": "Magnification at which the marks have their nominal value (from the scope manual)",
    "Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)": "Loupe magnification relative to the view (also Shift+wheel on the image with the loupe on)",
    "Innesco": "Primer",
    "Inserisci il calibro: il punteggio dipende dal bordo del foro.": "Enter the caliber: the score depends on the edge of the hole.",
+   "Inserisci il codice stampato sul bersaglio (SA-1000…9999).": "Enter the code printed on the target (SA-1000…9999).",
    "Intervalli di confidenza": "Confidence intervals",
    "Istogramma delle distanze dal centro gruppo": "Histogram of distances from the group centre",
    "L'archivio è vuoto: salva una sessione o aggiungi sessioni salvate.": "The archive is empty: save a session or add saved sessions.",
@@ -2193,9 +2461,15 @@ const I18N = (() => {
    "Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)": "Level of the confidence intervals (σ, CEP, R95, R99, expected mean radius, group centre and correction)",
    "MIL": "MIL",
    "MIL (mrad)": "MIL (mrad)",
+   "MIL a tacche": "MIL hash marks",
+   "MIL a tacche (ogni 0,5 MIL)": "MIL hash marks (every 0.5 MIL)",
+   "MIL-DOT (punti ogni 1 MIL)": "MIL-DOT (dots every 1 MIL)",
    "MOA": "MOA",
+   "MOA a tacche": "MOA hash marks",
+   "MOA a tacche (ogni 2 MOA)": "MOA hash marks (every 2 MOA)",
    "Manca il punto di mira: direzioni dal centro gruppo. ": "No point of aim: directions from the group centre. ",
    "Mano: trascina per spostare, rotella per zoom. Puoi comunque trascinare i punti.": "Pan: drag to move, wheel to zoom. You can still drag the points.",
+   "Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati": "Heatmap of the probability density of impacts according to the normal model (the same as ellipse, CEP and hit probability); needs at least 3 non-collinear holes",
    "Media dei fori inclusi": "Average of the included shots",
    "Media punti": "Average points",
    "Media su": "Average over",
@@ -2206,6 +2480,10 @@ const I18N = (() => {
    "Migliore (più stretto)": "Better (tighter)",
    "Mira": "Aim",
    "Mira: clicca il punto mirato per «{0}».": "Aim: click the point you aimed at for «{0}».",
+   "Mira: si vede anche dove cade ogni gruppo. Centro gruppo: si confronta solo la forma della rosata": "Aim: you also see where each group lands. Group centre: only the shape of the groups is compared",
+   "Misura accettabile ma migliorabile (scala entro ±2%, RMS < 1 mm): rifai la calibrazione o la foto più perpendicolare.": "Acceptable but improvable measurement (scale within ±2%, RMS < 1 mm): redo the calibration or take the photo more perpendicular.",
+   "Misura coerente: scala e fori entro le tolleranze indicative (scala ±1%, RMS < 0,5 mm).": "Consistent measurement: scale and holes within the indicative tolerances (scale ±1%, RMS < 0.5 mm).",
+   "Misura da rivedere: controlla la stampa (righello = 100 mm), la calibrazione della scala, la prospettiva della foto e il punto di mira.": "Measurement to review: check the print (ruler = 100 mm), the scale calibration, the photo perspective and the aiming point.",
    "Misure": "Measurements",
    "Misure e correzione": "Measurements and correction",
    "Modello normale circolare: σ = {0} mm per asse a {1}{2}. Flyer esclusi non contano.": "Circular normal model: σ = {0} mm per axis at {1}{2}. Excluded flyers do not count.",
@@ -2222,13 +2500,16 @@ const I18N = (() => {
    "Niente da esportare: inserisci prima dei fori.": "Nothing to export: add some shots first.",
    "Niente da salvare: carica prima un'immagine.": "Nothing to save: load an image first.",
    "Non calibrato: seleziona «Scala» e clicca due punti a distanza nota.": "Not calibrated: select «Scale» and click two points at a known distance.",
+   "Non disegnati:": "Not drawn:",
    "Note": "Notes",
    "Numero di gruppi per la media mobile": "Number of groups for the moving average",
    "Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.": "Each group has its own data. A new group copies all the data of the active group (shots, foulers and notes included): correct the ones that change. Everything appears in the Result Card.",
    "Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo": "Each group has its own distance: a new group starts from that of the active group",
    "Orientamento": "Orientation",
    "Orientamento e prospettiva": "Orientation and perspective",
+   "Origine": "Origin",
    "Orologio": "Clock",
+   "PDF A4 a 300 dpi con un nuovo codice: stampalo al 100% (senza «adatta alla pagina»)": "A4 PDF at 300 dpi with a new code: print it at 100% (no «fit to page»)",
    "PROBABILITÀ DI COLPIRE · {0} a {1}": "HIT PROBABILITY · {0} at {1}",
    "PUNTEGGIO · {0}": "SCORE · {0}",
    "PUNTI (mm; X, Y dal punto di mira, Y↑; direzione dal centro gruppo)": "SHOTS (mm; X, Y from the point of aim, Y↑; direction from the group centre)",
@@ -2238,6 +2519,7 @@ const I18N = (() => {
    "Peggiore (più largo)": "Worse (wider)",
    "Per foro: {0}  (* 10 interno, ≈ sulla linea)": "Per shot: {0}  (* inner 10, ≈ on the line)",
    "Personalizzato": "Custom",
+   "Piano focale": "Focal plane",
    "Pistola / revolver": "Pistol / revolver",
    "Polvere": "Powder",
    "Precisione e carica": "Precision and charge",
@@ -2245,11 +2527,13 @@ const I18N = (() => {
    "Precisione e salto dalle righe": "Precision and jump to the lands",
    "Precisione in funzione della carica o del salto dalle righe": "Precision as a function of charge or jump to the lands",
    "Precisione per livello, con intervallo di confidenza": "Precision per level, with confidence interval",
+   "Preparazione del bersaglio…": "Preparing the target…",
    "Preparazione del report PDF…": "Preparing the PDF report…",
    "Preparazione dello ZIP ({0} sessioni)…": "Preparing the ZIP ({0} sessions)…",
    "Pressione": "Pressure",
    "Pressione (hPa)": "Pressure (hPa)",
    "Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)": "Atmospheric pressure in hPa (= mbar), as shown by your instrument (absolute or sea-level)",
+   "Primo (FFP)": "First (FFP)",
    "Probabilità di colpire": "Hit probability",
    "Prospettiva": "Perspective",
    "Prospettiva: clicca i 4 angoli del rettangolo di {0} × {1} mm, in qualsiasi ordine ({2}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.": "Perspective: click the 4 corners of the {0} × {1} mm rectangle, in any order ({2}/4). The width is the top side. Backspace = remove the last one · Esc = cancel.",
@@ -2286,6 +2570,11 @@ const I18N = (() => {
    "Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta": "Printable PDF report (A4): image, metrics, charts, shots table, load data and notes; with several groups also comparison, dope card and precision per charge/seating",
    "Report {0}": "Report {0}",
    "Result Card esportata": "Result Card exported",
+   "Reticolo": "Reticle",
+   "Reticolo con le tacche da usare per ogni distanza": "Reticle with the marks to use for each distance",
+   "Reticolo e holdover · dove mirare senza toccare le torrette": "Reticle and holdover · where to aim without touching the turrets",
+   "Reticolo esportato (PNG)": "Reticle exported (PNG)",
+   "Reticolo {0}, visto dal tiratore. Ogni punto è la tacca da sovrapporre al bersaglio: serve più alzo → tacca sotto il centro; serve correggere a destra → tacca a sinistra.": "Reticle {0}, as seen by the shooter. Each dot is the mark to place on the target: more elevation needed → mark below the centre; correction to the right needed → mark to the left.",
    "Rettangolo (largh. × alt.)": "Rectangle (width × height)",
    "Rettangolo di riferimento": "Reference rectangle",
    "Rettangolo di riferimento piccolo nella foto (lato più corto {0} px): errore di scala fino a ±{1}%. Usa un rettangolo più grande.": "Small reference rectangle in the photo (shortest side {0} px): scale error up to ±{1}%. Use a larger rectangle.",
@@ -2297,10 +2586,12 @@ const I18N = (() => {
    "Rimuovi correzione": "Remove correction",
    "Riporta la foto all'orientamento originale": "Bring the photo back to its original orientation",
    "Ripristina (Ctrl+Y)": "Redo (Ctrl+Y)",
+   "Riquadro 150 × 150 mm, tacche ogni 10 mm; le tacche lunghe indicano la croce della mira · Shoot Analyzer {0}": "Frame 150 × 150 mm, marks every 10 mm; the long marks show the aiming cross · Shoot Analyzer {0}",
    "Risoluzione bassa: un foro misura solo {0} px, il centro è difficile da individuare con precisione.": "Low resolution: a hole is only {0} px wide, its centre is hard to locate precisely.",
    "Risultati": "Results",
    "Risultati copiati negli appunti": "Results copied to the clipboard",
    "Risultati salvati in un file di testo": "Results saved to a text file",
+   "Rosate dei gruppi scelti, sovrapposte o affiancate": "Selected groups, overlaid or side by side",
    "Rotazione (° , + = orario)": "Rotation (° , + = clockwise)",
    "Ruota di 90° in senso antiorario": "Rotate 90° counter-clockwise",
    "Ruota di 90° in senso orario": "Rotate 90° clockwise",
@@ -2310,6 +2601,7 @@ const I18N = (() => {
    "SD radiale (mm)": "Radial SD (mm)",
    "SD radiale √(σx²+σy²)": "Radial SD √(σx²+σy²)",
    "SD radiale √(σx²+σy²): {0}": "Radial SD √(σx²+σy²): {0}",
+   "SHOOT ANALYZER · RETICOLO {0} · {1}{2}": "SHOOT ANALYZER · RETICLE {0} · {1}{2}",
    "SHOOT ANALYZER — {0}": "SHOOT ANALYZER — {0}",
    "SINISTRA": "LEFT",
    "STATISTICHE{0}": "STATISTICS{0}",
@@ -2333,14 +2625,18 @@ const I18N = (() => {
    "Scaldacanna": "Foulers",
    "Scegli un bersaglio per disegnare gli anelli attorno al punto di mira di ogni gruppo e calcolare il punteggio.": "Choose a target to draw the rings around the point of aim of each group and compute the score.",
    "Scostamento centro gruppo": "Group centre offset",
+   "Secondo (SFP)": "Second (SFP)",
    "Segmento di scala corto ({0} px): errore di scala fino a ±{1}%. Usa due punti più lontani (almeno 150 px).": "Short scale segment ({0} px): scale error up to ±{1}%. Use two points farther apart (at least 150 px).",
    "Segmento di scala {0} px": "Scale segment {0} px",
    "Serve almeno un secondo salto dalle righe per un confronto.": "At least a second jump value is needed for a comparison.",
    "Serve almeno una seconda carica per un confronto.": "At least a second charge is needed for a comparison.",
+   "Serve il punto di mira al centro della croce.": "The aiming point at the centre of the cross is needed.",
+   "Serve la scala: calibrala sul righello di 100 mm del bersaglio.": "The scale is needed: calibrate it on the 100 mm ruler of the target.",
    "Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».": "You need a REAL rectangle of known size (sheet edge, printed frame). After the correction the scale is already set from the rectangle; you can redo it by hand with «Scale».",
    "Servono almeno 2 fori": "At least 2 shots needed",
    "Servono almeno 2 fori inclusi nel gruppo attivo.": "At least 2 included shots are needed in the active group.",
    "Servono almeno 3 colpi per l'asse di dispersione.": "At least 3 shots are needed for the dispersion axis.",
+   "Servono almeno 3 fori non allineati.": "At least 3 non-collinear holes are needed.",
    "Sessione": "Session",
    "Sessione Shoot Analyzer": "Shoot Analyzer session",
    "Sessione caricata": "Session loaded",
@@ -2349,27 +2645,34 @@ const I18N = (() => {
    "Shoot Analyzer": "Shoot Analyzer",
    "Shoot Analyzer {0} · {1} · {2}": "Shoot Analyzer {0} · {1} · {2}",
    "Shoot Analyzer {0} — archivio esportato il {1}": "Shoot Analyzer {0} — archive exported on {1}",
+   "Shoot Analyzer · bersaglio di autoverifica": "Shoot Analyzer · self-check target",
    "Significato di termini, misure e grafici, con formule ed esempi (tasto H)": "Meaning of terms, measurements and charts, with formulas and examples (key H; in Italian)",
    "Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap.": "Snap: the clicked shot locks onto the centre of the hole (M). Needs a calibrated scale and the caliber. Alt+click = no snap.",
    "Soglia flyer (k · SD)": "Flyer threshold (k · SD)",
    "Solo distanze tirate. Il brandeggio vale per il vento di quel giorno.": "Only distances actually shot. Windage is valid for the wind of that day.",
    "Solo {0} colpi: statistiche poco significative (consigliati almeno 5, meglio 10).": "Only {0} shots: statistics of limited significance (at least 5 recommended, better 10).",
+   "Sovrapposte": "Overlaid",
    "Sposta/zoom (1)": "Move/zoom (1)",
    "Storico vuoto.": "History empty.",
    "Storico: {0} gruppi aggiunti{1}.": "History: {0} groups added{1}.",
    "Storico: {0} gruppi da altre sessioni.": "History: {0} groups from other sessions.",
    "Sulla linea": "On the line",
+   "Superficie 3D della densità di probabilità degli impatti": "3D surface of the probability density of impacts",
    "Svuota archivio": "Clear archive",
    "Svuota storico": "Clear history",
    "Svuotare l'archivio delle sessioni? I file già salvati sul disco non vengono toccati.": "Clear the session archive? Files already saved on disk are not touched.",
    "Svuotare lo storico del confronto?": "Clear the comparison history?",
    "Tabella della dope card per i fogli di calcolo": "Dope card table for spreadsheets",
+   "Tacca ({0})": "Mark ({0})",
+   "Tacca lunga e numero ogni quanti passi": "Long mark and number every how many steps",
    "Tema chiaro / scuro (T)": "Light / dark theme (T)",
    "Temperatura": "Temperature",
    "Temperatura (°C)": "Temperature (°C)",
    "Testo": "Text",
    "Torna all'immagine (Esc)": "Back to the image (Esc)",
    "Torna alla foto originale (i punti vengono riportati su di essa)": "Back to the original photo (points are mapped back onto it)",
+   "Torrette: alzo": "Turrets: elevation",
+   "Torrette: alzo {0} · brand. {1} click · {2}": "Turrets: elevation {0} · windage {1} clicks · {2}",
    "Trascina per ridimensionare il pannello · doppio clic: larghezza predefinita · frecce ←/→": "Drag to resize the panel · double-click: default width · arrows ←/→",
    "Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.": "Drag a point to move it · right-click a point to delete it · <kbd>Alt</kbd>+click to add a shot on top of an existing point (overlapping shots) · wheel = zoom · <kbd>Shift</kbd>+wheel = loupe magnification (×2–×12, also from the menu next to «Loupe») · drag the background or middle button = pan.",
    "Tutti i gruppi": "All groups",
@@ -2377,6 +2680,7 @@ const I18N = (() => {
    "Uguale": "Same",
    "Umidità": "Humidity",
    "Umidità (%)": "Humidity (%)",
+   "Un bersaglio da stampare con fori a posizioni note: fotografalo e misuralo come un bersaglio vero (scala sul righello, mira al centro della croce, fori); la verifica confronta le tue misure con i valori esatti e mette alla prova tutta la catena di misura.": "A target to print with holes at known positions: photograph it and measure it like a real target (scale on the ruler, aiming point at the centre of the cross, holes); the check compares your measurements with the exact values and tests the whole measuring chain.",
    "Un colpo è segnalato come flyer se la sua distanza dal centro degli altri colpi supera la loro distanza media di più di k deviazioni standard (servono almeno 5 colpi)": "A shot is flagged as a flyer if its distance from the centre of the other shots exceeds their mean distance by more than k standard deviations (at least 5 shots needed)",
    "Un punto per gruppo; barre = intervallo di confidenza della media. Le linee uniscono solo i punti misurati: non sono una traiettoria.": "One point per group; bars = confidence interval of the mean. The lines only join the measured points: they are not a trajectory.",
    "Un solo livello: nessun confronto possibile.": "Only one level: no comparison possible.",
@@ -2386,6 +2690,7 @@ const I18N = (() => {
    "Unità click": "Click unit",
    "Unità salto": "Jump unit",
    "Unità vento": "Wind unit",
+   "Unità: {0}{1} · origine: {2} · cerchio = raggio medio attorno al centro gruppo (✕), stessa scala per tutti.": "Unit: {0}{1} · origin: {2} · circle = mean radius around the group centre (✕), same scale for all.",
    "Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .json).": "Use the «Load photo» button or drop a JPG/PNG file here (or a .json session).",
    "V-spread (mm)": "V-spread (mm)",
    "V-spread (vert.)": "V-spread (vert.)",
@@ -2396,26 +2701,34 @@ const I18N = (() => {
    "Vento": "Wind",
    "Verso orizzontale": "Horizontal direction",
    "Verso verticale": "Vertical direction",
+   "Vista": "View",
    "Vuoto = distanza a cui è stato sparato il gruppo": "Empty = distance at which the group was shot",
    "X dal punto di mira (mm)": "X from the point of aim (mm)",
    "Y dal punto di mira (mm, + = alto)": "Y from the point of aim (mm, + = up)",
    "ZIP salvato: {0} sessioni, {1} MB": "ZIP saved: {0} sessions, {1} MB",
    "Zone di punteggio": "Scoring zones",
    "[{0}] {1} colpi{2}{3}": "[{0}] {1} shots{2}{3}",
+   "al centro del reticolo": "at the centre of the reticle",
    "alto": "high",
    "alzo": "elevation",
    "alzo {0} · brandeggio {1} click (+ = alto / destra)": "elevation {0} · windage {1} clicks (+ = up / right)",
+   "anche il brandeggio": "windage too",
    "anche lo storico": "include history",
    "anelli: {0}": "rings: {0}",
    "antiorario": "counter-clockwise",
    "archivio oltre 4 GB": "archive larger than 4 GB",
+   "az {0}° · elev {1}° · griglia {2} {3}": "az {0}° · elev {1}° · grid {2} {3}",
    "basso": "low",
    "bersaglio": "target",
+   "bersaglio_prova_SA-{0}.pdf": "test_target_SA-{0}.pdf",
+   "brand.": "wind.",
    "brandeggio": "windage",
    "canvas troppo grande": "canvas too large",
+   "centro di ogni gruppo": "centre of each group",
    "centro gruppo": "group centre",
    "cerchio ⌀ {0} {1}": "circle ⌀ {0} {1}",
    "clic: spiegazione nell'help tecnico": "click: explanation in the technical help",
+   "click": "clicks",
    "click di alzo": "elevation clicks",
    "cm": "cm",
    "colpi": "shots",
@@ -2428,7 +2741,9 @@ const I18N = (() => {
    "da ore {0}": "from {0} o'clock",
    "da {0} a {1}": "from {0} to {1}",
    "dal centro gruppo": "from the group centre",
+   "dal gruppo attivo": "from the active group",
    "dal punto di mira": "from the point of aim",
+   "dalla dope card (munizione scelta sopra)": "from the dope card (ammunition chosen above)",
    "database bloccato da un'altra scheda": "database blocked by another tab",
    "dei fori": "Shots",
    "dei gruppi": "Groups",
@@ -2450,6 +2765,7 @@ const I18N = (() => {
    "hPa": "hPa",
    "in": "in",
    "in @100 yd (SMOA)": "in @100 yd (SMOA)",
+   "in uso": "in use",
    "km/h": "km/h",
    "marca, n° ricariche…": "brand, number of reloads…",
    "marca, peso gr, tipo (il calibro è nei parametri)": "brand, weight gr, type (the caliber is in the parameters)",
@@ -2460,13 +2776,17 @@ const I18N = (() => {
    "nessun gruppo": "no group",
    "no": "no",
    "non calibrata": "not calibrated",
+   "numero ogni": "number every",
    "orario": "clockwise",
    "ore {0}": "{0} o'clock",
    "ore {0}: {1} {2}": "{0} o'clock: {1} {2}",
    "orizzontale": "horizontal",
    "pagina {0} di {1}": "page {0} of {1}",
+   "passi": "steps",
+   "passo": "step",
    "perimetro": "perimeter",
    "personalizzato (10 ⌀ {0} mm, passo {1} mm)": "custom (10 ⌀ {0} mm, step {1} mm)",
+   "personalizzato {0} {1}": "custom {0} {1}",
    "pixel": "pixels",
    "pixel immagine": "image pixels",
    "più alto che largo": "taller than it is wide",
@@ -2474,8 +2794,10 @@ const I18N = (() => {
    "più largo che alto": "wider than it is tall",
    "più stretto": "tighter",
    "punto di mira": "point of aim",
+   "punto di mira ⊕": "aiming point ⊕",
    "raggio medio": "mean radius",
    "raggio medio atteso": "expected mean radius",
+   "reticolo_{0}.png": "reticle_{0}.png",
    "rettangolo {0} × {1} {2}": "rectangle {0} × {1} {2}",
    "riepilogo_gruppi.csv": "groups_summary.csv",
    "riepilogo_gruppi.csv: tutti i gruppi di tutte le sessioni in un'unica tabella.": "groups_summary.csv: all groups of all sessions in a single table.",
@@ -2487,6 +2809,7 @@ const I18N = (() => {
    "showSaveFilePicker non utilizzabile, uso il download:": "showSaveFilePicker not usable, falling back to download:",
    "sinistra": "left",
    "sì": "yes",
+   "tarato a": "calibrated at",
    "tipo": "type",
    "title=\"Correzione da applicare alle torrette\"": "title=\"Correction to dial on the turrets\"",
    "totali, flyer inclusi": "total, flyers included",
@@ -2513,6 +2836,7 @@ const I18N = (() => {
    "{0} esclusi": "{0} excluded",
    "{0} escluso": "{0} excluded",
    "{0} fori": "{0} shots",
+   "{0} fori · calibro {1} mm · stampa al 100% (scala reale, senza «adatta alla pagina»)": "{0} holes · calibre {1} mm · print at 100% (true scale, no «fit to page»)",
    "{0} gruppi": "{0} groups",
    "{0} gruppi · {1} colpi": "{0} groups · {1} shots",
    "{0} mm a {1}": "{0} mm {1}",
@@ -2528,13 +2852,21 @@ const I18N = (() => {
    "{0} scaldacanna": "{0} foulers",
    "{0} sessioni archiviate": "{0} sessions archived",
    "{0} sessioni, una cartella ciascuna (numero_nome-foto_data-salvataggio):": "{0} sessions, one folder each (number_photo-name_save-date):",
+   "{0} {1} a destra": "{0} {1} to the right",
+   "{0} {1} a sinistra": "{0} {1} to the left",
+   "{0} {1} sopra il centro": "{0} {1} above the centre",
+   "{0} {1} sotto il centro": "{0} {1} below the centre",
+   "{0} · ES {1} · raggio medio {2} {3}": "{0} · ES {1} · mean radius {2} {3}",
    "{0} · cal. {1}": "{0} · cal. {1}",
+   "{0} · foro {1} · {2}; {3} {4}": "{0} · hole {1} · {2}; {3} {4}",
    "{0} · {1} colpi": "{0} · {1} shots",
    "{0} · {1} colpi · {2}": "{0} · {1} shots · {2}",
    "{0} · {1} fori. Ogni «Salva sessione» aggiorna l'archivio.": "{0} · {1} shots. Every «Save session» updates the archive.",
    "{0} · {1} gruppi, {2} colpi · {3} {4} {5} (IC {6}–{7})": "{0} · {1} groups, {2} shots · {3} {4} {5} (CI {6}–{7})",
    "{0}, {1}, {2}. ": "{0}, {1}, {2}. ",
    "{0}: anelli 10 → 1 da ⌀ {1} a ⌀ {2} mm attorno al punto di mira. Punteggio: vale l'anello toccato dal bordo del foro (calibro {3} mm); * = 10 interno, ≈ = sulla linea entro l'incertezza di posizione. Contano tutti i fori, anche quelli esclusi dalle statistiche.": "{0}: rings 10 → 1 from ⌀ {1} to ⌀ {2} mm around the point of aim. Scoring: a shot scores the ring touched by the edge of the hole (caliber {3} mm); * = inner 10, ≈ = on the line within the position uncertainty. All shots count, including those excluded from the statistics.",
+   "{0}: senza distanza": "{0}: no distance",
+   "{0}: senza punto di mira": "{0}: no aiming point",
    "{0}: valore più piccolo con intervallo che non si sovrappone agli altri (criterio prudente).": "{0}: smallest value, with an interval that does not overlap the others (conservative criterion).",
    "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Data</th><th>Gruppo</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Differenza della metrica scelta rispetto al gruppo precedente\">Δ prec.</th><th class=\"x\" title=\"Media della metrica scelta sugli ultimi N gruppi\">Media {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Valori in {4}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «{5}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>": "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th>Date</th><th>Group</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Difference of the chosen metric from the previous group\">Δ prev.</th><th class=\"x\" title=\"Average of the chosen metric over the last N groups\">Avg {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Values in {4}; ordered by the date of the load data. In bold the best (smallest) value of each column. Δ and moving average refer to «{5}». With few shots per group, small differences may be just chance.</div>",
    "{0}° dalla verticale · rapporto {1} : 1": "{0}° from vertical · ratio {1} : 1",
@@ -2553,12 +2885,14 @@ const I18N = (() => {
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante. In realtà vento e differenze di velocità la fanno crescere con la distanza: {0}. «Taratura attuale» non calcolabile: lo scostamento a un'altra distanza dipende dalla balistica.": "⚠ Distance different from that of the group: angular dispersion assumed constant. In reality wind and velocity spread make it grow with distance: {0}. «Current zero» cannot be computed: the offset at another distance depends on ballistics.",
    "⚠ Nella foto il rettangolo è {0}: controlla di non aver invertito larghezza e altezza ({1} × {2} mm).": "⚠ In the photo the rectangle is {0}: check that you have not swapped width and height ({1} × {2} mm).",
    "✋ Mano": "✋ Pan",
+   "✓ Verifica il gruppo attivo": "✓ Check the active group",
    "⤢ Adatta": "⤢ Fit",
    "⬚ Correggi con 4 punti": "⬚ Correct with 4 points",
    "⬚ Prospettiva": "⬚ Perspective",
    "＋ Aggiungi sessioni": "＋ Add sessions",
    "＋ Importa sessioni nello storico": "＋ Import sessions into history",
    "＋ Nuovo gruppo": "＋ New group",
+   "🎯 Bersaglio di prova (PDF)": "🎯 Test target (PDF)",
    "💾 Salva sessione JSON": "💾 Save JSON session",
    "📂 Carica foto": "📂 Load photo",
    "📂 Carica sessione JSON": "📂 Open JSON session",
@@ -2574,6 +2908,7 @@ const I18N = (() => {
    "🔍 Lente": "🔍 Loupe",
    "🖼 Dope card (PNG)": "🖼 Dope card (PNG)",
    "🖼 Esporta Result Card (PNG)": "🖼 Export Result Card (PNG)",
+   "🖼 Reticolo (PNG)": "🖼 Reticle (PNG)",
    "🗑 Tutto": "🗑 All",
    "🗜 Esporta archivio (ZIP)": "🗜 Export archive (ZIP)",
    "🧲 Snap": "🧲 Snap"
@@ -2628,7 +2963,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.8.0";
+const APP_VERSION = "1.9.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 3;
@@ -2788,24 +3123,33 @@ function params() {
     clickVal: num("clickVal"), clickUnit: $("clickUnit").value,
     flyerK: num("flyerK") || 2,
     cmpMetric: $("cmpMetric").value, cmpUnit: $("cmpUnit").value, cmpN: num("cmpN") || 3,
-    ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95, hullOn: $("hullOn").checked,
+    ellipseOn: $("ellipseOn").checked, ellipseP: parseFloat($("ellipseP").value) || 95, hullOn: $("hullOn").checked, heatOn: $("heatOn").checked,
     ciLevel: parseFloat($("ciLevel").value) || 95,
     gridOn: $("gridOn").checked, gridStep: num("gridStep"), gridUnit: $("gridUnit").value,
     perspW: num("perspW"), perspH: num("perspH"), perspPreset: $("perspPreset").value,
     hitShape: $("hitShape").value, hitD: num("hitD"), hitW: num("hitW"), hitH: num("hitH"), hitUnit: $("hitUnit").value,
     hitDist: num("hitDist"), hitDistUnit: $("hitDistUnit").value,
     scoreTarget: $("scoreTarget").value, scoreD10: num("scoreD10"), scoreStep: num("scoreStep"), scoreInner: num("scoreInner"),
+    // dalla 1.9.0: confronto visivo e reticolo
+    visLayout: $("visLayout").value, visRef: $("visRef").value, visUnit: $("visUnit").value,
+    rtType: $("rtType").value, rtStep: num("rtStep"), rtUnit: $("rtUnit").value, rtLab: num("rtLab"), rtPlane: $("rtPlane").value,
+    rtCal: num("rtCal"), rtMag: num("rtMag"), rtSrc: $("rtSrc").value, rtWind: $("rtWind").checked,
   };
 }
 function setParams(p) {
   for (const [k, id] of Object.entries({ calDist: "calDist", calUnit: "calUnit", shotDist: "shotDist", shotDistUnit: "shotDistUnit",
     caliber: "caliber", caliberUnit: "caliberUnit", clickVal: "clickVal", clickUnit: "clickUnit", gridStep: "gridStep", gridUnit: "gridUnit", flyerK: "flyerK", ellipseP: "ellipseP", ciLevel: "ciLevel", cmpMetric: "cmpMetric", cmpUnit: "cmpUnit", cmpN: "cmpN", perspW: "perspW", perspH: "perspH", perspPreset: "perspPreset",
     hitShape: "hitShape", hitD: "hitD", hitW: "hitW", hitH: "hitH", hitUnit: "hitUnit", hitDistUnit: "hitDistUnit",
-    scoreTarget: "scoreTarget", scoreD10: "scoreD10", scoreStep: "scoreStep", scoreInner: "scoreInner" }))
+    scoreTarget: "scoreTarget", scoreD10: "scoreD10", scoreStep: "scoreStep", scoreInner: "scoreInner",
+    visLayout: "visLayout", visRef: "visRef", visUnit: "visUnit", rtType: "rtType", rtStep: "rtStep", rtUnit: "rtUnit", rtLab: "rtLab",
+    rtPlane: "rtPlane", rtCal: "rtCal", rtMag: "rtMag", rtSrc: "rtSrc" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
   if (p.hullOn !== undefined) $("hullOn").checked = !!p.hullOn;
+  if (p.heatOn !== undefined) $("heatOn").checked = !!p.heatOn;
+  if (p.rtWind !== undefined) $("rtWind").checked = !!p.rtWind;
+  if (typeof syncRtControls === "function") syncRtControls();
   if (p.hitDist !== undefined) $("hitDist").value = p.hitDist > 0 ? p.hitDist : "";   // 0 = distanza di tiro (campo vuoto)
   syncGridButton();
   if (p.caliberPreset && CALIBER_MM[p.caliberPreset] !== undefined) $("caliberPreset").value = p.caliberPreset;
@@ -3149,6 +3493,7 @@ function draw() {
   const cc = calcContext();
   drawGrid(ctx2d, toScreen, v.scale, cc, vis);
   drawRings(ctx2d, toScreen, v.scale, cc);
+  drawHeat(ctx2d, toScreen, v.scale);
   drawPerspRect(ctx2d, toScreen);
   drawOverlay(ctx2d, toScreen, v.scale, cc);
   drawAlignGuide();
@@ -3297,6 +3642,39 @@ function dopeHTML(g, cc) {
   const ax = (a, word) => _T`${word} <b>${sgn(milClk(a.mil, cc), 1)} click</b> (${sgn(a.mil, 2)} MIL${a.ci != null ? _T` · IC ±${fmt(milClk(a.ci, cc), 1)} click` : ""})`;
   return _T`<div class="dope" title="Click da impostare sulla torretta per portare i colpi sul punto di mira a questa distanza: click impostati sui fori + correzione di ogni foro, mediati (+ = in alto / a destra)">🎯 <b>Dope a ${distText([g])}</b>: ${ax(d.v, _t("alzo"))} · ${ax(d.h, _t("brandeggio"))}</div>`
     + (d.dialVaries ? _T`<div class="nwarn">⚠ Click diversi tra i fori: la dope compensa i click di ogni foro, ma dispersione e correzione sono calcolate sui fori come sono sul bersaglio.</div>` : "");
+}
+
+/* ------------------------- HEATMAP DELLA DENSITÀ (dalla 1.9.0) -------------------------
+   Densità della normale bivariata stimata dai fori inclusi (Calc.bvnDensity: stesso modello di ellisse, CEP e
+   probabilità di colpire) disegnata nel colore del gruppo, opacità crescente con la densità. Immagine calcolata in
+   coordinate mondo su ±3,5 σ e messa in cache finché i fori non cambiano. */
+const heatCache = new Map();
+function heatImage(g) {
+  const pts = inc(g), cov = Calc.covariance(pts), f = cov && Calc.bvnDensity(cov);
+  if (!f) return null;
+  const key = JSON.stringify([pts.map(q => [q.x, q.y]), g.color]);
+  const hit = heatCache.get(g.id); if (hit && hit.key === key) return hit;
+  const R = 3.5 * Math.sqrt(Math.max(cov.sxx, cov.syy)), N = 160;
+  const c = document.createElement("canvas"); c.width = c.height = N;
+  const k = c.getContext("2d"), im = k.createImageData(N, N);
+  const rgb = [1, 3, 5].map(i => parseInt(g.color.slice(i, i + 2), 16));
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const x = cov.cx - R + (i + 0.5) * 2 * R / N, y = cov.cy - R + (j + 0.5) * 2 * R / N;
+    const v = f(x, y) / f.peak, o = 4 * (j * N + i);
+    im.data[o] = rgb[0]; im.data[o + 1] = rgb[1]; im.data[o + 2] = rgb[2]; im.data[o + 3] = Math.round(255 * 0.6 * Math.pow(v, 0.7));
+  }
+  k.putImageData(im, 0, 0);
+  const out = { key, canvas: c, x0: cov.cx - R, y0: cov.cy - R, size: 2 * R };
+  heatCache.set(g.id, out);
+  return out;
+}
+function drawHeat(g2, T, scl, groups = state.groups) {
+  if (!params().heatOn) return;
+  for (const g of groups) {
+    const h = heatImage(g); if (!h) continue;
+    const a = T({ x: h.x0, y: h.y0 });
+    g2.save(); g2.imageSmoothingEnabled = true; g2.drawImage(h.canvas, a.x, a.y, h.size * scl, h.size * scl); g2.restore();
+  }
 }
 
 /* ------------------------- SNAP E CERCHIO DEL CALIBRO (dalla 1.7.0) -------------------------
@@ -4512,6 +4890,7 @@ async function exportCard(scope = "active") {
   paintImage(k, s, ox - x0 * s, oy - y0 * s, { x0, y0, x1, y1 });
   drawGrid(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { x0, y0, x1, y1 });
   drawRings(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc, { onlyGroupIds: groups.map(g => g.id) });
+  drawHeat(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, groups);
   drawOverlay(k, q => ({ x: ox + (q.x - x0) * s, y: oy + (q.y - y0) * s }), s, cc,
     { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
   k.restore();
@@ -4708,6 +5087,7 @@ function cropCanvas(groups, side) {
   paintImage(k, s, -x0 * s, -y0 * s, { x0, y0, x1, y1 });
   drawGrid(k, T, s, cc, { x0, y0, x1, y1 });
   drawRings(k, T, s, cc, { onlyGroupIds: groups.map(g => g.id) });
+  drawHeat(k, T, s, groups);
   drawOverlay(k, T, s, cc, { onlyGroupIds: groups.map(g => g.id), noCalib: true, showNames: groups.length > 1 || undefined });
   return c;
 }
@@ -4863,7 +5243,7 @@ function chartData(g = activeGroup()) {
   const pts = g.shots.map((s, i) => ({ ...P(s), n: i + 1, excluded: !!s.excluded, flag: !!(fl.get(s.id) && fl.get(s.id).flagged) }));
   const r = Calc.analyze(shotsIn, g.poa, cc), u = k;
   return { g, cc, unit, pts, inPts: pts.filter(p => !p.excluded), poa: g.poa ? P(g.poa) : null,
-    mr: r.px.mr * u, cep: r.px.cep * u,
+    mr: r.px.mr * u, cep: r.px.cep * u, r95: r.px.r95 * u,
     ell: r.shape && params().ellipseOn ? { bearing: r.shape.bearing, a: r.px.ellA * u, b: r.px.ellB * u, p: r.shape.p } : null,
     hull: r.hull && params().hullOn ? Calc.convexHull(pts.filter(p => !p.excluded)) : null };
 }
@@ -4873,11 +5253,106 @@ function drawCharts() {
   const D = chartData();
   const msg = D ? (D.few ? _t("Servono almeno 2 fori inclusi nel gruppo attivo.") : "") : _t("Nessun gruppo.");
   $("chMsg").textContent = msg;
-  for (const id of ["chScatter", "chHist", "chClock"]) $(id).parentElement.style.display = msg ? "none" : "";
+  for (const id of ["chScatter", "chHist", "chClock", "chPolar", "ch3d"]) $(id).parentElement.style.display = msg ? "none" : "";
   if (msg) return;
   drawScatter($("chScatter"), W, Math.min(W, 420), D);
   drawHistogram($("chHist"), W, 200, D);
   drawClock($("chClock"), W, Math.min(W, 340), D);
+  drawPolar($("chPolar"), W, Math.min(W, 340) + 170, D);
+  draw3D($("ch3d"), W, Math.min(W, 420), D);
+}
+
+/* ---- Coordinate polari (dalla 1.9.0) ----
+   Sopra: polare classico centrato sul centro gruppo (0° = in alto, senso orario, anelli del modello: raggio medio,
+   CEP, R95). Sotto: lo stesso «srotolato» (angolo in ascissa, distanza in ordinata), dove anelli e settori vuoti si
+   leggono come bande. Nessuna diagnosi automatica: con pochi colpi forme simili capitano per caso. */
+function drawPolar(cv, W, H, D) {
+  const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), grid = cssVar("--line"), surf = cssVar("--panel"), col = D.g.color;
+  const hits = CH.hits.polar = [];
+  const P = D.pts.map(p => { const r = Math.hypot(p.x, p.y), deg = ((Math.atan2(p.x, p.y) * 180 / Math.PI) + 360) % 360; return { ...p, r, deg }; });
+  const rMax0 = Math.max(D.r95 || 0, ...P.map(p => p.r)) * 1.08 || 1, st = niceStep(rMax0 / 4), rMax = Math.ceil(rMax0 / st) * st;
+  const Hp = H - 170, cx = W / 2, cy = Hp / 2 + 4, R = Math.min(W / 2 - 24, Hp / 2 - 14);
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  for (let v = st; v <= rMax + 1e-9; v += st) { g.strokeStyle = grid; g.beginPath(); g.arc(cx, cy, v / rMax * R, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = muted; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillText(nfmt(v, 1), cx + 3, cy - v / rMax * R); }
+  for (let h = 0; h < 12; h++) { const a = h * Math.PI / 6;
+    g.strokeStyle = grid; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + R * Math.sin(a), cy - R * Math.cos(a)); g.stroke();
+    g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(`${h * 30}°`, cx + (R + 13) * Math.sin(a), cy - (R + 9) * Math.cos(a)); }
+  const ring = (v, dash, w) => { if (!(v > 0)) return; g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash); g.beginPath(); g.arc(cx, cy, v / rMax * R, 0, Math.PI * 2); g.stroke(); g.setLineDash([]); };
+  ring(D.mr, [], 1.5); ring(D.cep, [5, 4], 1.5); ring(D.r95, [2, 3], 1.2);
+  for (const p of P) {
+    const x = cx + p.r / rMax * R * Math.sin(p.deg * Math.PI / 180), y = cy - p.r / rMax * R * Math.cos(p.deg * Math.PI / 180);
+    g.fillStyle = p.excluded ? surf : col; g.strokeStyle = p.excluded ? muted : surf; g.lineWidth = 1.5;
+    g.beginPath(); g.arc(x, y, 4.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    hits.push({ x, y, r: 8, tip: _T`Foro ${p.n} · ${fmt(p.deg, 0)}° · ${fmt(p.r, 1)} ${D.unit}${p.excluded ? _t(" (escluso)") : ""}` });
+  }
+  // srotolato: angolo 0–360° in ascissa, distanza in ordinata
+  const top = Hp + 22, ph = 120, padL = 44, pw = W - padL - 12;
+  const X = d => padL + d / 360 * pw, Y = r => top + ph - r / rMax * ph;
+  g.strokeStyle = grid; g.lineWidth = 1;
+  const lab = pw < 400 ? 60 : 30;
+  for (let d = 0; d <= 360; d += 30) { g.beginPath(); g.moveTo(X(d), top); g.lineTo(X(d), top + ph); g.stroke();
+    if (d % lab === 0) { g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "top"; g.fillText(`${d}°`, X(d), top + ph + 4); } }
+  for (let v = 0; v <= rMax + 1e-9; v += st) { g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(padL + pw, Y(v)); g.stroke();
+    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(v, 1), padL - 5, Y(v)); }
+  const band = (v, dash, w) => { if (!(v > 0)) return; g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash); g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(padL + pw, Y(v)); g.stroke(); g.setLineDash([]); };
+  band(D.mr, [], 1.5); band(D.cep, [5, 4], 1.5); band(D.r95, [2, 3], 1.2);
+  for (const p of P) { g.fillStyle = p.excluded ? surf : col; g.strokeStyle = p.excluded ? muted : surf; g.lineWidth = 1.5;
+    g.beginPath(); g.arc(X(p.deg), Y(p.r), 4, 0, Math.PI * 2); g.fill(); g.stroke();
+    hits.push({ x: X(p.deg), y: Y(p.r), r: 7, tip: _T`Foro ${p.n} · ${fmt(p.deg, 0)}° · ${fmt(p.r, 1)} ${D.unit}` }); }
+  g.fillStyle = ink; g.textAlign = "left"; g.textBaseline = "top";
+  $("chPolarNote").innerHTML = _T`Distanze in ${D.unit} dal centro gruppo, angoli in senso orario da «in alto». <span class="key" style="border-color:${col}"></span>raggio medio · <span class="key dash" style="border-color:${col}"></span>CEP · <span class="key dot2" style="border-color:${col}"></span>R95 attesi dal modello. Sotto, lo stesso grafico «srotolato». Con pochi colpi anelli vuoti o settori senza fori capitano spesso per caso: l'app non ne trae conclusioni.`;
+}
+
+/* ---- Densità 3D (dalla 1.9.0): superficie della normale bivariata, proiezione ortografica ruotabile ---- */
+const VIEW3D = { az: -35, el: 35 };
+function draw3D(cv, W, H, D) {
+  const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), col = D.g.color;
+  const cov = Calc.covariance(D.inPts), f = cov && Calc.bvnDensity(cov);
+  if (!f) { g.fillStyle = muted; g.font = "13px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "center"; g.fillText(_t("Servono almeno 3 fori non allineati."), W / 2, H / 2); $("ch3dNote").textContent = ""; cv._d3 = null; return; }
+  cv._d3 = { D };
+  const R = 3.2 * Math.sqrt(Math.max(cov.sxx, cov.syy)), N = 36;
+  const az = VIEW3D.az * Math.PI / 180, el = VIEW3D.el * Math.PI / 180, zH = R * 0.9;
+  const proj = (x, y, z) => {   // x, y nel piano del bersaglio (centrati), z = altezza
+    const xr = x * Math.cos(az) - y * Math.sin(az), yr = x * Math.sin(az) + y * Math.cos(az);
+    return { sx: xr, sy: -(yr * Math.sin(el)) - z * Math.cos(el), d: yr * Math.cos(el) - z * Math.sin(el) };
+  };
+  const sc = Math.min(W, H) / (2.9 * R), ox = W / 2, oy = H * 0.58;
+  const S = p => ({ x: ox + p.sx * sc, y: oy + p.sy * sc });
+  const zOf = (x, y) => f(cov.cx + x, cov.cy + y) / f.peak * zH;
+  // pavimento e assi
+  g.strokeStyle = grid; g.lineWidth = 1;
+  for (let i = -2; i <= 2; i++) { const t = i * R / 2;
+    for (const [a, b] of [[[t, -R], [t, R]], [[-R, t], [R, t]]]) { const p1 = S(proj(a[0], a[1], 0)), p2 = S(proj(b[0], b[1], 0)); g.beginPath(); g.moveTo(p1.x, p1.y); g.lineTo(p2.x, p2.y); g.stroke(); } }
+  // superficie: quadrilateri dal più lontano al più vicino
+  const Q = [];
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const x0 = -R + 2 * R * i / N, x1 = -R + 2 * R * (i + 1) / N, y0 = -R + 2 * R * j / N, y1 = -R + 2 * R * (j + 1) / N;
+    const c4 = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => ({ x, y, z: zOf(x, y) }));
+    const P4 = c4.map(c => proj(c.x, c.y, c.z)), zm = c4.reduce((a, c) => a + c.z, 0) / 4 / zH;
+    Q.push({ P4, d: P4.reduce((a, p) => a + p.d, 0) / 4, zm });
+  }
+  Q.sort((a, b) => b.d - a.d);
+  const rgb = [1, 3, 5].map(i => parseInt(col.slice(i, i + 2), 16));
+  for (const q of Q) {
+    const a = 0.15 + 0.8 * q.zm, mix = v => Math.round(255 - (255 - v) * a);
+    g.fillStyle = `rgb(${mix(rgb[0])},${mix(rgb[1])},${mix(rgb[2])})`; g.strokeStyle = "rgba(0,0,0,.12)"; g.lineWidth = 0.5;
+    g.beginPath(); q.P4.forEach((p, i) => { const t = S(p); if (i) g.lineTo(t.x, t.y); else g.moveTo(t.x, t.y); }); g.closePath(); g.fill(); g.stroke();
+  }
+  // fori sul pavimento (coordinate dei grafici: x a destra, y in alto → y del piano verso l'osservatore)
+  for (const p of D.inPts) { const t = S(proj(p.x - (cov.cx), p.y - (cov.cy), 0)); g.fillStyle = "#111"; g.strokeStyle = "#fff"; g.lineWidth = 1.2; g.beginPath(); g.arc(t.x, t.y, 3.5, 0, Math.PI * 2); g.fill(); g.stroke(); }
+  g.fillStyle = muted; g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "top";
+  g.fillText(_T`az ${fmt(VIEW3D.az, 0)}° · elev ${fmt(VIEW3D.el, 0)}° · griglia ${nfmt(R / 2, 1)} ${D.unit}`, 6, 6);
+  $("ch3dNote").textContent = _t("Altezza = densità di probabilità degli impatti secondo il modello normale stimato dai fori (lo stesso di ellisse e CEP); punti neri = fori inclusi. Con pochi colpi la forma della superficie è incerta quanto l'ellisse.");
+}
+// rotazione del grafico 3D con il trascinamento
+{ const cv = $("ch3d"); let drag = null;
+  cv.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY, az: VIEW3D.az, el: VIEW3D.el }; cv.setPointerCapture(e.pointerId); cv.style.cursor = "grabbing"; });
+  cv.addEventListener("pointermove", e => { if (!drag || !cv._d3) return;
+    VIEW3D.az = drag.az + (e.clientX - drag.x) * 0.5; VIEW3D.el = Math.max(5, Math.min(89, drag.el + (e.clientY - drag.y) * 0.4));
+    draw3D(cv, cv.clientWidth, cv.clientHeight, cv._d3.D); });
+  cv.addEventListener("pointerup", () => { drag = null; cv.style.cursor = "grab"; });
+  cv.addEventListener("dblclick", () => { VIEW3D.az = -35; VIEW3D.el = 35; if (cv._d3) draw3D(cv, cv.clientWidth, cv.clientHeight, cv._d3.D); });
 }
 
 /* ---- 1. Dispersione senza immagine ---- */
@@ -5126,6 +5601,12 @@ function groupSummary(shots, poa, ctx, meta) {
   // dalla 1.7.0: varianza per la precisione per carica (s² = (sx²+sy²)/2 in mm², ν = 2(n−1)) e dope (MIL)
   if (r.n >= 2 && r.mm) { out.s2mm = (r.mm.sx ** 2 + r.mm.sy ** 2) / 2; out.nu = 2 * (r.n - 1); }
   const dp = poa && ctx.pxPerMm ? Calc.dope(shots, poa, ctx) : null;
+  // dalla 1.9.0: coordinate dei fori in mm (Y verso l'alto) per il confronto visivo, rispetto alla mira o al centro gruppo
+  if (ctx.pxPerMm && shots.length) {
+    const o = poa || Calc.centroid(shots);
+    out.pts = shots.map(q => [+((q.x - o.x) / ctx.pxPerMm).toFixed(2), +((o.y - q.y) / ctx.pxPerMm).toFixed(2)]);
+    out.ref = poa ? "poa" : "c";
+  }
   if (dp) out.dope = { n: dp.n, vMil: dp.v.mil, hMil: dp.h.mil, ciV: dp.v.ci, ciH: dp.h.ci, dialV: dp.dialV, dialH: dp.dialH, varies: dp.dialVaries, level: dp.level };
   if (r.n >= 2 && r.mm && r.ang) {
     out.mm = {}; out.MOA = {}; out.MIL = {};
@@ -5158,7 +5639,7 @@ function movingAverage(vals, N) {
 const fmtA = v => fmt(v, Math.abs(v) < 0.1 ? 3 : 2);
 const dIT = d => { if (!d) return "–"; const [y, m, g] = d.split("-"); return g ? `${g}/${m}/${y.slice(2)}` : d; };
 /** Pannelli della vista grafici che dipendono da tutti i gruppi: confronto, dope card, carica e precisione. */
-function drawCompare() { drawCompareTable(); drawDope(); drawCharge(); }
+function drawCompare() { drawCompareTable(); drawDope(); drawCharge(); drawVisual(); drawHold(); }
 function drawCompareTable() {
   const box = $("cmpBody"); if (!box || !anaOpen()) return;
   const rows = compareRows();
@@ -6196,6 +6677,7 @@ $("gridUnit").addEventListener("change", () => {
 });
 $("ellipseOn").addEventListener("change", () => { requestDraw(); drawCharts(); });
 $("hullOn").addEventListener("change", () => { requestDraw(); drawCharts(); scheduleAutosave(); });
+$("heatOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
 $("gridOn").addEventListener("change", () => { syncGridButton(); requestDraw(); if ($("gridOn").checked && !gridSpec(calcContext())) toast(_t("Griglia: servono scala calibrata e distanza di tiro.")); });
 $("bTheme").onclick = toggleTheme;
 // dati di ricarica: scrittura nel gruppo attivo (con undo) al termine della modifica del campo
@@ -6294,7 +6776,300 @@ $("chgVar").addEventListener("input", () => { delete $("chgLoad").dataset.user; 
 $("bDopePng").onclick = () => exportDopePng();
 { let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawDope(); drawCharge(); } }).observe($("dopeBox")); }
 $("clockRef").addEventListener("change", drawCharts);
-chartHover("scatter", $("chScatter")); chartHover("hist", $("chHist")); chartHover("clock", $("chClock"));
+chartHover("scatter", $("chScatter")); chartHover("hist", $("chHist")); chartHover("clock", $("chClock")); chartHover("polar", $("chPolar"));
+/* ======================= CONFRONTO VISIVO TRA ROSATE (dalla 1.9.0) =======================
+   Gruppi della sessione e dello storico (con le coordinate dei fori, salvate dalla 1.9.0) disegnati insieme:
+   sovrapposti su un'origine comune (punto di mira o centro gruppo) o affiancati, sempre alla stessa scala.
+   In angoli (MOA/MIL) ogni gruppo usa la propria distanza: si confrontano rosate tirate a distanze diverse. */
+const visState = { off: new Set() };
+function visRows() {
+  const rows = compareRows().filter(r => r.pts && r.pts.length);
+  rows.forEach(r => { r.vkey = r.hist ? `h${r.idx}` : `g${r.gid}`; if (!r.color) r.color = GROUP_COLORS[(r.idx + 2) % GROUP_COLORS.length]; });
+  return rows;
+}
+/** Gruppi scelti trasformati nell'origine e nell'unità richieste; skipped = gruppi esclusi con il motivo. */
+function visData() {
+  const p = params(), rows = visRows(), ref = p.visRef, u = p.visUnit, out = [], skipped = [];
+  for (const r of rows) {
+    if (visState.off.has(r.vkey)) continue;
+    if (ref === "poa" && r.ref !== "poa") { skipped.push(_T`${r.name}: senza punto di mira`); continue; }
+    if (u !== "mm" && !(r.distM > 0)) { skipped.push(_T`${r.name}: senza distanza`); continue; }
+    const D = r.distM * 1000, conv = v => u === "mm" ? v : Calc.fromRad(Math.atan(v / D), u);
+    let P = r.pts.map(([x, y]) => ({ x, y }));
+    if (ref === "c") { const c = Calc.centroid(P); P = P.map(q => ({ x: q.x - c.x, y: q.y - c.y })); }
+    P = P.map(q => ({ x: conv(q.x), y: conv(q.y) }));
+    const c = Calc.centroid(P);
+    out.push({ r, P, c, mr: Calc.meanRadius(P, c), es: Calc.extremeSpread(P).d });
+  }
+  return { rows, groups: out, skipped, ref, unit: u };
+}
+function drawVisual() {
+  const box = $("visList"); if (!box || !anaOpen()) return;
+  const V = visData(), u = dopeUnitD();
+  box.innerHTML = V.rows.length ? V.rows.map(r => `<label class="vis-it"><input type="checkbox" data-vk="${r.vkey}"${visState.off.has(r.vkey) ? "" : " checked"}>
+      <span class="dot" style="background:${r.hist ? "transparent" : r.color};border:2px solid ${r.color}"></span>${esc(r.name)}
+      <span class="muted">· ${r.n}${r.distM > 0 ? ` · ${fmt(distIn(r.distM, u), 0)} ${u}` : ""}${r.hist ? ` · ${esc(r.source)}` : ""}</span></label>`).join("")
+    : _T`<div class="muted">Nessun gruppo con fori e scala calibrata. I gruppi dello storico portano le coordinate dei fori solo se importati con la 1.9.0 o successive.</div>`;
+  $("visChartWrap").style.display = V.groups.length ? "" : "none";
+  if (V.groups.length) drawVisChart($("chVis"), Math.max(220, Math.floor($("visChartWrap").clientWidth)), V);
+  $("visNote").innerHTML = (V.groups.length ? _T`Unità: ${V.unit}${V.unit !== "mm" ? _t(" (ogni gruppo alla sua distanza)") : ""} · origine: ${V.ref === "poa" ? _t("punto di mira ⊕") : _t("centro di ogni gruppo")} · cerchio = raggio medio attorno al centro gruppo (✕), stessa scala per tutti.` : "")
+    + (V.skipped.length ? `<br>${_t("Non disegnati:")} ${V.skipped.map(esc).join(" · ")}` : "");
+}
+function drawVisChart(cv, W, V) {
+  const side = V.groups.length > 1 && params().visLayout === "side";
+  const ext0 = Math.max(...V.groups.flatMap(G => G.P.map(q => Math.max(Math.abs(q.x), Math.abs(q.y))))) * 1.12 || 1;
+  const st = niceStep(ext0 / (side ? 2 : 4)), ext = Math.ceil(ext0 / st) * st;
+  const cols = side ? Math.max(1, Math.min(V.groups.length, Math.floor(W / 190))) : 1, cw = side ? W / cols : Math.min(W, 520);
+  const rowsN = side ? Math.ceil(V.groups.length / cols) : 1, H = side ? rowsN * (cw + 18) : cw;
+  const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), surf = cssVar("--panel"), ink = cssVar("--ink");
+  const hits = CH.hits.vis = [];
+  const cell = (x0, y0, sz, list, title) => {
+    const pad = 26, R = (sz - pad - 8) / 2, cx = x0 + pad + R, cy = y0 + 4 + R, k = R / ext;
+    const S = q => ({ x: cx + q.x * k, y: cy - q.y * k });
+    g.font = "10.5px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1; g.strokeStyle = grid;
+    for (let v = -ext; v <= ext + 1e-9; v += st) {
+      g.beginPath(); g.moveTo(cx + v * k, cy - R); g.lineTo(cx + v * k, cy + R); g.stroke();
+      g.beginPath(); g.moveTo(cx - R, cy - v * k); g.lineTo(cx + R, cy - v * k); g.stroke();
+      if (!side || Math.abs(v) < 1e-9 || Math.abs(Math.abs(v) - ext) < 1e-9) {
+        g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(v, 2), cx - R - 3, cy - v * k);
+        g.textAlign = "center"; g.textBaseline = "top"; if (!side && v > -ext + 1e-9) g.fillText(nfmt(v, 2), cx + v * k, cy + R + 2);
+      }
+    }
+    // origine
+    g.strokeStyle = V.ref === "poa" ? COL_POA : muted; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(cx - 8, cy); g.lineTo(cx + 8, cy); g.moveTo(cx, cy - 8); g.lineTo(cx, cy + 8); g.stroke();
+    if (V.ref === "poa") { g.beginPath(); g.arc(cx, cy, 5, 0, Math.PI * 2); g.stroke(); }
+    for (const G of list) {
+      const col = G.r.color, c = S(G.c);
+      g.strokeStyle = col; g.lineWidth = 1.5; g.setLineDash(G.r.hist ? [5, 3] : []);
+      g.beginPath(); g.arc(c.x, c.y, G.mr * k, 0, Math.PI * 2); g.stroke(); g.setLineDash([]);
+      g.beginPath(); g.moveTo(c.x - 5, c.y - 5); g.lineTo(c.x + 5, c.y + 5); g.moveTo(c.x + 5, c.y - 5); g.lineTo(c.x - 5, c.y + 5); g.stroke();
+      G.P.forEach((q, i) => { const s = S(q);
+        g.fillStyle = G.r.hist ? surf : col; g.strokeStyle = col; g.lineWidth = 2;
+        g.beginPath(); g.arc(s.x, s.y, 4, 0, Math.PI * 2); g.fill(); g.stroke();
+        hits.push({ x: s.x, y: s.y, r: 7, tip: _T`${G.r.name} · foro ${i + 1} · ${nfmt(q.x, 2)}; ${nfmt(q.y, 2)} ${V.unit}` }); });
+      hits.push({ x: c.x, y: c.y, r: 7, tip: _T`${G.r.name} · ES ${nfmt(G.es, 2)} · raggio medio ${nfmt(G.mr, 2)} ${V.unit}` });
+    }
+    if (title) { g.fillStyle = ink; g.textAlign = "left"; g.textBaseline = "top"; g.font = "600 11.5px 'Segoe UI', system-ui, sans-serif"; g.fillText(title, x0 + pad, y0 + sz - 10, sz - pad); }
+  };
+  if (side) V.groups.forEach((G, i) => cell((i % cols) * cw, Math.floor(i / cols) * (cw + 18), cw, [G], `${G.r.name} · ES ${nfmt(G.es, 2)} ${V.unit}`));
+  else cell((W - cw) / 2, 0, cw, V.groups);
+}
+
+/* ======================= RETICOLO E HOLDOVER (dalla 1.9.0) =======================
+   Reticoli generici (nessun modello commerciale): MIL a tacche, MIL-DOT, MOA a tacche o passo personalizzato.
+   Per ogni distanza della dope card (o per il gruppo attivo) la correzione ancora da dare dopo i click impostati
+   sulle torrette diventa la tacca da sovrapporre al bersaglio (Calc.holdover). Solo distanze tirate. */
+function syncRtControls() {
+  $("rtCustom").hidden = $("rtType").value !== "custom";
+  $("rtSfp").hidden = $("rtPlane").value !== "SFP";
+}
+/** Spaziatura del reticolo: unità, passo minore, ogni quanti passi la tacca lunga/numero, stile. */
+function reticleSpec(p = params()) {
+  switch (p.rtType) {
+    case "mildot": return { unit: "MIL", step: 1, lab: 2, dots: true, name: "MIL-DOT" };
+    case "moahash": return { unit: "MOA", step: 2, lab: 5, name: _t("MOA a tacche") };
+    case "custom": { const u = p.rtUnit === "MOA" ? "MOA" : "MIL", st = p.rtStep > 0 ? p.rtStep : 0.2;
+      return { unit: u, step: st, lab: Math.max(1, Math.round(p.rtLab) || 5), name: _T`personalizzato ${fmt(st, 3)} ${u}` }; }
+    default: return { unit: "MIL", step: 0.5, lab: 2, name: _t("MIL a tacche") };
+  }
+}
+/** Righe dell'holdover: necessario (MIL) = dope − torrette; posizione della tacca nelle unità del reticolo. */
+function holdRows() {
+  const p = params(), cc = calcContext(), spec = reticleSpec(p);
+  if (!(cc.clickValue > 0)) return { rows: [], spec };
+  let src;
+  if (p.rtSrc === "active") { const r = compareRows().find(x => !x.hist && x.gid === state.activeGroupId); src = r && r.dope ? [r] : []; }
+  else src = dopeRows();
+  const dialMil = c => Calc.toRad((+c || 0) * cc.clickValue, cc.clickUnit) * 1000;
+  const dV = dialMil($("rtDialV").value), dH = dialMil($("rtDialH").value);
+  const rows = src.map((r, i) => {
+    const v = r.dope.vMil - dV, h = p.rtWind ? r.dope.hMil - dH : 0;
+    return { r, v, h, H: Calc.holdover(v, h, { unit: spec.unit, plane: p.rtPlane, calibMag: p.rtCal, mag: p.rtMag }), color: GROUP_COLORS[i % GROUP_COLORS.length] };
+  });
+  return { rows, spec, cc };
+}
+const holdWords = (H, u) => {
+  const a = [];
+  if (Math.abs(H.markY) >= 0.005) a.push(H.markY < 0 ? _T`${fmt(-H.markY, 2)} ${u} sotto il centro` : _T`${fmt(H.markY, 2)} ${u} sopra il centro`);
+  if (Math.abs(H.markX) >= 0.005) a.push(H.markX < 0 ? _T`${fmt(-H.markX, 2)} ${u} a sinistra` : _T`${fmt(H.markX, 2)} ${u} a destra`);
+  return a.length ? a.join(" · ") : _t("al centro del reticolo");
+};
+function drawHold() {
+  const box = $("rtBody"); if (!box || !anaOpen()) return;
+  syncRtControls();
+  const X = holdRows(), p = params(), u = X.spec.unit, du = dopeUnitD();
+  const W = Math.max(220, Math.floor($("rtChartWrap").clientWidth));
+  drawReticle($("chReticle"), Math.min(W, 520), Math.min(W, 520), X);
+  if (!X.rows.length) {
+    box.innerHTML = _T`<div class="muted">Nessuna correzione: servono punto di mira, scala, distanza e valore click (come per la dope card). Il reticolo è comunque disegnato.</div>`;
+  } else {
+    const trs = X.rows.map(x => `<tr><td><span class="dot" style="background:${x.color}"></span><b>${x.r.distM > 0 ? `${fmt(distIn(x.r.distM, du), 0)} ${du}` : "—"}</b></td>
+      <td class="x">${sgn(x.v, 2)}</td><td class="x">${sgn(x.h, 2)}</td><td class="x"><b>${fmt(Math.abs(x.H.markY), 2)}</b></td><td class="x"><b>${fmt(Math.abs(x.H.markX), 2)}</b></td>
+      <td>${holdWords(x.H, u)}</td><td class="muted">${esc(x.r.name)}</td></tr>`).join("");
+    box.innerHTML = _T`<div class="tscroll"><table class="cmp"><thead><tr><th>Distanza</th><th class="x" title="Alzo ancora da correggere dopo i click delle torrette (+ = in alto)">Alzo MIL</th><th class="x" title="+ = a destra">Brand. MIL</th>
+      <th class="x">Tacca vert. (${u})</th><th class="x">Tacca orizz. (${u})</th><th>Dove mettere il bersaglio</th><th>Gruppo</th></tr></thead><tbody>${trs}</tbody></table></div>`;
+  }
+  const sfp = p.rtPlane === "SFP" ? (Math.abs(p.rtMag - p.rtCal) < 1e-9 ? _T` SFP all'ingrandimento di taratura (${fmt(p.rtCal, 1)}×): le tacche valgono il nominale.` : _T` SFP a ${fmt(p.rtMag, 1)}× (tarato a ${fmt(p.rtCal, 1)}×): le letture sono moltiplicate per ${fmt(p.rtMag / p.rtCal, 3)}; il disegno è in unità nominali.`) : _t(" FFP: le tacche valgono il nominale a ogni ingrandimento.");
+  $("rtNote").innerHTML = _T`Reticolo ${esc(X.spec.name)}, visto dal tiratore. Ogni punto è la tacca da sovrapporre al bersaglio: serve più alzo → tacca sotto il centro; serve correggere a destra → tacca a sinistra.` + sfp
+    + _t(" Solo le distanze tirate (nessuna estrapolazione balistica); il brandeggio vale per il vento di quel giorno. Il disegno è generico: verifica le spaziature sul manuale del tuo cannocchiale.");
+}
+function drawReticle(cv, W, H, X, opt = {}) {
+  const g = setupCanvas(cv, W, H), ink = cssVar("--ink"), muted = cssVar("--muted"), surf = cssVar("--panel");
+  const hits = CH.hits.reticle = [], sp = X.spec, u = sp.unit;
+  const top = opt.title ? 34 : 0, Hh = H - top;
+  let S = u === "MOA" ? 30 : 10;
+  for (const x of X.rows) S = Math.max(S, Math.abs(x.H.markX) * 1.15, Math.abs(x.H.markY) * 1.15);
+  S = Math.ceil(S / (sp.step * sp.lab)) * sp.step * sp.lab;
+  const cx = W / 2, cy = top + Hh / 2, R = Math.min(W, Hh) / 2 - 6, k = (R - 4) / S;
+  if (opt.title) { g.fillStyle = ink; g.font = "600 13px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "top"; g.fillText(opt.title, 8, 8, W - 16); }
+  g.save(); g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.fillStyle = surf; g.fill(); g.strokeStyle = muted; g.lineWidth = 2; g.stroke(); g.clip();
+  g.strokeStyle = ink; g.fillStyle = ink; g.lineWidth = 1.2;
+  g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+  g.font = "10px 'Segoe UI', system-ui, sans-serif";
+  const nSteps = Math.round(S / sp.step);
+  for (let i = 1; i <= nSteps; i++) {
+    const d = i * sp.step * k, big = i % sp.lab === 0;
+    for (const s of [-1, 1]) {
+      if (sp.dots) { g.beginPath(); g.arc(cx + s * d, cy, Math.max(1.6, 0.125 * k), 0, Math.PI * 2); g.fill(); g.beginPath(); g.arc(cx, cy + s * d, Math.max(1.6, 0.125 * k), 0, Math.PI * 2); g.fill(); }
+      else { const L = big ? 7 : 4; g.beginPath(); g.moveTo(cx + s * d, cy - L); g.lineTo(cx + s * d, cy + L); g.moveTo(cx - L, cy + s * d); g.lineTo(cx + L, cy + s * d); g.stroke(); }
+    }
+    if (big && d < R - 12) { const t = nfmt(i * sp.step, 2); g.textAlign = "center"; g.textBaseline = "top"; g.fillText(t, cx + d, cy + 9); g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(t, cx + 9, cy + d); }
+  }
+  for (const x of X.rows) {
+    const px = cx + x.H.markX * k, py = cy - x.H.markY * k;
+    g.fillStyle = x.color; g.strokeStyle = surf; g.lineWidth = 2;
+    g.beginPath(); g.arc(px, py, 6, 0, Math.PI * 2); g.fill(); g.stroke();
+    const lab = x.r.distM > 0 ? `${fmt(distIn(x.r.distM), 0)} ${dopeUnitD()}` : x.r.name;
+    g.font = "600 11px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "left"; g.textBaseline = "middle";
+    g.lineWidth = 3; g.strokeText(lab, px + 9, py); g.fillText(lab, px + 9, py);
+    hits.push({ x: px, y: py, r: 9, tip: `${lab} · ${holdWords(x.H, u)}` });
+  }
+  g.restore();
+  g.fillStyle = muted; g.font = "10.5px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "right"; g.textBaseline = "bottom"; g.fillText(u, W - 6, H - 4);
+}
+async function exportReticlePng() {
+  const X = holdRows(), p = params(), u = X.spec.unit, du = dopeUnitD();
+  const S = 640, RH = 22, H = S + 30 + RH * (X.rows.length + 1) + 50;
+  const title = _T`SHOOT ANALYZER · RETICOLO ${X.spec.name} · ${p.rtPlane}${p.rtPlane === "SFP" ? _T` a ${fmt(p.rtMag, 1)}× (tarato a ${fmt(p.rtCal, 1)}×)` : ""}`;
+  const out = document.createElement("canvas"); out.width = S * 2; out.height = H * 2;
+  const k = out.getContext("2d"); k.fillStyle = "#fff"; k.fillRect(0, 0, out.width, out.height);
+  withLightTheme(() => { const rc = chartCanvas((cv, w, h) => drawReticle(cv, w, h, X, { title }), S, S); k.drawImage(rc, 0, 0, S * 2, S * 2); });
+  k.scale(2, 2);
+  const F = (w, z) => `${w} ${z}px "Segoe UI", system-ui, sans-serif`;
+  let y = S + 30;
+  const cols = [[16, "left"], [150, "right"], [240, "right"], [260, "left"]];
+  const line = (cells, font, color) => { k.font = font; k.fillStyle = color; cells.forEach((t, i) => { k.textAlign = cols[i][1]; k.fillText(t, cols[i][0], y, i === 3 ? S - 270 : 200); }); k.textAlign = "left"; y += RH; };
+  line([_t("Distanza"), _t("Alzo MIL"), _t("Brand. MIL"), _T`Tacca (${u})`], F(700, 12), "#6b7280");
+  for (const x of X.rows) line([x.r.distM > 0 ? `${fmt(distIn(x.r.distM, du), 0)} ${du}` : x.r.name, sgn(x.v, 2), sgn(x.h, 2), holdWords(x.H, u)], F(600, 13), "#1d2330");
+  k.font = F(400, 11); k.fillStyle = "#6b7280";
+  k.fillText(_T`Torrette: alzo ${sgn(+$("rtDialV").value || 0, 0)} · brand. ${sgn(+$("rtDialH").value || 0, 0)} click · ${new Date().toLocaleDateString(I18N.locale())}`, 16, y + 6, S - 32);
+  k.fillText(_t("Solo distanze tirate. Il brandeggio vale per il vento di quel giorno."), 16, y + 22, S - 32);
+  const blob = await new Promise(res => out.toBlob(res, "image/png"));
+  if (await FileStore.saveBlob(_T`reticolo_${stamp()}.png`, blob)) toast(_t("Reticolo esportato (PNG)"));
+}
+
+/* ======================= BERSAGLIO DI AUTOVERIFICA (dalla 1.9.0) =======================
+   PDF A4 a 300 dpi a scala reale: riquadro di 150 mm, croce del punto di mira al centro, fori neri del calibro
+   attuale (al massimo 12 mm) nelle posizioni Calc.testTarget(codice, n), righello di 100 mm. I valori veri non sono
+   stampati: la verifica li ricava dal codice. */
+const TT_DPI = 300, TT_PAGE = { w: 210, h: 297 }, TT_C = { x: 105, y: 128 };
+function testTargetCanvas(code, n = 5, calMm = calcContext().caliberMm || 7.62, dpi = TT_DPI) {
+  const k = dpi / 25.4, W = Math.round(TT_PAGE.w * k), H = Math.round(TT_PAGE.h * k);
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d"), X = mm => mm * k, F = (w, z) => `${w} ${X(z)}px "Segoe UI", Arial, sans-serif`;
+  g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.fillStyle = "#000"; g.strokeStyle = "#000";
+  g.textBaseline = "top"; g.font = F(700, 6); g.fillText(_t("Shoot Analyzer · bersaglio di autoverifica"), X(20), X(14));
+  g.font = F(700, 9); g.textAlign = "right"; g.fillText(`SA-${code}`, X(190), X(12)); g.textAlign = "left";
+  g.font = F(400, 3.6);
+  g.fillText(_T`${n} fori · calibro ${fmt(Math.min(calMm, 12), 2)} mm · stampa al 100% (scala reale, senza «adatta alla pagina»)`, X(20), X(24));
+  // riquadro 150 mm con tacche ogni 10 mm all'esterno; croce del punto di mira piccola (i fori stanno a più di 12 mm:
+  // linee lunghe toccherebbero i fori e disturberebbero lo snap)
+  const cx = X(TT_C.x), cy = X(TT_C.y), half = X(75);
+  g.lineWidth = X(0.35); g.strokeRect(cx - half, cy - half, 2 * half, 2 * half);
+  g.lineWidth = X(0.25);
+  for (let m = -70; m <= 70; m += 10) { const L = m === 0 ? 6 : 2.5;
+    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(cx + X(m), cy + s * half); g.lineTo(cx + X(m), cy + s * (half + X(L))); g.stroke();
+      g.beginPath(); g.moveTo(cx + s * half, cy + X(m)); g.lineTo(cx + s * (half + X(L)), cy + X(m)); g.stroke(); } }
+  g.lineWidth = X(0.3);
+  g.beginPath(); g.moveTo(cx - X(6), cy); g.lineTo(cx + X(6), cy); g.moveTo(cx, cy - X(6)); g.lineTo(cx, cy + X(6)); g.stroke();
+  g.beginPath(); g.arc(cx, cy, X(3), 0, Math.PI * 2); g.stroke();
+  // fori
+  const T = Calc.testTarget(code, n), r = X(Math.min(calMm, 12) / 2);
+  for (const q of T.pts) { g.beginPath(); g.arc(cx + X(q.x), cy - X(q.y), r, 0, Math.PI * 2); g.fill(); }
+  // righello 100 mm
+  const rx = X(55), ry = X(222);
+  g.lineWidth = X(0.25); g.beginPath(); g.moveTo(rx, ry); g.lineTo(rx + X(100), ry); g.stroke();
+  g.font = F(400, 3); g.textAlign = "center";
+  for (let m = 0; m <= 100; m++) { const L = m % 10 === 0 ? 5 : m % 5 === 0 ? 3.5 : 2;
+    g.lineWidth = X(m % 10 === 0 ? 0.3 : 0.18); g.beginPath(); g.moveTo(rx + X(m), ry); g.lineTo(rx + X(m), ry - X(L)); g.stroke();
+    if (m % 10 === 0) g.fillText(String(m), rx + X(m), ry + X(1.2)); }
+  g.textAlign = "left"; g.font = F(400, 3.4);
+  const lines = [
+    _t("1. Controlla con un righello vero che la barra misuri 100 mm: se no, la stampante ha ridimensionato la pagina."),
+    _t("2. Fotografa il foglio, il più possibile perpendicolare; calibra la scala sugli estremi 0 e 100 del righello (100 mm)."),
+    _t("3. Metti il punto di mira al centro della croce e i fori (snap consigliato), tutti nello stesso gruppo."),
+    _t("4. Sezione Dati → «Verifica il gruppo attivo» con questo codice: confronta le misure con le posizioni vere."),
+  ];
+  lines.forEach((t, i) => g.fillText(t, X(20), X(236 + i * 6), X(170)));
+  g.fillStyle = "#666"; g.font = F(400, 2.8);
+  g.fillText(_T`Riquadro 150 × 150 mm, tacche ogni 10 mm; le tacche lunghe indicano la croce della mira · Shoot Analyzer ${APP_VERSION}`, X(20), X(280));
+  return c;
+}
+async function exportTestTarget() {
+  const code = 1000 + Math.floor(Math.random() * 9000);   // ogni stampa un codice nuovo
+  $("ttCode").value = code;
+  const n = +$("ttN").value || 5;
+  toast(_t("Preparazione del bersaglio…"));
+  await new Promise(r => setTimeout(r, 30));
+  const c = testTargetCanvas(code, n);
+  const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.95));
+  const pdf = makePdf([{ jpeg: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height }], { title: `Shoot Analyzer SA-${code}` });
+  if (await FileStore.saveBlob(_T`bersaglio_prova_SA-${code}.pdf`, pdf)) toast(_T`Bersaglio SA-${code} salvato: stampalo al 100%`);
+  scheduleAutosave();
+}
+/** Confronto del gruppo attivo con il bersaglio di prova del codice indicato. */
+function checkTestTarget() {
+  const box = $("ttResult"), g = activeGroup(), cc = calcContext(g), code = Math.round(+$("ttCode").value);
+  const fail = m => { box.innerHTML = `<div class="tt-msg warn">${m}</div>`; };
+  if (!(code >= 1000 && code <= 9999)) return fail(_t("Inserisci il codice stampato sul bersaglio (SA-1000…9999)."));
+  if (!g || !g.shots.length) return fail(_t("Il gruppo attivo non ha fori."));
+  if (!cc.pxPerMm) return fail(_t("Serve la scala: calibrala sul righello di 100 mm del bersaglio."));
+  if (!g.poa) return fail(_t("Serve il punto di mira al centro della croce."));
+  const shots = g.shots;
+  if (shots.length !== 5 && shots.length !== 10) return fail(_T`Il gruppo ha ${shots.length} fori: il bersaglio ne ha 5 o 10.`);
+  const T = Calc.testTarget(code, shots.length).pts;
+  const M = shots.map(q => ({ x: (q.x - g.poa.x) / cc.pxPerMm, y: (g.poa.y - q.y) / cc.pxPerMm }));
+  const V = Calc.verifyTarget(T, M);
+  const sc = (V.scale - 1) * 100, ok = Math.abs(sc) < 1 && V.rms < 0.5, mid = Math.abs(sc) < 2 && V.rms < 1;
+  const verdict = ok ? _t("Misura coerente: scala e fori entro le tolleranze indicative (scala ±1%, RMS < 0,5 mm).")
+    : mid ? _t("Misura accettabile ma migliorabile (scala entro ±2%, RMS < 1 mm): rifai la calibrazione o la foto più perpendicolare.")
+    : _t("Misura da rivedere: controlla la stampa (righello = 100 mm), la calibrazione della scala, la prospettiva della foto e il punto di mira.");
+  const trs = V.err.map((e, i) => { const t = T[i], m = M[V.perm[i]];
+    return `<tr><td>${shots.indexOf(shots[V.perm[i]]) + 1}</td><td class="x">${fmt(t.x, 1)}; ${fmt(t.y, 1)}</td><td class="x">${fmt(m.x, 1)}; ${fmt(m.y, 1)}</td><td class="x"><b>${fmt(e.d, 2)}</b></td></tr>`; }).join("");
+  box.innerHTML = _T`<div class="tt-msg ${ok ? "ok" : mid ? "" : "warn"}">${verdict}</div>
+    <table class="pts tt"><tbody>
+      <tr><td>Rapporto di scala (misurato / vero)</td><td class="x"><b>${fmt(V.scale, 4)}</b> (${sgn(sc, 2)}%)</td></tr>
+      <tr><td>Errore per foro: RMS · massimo</td><td class="x"><b>${fmt(V.rms, 2)}</b> · ${fmt(V.max, 2)} mm</td></tr>
+      <tr><td>Spostamento del centro gruppo (mira)</td><td class="x">${sgn(V.shift.x, 2)}; ${sgn(V.shift.y, 2)} mm</td></tr>
+      <tr><td>Rotazione residua</td><td class="x">${sgn(V.rotDeg, 2)}°</td></tr>
+      <tr><td>Group size (ES) vero · misurato</td><td class="x">${fmt(V.es.t, 2)} · ${fmt(V.es.m, 2)} mm</td></tr>
+      <tr><td>Raggio medio vero · misurato</td><td class="x">${fmt(V.mr.t, 2)} · ${fmt(V.mr.m, 2)} mm</td></tr>
+    </tbody></table>
+    <details><summary>Fori (vero e misurato, mm rispetto alla mira, + = destra / alto)</summary>
+      <table class="pts tt"><thead><tr><th>Foro</th><th class="x">Vero</th><th class="x">Misurato</th><th class="x">Errore</th></tr></thead><tbody>${trs}</tbody></table></details>
+    <div class="muted" style="font-size:11.5px">Spostamento e rotazione dicono dove hai messo la mira e quanto è ruotata la foto: non cambiano le misure di dispersione. Il rapporto di scala include la stampa: se il righello stampato non misura 100 mm, la differenza è della stampante.</div>`;
+}
+$("bTtPdf").onclick = () => exportTestTarget();
+$("bTtCheck").onclick = () => checkTestTarget();
+// confronto visivo e reticolo
+$("visList").addEventListener("change", e => { const k = e.target.dataset.vk; if (!k) return; if (e.target.checked) visState.off.delete(k); else visState.off.add(k); drawVisual(); });
+for (const id of ["visLayout", "visRef", "visUnit"]) $(id).addEventListener("change", () => { drawVisual(); scheduleAutosave(); });
+for (const id of ["rtType", "rtStep", "rtUnit", "rtLab", "rtPlane", "rtCal", "rtMag", "rtSrc", "rtDialV", "rtDialH", "rtWind"]) $(id).addEventListener("input", () => { drawHold(); scheduleAutosave(); });
+$("dopeLoad").addEventListener("change", () => drawHold());
+$("bRtPng").onclick = () => exportReticlePng();
+chartHover("vis", $("chVis")); chartHover("reticle", $("chReticle"));
+{ let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawVisual(); drawHold(); } }).observe($("visBox")); }
 initSplitter();
 window.addEventListener("resize", () => { const w = $("side").getBoundingClientRect().width; if (w > window.innerWidth - 320) setSideWidth(w, false); });
 window.addEventListener("resize", resizeCanvas);
@@ -6310,7 +7085,8 @@ if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); 
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
 window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
-  I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext };
+  I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
+  CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C };
 </script>
 </body>
 </html>

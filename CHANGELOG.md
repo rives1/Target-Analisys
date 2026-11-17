@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.9.0] - 2026-11-17
+### Aggiunto
+- **Heatmap della densità** (Parametri di tiro, spenta all'avvio, salvata nella sessione): densità della **normale
+  bivariata** stimata dai fori inclusi (covarianza piena, divisore n−1), colore del gruppo entro ±3,5 σ; anche nella
+  Result Card e nel report. Scelta concordata al posto di una densità a nucleo (con 5–10 colpi dipende dalla banda).
+- **Coordinate polari** (vista grafici): angolo (0° in alto, senso orario) e distanza dal centro gruppo, anelli del modello
+  (raggio medio, CEP, R95) e lo stesso grafico «srotolato». Nessuna diagnosi automatica (scelta concordata).
+- **Densità 3D** (vista grafici): superficie della stessa normale bivariata, proiezione ortografica ruotabile con il
+  trascinamento, doppio clic per la vista iniziale.
+- **Confronto visivo tra rosate** (vista grafici): gruppi della sessione e dello storico **sovrapposti** o **affiancati**
+  alla stessa scala, origine nel **punto di mira** o nel **centro gruppo**, in **mm** o in **MOA/MIL** (ogni gruppo con la
+  sua distanza); cerchio del raggio medio e centro. I riepiloghi dello storico salvano ora le coordinate dei fori
+  (`pts`, mm rispetto alla mira o al centro): i gruppi importati prima della 1.9.0 non sono disegnabili.
+- **Reticolo e holdover** (vista grafici): reticoli generici MIL a tacche, MIL-DOT, MOA a tacche o passo personalizzato;
+  primo o secondo piano focale (SFP: lettura = necessario × ingrandimento / ingrandimento di taratura); correzioni dalla
+  dope card o dal gruppo attivo, meno i click già impostati sulle torrette; tacca da usare disegnata sul reticolo (dalla
+  parte opposta alla correzione), tabella con istruzione a parole, **PNG**. Nessun reticolo commerciale e nessuna
+  estrapolazione balistica (scelte concordate).
+- **Bersaglio di autoverifica** (sezione Dati): **PDF A4 a 300 dpi** con codice SA-xxxx, riquadro 150 × 150 mm, croce
+  della mira, 5 o 10 fori del calibro attuale (max 12 mm) a posizioni generate dal codice e righello di 100 mm; la
+  **verifica** del gruppo attivo abbina i fori misurati a quelli veri e riporta rapporto di scala, errore per foro (RMS e
+  massimo), spostamento della mira, rotazione residua, ES e raggio medio veri e misurati, con giudizio indicativo.
+- Motore: `covariance`, `bvnDensity`, `prng`, `testTarget`, `matchPoints`, `verifyTarget`, `holdover`.
+- Help tecnico: «Densità: heatmap e superficie 3D», «Reticolo e holdover», «Bersaglio di autoverifica», voci dei grafici
+  polare e confronto visivo; guida rapida aggiornata; tutto tradotto in inglese tranne l'help.
+- Test: +32 verifiche del motore (210), 4 test UI nuovi (37), tra cui il test end-to-end del bersaglio di prova
+  (disegno → foto → scala sul righello → snap → verifica).
+
 ## [1.8.0] - 2026-11-17
 ### Aggiunto
 - **Salto dalle righe** (profondità di seduta) nei dati di ricarica, con unità pollici/mm; nella card, nel testo, nel CSV

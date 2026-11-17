@@ -57,6 +57,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Convex hull** dei fori (sull'immagine e nel grafico, area e perimetro nei risultati e nei CSV).
 - **Glossario contestuale**: nei risultati i termini (CEP, FOM, σ…) mostrano una spiegazione breve e con un clic aprono la voce dell'help tecnico.
 - **Snap al centro del foro** (riconoscimento della macchia vicino al clic, con controlli di plausibilità) e **cerchio del calibro** sul cursore per verificare la scala.
+- **Densità**: heatmap della normale bivariata sull'immagine e superficie 3D ruotabile; **coordinate polari** dei fori (senza diagnosi automatiche).
+- **Confronto visivo tra rosate**: gruppi della sessione e dello storico sovrapposti o affiancati, sulla mira o sul centro gruppo, in mm o in MOA/MIL.
+- **Reticolo e holdover**: reticoli generici (MIL, MIL-DOT, MOA, passo personalizzato), FFP/SFP, tacca da usare per ogni distanza della dope card tenendo conto dei click sulle torrette; PNG.
+- **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -127,11 +131,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (178 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (210 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (33 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (37 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```
