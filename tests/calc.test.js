@@ -523,4 +523,33 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
     const D = Calc.holeDiameter(lum, w, h, 52, 49, { rSearch: 30 }); near(D.d, 20, 0.6, "diametro del disco"); near(D.x, 50.5, 0.05, "centro"); }
 }
 
+/* ---------------- 1.12.0: correzione applicata e influenza dei fori ---------------- */
+{
+  const C = { distMm: 100000, clickValue: 0.1, clickUnit: "MIL" };
+  // 23 mm a destra, 7 mm in basso a 100 m: 0,23 MIL → 2 click (resta ≈ 3 mm a destra), 0,07 MIL → 1 click (finisce ≈ 3 mm sopra)
+  const off = { dx: 23, dy: -7 }, cr = Calc.correction(off.dx, off.dy, C), a = Calc.afterCorrection(off, cr, C);
+  eq([cr.hClicks, cr.vClicks], [2, 1], "click arrotondati");
+  near(a.dx, 23 - 100000 * Math.tan(0.0002), 1e-6, "residuo orizzontale (stesso segno)");
+  near(a.dy, -100000 * Math.tan(Math.atan(7 / 100000) - 0.0001), 1e-9, "residuo verticale: supera la mira (segno opposto)"); ok(a.dy > 2.9, "il gruppo basso va 3 mm sopra la mira");
+  ok(Math.abs(a.dx) <= 5 + 1e-9 && Math.abs(a.dy) <= 5 + 1e-9, "entro mezzo click per asse");
+  const z = Calc.afterCorrection({ dx: 30, dy: 0 }, Calc.correction(30, 0, C), C);
+  near(z.dx, 0, 1e-6, "multiplo esatto del click: sulla mira"); eq(z.dy, 0, "asse senza scostamento");
+  const M = Calc.afterCorrection({ dx: -12, dy: 9 }, Calc.correction(-12, 9, { ...C, clickValue: 0.25, clickUnit: "MOA", distMm: 91440 }), { distMm: 91440 });
+  ok(Math.abs(M.dx) <= 91440 * Math.tan(0.125 * Math.PI / 10800) + 1e-9 && Math.abs(M.dy) <= 91440 * Math.tan(0.125 * Math.PI / 10800) + 1e-9, "MOA: entro mezzo click");
+  eq(Calc.afterCorrection(null, cr, C), null, "senza scostamento: null");
+  // influenza: effetto = valore con il foro − valore senza
+  const P = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 0, y: 10 }, { x: 10, y: 10 }, { x: 40, y: 5 }];
+  const I = Calc.influence(P, P.map(() => false)), es = q => Calc.extremeSpread(q).d, mr = q => Calc.meanRadius(q, Calc.centroid(q));
+  near(I[4].es, es(P) - es(P.slice(0, 4)), 1e-12, "ES: foro lontano"); near(I[4].mr, mr(P) - mr(P.slice(0, 4)), 1e-12, "RM: foro lontano");
+  ok(I[4].es > 0 && I[4].mr > 0, "il foro lontano allarga entrambi");
+  ok(I.every(v => v.es >= 0), "l'effetto sull'ES non è mai negativo");
+  eq(I[1].es, 0, "foro interno all'ES: effetto nullo");
+  const X = Calc.influence(P, [false, false, false, false, true]);
+  near(X[4].es, I[4].es, 1e-12, "foro escluso: effetto se lo si rimette");
+  near(X[0].es, es(P.slice(0, 4)) - es(P.slice(1, 4)), 1e-12, "con il lontano escluso, gli altri si valutano tra loro");
+  const inner = Calc.influence([...P.slice(0, 4), { x: 5, y: 5 }], P.map(() => false));
+  ok(inner[4].mr < 0 && inner[4].es === 0, "foro al centro: stringe il raggio medio");
+  eq(Calc.influence(P.slice(0, 2), [false, false]), [null, null], "senza il foro resterebbe un solo foro: null");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

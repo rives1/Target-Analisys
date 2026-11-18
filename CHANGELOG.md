@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.12.0] - 2026-11-18
+### Aggiunto
+- **Etichette senza sovrapposizioni** sull'immagine: numeri dei fori, group size, scala e nomi dei gruppi scelgono tra 8
+  posizioni attorno all'ancora (a tre distanze, con linea guida se allontanate) evitando fori, mira, centro, estremi della
+  scala e le altre etichette.
+- **Pannello in tempo reale** sull'immagine (gruppo attivo): fori, group size e raggio medio in mm e nell'unità dei
+  click, avviso «meno di 5 colpi – statistiche indicative»; chiudibile, interruttore in Parametri di tiro.
+- **Tooltip sul foro**: numero, distanza dalla mira (mm e angolo), direzione a ore e in gradi, click impostati, punti.
+- **Doppio clic su un foro**: apre «Punti del gruppo attivo», scorre alla riga e la evidenzia.
+- **Freccia di correzione** sulla foto (centro gruppo → centro previsto dopo i click arrotondati, con crocetta) e
+  **correzione virtuale** (fori spostati in trasparenza; solo visualizzazione, non salvata). Nuova funzione pura
+  `Calc.afterCorrection`.
+- **Semaforo della calibrazione** con barra: verde ≤ ±0,5%, giallo ≤ ±1% o fori sotto 8 px, rosso oltre o con un
+  controllo di scala in allarme.
+- **Colonna «Effetto ES / RM»** nella tabella punti: group size e raggio medio con il foro − senza (per i fori esclusi:
+  rimettendoli), rosso/verde in tempo reale, con l'avvertenza sulla selezione a posteriori. Funzione `Calc.influence`.
+- **Densità delle informazioni** Compatta / Standard / Dettagliata e **layout del pannello** (⚙: ordine e visibilità delle
+  sezioni), salvati nel browser.
+### Cambiato
+- Help tecnico: sezione «Correzione sulla foto e correzione virtuale», semaforo in «Qualità della misura», colonna Effetto
+  in «Flyer ed esclusione»; guida rapida e traduzioni.
+- Test: 642 verifiche del motore, 50 scenari UI.
+
 ## [1.11.0] - 2026-11-18
 ### Aggiunto
 - **Verifica incrociata della scala**: diametro di ogni foro misurato nella foto (macchia scura senza vincolo di area,

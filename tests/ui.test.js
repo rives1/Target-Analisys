@@ -1548,6 +1548,114 @@ test("reticolo: zoom con rotella, pulsanti, trascinamento e doppio clic", async 
   await page.click("#bRtOut"); assert.strictEqual(await page.evaluate(() => window.__SA.RT_VIEW.zoom), 1, "non si riduce sotto la vista intera");
 });
 
+test("etichette senza sovrapposizioni, pannello in tempo reale, tooltip e doppio clic sul foro", async page => {
+  // etichette: 6 fori quasi sovrapposti con mira e centro vicini → nessun rettangolo si sovrappone
+  const L = await page.evaluate(() => {
+    const g = document.createElement("canvas").getContext("2d"), LL = new window.__SA.LabelLayout(g);
+    const P = [[100, 100], [108, 102], [104, 110], [96, 106], [112, 96], [100, 92]];
+    P.forEach(([x, y], i) => { LL.block(x, y, 6); LL.add(String(i + 1), "#000", 11, { x, y, r: 8 }, 2); });
+    LL.block(104, 101, 8); LL.add("ES 12,3 mm · 0,12 MIL", "#000", 12, { x: 104, y: 80, r: 0, pref: "top" }, 1);
+    LL.draw();
+    const R = LL.rects, ov = (a, b) => Math.min(a.x + a.w, b.x + b.w) > Math.max(a.x, b.x) && Math.min(a.y + a.h, b.y + b.h) > Math.max(a.y, b.y);
+    let n = 0; for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) if (ov(R[i], R[j])) n++;
+    const onHole = R.filter(r => P.some(([x, y]) => x > r.x + 1 && x < r.x + r.w - 1 && y > r.y + 1 && y < r.y + r.h - 1)).length;
+    return { n, count: R.length, onHole };
+  });
+  assert.strictEqual(L.count, 7); assert.strictEqual(L.n, 0, "etichette sovrapposte"); assert.strictEqual(L.onHole, 0, "etichetta sopra il centro di un foro");
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS.slice(0, 3));
+  await page.waitForSelector("#livePanel:not([hidden])");
+  let lp = await page.textContent("#livePanel");
+  ok2(/meno di 5 colpi – statistiche indicative/.test(lp), "avviso con 3 colpi: " + lp);
+  for (const s of SHOTS.slice(3)) await clickAt(page, s);
+  lp = await page.textContent("#livePanel");
+  const r = await analyzeActive(page);
+  ok2(!/meno di 5/.test(lp), "nessun avviso con 5 colpi");
+  ok2(lp.includes(r.mm.es.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })), "ES aggiornato: " + lp);
+  ok2(/Fori\s*5/.test(lp), "numero di fori: " + lp);
+  await page.click("#bLiveClose"); ok2(await page.isHidden("#livePanel"), "si chiude");
+  ok2(!(await page.isChecked("#livePanelOn")), "e la scelta resta in Visualizzazione");
+  await page.check("#livePanelOn"); ok2(await page.isVisible("#livePanel"), "si riapre");
+  // tooltip
+  await key(page, "1");
+  const s2 = await screenOf(page, SHOTS[1]); await page.mouse.move(s2.x, s2.y);
+  await page.waitForSelector("#holeTip:not([hidden])");
+  const tip = await page.textContent("#holeTip");
+  ok2(/Foro 2/.test(tip) && /mm dalla mira/.test(tip) && /ore \d+/.test(tip) && /alzo \+?0/.test(tip), "tooltip: " + tip);
+  await page.mouse.move(s2.x + 120, s2.y + 120); ok2(await page.isHidden("#holeTip"), "lontano dal foro sparisce");
+  // doppio clic → riga della tabella
+  await page.evaluate(() => { document.getElementById("sec-points").open = false; });
+  const s4 = await screenOf(page, SHOTS[3]); await page.mouse.dblclick(s4.x, s4.y);
+  ok2(await page.evaluate(() => document.getElementById("sec-points").open), "sezione aperta");
+  await page.waitForSelector("#points tr.flash.sel");
+  ok2(/Foro 4/.test(await page.textContent("#points tr.flash")), "riga del foro 4 evidenziata");
+  assert.strictEqual((await S(page)).g.shots.length, 5, "il doppio clic non aggiunge fori");
+});
+
+test("freccia di correzione sulla foto e correzione virtuale", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  const C = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0], cc = S.calcContext(), r = S.Calc.analyze(g.shots, g.poa, cc);
+    return { pc: S.correctedCenter(g, cc, r), poa: g.poa, k: cc.pxPerMm }; });
+  // dopo i click arrotondati il centro resta entro mezzo click (0,05 MIL a 100 m = 5 mm) dalla mira su ogni asse
+  ok2(Math.abs(C.pc.res.dx) <= 5.0001 && Math.abs(C.pc.res.dy) <= 5.0001, "residuo entro mezzo click: " + JSON.stringify(C.pc.res));
+  near(C.pc.x, C.poa.x + C.pc.res.dx * C.k, 1e-6, "x del centro previsto");
+  const s0 = await canvasSig(page);
+  await page.uncheck("#corrArrowOn"); await page.waitForTimeout(100);
+  const s1 = await canvasSig(page); ok2(s1 !== s0, "la freccia si toglie");
+  await page.check("#corrArrowOn"); await page.waitForTimeout(100);
+  const before = JSON.stringify((await S(page)).g.shots), res0 = await page.textContent("#results");
+  await page.click("#results button[data-vcorr]"); await page.waitForTimeout(100);
+  ok2(await page.evaluate(() => window.__SA.state.virtCorr === true), "attiva");
+  ok2(await canvasSig(page) !== s0, "fori spostati disegnati");
+  ok2(/Correzione virtuale attiva/.test(await page.textContent("#livePanel")), "segnalata nel pannello");
+  assert.strictEqual(JSON.stringify((await S(page)).g.shots), before, "i dati non cambiano");
+  ok2(await page.evaluate(() => window.__SA.buildSession().params.virtCorr === undefined), "non salvata nella sessione");
+  await page.click("#results button[data-vcorr]"); await page.waitForTimeout(100);
+  ok2(await page.evaluate(() => !window.__SA.state.virtCorr), "si toglie");
+  assert.strictEqual(await page.textContent("#results"), res0, "risultati invariati");
+});
+
+test("semaforo della calibrazione, densità, layout del pannello ed effetto dei fori", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, [...SHOTS, { x: 520, y: 330 }]);
+  // 200 px di scala → ±0,71%: giallo
+  ok2(await page.isVisible("#calStatus .calsem.s-y"), "semaforo giallo con 200 px");
+  ok2(/Qualità della calibrazione/.test(await page.textContent("#calStatus")), "testo");
+  await key(page, "2"); await clickAt(page, { x: 20, y: 580 }); await clickAt(page, { x: 780, y: 580 }); await setField(page, "#calDist", 190);
+  ok2(await page.isVisible("#calStatus .calsem.s-g"), "verde con 760 px");
+  // effetto dei fori: il colpo lontano allarga (rosso) ES e raggio medio
+  const cells = await page.$$eval("#points tr[data-ref]", trs => trs.filter(tr => /Foro/.test(tr.textContent)).map(tr => tr.querySelector(".inf-w, .inf-b, .inf-0") ? [...tr.querySelectorAll("span[class^=inf]")].map(s => s.className) : null));
+  assert.deepStrictEqual(cells[5], ["inf-w", "inf-w"], "il colpo lontano peggiora ES e RM");
+  ok2(cells.slice(0, 5).every(c => c && c[0] !== "inf-b"), "togliere un foro non può stringere l'ES");
+  await page.check("#points input[data-ex] >> nth=5");
+  const ex = await page.$$eval("#points tr.excl span[class^=inf]", s => s.map(x => x.className));
+  assert.deepStrictEqual(ex, ["inf-w", "inf-w"], "escluso: rimetterlo peggiorerebbe");
+  ok2(/Effetto ES \/ RM/.test(await page.textContent("#points thead")), "colonna");
+  // densità
+  await page.selectOption("#densSel", "compact");
+  ok2(await page.evaluate(() => getComputedStyle(document.querySelector("#results tr.sec2")).display === "none"), "compatta: righe secondarie nascoste");
+  await page.selectOption("#densSel", "detail");
+  ok2(await page.evaluate(() => [...document.querySelectorAll("#results details.meas")].every(d => d.open)), "dettagliata: riquadri aperti");
+  // layout
+  await page.click("#bLayout"); ok2(await page.isVisible("#layoutPop"), "pannello layout");
+  const ord0 = await page.evaluate(() => window.__SA.getLayout().map(x => x.id));
+  await page.click('#layoutPop button[data-lm="sec-points"][data-d="-1"]');
+  const ord1 = await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), i0 = ord0.indexOf("sec-points");
+  assert.strictEqual(ord1[i0 - 1], "sec-points", "sezione spostata in su");
+  await page.uncheck('#layoutPop input[data-lv="sec-load"]');
+  ok2(await page.isHidden("#sec-load"), "sezione nascosta");
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  assert.strictEqual(await page.inputValue("#densSel"), "detail", "densità ricordata");
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord1, "ordine ricordato");
+  ok2(await page.isHidden("#sec-load"), "visibilità ricordata");
+  await page.click("#bLayout"); await page.click("#bLayReset");
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord0, "layout ripristinato");
+  ok2(await page.isVisible("#sec-load >> xpath=..") , "sezione di nuovo visibile");
+  await page.selectOption("#densSel", "standard");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
