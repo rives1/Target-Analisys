@@ -71,6 +71,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.
 - **Correzione sulla foto**: freccia dal centro gruppo al punto previsto dopo i click e correzione virtuale (fori spostati in trasparenza, solo visualizzazione).
 - **Personalizzazione**: densità Compatta / Standard / Dettagliata e layout del pannello (ordine e sezioni nascoste) salvati nel browser.
+- **Profili di ricarica** salvabili (componenti e calibro) da scegliere con un menu; **quadrante del vento** con componenti laterale e frontale.
+- **Ritaglio** definitivo della foto (scala invariata) e **croce estesa** del cursore per la mira.
+- **Risultati a card** con dettagli espandibili.
+- **Sessione ZIP**: foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -88,7 +92,9 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
 - Freccia e correzione virtuale valgono alla distanza del gruppo e mostrano solo lo spostamento del centro: il gruppo successivo avrà comunque un centro casuale. La colonna «Effetto ES / RM» descrive il gruppo, non è un criterio di esclusione.
-- Densità e layout del pannello sono salvati nel browser (localStorage), non nella sessione.
+- Densità, layout del pannello e profili di ricarica sono salvati nel browser (localStorage), non nella sessione.
+- Il ritaglio è definitivo: dopo il caricamento di un'altra foto non si annulla più; conservalo salvando la sessione con la foto (ZIP o JSON con immagine). Le foto JPEG ritagliate sono ricodificate al 95%.
+- La card «Vento» non calcola la deriva (serve un calcolatore balistico): mostra vento inserito, componenti e scostamento misurato.
 - Il test dei flyer sbaglia in circa il 5% dei gruppi ma con pochi colpi ha poca potenza: segnala solo colpi molto lontani (a 8 σ: 22% con 5 colpi, 98% con 10). I test della diagnostica hanno poca potenza sotto 10 colpi.
 - Salvataggio automatico e archivio stanno nel browser (IndexedDB): si perdono cancellando i dati del sito e non passano da un browser o PC all'altro. «Salva sessione» resta il salvataggio vero. Da `file://` IndexedDB funziona in Chrome ed Edge; negli altri browser, se non è disponibile, l'app lo segnala.
 - Il punteggio è stimato dalla foto: per i colpi «sulla linea» (≈) decide il calibro di controllo; il punteggio decimale dei bersagli elettronici non è calcolato.
@@ -145,11 +151,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (642 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (655 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (50 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (53 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

@@ -679,7 +679,7 @@ test("nuovo gruppo: copia tutti i dati di ricarica e condizioni del gruppo attiv
   const vals = { "#ld-date": "2026-11-17", "#ld-case": "Lapua 3x", "#ld-powder": "N140", "#ld-charge": "44.5", "#ld-bullet": "SMK 168",
     "#ld-primer": "CCI BR2", "#ld-temp": "12", "#ld-wind": "3", "#ld-shotsTotal": "7", "#ld-foulers": "2", "#ld-notes": "nota di prova" };
   for (const [sel, v] of Object.entries(vals)) await setField(page, sel, v);
-  await page.selectOption("#ld-windDir", "9"); await page.dispatchEvent("#ld-windDir", "change");
+  await page.click('#windDial g[data-h="9"]');
   const g1 = (await S(page)).g;
   await page.click("#bAddGroup");
   const s2 = await S(page);
@@ -710,7 +710,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await setField(page, "#shotDist", 100);
   await page.selectOption("#scoreTarget", "issf50r"); await page.dispatchEvent("#scoreTarget", "change");
   await setField(page, "#ld-charge", "42.5"); await setField(page, "#ld-notes", "test note"); await setField(page, "#ld-humidity", "55");
-  await page.selectOption("#ld-windDir", "3"); await page.dispatchEvent("#ld-windDir", "change");
+  await page.click('#windDial g[data-h="3"]');
   await setDialCell(page, 0, "dv", 5);   // click impostati → riga della dope nei risultati
   const s1 = await S(page);
   assert.strictEqual(s1.g.name, "Group 1", "nome automatico del gruppo in inglese");
@@ -793,10 +793,10 @@ test("cambio lingua a lavoro aperto: pannelli e menu ridisegnati", async page =>
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100);
-  ok2(/Raggio medio/.test(await page.innerText("#results")), "risultati in italiano");
+  ok2(/Raggio medio/i.test(await page.innerText("#results")), "risultati in italiano");
   await page.selectOption("#langSel", "en");
   const res = await page.innerText("#results");
-  ok2(/Mean radius/.test(res) && !/Raggio medio/.test(res), "risultati ridisegnati in inglese");
+  ok2(/Mean radius/i.test(res) && !/Raggio medio/i.test(res), "risultati ridisegnati in inglese");
   ok2(/From aim/.test(await page.innerText("#points")), "tabella punti in inglese");
   assert.strictEqual(await page.textContent('#ld-windDir option[value="12"]'), "12 o'clock (headwind)");
   assert.match(await page.textContent('#caliberPreset optgroup[label="Rifle"] option'), /\.17 HMR/);
@@ -1635,7 +1635,7 @@ test("semaforo della calibrazione, densità, layout del pannello ed effetto dei 
   ok2(/Effetto ES \/ RM/.test(await page.textContent("#points thead")), "colonna");
   // densità
   await page.selectOption("#densSel", "compact");
-  ok2(await page.evaluate(() => getComputedStyle(document.querySelector("#results tr.sec2")).display === "none"), "compatta: righe secondarie nascoste");
+  ok2(await page.evaluate(() => getComputedStyle(document.querySelector("#results .rc-more")).display === "none"), "compatta: dettagli delle card nascosti");
   await page.selectOption("#densSel", "detail");
   ok2(await page.evaluate(() => [...document.querySelectorAll("#results details.meas")].every(d => d.open)), "dettagliata: riquadri aperti");
   // layout
@@ -1655,6 +1655,158 @@ test("semaforo della calibrazione, densità, layout del pannello ed effetto dei 
   ok2(await page.isVisible("#sec-load >> xpath=..") , "sezione di nuovo visibile");
   await page.selectOption("#densSel", "standard");
 });
+
+test("croce estesa della mira, quadrante del vento e profili di ricarica", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  // croce: con lo strumento Mira l'immagine cambia rispetto a Scala con il cursore nello stesso punto
+  const h = await screenOf(page, { x: 200, y: 400 });
+  await key(page, "2"); await page.mouse.move(h.x, h.y); await page.waitForTimeout(80); const a = await canvasSig(page);
+  await key(page, "3"); await page.mouse.move(h.x + 1, h.y); await page.mouse.move(h.x, h.y); await page.waitForTimeout(80); const b = await canvasSig(page);
+  ok2(a !== b, "linee della croce disegnate");
+  const px = await page.evaluate(({ x, y }) => { const c = document.getElementById("canvas"), r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1, g = c.getContext("2d");
+    let best = 0;
+    for (const dy of [-1, 0, 1]) { const row = g.getImageData(Math.round((x - r.left + 40) * d), Math.floor((y - r.top) * d) + dy, Math.round(200 * d), 1).data; let dark = 0;
+      for (let i = 0; i < row.length; i += 4) if (row[i] < 170 && row[i + 1] < 170 && row[i + 2] < 170) dark++; best = Math.max(best, dark); }
+    return best; }, h);
+  ok2(px > 20, "tratteggio scuro lungo l'orizzontale: " + px);
+  // quadrante del vento
+  await page.evaluate(() => { document.getElementById("sec-load").open = true; });
+  await setField(page, "#ld-wind", 10); await page.selectOption("#ld-windUnit", "km/h");
+  await page.click('#windDial g[data-h="3"]');
+  assert.strictEqual((await S(page)).g.load.windDir, "3");
+  ok2(/laterale 10,0 km\/h da destra/.test(await page.textContent("#windInfo")) && /frontale 0/.test(await page.textContent("#windInfo")), await page.textContent("#windInfo"));
+  await page.click('#windDial g[data-h="3"]'); assert.strictEqual((await S(page)).g.load.windDir, "", "secondo clic: tolta");
+  await page.focus('#windDial g[data-h="12"]'); await page.keyboard.press("Enter");
+  assert.strictEqual((await S(page)).g.load.windDir, "12", "da tastiera");
+  ok2(/frontale 10,0 km\/h/.test(await page.textContent("#windInfo")), "vento contro");
+  ok2(/Vento/.test(await page.textContent("#results")) && /Componente frontale/.test(await page.textContent("#results")), "card del vento");
+  const W = await page.evaluate(() => window.__SA.Calc.windComponents(4, 2));
+  near(W.cross, 4 * Math.sin(Math.PI / 3), 1e-12, "laterale"); near(W.head, 2, 1e-12, "frontale");
+  // profili
+  await setField(page, "#ld-case", "Lapua"); await setField(page, "#ld-powder", "N140"); await setField(page, "#ld-charge", "44.5");
+  await setField(page, "#ld-bullet", "SMK 168"); await setField(page, "#ld-primer", "CCI BR2");
+  await page.selectOption("#caliberPreset", { index: 1 }); const cal = await page.inputValue("#caliber");
+  await page.click("#bProfSave");
+  let P = await page.evaluate(() => window.__SA.getProfiles());
+  assert.strictEqual(P.length, 1); ok2(/SMK 168 · N140 44,5 gr/.test(P[0].name), "nome automatico: " + P[0].name);
+  assert.strictEqual(await page.inputValue("#ldProfile"), P[0].name, "profilo riconosciuto come quello in uso");
+  await setField(page, "#ld-powder", "Varget"); await setField(page, "#caliber", 9);
+  assert.strictEqual(await page.inputValue("#ldProfile"), "", "dati cambiati: nessun profilo");
+  await page.selectOption("#ldProfile", P[0].name);
+  const L = (await S(page)).g.load;
+  ok2(L.powder === "N140" && L.case === "Lapua" && L.primer === "CCI BR2" && L.charge === "44.5", "dati applicati al gruppo: " + JSON.stringify(L));
+  assert.strictEqual(await page.inputValue("#caliber"), cal, "calibro dal profilo");
+  ok2(L.windDir === "12", "condizioni del giorno non toccate");
+  await page.fill("#ldProfName", "Gara"); await page.click("#bProfSave");
+  const ex = await download(page, "#bProfExp");
+  ok2(/\.json$/.test(ex.name) && JSON.parse(ex.text).profiles.length === 2, "esportati");
+  await page.evaluate(n => window.__SA.deleteProfile(n), P[0].name);
+  assert.strictEqual((await page.evaluate(() => window.__SA.getProfiles())).length, 1, "eliminato");
+  assert.strictEqual(await page.evaluate(t => window.__SA.importProfilesText(t), ex.text), 2, "reimportati");
+  assert.strictEqual((await page.evaluate(() => window.__SA.getProfiles())).length, 2, "uniti per nome");
+  assert.strictEqual(await page.evaluate(() => window.__SA.importProfilesText("{}")), 0, "file non valido");
+});
+
+test("ritaglio definitivo: rettangolo, punti spostati, misure invariate, annulla", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.evaluate(() => window.__SA.setRotation(4));
+  const r0 = await analyzeActive(page), s0 = await S(page);
+  await page.evaluate(() => { document.getElementById("sec-orient").open = true; });
+  await page.click("#bCrop"); assert.strictEqual((await S(page)).mode, "crop");
+  const drag = async (p, q) => { const a = await screenOf(page, p), b = await screenOf(page, q); await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(b.x, b.y, { steps: 4 }); await page.mouse.up(); };
+  await drag({ x: 330, y: 200 }, { x: 500, y: 300 });   // taglia fuori la mira
+  ok2(/restano fuori/.test(await page.textContent("#cropStatus")), "avviso: mira fuori");
+  ok2(!(await page.evaluate(() => window.__SA.applyCrop())), "rifiutato"); assert.strictEqual((await S(page)).g.shots[0].x, s0.g.shots[0].x);
+  await drag({ x: 250, y: 150 }, { x: 520, y: 330 });
+  const rect = await page.evaluate(() => window.__SA.state.cropRect);
+  ok2(/punti di scala\/controllo restano fuori/.test(await page.textContent("#cropStatus")), "scala fuori: consentito con nota");
+  await key(page, "Enter"); await page.waitForFunction(() => !!window.__SA.state.cropUndo);
+  const s1 = await S(page), r1 = await analyzeActive(page);
+  assert.deepStrictEqual([await page.evaluate(() => window.__SA.state.image.w), await page.evaluate(() => window.__SA.state.image.h)], [rect.w, rect.h], "nuova foto");
+  assert.strictEqual(s1.rot, 0, "rotazione incorporata");
+  near(s1.g.shots[2].x, s0.g.shots[2].x - rect.x, 1e-9, "foro spostato"); near(s1.g.poa.y, s0.g.poa.y - rect.y, 1e-9, "mira spostata");
+  near(s1.ctxPx, s0.ctxPx, 1e-12, "scala invariata"); near(r1.mm.es, r0.mm.es, 1e-9, "group size invariato");
+  near(r1.correction.hAng, r0.correction.hAng, 1e-9, "correzione invariata"); assert.strictEqual(r1.correction.hClicks, r0.correction.hClicks);
+  ok2(await page.isDisabled("#bUndo"), "la storia riparte dalla foto ritagliata");
+  const ses = await page.evaluate(() => window.__SA.buildSession(true));
+  ok2(ses.image.w === rect.w && /^data:image\/png/.test(ses.image.dataUrl), "sessione con la foto ritagliata");
+  await page.click("#bCropUndo"); await page.waitForFunction(() => !window.__SA.state.cropUndo);
+  const s2 = await S(page);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.image.w), 800, "foto originale");
+  near(s2.rot, 4, 1e-9, "rotazione ripristinata"); near(s2.g.shots[2].x, s0.g.shots[2].x, 1e-9, "punti ripristinati");
+  // scala solo dalla prospettiva: diventa una scala a 2 punti equivalente
+  await page.evaluate(() => { const S = window.__SA; S.state.calib = { p1: null, p2: null }; S.setRotation(0); });
+  await setField(page, "#perspW", 150); await setField(page, "#perspH", 100);
+  await page.evaluate(() => window.__SA.applyPersp([{ x: 100, y: 100 }, { x: 700, y: 110 }, { x: 690, y: 520 }, { x: 110, y: 500 }]));
+  await page.waitForFunction(() => !window.__SA.state.busy && window.__SA.state.persp);
+  const k0 = await page.evaluate(() => window.__SA.calcContext().pxPerMm);
+  const B = await page.evaluate(() => { const S = window.__SA; return { b: S.state.base.w, h: S.state.base.h }; });
+  await page.evaluate(B => { const S = window.__SA; S.state.cropRect = { x: 5, y: 5, w: B.b - 10, h: B.h - 10 }; }, B);
+  await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0]; g.poa = { x: 50, y: 50 }; g.shots = [{ id: 900, x: 60, y: 60 }]; });
+  ok2(await page.evaluate(() => window.__SA.applyCrop()), "ritaglio con prospettiva");
+  near(await page.evaluate(() => window.__SA.calcContext().pxPerMm), k0, 1e-9, "scala dal rettangolo conservata");
+  ok2(await page.evaluate(() => !window.__SA.state.persp && !!window.__SA.state.calib.p2), "prospettiva incorporata, scala a 2 punti");
+});
+
+test("risultati a card e file ZIP di sessione: salva, riapri, storico, ZIP compresso", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; });
+  const keys = await page.$$eval("#results .rcard", a => a.map(e => e.dataset.key));
+  assert.deepStrictEqual(keys, ["es", "mr", "corr", "shape"], "card");
+  ok2(/3 click SINISTRA/.test(await page.textContent('#results .rcard[data-key="corr"] .rc-main')), "correzione in evidenza");
+  ok2(!(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table')), "dettagli chiusi");
+  await page.click('#results .rcard[data-key="mr"] .rc-more > summary');
+  await clickAt(page, { x: 430, y: 255 });
+  ok2(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table'), "dettagli ancora aperti dopo l'aggiornamento");
+  ok2(/R99/.test(await page.textContent('#results .rcard[data-key="mr"]')), "R99 nei dettagli");
+  await page.click('#results .rc-t a.gl >> nth=0'); ok2(await page.evaluate(() => window.__SA.helpOpen()), "titolo collegato al glossario"); await key(page, "Escape");
+  // ZIP di sessione
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bSaveZip")]);
+  ok2(/\.zip$/.test(dl.suggestedFilename()), dl.suggestedFilename());
+  const fs = require("fs"), zbuf = fs.readFileSync(await dl.path());
+  const names = await page.evaluate(async b64 => { const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); return [...(await window.__SA.readZip(new Blob([u]))).keys()]; }, zbuf.toString("base64"));
+  assert.deepStrictEqual(names, ["manifest.json", "sessione.json", "foto.png", "fori.csv", "gruppi.csv", "LEGGIMI.txt"]);
+  const g0 = (await S(page)).g;
+  // riapertura in una pagina nuova (senza foto caricata)
+  const p2 = await openApp(page.context());
+  await p2.setInputFiles("#fJson", { name: "sessione.zip", mimeType: "application/zip", buffer: zbuf });
+  await p2.waitForFunction(() => window.__SA.state.image && window.__SA.state.groups[0].shots.length === 6);
+  const g1 = await p2.evaluate(() => JSON.parse(JSON.stringify(window.__SA.state.groups[0])));
+  assert.deepStrictEqual(g1.shots.map(s => [s.x, s.y]), g0.shots.map(s => [s.x, s.y]), "fori riaperti");
+  assert.strictEqual(await p2.evaluate(() => window.__SA.state.image.w), 800, "foto riaperta");
+  // storico del confronto da ZIP e ZIP ricompresso (deflate)
+  await p2.setInputFiles("#fHist", [{ name: "a.zip", mimeType: "application/zip", buffer: zbuf }, { name: "b.zip", mimeType: "application/zip", buffer: deflateZip(zbuf) }]);
+  await p2.waitForFunction(() => window.__SA.cmpState.history.length >= 1);
+  ok2(/1 gruppi aggiunti|1 groups added/.test(await p2.textContent("#toast")), await p2.textContent("#toast"));   // stessa sessione due volte: un solo gruppo
+  const dz = await p2.evaluate(async b64 => { const u = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); const L = await window.__SA.sessionsFromZip(new Blob([u])); return L.map(s => [s.groups[0].shots.length, /^data:image\/png/.test(s.image.dataUrl)]); }, deflateZip(zbuf).toString("base64"));
+  assert.deepStrictEqual(dz, [[6, true]], "ZIP compresso letto con la foto");
+  for (const p of page.context().pages()) if (p !== page) { assert.deepStrictEqual(p.problems, [], "errori nella seconda pagina"); await p.close(); }
+});
+/** Ricomprime uno ZIP «store» con deflate (come la cartella compressa di Windows), con un piccolo scrittore ZIP in Node. */
+function deflateZip(buf) {
+  const zlib = require("zlib"), out = [], cen = []; let off = 0;
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let e = buf.length - 22; while (dv.getUint32(e, true) !== 0x06054b50) e--;
+  let p = dv.getUint32(e + 16, true); const n = dv.getUint16(e + 10, true);
+  for (let k = 0; k < n; k++) {
+    const crc = dv.getUint32(p + 16, true), size = dv.getUint32(p + 24, true), nl = dv.getUint16(p + 28, true), lo = dv.getUint32(p + 42, true);
+    const name = buf.subarray(p + 46, p + 46 + nl), start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+    const data = zlib.deflateRawSync(buf.subarray(start, start + size));
+    const h = Buffer.alloc(30); h.writeUInt32LE(0x04034b50, 0); h.writeUInt16LE(20, 4); h.writeUInt16LE(0x0800, 6); h.writeUInt16LE(8, 8);
+    h.writeUInt32LE(crc, 14); h.writeUInt32LE(data.length, 18); h.writeUInt32LE(size, 22); h.writeUInt16LE(nl, 26);
+    const c = Buffer.alloc(46); c.writeUInt32LE(0x02014b50, 0); c.writeUInt16LE(20, 4); c.writeUInt16LE(20, 6); c.writeUInt16LE(0x0800, 8); c.writeUInt16LE(8, 10);
+    c.writeUInt32LE(crc, 16); c.writeUInt32LE(data.length, 20); c.writeUInt32LE(size, 24); c.writeUInt16LE(nl, 28); c.writeUInt32LE(off, 42);
+    out.push(h, name, data); cen.push(c, name); off += 30 + nl + data.length; p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  const cd = Buffer.concat(cen), end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(n, 8); end.writeUInt16LE(n, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
+  return Buffer.concat([...out, cd, end]);
+}
 
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {

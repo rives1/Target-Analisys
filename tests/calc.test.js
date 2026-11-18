@@ -552,4 +552,16 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.influence(P.slice(0, 2), [false, false]), [null, null], "senza il foro resterebbe un solo foro: null");
 }
 
+/* ---------------- 1.13.0: componenti del vento ---------------- */
+{
+  const W = (v, h) => Calc.windComponents(v, h);
+  near(W(10, 3).cross, 10, 1e-12, "ore 3: tutto laterale da destra"); near(W(10, 3).head, 0, 1e-12, "ore 3: niente frontale");
+  near(W(10, 9).cross, -10, 1e-12, "ore 9: da sinistra"); near(W(10, 12).head, 10, 1e-12, "ore 12: contro"); near(W(10, 6).head, -10, 1e-12, "ore 6: in coda");
+  near(W(8, 2).cross, 8 * Math.sqrt(3) / 2, 1e-12, "ore 2: sin 60°"); near(W(8, 2).head, 4, 1e-12, "ore 2: cos 60°");
+  near(Math.hypot(W(7, 5).cross, W(7, 5).head), 7, 1e-12, "modulo conservato");
+  near(W("4.5", "3").cross, 4.5, 1e-12, "valori come testo (dal modulo)");
+  eq(W("", 3), null, "senza velocità"); eq(W(5, ""), null, "senza direzione"); eq(W(5, 13), null, "ora fuori scala");
+  near(W(5, 3).cross, Calc.crossWind(5, "m/s", 3), 1e-12, "coerente con crossWind in m/s");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

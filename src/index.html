@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.12.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.13.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -39,6 +39,38 @@
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  /* ---------- 1.13.0 ---------- */
+  .rcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); gap: 8px; margin-top: 4px; }
+  .rcard { border: 1px solid var(--line); border-radius: var(--radius); padding: 7px 9px; background: var(--panel); min-width: 0; }
+  .rcard.wide { grid-column: 1 / -1; }
+  .rc-t { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+  .rc-t a.gl { color: inherit; }
+  .rc-main { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.25; }
+  .rc-main .corr { margin: 2px 0 0; }
+  .rc-sub { font-size: 12.5px; color: var(--muted); margin-top: 1px; }
+  .rcard table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 4px; }
+  .rcard td { padding: 1px 0; vertical-align: top; }
+  .rcard td:first-child { color: var(--muted); padding-right: 8px; }
+  .rcard td.v { text-align: right; font-variant-numeric: tabular-nums; }
+  .rcard:not(.wide) td { display: block; padding: 0; } .rcard:not(.wide) td.v { text-align: left; margin-bottom: 4px; color: var(--ink); }
+  .rc-more { margin-top: 4px; font-size: 12.5px; }
+  .rc-more > summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+  .prof { border: 1px dashed var(--line); border-radius: var(--radius); padding: 6px 8px 0; margin-bottom: 8px; }
+  .prof .row { margin-bottom: 6px; }
+  .wdial-box { display: flex; align-items: center; gap: 10px; margin: 2px 0 4px; }
+  .wdial { width: 120px; height: 120px; flex: none; }
+  .wdial .wd-ring { fill: var(--hover); stroke: var(--line); stroke-width: 1.5; }
+  .wdial .wd-aim { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  .wdial .wd-lbl { fill: var(--muted); font-size: 8px; }
+  .wdial .wd-me { fill: var(--ink); }
+  .wdial .wd-arrow { stroke: #0284c7; stroke-width: 3; }
+  .wdial .wd-head { fill: #0284c7; }
+  .wdial g[data-h] { cursor: pointer; }
+  .wdial g[data-h] circle { fill: var(--input-bg); stroke: var(--input-border); stroke-width: 1; }
+  .wdial g[data-h] text { fill: var(--ink); font-size: 9px; font-weight: 600; pointer-events: none; }
+  .wdial g[data-h]:hover circle, .wdial g[data-h]:focus circle { stroke: #0284c7; stroke-width: 2; outline: none; }
+  .wdial g[data-h].on circle { fill: #0284c7; stroke: #0284c7; } .wdial g[data-h].on text { fill: #fff; }
+  .wd-info { font-size: 12px; color: var(--muted); line-height: 1.4; }
   /* ---------- 1.12.0 ---------- */
   #livePanel { position: absolute; right: 10px; top: 56px; z-index: 3; background: var(--panel); color: var(--ink); border: 1px solid var(--line);
     border-radius: var(--radius); box-shadow: 0 2px 10px rgba(0,0,0,.25); padding: 6px 9px; font-size: 12.5px; min-width: 190px; }
@@ -81,8 +113,9 @@
   [data-density=compact] .res td { padding: 0; }
   [data-density=compact] .res table, [data-density=compact] table.pts { font-size: 12px; }
   [data-density=compact] table.pts td, [data-density=compact] table.pts th { padding: 1px 3px; }
-  [data-density=compact] #results .sec2, [data-density=compact] #results .civ, [data-density=compact] #results .note2,
+  [data-density=compact] #results .rc-more, [data-density=compact] #results .civ,
   [data-density=compact] #calStatus .qinfo { display: none; }
+  [data-density=compact] .rcards { gap: 5px; } [data-density=compact] .rcard { padding: 4px 6px; } [data-density=compact] .rc-main { font-size: 15px; }
   [data-density=detail] section { padding: 14px 0 6px; }
   [data-density=detail] .res td { padding: 3px 0; }
   [data-density=detail] .row { margin-bottom: 10px; }
@@ -339,7 +372,7 @@
     </div>
     <div id="drop">
       <div class="big">Carica la foto di un bersaglio</div>
-      <div>Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .json).</div>
+      <div>Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .zip o .json).</div>
     </div>
     <div id="toolbar">
       <div class="grp">
@@ -418,6 +451,13 @@
           <button class="btn" id="bRotR" title="Ruota di 90° in senso orario">⟳ 90°</button>
           <button class="btn" id="bAlign" title="Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)">📐 Raddrizza con 2 punti</button>
           <button class="btn" id="bRot0" title="Riporta la foto all'orientamento originale">Azzera</button>
+        </div>
+        <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Ritaglio della foto</div>
+        <div id="cropStatus" class="status">Foto intera.</div>
+        <div class="btns">
+          <button class="btn" id="bCrop" title="Trascina un rettangolo sulla foto per tenere solo quella parte (Invio = applica, Esc = annulla)">✂ Ritaglia</button>
+          <button class="btn" id="bCropApply" title="Taglia la foto al rettangolo: definitivo (rotazione, prospettiva e distorsione vengono incorporate nella nuova foto, la scala non cambia)" disabled>✓ Applica ritaglio</button>
+          <button class="btn" id="bCropUndo" title="Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)" disabled>↶ Annulla ritaglio</button>
         </div>
         <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Distorsione dell'obiettivo</div>
         <div id="lensStatus" class="status">Nessuna correzione della distorsione.</div>
@@ -550,6 +590,15 @@
       <details class="box" id="sec-load">
         <summary>Ricarica e condizioni · gruppo attivo</summary>
         <div id="ldGroup" class="pgroup"></div>
+        <div class="prof" id="ldProfBox">
+          <div class="row"><select id="ldProfile" style="flex:1" title="Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro" aria-label="Profilo di ricarica"></select>
+            <button class="btn" id="bProfDel" title="Elimina il profilo scelto">🗑</button></div>
+          <div class="row"><input id="ldProfName" placeholder="nome del profilo (vuoto = automatico)" style="flex:1" aria-label="Nome del profilo">
+            <button class="btn" id="bProfSave" title="Salva come profilo i dati di ricarica del gruppo attivo e il calibro (stesso nome = aggiorna)">💾 Salva profilo</button></div>
+          <div class="btns"><button class="btn" id="bProfExp" title="Esporta tutti i profili in un file JSON (per un altro browser o PC)">⇩ Esporta profili</button>
+            <button class="btn" id="bProfImp" title="Importa profili da un file JSON esportato (stesso nome = sostituito)">⇧ Importa profili</button>
+            <input type="file" id="fProf" accept=".json,application/json" hidden></div>
+        </div>
         <div class="ld-grid" id="ldForm">
           <label for="ld-date">Data</label><input id="ld-date" data-k="date" type="date">
           <label for="ld-case">Bossolo</label><input id="ld-case" data-k="case" placeholder="marca, n° ricariche…">
@@ -569,7 +618,8 @@
           <label for="ld-wind">Vento</label>
           <div class="pair"><input id="ld-wind" data-k="wind" type="number" min="0" step="any" placeholder="velocità">
             <select id="ld-windUnit" data-k="windUnit"><option>m/s</option><option>km/h</option><option>mph</option></select>
-            <select id="ld-windDir" data-k="windDir" title="Da dove soffia il vento, a ore (ore 12 = dal bersaglio verso il tiratore)"></select></div>
+            <select id="ld-windDir" data-k="windDir" hidden title="Da dove soffia il vento, a ore (ore 12 = dal bersaglio verso il tiratore)"></select></div>
+          <span></span><div id="windDial" class="wdial-box"></div>
           <label for="ld-shotsTotal">Colpi sparati</label>
           <input id="ld-shotsTotal" data-k="shotsTotal" type="number" min="0" step="1" placeholder="totali, flyer inclusi">
           <span></span><span class="muted" id="ldShotsInfo" style="font-size:12px;margin-top:-3px"></span>
@@ -677,8 +727,9 @@
       <details class="box" id="sec-data">
         <summary>Dati</summary>
         <div class="btns">
+          <button class="btn" id="bSaveZip" title="Salva la sessione in un unico file .zip: foto originale, punti, parametri, dati di ricarica e CSV. Si riapre con «Carica sessione» e si importa nel confronto">🗜 Salva sessione ZIP</button>
           <button class="btn" id="bSave">💾 Salva sessione JSON</button>
-          <button class="btn" id="bOpen">📂 Carica sessione JSON</button>
+          <button class="btn" id="bOpen" title="Apre una sessione salvata (.zip o .json)">📂 Carica sessione</button>
         </div>
         <div class="btns">
           <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
@@ -693,10 +744,10 @@
         <div id="archiveInfo">Archivio vuoto.</div>
         <div class="btns">
           <button class="btn" id="bZip" title="Un unico ZIP con tutte le sessioni archiviate: per ognuna sessione JSON, foto originale, CSV fori e gruppi; in più un CSV riepilogativo di tutti i gruppi">🗜 Esporta archivio (ZIP)</button>
-          <button class="btn" id="bArchAdd" title="Aggiunge all'archivio sessioni salvate in precedenza (.json, meglio con l'immagine incorporata)">＋ Aggiungi sessioni</button>
+          <button class="btn" id="bArchAdd" title="Aggiunge all'archivio sessioni salvate in precedenza (.zip, oppure .json meglio con l'immagine incorporata)">＋ Aggiungi sessioni</button>
           <button class="btn" id="bArchClear">Svuota archivio</button>
         </div>
-        <input type="file" id="fArch" accept=".json,application/json" multiple hidden>
+        <input type="file" id="fArch" accept=".json,.zip,application/json,application/zip" multiple hidden>
         <div style="margin-top:12px;font-weight:600;font-size:13px">Bersaglio di autoverifica</div>
         <div class="muted" style="font-size:12px">Un bersaglio da stampare con fori a posizioni note: fotografalo e misuralo come un bersaglio vero (scala sul righello, mira al centro della croce, fori); la verifica confronta le tue misure con i valori esatti e mette alla prova tutta la catena di misura.</div>
         <div class="row" style="flex-wrap:wrap;margin-top:4px">
@@ -722,6 +773,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.13</b>: <b>profili di ricarica</b> salvati nel browser (Ricarica e condizioni: componenti e calibro, esportabili); <b>croce estesa</b> del cursore con lo strumento Mira; <b>ritaglio</b> della foto (Orientamento: definitivo, con «Annulla ritaglio» finché non carichi un'altra foto); <b>risultati a card</b> con dettagli espandibili; <b>quadrante del vento</b> con componenti laterale e frontale; <b>sessione ZIP</b> (foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio).</p>
           <p data-i18n><b>Novità 1.12</b>: etichette dei fori che <b>non si sovrappongono</b>; <b>pannello in tempo reale</b> sull'immagine (fori, group size, raggio medio, avviso sotto 5 colpi); <b>tooltip</b> sul foro e <b>doppio clic</b> per aprirne la riga nella tabella; <b>freccia di correzione</b> e <b>correzione virtuale</b> sulla foto; <b>semaforo</b> della calibrazione; colonna <b>Effetto ES / RM</b> dei fori; <b>densità</b> Compatta / Standard / Dettagliata e <b>layout</b> del pannello (⚙: ordine e sezioni nascoste), salvati nel browser.</p>
           <p data-i18n><b>Novità 1.11</b>: <b>verifica incrociata della scala</b> (diametro dei fori e riferimento di controllo); <b>incertezza di misura</b> dei risultati con fori «difficili» (◐); <b>flyer</b> con il test di Mahalanobis; <b>diagnostica del modello</b> con QQ-plot e avvisi; <b>ES equivalente</b> a 5 e 10 colpi; <b>zoom</b> del reticolo.</p>
           <p data-i18n><b>Novità 1.10</b>: <b>etichetta del group size</b> sull'immagine; <b>sagome</b> IPSC, IDPA, silhouette e zona vitale (punteggio e probabilità, spostabili e ruotabili) e <b>punteggio decimale</b> ISSF; nella vista grafici <b>correlazioni</b> ricarica/condizioni con <b>ladder</b> (carica per foro) e <b>cono di dispersione</b> a distanze diverse; in Orientamento la <b>correzione della distorsione</b> dell'obiettivo calibrata da linee dritte.</p>
@@ -786,7 +838,7 @@
         <div class="chart" id="cmpChartWrap"><div class="ctitle">Andamento nel tempo</div>
           <canvas id="chTrend" aria-label="Andamento della metrica scelta nel tempo"></canvas><div class="cnote" id="cmpLegend"></div></div>
         <div class="btns">
-          <button class="btn" id="bHistAdd" title="Aggiunge i gruppi di altre sessioni salvate (.json) per confrontarli con quelli attuali">＋ Importa sessioni nello storico</button>
+          <button class="btn" id="bHistAdd" title="Aggiunge i gruppi di altre sessioni salvate (.zip o .json) per confrontarli con quelli attuali">＋ Importa sessioni nello storico</button>
           <button class="btn" id="bHistClear">Svuota storico</button>
         </div>
         <div class="muted" style="font-size:11.5px" id="cmpHistInfo"></div>
@@ -902,8 +954,8 @@
   </div>
 </div>
 <input type="file" id="fImg" accept="image/jpeg,image/png,image/webp,image/bmp" hidden>
-<input type="file" id="fJson" accept=".json,application/json" hidden>
-<input type="file" id="fHist" accept=".json,application/json" multiple hidden>
+<input type="file" id="fJson" accept=".json,.zip,application/json,application/zip" hidden>
+<input type="file" id="fHist" accept=".json,.zip,application/json,application/zip" multiple hidden>
 <div id="toast"></div>
 <div id="chTip" role="tooltip"></div>
 
@@ -952,6 +1004,7 @@
       <a data-to="h-es-eq">ES equivalente</a>
       <a data-to="h-qualita">Qualità della misura</a>
       <a data-to="h-corr-foto">Correzione sulla foto</a>
+      <a data-to="h-file">Ritaglio, profili e file ZIP</a>
       <a data-to="h-correggersi">Dalla lettura alla correzione</a>
       <a data-to="h-esempi">Esempi svolti</a>
     </nav>
@@ -1397,6 +1450,22 @@ Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 
 <p>Con mira, scala, distanza e valore click la <b>freccia verde acqua</b> (Visualizzazione → «Freccia di correzione sulla foto») parte dal centro del gruppo e arriva al punto in cui andrebbe il centro dopo aver dato i click indicati, arrotondati al click intero. Per ogni asse lo scostamento q che resta è:</p>
 <p class="formula">q′ = segno(q) · D · tan( atan(|q| / D) − click · valore click )</p>
 <p>quindi la crocetta non cade esattamente sulla mira: ne dista al massimo mezzo click per asse (0,05 MIL a 100 m = 5 mm). <b>⇢ Applica correzione virtuale</b> (nei Risultati) disegna in trasparenza tutti i fori spostati dello stesso vettore: mostra dove sarebbe finito il gruppo con la correzione. È solo una visualizzazione: fori, risultati ed esportazioni non cambiano e la scelta non viene salvata. Vale alla distanza del gruppo e suppone che la dispersione resti la stessa: il prossimo gruppo avrà comunque un suo centro casuale (vedi l'intervallo di confidenza della correzione).</p>
+</section>
+
+<section id="h-file">
+<h3>Ritaglio, profili di ricarica e file ZIP</h3>
+<dl class="help-dl">
+<dt>Ritaglio della foto</dt>
+<dd>«✂ Ritaglia» (Orientamento) e un rettangolo trascinato sulla foto; «✓ Applica ritaglio» o Invio. Il ritaglio è <b>definitivo</b>: la nuova foto è ciò che si vede (rotazione, prospettiva e distorsione corrette vengono incorporate) limitato al rettangolo, a 1 pixel = 1 pixel, quindi la <b>scala non cambia</b> e i punti vengono solo traslati: group size, statistiche e correzione restano identici. Mire e fori devono stare nel rettangolo; i punti della scala possono restare fuori (la scala resta valida). Se la scala veniva dal rettangolo della prospettiva diventa una scala a 2 punti sul lato superiore del rettangolo. Le foto JPEG vengono ricodificate in JPEG al 95% (perdita minima), le altre in PNG. La storia (Annulla) riparte dalla foto ritagliata; «↶ Annulla ritaglio» rimette foto e punti di prima finché non carichi un'altra foto. Per conservare il ritaglio salva la sessione con la foto (ZIP, o JSON con l'immagine incorporata): un JSON senza foto non si riapre sulla foto originale.</dd>
+<dt>Profili di ricarica</dt>
+<dd>Un profilo è un nome con bossolo, polvere, carica, palla, salto dalle righe, innesco e calibro. «💾 Salva profilo» li prende dal gruppo attivo e dai parametri (stesso nome = aggiornato, nome vuoto = calibro · palla · polvere carica); sceglierlo nel menu li ricopia nel gruppo attivo e imposta il calibro. Data, meteo, vento e note non fanno parte del profilo. I profili stanno nel browser (localStorage): «⇩ Esporta profili» e «⇧ Importa profili» li portano su un altro browser o PC.</dd>
+<dt>Quadrante del vento</dt>
+<dd>Ore da cui soffia il vento (ore 12 = dal bersaglio verso il tiratore, ore 3 = da destra). Componente laterale = v·sin(ore·30°), positiva da destra; frontale = v·cos(ore·30°), positiva contro, negativa in coda. La card «Vento» mette accanto lo scostamento orizzontale misurato del centro gruppo: la deriva teorica non è calcolata (servirebbero coefficiente balistico, velocità e atmosfera) e lo scostamento misurato comprende anche la taratura.</dd>
+<dt>File ZIP di sessione</dt>
+<dd>«🗜 Salva sessione ZIP» crea un unico file con <code>manifest.json</code> (tipo <code>shoot-analyzer-session</code>, versione 1), la sessione JSON (senza foto incorporata, con il nome del file della foto), la foto originale, i CSV di fori e gruppi e un LEGGIMI. «📂 Carica sessione» lo riapre con foto e misure; «＋ Importa sessioni nello storico» e «＋ Aggiungi sessioni» all'archivio accettano anche gli ZIP, compresi quelli dell'archivio (più sessioni) e quelli ricompressi da Windows o macOS (metodo deflate, decompresso dal browser).</dd>
+<dt>Risultati a card</dt>
+<dd>Ogni card mostra il valore principale; «Dettagli» apre i valori secondari e resta aperto finché non lo chiudi. Con la densità «Compatta» i dettagli sono nascosti, con «Dettagliata» sono tutti aperti.</dd>
+</dl>
 </section>
 
 <section id="h-correggersi">
@@ -1929,6 +1998,15 @@ const Calc = (() => {
   function crossWind(speed, unit, clock) {
     const v = +speed * ({ "m/s": 1, "km/h": 1 / 3.6, mph: 0.44704 }[unit || "m/s"] || 1);
     return isFinite(v) && clock ? v * Math.sin(+clock * Math.PI / 6) : null;
+  }
+
+  /**
+   * Componenti del vento (dalla 1.13.0) nella stessa unità della velocità: cross = laterale (+ = da destra),
+   * head = frontale (+ = contro, − = in coda). clock = ore da cui soffia (12 = dal bersaglio). null senza velocità o ora.
+   */
+  function windComponents(speed, clock) {
+    const v = speed === "" || speed == null ? NaN : +speed, a = +clock * Math.PI / 6;
+    return isFinite(v) && +clock >= 1 && +clock <= 12 ? { cross: v * Math.sin(a), head: v * Math.cos(a) } : null;
   }
 
   /* ---------------- 1.12.0: correzione applicata e influenza dei fori ---------------- */
@@ -2680,7 +2758,7 @@ const Calc = (() => {
     SCORE_TARGETS, ringDiameters, shotScore,
     toRad, dope, milToClicks, pooledSigma, snapHole, convexHull, polygonAreaPerim,
     covariance, bvnDensity, prng, testTarget, matchPoints, verifyTarget, holdover,
-    pointInPoly, distToPoly, inZone, zoneEdgeDist, shapeZone, polyCentroid, ipscShape, idpaShape, SIL, silShape, vitalShape, shapeRaster, rasterProbs, hitShapeProbability, decimalScore, linReg, crossWind,
+    pointInPoly, distToPoly, inZone, zoneEdgeDist, shapeZone, polyCentroid, ipscShape, idpaShape, SIL, silShape, vitalShape, shapeRaster, rasterProbs, hitShapeProbability, decimalScore, linReg, crossWind, windComponents,
     distortPoint, undistortPoint, lineSS, nelderMead, fitLens,
     flyersMahal, ES_E, ES_SD, esFactor, esEquivalent, eig2, diagStats, modelDiagnostics, measurementMC, holeDiameter,
     afterCorrection, influence };
@@ -2717,8 +2795,12 @@ const I18N = (() => {
    "  SD radiale:     {0}  [√(σx²+σy²)]": "  Radial SD:      {0}  [√(σx²+σy²)]",
    "  Scostamento:    {0} mm {1}, {2} mm {3}": "  Offset:         {0} mm {1}, {2} mm {3}",
    "  fori.csv       una riga per foro (coordinate, distanze, direzione, click, punteggio)": "  shots.csv      one row per shot (coordinates, distances, direction, clicks, score)",
+   "  fori.csv       una riga per foro · gruppi.csv  una riga per gruppo": "  shots.csv      one row per shot · groups.csv  one row per group",
+   "  foto.*         foto del bersaglio": "  photo.*        target photo",
    "  foto.*         foto originale del bersaglio": "  photo.*        original photo of the target",
    "  gruppi.csv     una riga per gruppo (misure in mm/MOA/MIL, statistiche, correzione, punteggio, ricarica)": "  groups.csv     one row per group (measurements in mm/MOA/MIL, statistics, correction, score, load)",
+   "  manifest.json  tipo e versione del formato": "  manifest.json  format type and version",
+   "  sessione.json  punti, parametri, gruppi e dati di ricarica (la foto è il file accanto)": "  session.json   points, parameters, groups and reloading data (the photo is the file next to it)",
    "  sessione.json  sessione completa, SENZA foto incorporata (per riaprirla: carica prima la foto, poi la sessione)": "  session.json   complete session, WITHOUT the embedded photo (to reopen it: load the photo first, then the session)",
    "  {0} {1} n={2} ES {3} · MR {4} · FOM {5} · CEP {6}": "  {0} {1} n={2} ES {3} · MR {4} · FOM {5} · CEP {6}",
    " (a favore)": " (tailwind)",
@@ -2740,6 +2822,7 @@ const I18N = (() => {
    " Click ({0} {1}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>.": " Clicks ({0} {1}) to bring the point onto the aim: the correction to apply is the one of the <b>group centre</b>.",
    " Collo, spalle e zona −1 del corpo ricostruiti dal disegno: approssimati; cerchi −0 e testa quotati.": " Neck, shoulders and body −1 zone reconstructed from the drawing: approximate; −0 circles and head are dimensioned.",
    " Con meno di 10 colpi i test hanno poca potenza: l'assenza di avvisi non prova che il modello sia adatto.": " With fewer than 10 shots the tests have little power: the absence of warnings does not prove that the model fits.",
+   " Con meno di 5 colpi queste statistiche sono poco affidabili.": " With fewer than 5 shots these statistics are not very reliable.",
    " Contorno disegnato sull'ingombro ufficiale: approssimato.": " Outline drawn on the official overall size: approximate.",
    " Decimale: ogni anello è diviso in 10 fasce uguali (10,0–10,9).": " Decimal: each ring is split into 10 equal bands (10.0–10.9).",
    " FFP: le tacche valgono il nominale a ogni ingrandimento.": " FFP: the marks have their nominal value at every magnification.",
@@ -2766,6 +2849,7 @@ const I18N = (() => {
    " · due centri p {0}": " · two centres p {0}",
    " · due centri: da 8 colpi": " · two centres: from 8 shots",
    " · foro ⌀ {0} px": " · hole ⌀ {0} px",
+   " · inserisci la velocità per le componenti": " · enter the speed for the components",
    " · media {0}": " · average {0}",
    " · media {0}: {1}": " · average {0}: {1}",
    " · scala: dal rettangolo": " · scale: from the rectangle",
@@ -2775,11 +2859,12 @@ const I18N = (() => {
    " · {0} ({1}) con la taratura attuale": " · {0} ({1}) with the current zero",
    " · {0} MOA · {1} MIL": " · {0} MOA · {1} MIL",
    " · {0} dal calcolo": " · {0} by calculation",
+   " · {0} punti di scala/controllo restano fuori dalla foto (la scala non cambia)": " · {0} scale/check points stay outside the photo (the scale does not change)",
    " · {0} sulla linea (≈)": " · {0} on the line (≈)",
    " · {0} × 10 interno": " · {0} × inner 10",
    " · ⚠ meno dei fori marcati": " · ⚠ fewer than the marked shots",
    " · ⚠ poco affidabile con meno di 5 colpi": " · ⚠ unreliable with fewer than 5 shots",
-   " · ⚠ poco affidabili con meno di 5 colpi": " · ⚠ unreliable with fewer than 5 shots",
+   " · ⚠ {0} punti (mire o fori) restano fuori: allarga il rettangolo": " · ⚠ {0} points (aims or shots) are outside: enlarge the rectangle",
    " ⚠ Sono mescolate munizioni diverse: scegline una.": " ⚠ Different ammunition is mixed: choose one.",
    "(* 10 interno, ≈ sulla linea)": "(* inner 10, ≈ on the line)",
    "(M = mancato, ≈ sulla linea)": "(M = miss, ≈ on the line)",
@@ -2820,6 +2905,7 @@ const I18N = (() => {
    "<b>Novità 1.10</b>: <b>etichetta del group size</b> sull'immagine; <b>sagome</b> IPSC, IDPA, silhouette e zona vitale (punteggio e probabilità, spostabili e ruotabili) e <b>punteggio decimale</b> ISSF; nella vista grafici <b>correlazioni</b> ricarica/condizioni con <b>ladder</b> (carica per foro) e <b>cono di dispersione</b> a distanze diverse; in Orientamento la <b>correzione della distorsione</b> dell'obiettivo calibrata da linee dritte.": "<b>New in 1.10</b>: <b>group size label</b> on the image; IPSC, IDPA, silhouette and vital-zone <b>targets</b> (scoring and probability, movable and rotatable) and ISSF <b>decimal scoring</b>; in the charts view load/conditions <b>correlations</b> with <b>ladder</b> (charge per shot) and the <b>dispersion cone</b> at different distances; in Orientation the lens <b>distortion correction</b> calibrated from straight lines.",
    "<b>Novità 1.11</b>: <b>verifica incrociata della scala</b> (diametro dei fori e riferimento di controllo); <b>incertezza di misura</b> dei risultati con fori «difficili» (◐); <b>flyer</b> con il test di Mahalanobis; <b>diagnostica del modello</b> con QQ-plot e avvisi; <b>ES equivalente</b> a 5 e 10 colpi; <b>zoom</b> del reticolo.": "<b>New in 1.11</b>: <b>scale cross-check</b> (hole diameter and check reference); results <b>measurement uncertainty</b> with «difficult» holes (◐); <b>flyers</b> with the Mahalanobis test; <b>model diagnostics</b> with QQ-plot and warnings; <b>equivalent ES</b> at 5 and 10 shots; reticle <b>zoom</b>.",
    "<b>Novità 1.12</b>: etichette dei fori che <b>non si sovrappongono</b>; <b>pannello in tempo reale</b> sull'immagine (fori, group size, raggio medio, avviso sotto 5 colpi); <b>tooltip</b> sul foro e <b>doppio clic</b> per aprirne la riga nella tabella; <b>freccia di correzione</b> e <b>correzione virtuale</b> sulla foto; <b>semaforo</b> della calibrazione; colonna <b>Effetto ES / RM</b> dei fori; <b>densità</b> Compatta / Standard / Dettagliata e <b>layout</b> del pannello (⚙: ordine e sezioni nascoste), salvati nel browser.": "<b>New in 1.12</b>: shot labels that <b>do not overlap</b>; <b>live panel</b> on the image (shots, group size, mean radius, warning below 5 shots); <b>tooltip</b> on the shot and <b>double-click</b> to open its row in the table; <b>correction arrow</b> and <b>virtual correction</b> on the photo; calibration <b>traffic light</b>; shots <b>Effect ES / MR</b> column; <b>density</b> Compact / Standard / Detailed and panel <b>layout</b> (⚙: order and hidden sections), saved in the browser.",
+   "<b>Novità 1.13</b>: <b>profili di ricarica</b> salvati nel browser (Ricarica e condizioni: componenti e calibro, esportabili); <b>croce estesa</b> del cursore con lo strumento Mira; <b>ritaglio</b> della foto (Orientamento: definitivo, con «Annulla ritaglio» finché non carichi un'altra foto); <b>risultati a card</b> con dettagli espandibili; <b>quadrante del vento</b> con componenti laterale e frontale; <b>sessione ZIP</b> (foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio).": "<b>New in 1.13</b>: <b>reload profiles</b> saved in the browser (Reloading and conditions: components and caliber, exportable); <b>extended crosshair</b> of the cursor with the Aim tool; photo <b>crop</b> (Orientation: permanent, with «Undo crop» until you load another photo); <b>results as cards</b> with expandable details; <b>wind dial</b> with crosswind and head/tail components; <b>ZIP session</b> (photo and measurements in a single file, to reopen or import into the comparison and the archive).",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
@@ -2829,7 +2915,6 @@ const I18N = (() => {
    "<b>📊 Grafici e confronto tra gruppi</b> (in fondo al pannello, tasto <kbd>A</kbd>): vista a schermo intero con dispersione, istogramma, orologio del gruppo attivo, tabella di confronto, andamento nel tempo e storico. <kbd>Esc</kbd> o «← Torna all'analisi» per tornare all'immagine.": "<b>📊 Charts and group comparison</b> (at the bottom of the panel, key <kbd>A</kbd>): full-screen view with scatter plot, histogram, clock of the active group, comparison table, trend over time and history. <kbd>Esc</kbd> or «← Back to analysis» to return to the image.",
    "<b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.": "<b>📑 PDF report</b> (next to the Result Card): A4 file with photo, measurements, charts, shots table, load and notes, comparison, dope card and precision. In the results the underlined terms (CEP, FOM, σ…) show a short explanation and, with a click, open the glossary of the technical help. <b>Convex hull</b>: turn it on in the Shooting parameters.",
    "<br><span class=\"civ\" title=\"Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))\">IC {0}% atteso: {1}</span>": "<br><span class=\"civ\" title=\"Confidence interval of the expected mean radius from the circular normal model (σ·√(π/2))\">CI {0}% expected: {1}</span>",
-   "<br><span class=\"civ\">IC {0}%: {1}</span>": "<br><span class=\"civ\">CI {0}%: {1}</span>",
    "<br><span class=\"civ\">IC {0}%: ±{1} mm vert. · ±{2} mm orizz.</span>": "<br><span class=\"civ\">CI {0}%: ±{1} mm vert. · ±{2} mm horiz.</span>",
    "<details class=\"meas\"><summary>Incertezza di misura ({0}%): ES {1}</summary>\n    <table>\n      <tr><td>Group size (c-c)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Raggio medio</td><td class=\"v\">{3}</td></tr>\n      {4}\n      <tr><td>σ (misura)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Intervallo che comprende sia l'incertezza statistica (pochi colpi, χ²) sia quella di misura\">σ (statistica + misura)</td><td class=\"v\">{6}</td></tr>\n      <tr><td>CEP (statistica + misura)</td><td class=\"v\">{7}–{8} mm</td></tr>\n    </table>\n    <div class=\"muted\" style=\"font-size:11px\">Simulazione con marcatura ±{9} px a mano, ±{10} px con snap ({11} fori), ×3 sui fori difficili ({12}), e scala ±{13}%. È l'effetto degli errori di misura sui numeri di QUESTO gruppo; l'IC statistico riguarda invece quanto il gruppo rappresenta l'arma.</div>\n  </details>": "<details class=\"meas\"><summary>Measurement uncertainty ({0}%): ES {1}</summary>\n    <table>\n      <tr><td>Group size (c-c)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Mean radius</td><td class=\"v\">{3}</td></tr>\n      {4}\n      <tr><td>σ (measurement)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Interval including both the statistical uncertainty (few shots, χ²) and the measurement one\">σ (statistical + measurement)</td><td class=\"v\">{6}</td></tr>\n      <tr><td>CEP (statistical + measurement)</td><td class=\"v\">{7}–{8} mm</td></tr>\n    </table>\n    <div class=\"muted\" style=\"font-size:11px\">Simulation with marking ±{9} px by hand, ±{10} px with snap ({11} holes), ×3 on difficult holes ({12}), and scale ±{13}%. It is the effect of measurement errors on the numbers of THIS group; the statistical CI is instead about how well the group represents the rifle.</div>\n  </details>",
    "<div class=\"cmpsum muted\">Il gruppo attivo è il primo in ordine di data: nessun precedente.</div>": "<div class=\"cmpsum muted\">The active group is the first in date order: no previous group.</div>",
@@ -2843,12 +2928,11 @@ const I18N = (() => {
    "<div class=\"hitnote\">σ angolare {0} MIL (IC {1}% {2}–{3}) da {4}, {5} gradi di libertà. Modello a <b>angolo costante</b>: diametri proporzionali alla distanza. Vale vicino alle distanze tirate (la più lunga: {6}); oltre (⚠) vento, differenze di velocità e caduta fanno crescere la dispersione più in fretta: i valori sono un limite inferiore. Distanze massime: 2 × {7} = {8}.</div>": "<div class=\"hitnote\">Angular σ {0} MIL ({1}% CI {2}–{3}) from {4}, {5} degrees of freedom. <b>Constant-angle</b> model: diameters proportional to distance. It holds near the distances shot (the longest: {6}); beyond (⚠) wind, velocity differences and drop make dispersion grow faster: the values are a lower bound. Maximum distances: 2 × {7} = {8}.</div>",
    "<div class=\"hitnote\">⚠ Con meno di 5 punti la pendenza è molto incerta.</div>": "<div class=\"hitnote\">⚠ With fewer than 5 points the slope is very uncertain.</div>",
    "<div class=\"hitnote\">⚠ Distanze escluse perché oltre {0}: {1}.</div>": "<div class=\"hitnote\">⚠ Distances excluded because beyond {0}: {1}.</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">Esatto: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Exact: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>",
    "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\" title=\"Adattamento Rayleigh p {0} · anisotropia p {1}{2}\">Diagnostica del modello: nessun segnale contro il modello circolare normale.{3}</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\" title=\"Rayleigh fit p {0} · anisotropy p {1}{2}\">Model diagnostics: no signal against the circular normal model.{3}</div>",
    "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Diagnostica del modello in calcolo…</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Model diagnostics being computed…</div>",
-   "<div class=\"muted\" style=\"margin-top:6px\">Aggiungi il punto di mira per la correzione.</div>": "<div class=\"muted\" style=\"margin-top:6px\">Add the point of aim to get the correction.</div>",
    "<div class=\"muted\">Calibra la scala per calcolare la probabilità.</div>": "<div class=\"muted\">Calibrate the scale to compute the probability.</div>",
    "<div class=\"muted\">Calibra la scala per ottenere le misure. (ES = {0} px)</div>": "<div class=\"muted\">Calibrate the scale to get the measurements. (ES = {0} px)</div>",
-   "<div class=\"muted\">Inserisci distanza di tiro e valore click.</div>": "<div class=\"muted\">Enter shooting distance and click value.</div>",
    "<div class=\"muted\">Inserisci la distanza di tiro.</div>": "<div class=\"muted\">Enter the shooting distance.</div>",
    "<div class=\"muted\">Inserisci le dimensioni del bersaglio.</div>": "<div class=\"muted\">Enter the target size.</div>",
    "<div class=\"muted\">Nessun foro utilizzabile: servono punto di mira, scala, distanza, valore click e la carica (del gruppo o del singolo foro: attiva «Carica per foro» nella tabella dei punti).</div>": "<div class=\"muted\">No usable shot: point of aim, scale, distance, click value and the charge (of the group or of the single shot: turn on «Charge per shot» in the points table) are needed.</div>",
@@ -2873,7 +2957,6 @@ const I18N = (() => {
    "<div class=\"qinfo\">{0} → incertezza di scala ≈ ±{1}% · inquadratura {2} × {3}": "<div class=\"qinfo\">{0} → scale uncertainty ≈ ±{1}% · field of view {2} × {3}",
    "<div class=\"qwarn\">⚠ I fori misurano in mediana ⌀ {0} mm, il {1}% del calibro ({2} mm, {3} fori): scala o calibro probabilmente sbagliati. Controlla la distanza nota della scala, la sua unità (mm / cm / in) e il calibro.</div>": "<div class=\"qwarn\">⚠ The holes measure a median ⌀ {0} mm, {1}% of the caliber ({2} mm, {3} holes): scale or caliber probably wrong. Check the known distance of the scale, its unit (mm / cm / in) and the caliber.</div>",
    "<div class=\"qwarn\">⚠ Riferimento di controllo: misurato {0} mm invece di {1} mm ({2}%, oltre l'incertezza ±{3}%): ricontrolla la scala.</div>": "<div class=\"qwarn\">⚠ Check reference: measured {0} mm instead of {1} mm ({2}%, beyond the ±{3}% uncertainty): check the scale again.</div>",
-   "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Punteggio</b> ({0}): <b>{1}</b></div>": "<div class=\"scoreline\" style=\"margin-top:6px\"><b>Score</b> ({0}): <b>{1}</b></div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Carica (gr)</th><th class=\"x\">Fori</th><th class=\"x\">Alzo medio (MIL)</th><th class=\"x\">IC {0}%</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Charge (gr)</th><th class=\"x\">Shots</th><th class=\"x\">Mean elevation (MIL)</th><th class=\"x\">{0}% CI</th></tr></thead><tbody>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th>\n      <th class=\"x\" title=\"Click di alzo da impostare (+ = in alto) e intervallo di confidenza della media\">Alzo (click)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Click di brandeggio da impostare (+ = a destra): vale per il vento di quel giorno\">Brand. (click)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Gruppo</th><th>Data</th><th>Condizioni</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Click da impostare sulla torretta per colpire il punto di mira ({1} {2}/click, + = in alto / a destra), dalla media dei fori: click impostati + correzione di ogni foro; ± = intervallo di confidenza {3}%. Solo le distanze tirate: per quelle intermedie serve un calcolatore balistico. Il brandeggio vale per il vento di quel giorno; alzo e brandeggio dipendono da munizione, temperatura e pressione.</div>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th>\n      <th class=\"x\" title=\"Elevation clicks to set (+ = up) and confidence interval of the mean\">Elev. (clicks)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Windage clicks to set (+ = right): valid for the wind of that day\">Wind. (clicks)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Group</th><th>Date</th><th>Conditions</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Clicks to set on the turret to hit the point of aim ({1} {2}/click, + = up / right), from the average of the shots: clicks set + correction of each shot; ± = {3}% confidence interval. Only the distances actually shot: for intermediate ones you need a ballistic calculator. Windage is valid for the wind of that day; elevation and windage depend on ammunition, temperature and pressure.</div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th><th class=\"x\">σ per asse (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ IC {0}% (mm)</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th><th class=\"x\">σ per axis (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ {0}% CI (mm)</th></tr></thead><tbody>",
@@ -2896,15 +2979,20 @@ const I18N = (() => {
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo</td></tr><tr><td colspan=\"2\" class=\"muted\">Servono almeno 3 fori.</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape</td></tr><tr><td colspan=\"2\" class=\"muted\">At least 3 shots needed.</td></tr></table>",
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo{0}</td></tr>\n    <tr><td title=\"Orientamento dell'asse maggiore dell'ellisse di dispersione: gradi dalla verticale in senso orario (0° = verticale, 90° = orizzontale)\">Asse maggiore</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Rapporto tra asse maggiore e asse minore dell'ellisse (√ del rapporto tra le varianze principali): 1 = gruppo circolare\">Rapporto d'aspetto</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Ellisse di concentrazione: contiene la percentuale indicata dei colpi se la dispersione è normale\">Ellisse {4}% (semiassi)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">Con pochi colpi il rapporto d'aspetto tende a risultare più alto del reale; con un gruppo quasi circolare l'angolo non è significativo.</div>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape{0}</td></tr>\n    <tr><td title=\"Orientation of the major axis of the dispersion ellipse: degrees from vertical, clockwise (0° = vertical, 90° = horizontal)\">Major axis</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Ratio between major and minor axis of the ellipse (√ of the ratio of the principal variances): 1 = circular group\">Aspect ratio</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Concentration ellipse: contains the stated percentage of shots if the dispersion is normal\">Ellipse {4}% (semi-axes)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">With few shots the aspect ratio tends to come out higher than the true one; with an almost circular group the angle is not significant.</div>",
    "<table style=\"margin-top:4px\"><tr><td title=\"Convex hull: poligono convesso più piccolo che racchiude tutti i fori inclusi. Un'area grande rispetto al CEP indica fori lontani dal centro in più direzioni\">Convex hull</td><td class=\"v\">{0} mm² · {1} {2} mm</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td title=\"Convex hull: smallest convex polygon enclosing all included shots. A large area compared with the CEP means shots far from the centre in several directions\">Convex hull</td><td class=\"v\">{0} mm² · {1} {2} mm</td></tr></table>",
-   "<table style=\"margin-top:4px\"><tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td>Group centre offset</td><td class=\"v\">{0}{1}</td></tr></table>",
+   "<table>\n        <tr><td title=\"Raggio previsto che contiene il 99% dei colpi\">R99</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Deviazione standard delle distanze dei fori dal centro gruppo\">SD distanze dal centro</td><td class=\"v\">{2}</td></tr>\n        <tr><td title=\"Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale\">SD radiale √(σx²+σy²)</td><td class=\"v\">{3}</td></tr>\n      </table>\n      <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = {4} mm, stima corretta per pochi colpi{5}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.{6}</div>": "<table>\n        <tr><td title=\"Predicted radius containing 99% of the shots\">R99</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Standard deviation of the distances of the shots from the group centre\">SD of distances from centre</td><td class=\"v\">{2}</td></tr>\n        <tr><td title=\"Radial standard deviation: √(σx² + σy²), with σx and σy the horizontal and vertical standard deviations\">Radial SD √(σx²+σy²)</td><td class=\"v\">{3}</td></tr>\n      </table>\n      <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: predicted radii around the group centre, circular normal model (σ = {4} mm, estimate corrected for few shots{5}). The confidence intervals (χ²) are asymmetric, so they are given as «min–max» and not as «±». The group size (ES) has no exact interval and is not estimated.{6}</div>",
+   "<table>\n        <tr><td>Bordo-bordo esterno</td><td class=\"v\">{0}</td></tr>\n        <tr><td title=\"Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)\">H-spread (orizz.)</td><td class=\"v\">{1}</td></tr>\n        <tr><td title=\"Dispersione verticale: dal colpo più basso al più alto (c-c)\">V-spread (vert.)</td><td class=\"v\">{2}</td></tr>\n        <tr><td title=\"Figure of Merit: media tra H-spread e V-spread\">FOM</td><td class=\"v\">{3}</td></tr>\n      </table>": "<table>\n        <tr><td>Outside edge-to-edge</td><td class=\"v\">{0}</td></tr>\n        <tr><td title=\"Horizontal dispersion: from the leftmost to the rightmost shot (c-c)\">H-spread (horiz.)</td><td class=\"v\">{1}</td></tr>\n        <tr><td title=\"Vertical dispersion: from the lowest to the highest shot (c-c)\">V-spread (vert.)</td><td class=\"v\">{2}</td></tr>\n        <tr><td title=\"Figure of Merit: average of H-spread and V-spread\">FOM</td><td class=\"v\">{3}</td></tr>\n      </table>",
    "<table>\n        <tr><td>Group size (c-c)</td><td class=\"v\"><b>{0}</b><br>{1}</td></tr>\n        {2}\n        <tr class=\"sec2\"><td>Bordo-bordo esterno</td><td class=\"v\">{3}</td></tr>\n        <tr><td>Raggio medio</td><td class=\"v\">{4}<br>{5}{6}</td></tr>\n        <tr><td title=\"Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)\">H-spread (orizz.)</td><td class=\"v\">{7}</td></tr>\n        <tr><td title=\"Dispersione verticale: dal colpo più basso al più alto (c-c)\">V-spread (vert.)</td><td class=\"v\">{8}</td></tr>\n        <tr class=\"sec2\"><td title=\"Figure of Merit: media tra H-spread e V-spread\">FOM</td><td class=\"v\">{9}</td></tr>\n        <tr><td colspan=\"2\" class=\"sub2\">Statistiche{10}</td></tr>\n        <tr class=\"sec2\"><td title=\"Deviazione standard delle distanze dei fori dal centro gruppo\">SD distanze dal centro</td><td class=\"v\">{11}</td></tr>\n        <tr class=\"sec2\"><td title=\"Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale\">SD radiale √(σx²+σy²)</td><td class=\"v\">{12}</td></tr>\n        <tr><td title=\"Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)\">CEP (50%)</td><td class=\"v\">{13}{14}</td></tr>\n        <tr><td title=\"Raggio previsto che contiene il 95% dei colpi\">R95</td><td class=\"v\">{15}{16}</td></tr>\n        <tr class=\"sec2\"><td title=\"Raggio previsto che contiene il 99% dei colpi\">R99</td><td class=\"v\">{17}{18}</td></tr>\n      </table>\n      <div class=\"muted note2\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = {19} mm, stima corretta per pochi colpi{20}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.</div>\n      {21}": "<table>\n        <tr><td>Group size (c-c)</td><td class=\"v\"><b>{0}</b><br>{1}</td></tr>\n        {2}\n        <tr class=\"sec2\"><td>Outside edge-to-edge</td><td class=\"v\">{3}</td></tr>\n        <tr><td>Mean radius</td><td class=\"v\">{4}<br>{5}{6}</td></tr>\n        <tr><td title=\"Horizontal dispersion: from the leftmost to the rightmost shot (c-c)\">H-spread (horiz.)</td><td class=\"v\">{7}</td></tr>\n        <tr><td title=\"Vertical dispersion: from the lowest to the highest shot (c-c)\">V-spread (vert.)</td><td class=\"v\">{8}</td></tr>\n        <tr class=\"sec2\"><td title=\"Figure of Merit: average of H-spread and V-spread\">FOM</td><td class=\"v\">{9}</td></tr>\n        <tr><td colspan=\"2\" class=\"sub2\">Statistics{10}</td></tr>\n        <tr class=\"sec2\"><td title=\"Standard deviation of the distances of the shots from the group centre\">SD of distances from centre</td><td class=\"v\">{11}</td></tr>\n        <tr class=\"sec2\"><td title=\"Radial standard deviation: √(σx² + σy²), with σx and σy the horizontal and vertical standard deviations\">Radial SD √(σx²+σy²)</td><td class=\"v\">{12}</td></tr>\n        <tr><td title=\"Circular Error Probable: predicted radius containing 50% of the shots (circular normal model, σ estimated from the shots)\">CEP (50%)</td><td class=\"v\">{13}{14}</td></tr>\n        <tr><td title=\"Predicted radius containing 95% of the shots\">R95</td><td class=\"v\">{15}{16}</td></tr>\n        <tr class=\"sec2\"><td title=\"Predicted radius containing 99% of the shots\">R99</td><td class=\"v\">{17}{18}</td></tr>\n      </table>\n      <div class=\"muted note2\" style=\"font-size:11px;margin-top:2px\">CEP/R95/R99: predicted radii around the group centre, circular normal model (σ = {19} mm, estimate corrected for few shots{20}). The confidence intervals (χ²) are asymmetric, so they are given as «min–max» and not as «±». The group size (ES) has no exact interval and is not estimated.</div>\n      {21}",
    "<th class=\"x\" title=\"Carica di polvere di questo foro (gr) per i ladder test; vuoto = quella del gruppo\">Carica</th>": "<th class=\"x\" title=\"Powder charge of this shot (gr) for ladder tests; empty = the group's\">Charge</th>",
    "<th class=\"x\" title=\"Punteggio ({0}): anello toccato dal bordo del foro; * = 10 interno; ≈ = sulla linea\">Punti</th>": "<th class=\"x\" title=\"Score ({0}): ring touched by the edge of the hole; * = inner 10; ≈ = on the line\">Points</th>",
+   "<tr><td title=\"Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)\">CEP (50%)</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Raggio previsto che contiene il 95% dei colpi\">R95</td><td class=\"v\">{2}{3}</td></tr>": "<tr><td title=\"Circular Error Probable: predicted radius containing 50% of the shots (circular normal model, σ estimated from the shots)\">CEP (50%)</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Predicted radius containing 95% of the shots\">R95</td><td class=\"v\">{2}{3}</td></tr>",
    "<tr><td title=\"Group size che lo stesso tiratore/arma darebbe in media con 5 o 10 colpi (stessa σ, modello circolare normale): l'ES cresce con il numero di colpi\">ES equivalente</td><td class=\"v\">{0}</td></tr>": "<tr><td title=\"Group size the same shooter/rifle would give on average with 5 or 10 shots (same σ, circular normal model): ES grows with the number of shots\">Equivalent ES</td><td class=\"v\">{0}</td></tr>",
+   "<tr><td title=\"Scostamento orizzontale del centro gruppo dalla mira, misurato: include vento, taratura e altri effetti\">Centro gruppo (orizz.)</td><td class=\"v\">{0} mm {1}</td></tr>": "<tr><td title=\"Horizontal offset of the group centre from the aim, measured: includes wind, zero and other effects\">Group centre (horiz.)</td><td class=\"v\">{0} mm {1}</td></tr>",
    "<tr><td>Colpi a segno su 100</td><td>{0}</td><td>{1}</td></tr>": "<tr><td>Hits per 100</td><td>{0}</td><td>{1}</td></tr>",
+   "<tr><td>Componente laterale</td><td class=\"v\">{0} {1}{2}</td></tr>\n    <tr><td>Componente frontale</td><td class=\"v\">{3} {4}{5}</td></tr>": "<tr><td>Crosswind component</td><td class=\"v\">{0} {1}{2}</td></tr>\n    <tr><td>Head/tail component</td><td class=\"v\">{3} {4}{5}</td></tr>",
    "<tr><td>IC {0}% (colpi su 100)</td><td>{1}–{2}</td><td>{3}</td></tr>": "<tr><td>CI {0}% (hits per 100)</td><td>{1}–{2}</td><td>{3}</td></tr>",
    "<tr><td>IC {0}%</td><td>{1}</td><td>{2}</td></tr>": "<tr><td>CI {0}%</td><td>{1}</td><td>{2}</td></tr>",
    "<tr><td>Probabilità per colpo</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>": "<tr><td>Probability per shot</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>",
+   "<tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr>": "<tr><td>Group centre offset</td><td class=\"v\">{0}{1}</td></tr>",
    "<tr><td>Scostamento dalla mira</td><td class=\"v\">{0}</td></tr>": "<tr><td>Offset from the aim</td><td class=\"v\">{0}</td></tr>",
    "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
    "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).\">Effetto ES / RM</th><th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Effect of the shot on the group: group size / mean radius with the shot − without it (mm). Red = enlarges it, green = tightens it. For an excluded shot: what would happen by putting it back. Do not exclude a shot just because it enlarges the group: there must be a cause (see the guide).\">Effect ES / MR</th><th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
@@ -2918,10 +3006,11 @@ const I18N = (() => {
    "ATTENZIONE: scala non calibrata": "WARNING: scale not calibrated",
    "Adatta allo schermo (F)": "Fit to screen (F)",
    "Affiancate": "Side by side",
-   "Aggiunge all'archivio sessioni salvate in precedenza (.json, meglio con l'immagine incorporata)": "Adds previously saved sessions to the archive (.json, preferably with the embedded image)",
+   "Aggiunge all'archivio sessioni salvate in precedenza (.zip, oppure .json meglio con l'immagine incorporata)": "Adds previously saved sessions to the archive (.zip, or .json preferably with the embedded image)",
    "Aggiunge alla tabella la colonna «Carica» per indicare la carica di ogni foro (ladder test); vuoto = carica del gruppo": "Adds the «Charge» column to the table to record the charge of each shot (ladder test); empty = group charge",
-   "Aggiunge i gruppi di altre sessioni salvate (.json) per confrontarli con quelli attuali": "Adds the groups of other saved sessions (.json) to compare them with the current ones",
+   "Aggiunge i gruppi di altre sessioni salvate (.zip o .json) per confrontarli con quelli attuali": "Adds the groups of other saved sessions (.zip or .json) to compare them with the current ones",
    "Aggiungi foro al gruppo attivo (4)": "Add a shot to the active group (4)",
+   "Aggiungi il punto di mira per la correzione.": "Add the point of aim for the correction.",
    "Altezza": "Height",
    "Altezza = densità di probabilità degli impatti secondo il modello normale stimato dai fori (lo stesso di ellisse e CEP); punti neri = fori inclusi. Con pochi colpi la forma della superficie è incerta quanto l'ellisse.": "Height = probability density of impacts according to the normal model estimated from the holes (the same as ellipse and CEP); black dots = included holes. With few shots the shape of the surface is as uncertain as the ellipse.",
    "Altezza = lato verticale del rettangolo": "Height = vertical side of the rectangle",
@@ -2947,6 +3036,7 @@ const I18N = (() => {
    "Annulla (Ctrl+Z)": "Undo (Ctrl+Z)",
    "Applica": "Apply",
    "Apre a schermo intero i grafici del gruppo attivo e il confronto tra gruppi (tasto A)": "Opens the charts of the active group and the group comparison full screen (key A)",
+   "Apre una sessione salvata (.zip o .json)": "Opens a saved session (.zip or .json)",
    "Archivio ZIP": "ZIP archive",
    "Archivio delle sessioni": "Session archive",
    "Archivio non disponibile in questo browser.": "Archive not available in this browser.",
@@ -3021,6 +3111,7 @@ const I18N = (() => {
    "Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6)": "Click the 4 corners of the reference rectangle, in any order (key 6)",
    "Clicca i due estremi di un'altra lunghezza nota (es. il diametro di un anello, il lato di un quadretto): l'app la misura con la scala attuale e avvisa se non torna": "Click the two ends of another known length (e.g. the diameter of a ring, the side of a grid square): the app measures it with the current scale and warns if it does not match",
    "Clicca il secondo punto di calibrazione.": "Click the second calibration point.",
+   "Clicca l'ora da cui soffia il vento (ore 12 = dal bersaglio verso di te). Clic di nuovo per toglierla.": "Click the hour the wind blows from (12 o'clock = from the target towards you). Click again to remove it.",
    "Clicca punti lungo 2 o più linee che nella realtà sono dritte (bordi del foglio, righe della griglia), vicino ai bordi della foto; Invio = linea successiva": "Click points along 2 or more lines that are straight in reality (sheet edges, grid lines), near the edges of the photo; Enter = next line",
    "Click diversi tra i fori del gruppo": "Different clicks between the shots of the group",
    "Click già impostati sulle torrette (+ = in alto / a destra): l'holdover copre solo il resto": "Clicks already set on the turrets (+ = up / right): the holdover covers only the rest",
@@ -3035,6 +3126,7 @@ const I18N = (() => {
    "Colpi": "Shots",
    "Colpi sparati": "Shots fired",
    "Compatta": "Compact",
+   "Compila almeno un dato di ricarica prima di salvare il profilo.": "Fill in at least one reloading field before saving the profile.",
    "Con correzione applicata: {0} ({1})": "With correction applied: {0} ({1})",
    "Con correzione: alzo e deriva supposti corretti per questa distanza; arrotondamento al click non considerato.": "With correction: elevation and windage assumed correct for this distance; click rounding not considered.",
    "Con correzione: gruppo supposto centrato sul bersaglio (manca il punto di mira: arrotondamento al click non considerato); l'intervallo comprende l'incertezza del centro gruppo.": "With correction: group assumed centred on the target (point of aim missing: click rounding not considered); the interval includes the uncertainty of the group centre.",
@@ -3083,6 +3175,7 @@ const I18N = (() => {
    "Densità 3D (modello normale) · trascina per ruotare, doppio clic per tornare alla vista iniziale": "3D density (normal model) · drag to rotate, double-click to return to the initial view",
    "Densità delle informazioni": "Information density",
    "Densità delle informazioni: Compatta (meno spazi, solo i valori principali) · Standard · Dettagliata (riquadri secondari aperti)": "Information density: Compact (less spacing, only the main values) · Standard · Detailed (secondary boxes open)",
+   "Dettagli": "Details",
    "Dettagliata": "Detailed",
    "Di quanto cresce il DIAMETRO da un anello al successivo": "How much the DIAMETER grows from one ring to the next",
    "Diagnostica del modello · QQ-plot Rayleigh delle distanze dal centro": "Model diagnostics · Rayleigh QQ-plot of the distances from the centre",
@@ -3095,6 +3188,7 @@ const I18N = (() => {
    "Direz.": "Dir.",
    "Direzione": "Direction",
    "Direzione dal centro gruppo (°)": "Direction from the group centre (°)",
+   "Direzione del vento a ore": "Wind direction as a clock position",
    "Direzione vento (ore)": "Wind direction (o'clock)",
    "Direzione: ore {0} · {1}° {2}": "Direction: {0} o'clock · {1}° {2}",
    "Dispersione (senza immagine, rispetto al centro gruppo)": "Scatter (without image, relative to the group centre)",
@@ -3136,6 +3230,7 @@ const I18N = (() => {
    "Dope card · alzo e brandeggio per distanza": "Dope card · elevation and windage by distance",
    "Dope: alzo {0} · brandeggio {1} click (+ = alto / destra)": "Dope: elevation {0} · windage {1} clicks (+ = up / right)",
    "Elimina i coefficienti scelti": "Delete the chosen coefficients",
+   "Elimina il profilo scelto": "Delete the chosen profile",
    "Elimina l'ultimo punto del gruppo attivo (Backspace)": "Delete the last point of the active group (Backspace)",
    "Elimina tutti i punti": "Delete all points",
    "Eliminare tutti i punti (calibrazione, mire e fori di tutti i gruppi)?": "Delete all points (calibration, aims and shots of all groups)?",
@@ -3144,16 +3239,19 @@ const I18N = (() => {
    "Ellisse di dispersione al": "Dispersion ellipse at",
    "Esclusi": "Excluded",
    "Escluso": "Excluded",
+   "Esporta tutti i profili in un file JSON (per un altro browser o PC)": "Export all profiles to a JSON file (for another browser or PC)",
    "Etichetta del group size": "Group size label",
    "FOM": "FOM",
    "FOM (mm)": "FOM (mm)",
    "FORMA DEL GRUPPO": "GROUP SHAPE",
    "Fattore di potenza": "Power factor",
    "File JSON non valido": "Invalid JSON file",
+   "File dei profili non valido.": "Invalid profiles file.",
    "Flyer: test di Mahalanobis (criterio ellittico) di ogni foro contro gli altri, p < 5%/n.": "Flyers: Mahalanobis test (elliptical criterion) of each hole against the others, p < 5%/n.",
    "Fonte": "Source",
    "Fori": "Holes",
    "Fori · X, Y in {0}": "Shots · X, Y in {0}",
+   "Forma del gruppo": "Group shape",
    "Formato non supportato": "Unsupported format",
    "Foro": "Shot",
    "Foro difficile (strappato, sovrapposto, bordo incerto): incertezza di marcatura ×3": "Difficult hole (torn, overlapping, uncertain edge): marking uncertainty ×3",
@@ -3162,7 +3260,10 @@ const I18N = (() => {
    "Foro {0} · {1}° · {2} {3}{4}": "Hole {0} · {1}° · {2} {3}{4}",
    "Foro {0}{1}{2} · {3} {4} dal centro{5}": "Shot {0}{1}{2} · {3} {4} from the centre{5}",
    "Foro: clicca il centro di ogni foro di «{0}». Tasto destro su un punto = elimina.": "Shot: click the centre of each hole of «{0}». Right-click a point = delete.",
+   "Foto intera.": "Whole photo.",
    "Foto raddrizzata di {0}° in senso {1} (linea {2}).": "Photo levelled by {0}° {1} (line {2}).",
+   "Foto ritagliata a {0} × {1} px. «Annulla ritaglio» la ripristina finché non carichi un'altra foto.": "Photo cropped to {0} × {1} px. «Undo crop» restores it until you load another photo.",
+   "Foto ritagliata: {0} × {1} px.": "Cropped photo: {0} × {1} px.",
    "Foto ruotata di {0}° in senso {1} (direzioni riferite al bersaglio raddrizzato)": "Photo rotated {0}° {1} (directions refer to the levelled target)",
    "Freccia dal centro del gruppo al punto in cui andrebbe dopo i click di correzione (arrotondati), con una crocetta; esatta alla distanza del gruppo": "Arrow from the group centre to where it would go after the correction clicks (rounded), with a small cross; exact at the group distance",
    "Freccia di correzione sulla foto": "Correction arrow on the photo",
@@ -3207,6 +3308,7 @@ const I18N = (() => {
    "IC {0}% {1}": "CI {0}% {1}",
    "IC {0}%: CEP {1} · R95 {2} · R99 {3}": "CI {0}%: CEP {1} · R95 {2} · R99 {3}",
    "IC {0}%: verticale {1} · orizzontale {2}": "CI {0}%: vertical {1} · horizontal {2}",
+   "IC {0}%: {1}": "CI {0}%: {1}",
    "IDPA": "IDPA",
    "IDPA (zone −0/−1/−3)": "IDPA (−0/−1/−3 zones)",
    "IPSC": "IPSC",
@@ -3237,7 +3339,9 @@ const I18N = (() => {
    "Immagine non ruotata.": "Image not rotated.",
    "Immagine ruotata di {0}° in senso {1}.": "Image rotated {0}° {1}.",
    "Immagine: {0}": "Image: {0}",
+   "Importa profili da un file JSON esportato (stesso nome = sostituito)": "Import profiles from an exported JSON file (same name = replaced)",
    "Impossibile aprire l'immagine: ": "Cannot open the image: ",
+   "Impossibile salvare i profili nel browser.": "Unable to save the profiles in the browser.",
    "Incertezza tipo (1σ per asse, in pixel della foto) del centro di un foro cliccato a mano e con lo snap; ×3 sui fori segnati come difficili (◐ nella tabella dei punti). Usata per l'incertezza di misura nei risultati.": "Standard uncertainty (1σ per axis, in photo pixels) of the centre of a hole clicked by hand and with snap; ×3 on holes marked as difficult (◐ in the points table). Used for the measurement uncertainty in the results.",
    "Includi l'immagine nella sessione": "Include the image in the session",
    "IndexedDB non disponibile": "IndexedDB not available",
@@ -3245,14 +3349,17 @@ const I18N = (() => {
    "Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)": "Loupe magnification relative to the view (also Shift+wheel on the image with the loupe on)",
    "Ingrandisci (anche rotella del mouse sul reticolo; trascina per spostarti)": "Zoom in (also mouse wheel on the reticle; drag to move)",
    "Innesco": "Primer",
+   "Inserisci distanza di tiro e valore click.": "Enter shooting distance and click value.",
    "Inserisci il calibro: il punteggio dipende dal bordo del foro.": "Enter the caliber: the score depends on the edge of the hole.",
    "Inserisci il codice stampato sul bersaglio (SA-1000…9999).": "Enter the code printed on the target (SA-1000…9999).",
    "Integrazione numerica sulla sagoma; l'incertezza della scala non è inclusa.": "Numerical integration over the target; the scale uncertainty is not included.",
    "Intervalli di confidenza": "Confidence intervals",
+   "Intervallo di confidenza della posizione del centro gruppo (t di Student per asse) tradotto in click": "Confidence interval of the group centre position (Student's t per axis) converted into clicks",
    "Istogramma delle distanze dal centro gruppo": "Histogram of distances from the group centre",
    "L'archivio è vuoto: salva una sessione o aggiungi sessioni salvate.": "The archive is empty: save a session or add saved sessions.",
    "L'incertezza della scala non è inclusa.": "The scale uncertainty is not included.",
    "LEGGIMI.txt": "README.txt",
+   "La deriva dovuta al vento non è calcolata: servirebbero coefficiente balistico, velocità e atmosfera. Lo scostamento del centro gruppo è quello misurato.": "Wind drift is not calculated: it would need ballistic coefficient, velocity and atmosphere. The group centre offset is the measured one.",
    "La foto risulterebbe larga {0}: valore insolito per un bersaglio, controlla la distanza nota e la sua unità (mm / cm / in).": "The photo would be {0} wide: unusual for a target, check the known distance and its unit (mm / cm / in).",
    "La linea è già {0}.": "The line is already {0}.",
    "La sessione non contiene l'immagine: carica prima la stessa foto (": "The session does not contain the image: first load the same photo (",
@@ -3270,6 +3377,8 @@ const I18N = (() => {
    "Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.": "Magnifier while placing points (L). While dragging a point it is always on.",
    "Linee: {0} · punti: {1}": "Lines: {0} · points: {1}",
    "Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)": "Level of the confidence intervals (σ, CEP, R95, R99, expected mean radius, group centre and correction)",
+   "Lo ZIP contiene {0} sessioni (archivio): importale nello storico del confronto o nell'archivio.": "The ZIP contains {0} sessions (archive): import them into the comparison history or the archive.",
+   "Lo ZIP non contiene sessioni di Shoot Analyzer.": "The ZIP contains no Shoot Analyzer sessions.",
    "Lunghezza vera del riferimento di controllo": "True length of the check reference",
    "MIL": "MIL",
    "MIL (mrad)": "MIL (mrad)",
@@ -3324,6 +3433,7 @@ const I18N = (() => {
    "Niente da esportare: inserisci prima dei fori.": "Nothing to export: add some shots first.",
    "Niente da salvare: carica prima un'immagine.": "Nothing to save: load an image first.",
    "Nome dei coefficienti (es. modello della fotocamera e zoom):": "Name of the coefficients (e.g. camera model and zoom):",
+   "Nome del profilo": "Profile name",
    "Non calibrato: seleziona «Scala» e clicca due punti a distanza nota.": "Not calibrated: select «Scale» and click two points at a known distance.",
    "Non disegnati:": "Not drawn:",
    "Note": "Notes",
@@ -3332,6 +3442,7 @@ const I18N = (() => {
    "Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo": "Each group has its own distance: a new group starts from that of the active group",
    "Oltre la distanza più lunga tirata": "Beyond the longest distance shot",
    "Ordine e visibilità delle sezioni, salvati in questo browser.": "Order and visibility of the sections, saved in this browser.",
+   "Ore {0}{1}": "{0} o'clock{1}",
    "Orientamento": "Orientation",
    "Orientamento e prospettiva": "Orientation and perspective",
    "Origine": "Origin",
@@ -3345,7 +3456,9 @@ const I18N = (() => {
    "Parametri di tiro": "Shooting parameters",
    "Passo tra gli anelli (mm, sul diametro)": "Ring step (mm, on the diameter)",
    "Peggiore (più largo)": "Worse (wider)",
+   "Per confrontarla: «＋ Importa sessioni nello storico» nella vista grafici, o «＋ Aggiungi sessioni» all'archivio.": "To compare it: «＋ Import sessions into history» in the charts view, or «＋ Add sessions» to the archive.",
    "Per foro: {0}  {1}": "Per shot: {0}  {1}",
+   "Per riaprirla: «Carica sessione» e scegli questo file .zip (foto e misure insieme).": "To reopen it: «Open session» and choose this .zip file (photo and measurements together).",
    "Personalizzata": "Custom",
    "Personalizzato": "Custom",
    "Piano focale": "Focal plane",
@@ -3370,6 +3483,12 @@ const I18N = (() => {
    "Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)": "Atmospheric pressure in hPa (= mbar), as shown by your instrument (absolute or sea-level)",
    "Primo (FFP)": "First (FFP)",
    "Probabilità di colpire": "Hit probability",
+   "Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro": "Reload profiles saved in this browser: choosing one fills in case, powder, charge, bullet, jump and primer of the active group and sets the caliber",
+   "Profilo di ricarica": "Reload profile",
+   "Profilo «{0}» aggiornato.": "Profile «{0}» updated.",
+   "Profilo «{0}» applicato al gruppo «{1}».": "Profile «{0}» applied to group «{1}».",
+   "Profilo «{0}» eliminato.": "Profile «{0}» deleted.",
+   "Profilo «{0}» salvato.": "Profile «{0}» saved.",
    "Prospettiva": "Perspective",
    "Prospettiva: clicca i 4 angoli del rettangolo di {0} × {1} mm, in qualsiasi ordine ({2}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.": "Perspective: click the 4 corners of the {0} × {1} mm rectangle, in any order ({2}/4). The width is the top side. Backspace = remove the last one · Esc = cancel.",
    "Prospettiva: i 4 punti non formano un quadrilatero convesso. Clicca i 4 angoli del rettangolo.": "Perspective: the 4 points do not form a convex quadrilateral. Click the 4 corners of the rectangle.",
@@ -3422,6 +3541,7 @@ const I18N = (() => {
    "Rettangolo (largh. × alt.)": "Rectangle (width × height)",
    "Rettangolo di riferimento": "Reference rectangle",
    "Rettangolo di riferimento piccolo nella foto (lato più corto {0} px): errore di scala fino a ±{1}%. Usa un rettangolo più grande.": "Small reference rectangle in the photo (shortest side {0} px): scale error up to ±{1}%. Use a larger rectangle.",
+   "Rettangolo {0} × {1} px": "Rectangle {0} × {1} px",
    "Ricarica e condizioni": "Load and conditions",
    "Ricarica e condizioni · gruppo attivo": "Load and conditions · active group",
    "Riconoscimento flyer da 5 fori in su.": "Flyer detection from 5 shots up.",
@@ -3433,12 +3553,16 @@ const I18N = (() => {
    "Rimuovi correzione": "Remove correction",
    "Riporta la foto all'orientamento originale": "Bring the photo back to its original orientation",
    "Ripristina (Ctrl+Y)": "Redo (Ctrl+Y)",
+   "Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)": "Restores the photo and the points as they were before the crop (until you load another photo)",
    "Ripristina layout": "Reset layout",
    "Riquadro 150 × 150 mm, tacche ogni 10 mm; le tacche lunghe indicano la croce della mira · Shoot Analyzer {0}": "Frame 150 × 150 mm, marks every 10 mm; the long marks show the aiming cross · Shoot Analyzer {0}",
    "Risoluzione bassa: un foro misura solo {0} px, il centro è difficile da individuare con precisione.": "Low resolution: a hole is only {0} px wide, its centre is hard to locate precisely.",
    "Risultati": "Results",
    "Risultati copiati negli appunti": "Results copied to the clipboard",
    "Risultati salvati in un file di testo": "Results saved to a text file",
+   "Ritaglio annullato: foto e punti come prima.": "Crop undone: photo and points as before.",
+   "Ritaglio della foto": "Photo crop",
+   "Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.": "Crop: drag a rectangle around the part to keep (aims and shots must stay inside); Enter or «✓ Apply crop» = cut, Esc = cancel.",
    "Rosate dei gruppi scelti, sovrapposte o affiancate": "Selected groups, overlaid or side by side",
    "Rotazione (° , + = orario)": "Rotation (° , + = clockwise)",
    "Rotazione (°, + = oraria)": "Rotation (°, + = clockwise)",
@@ -3461,7 +3585,9 @@ const I18N = (() => {
    "Salto dalle righe (jump): distanza della palla dall'inizio delle righe": "Jump to the lands: distance of the bullet from the start of the rifling",
    "Salto dalle righe (seduta)": "Jump to the lands (seating)",
    "Salva": "Save",
+   "Salva come profilo i dati di ricarica del gruppo attivo e il calibro (stesso nome = aggiorna)": "Save the reloading data of the active group and the caliber as a profile (same name = update)",
    "Salva k1 e k2 correnti con un nome (es. modello del telefono)": "Save the current k1 and k2 with a name (e.g. phone model)",
+   "Salva la sessione in un unico file .zip: foto originale, punti, parametri, dati di ricarica e CSV. Si riapre con «Carica sessione» e si importa nel confronto": "Save the session in a single .zip file: original photo, points, parameters, reloading data and CSV. It reopens with «Open session» and can be imported into the comparison",
    "Salvata il": "Saved on",
    "Salvataggio automatico nel browser (IndexedDB): alla riapertura puoi ripristinare il lavoro": "Autosave in the browser (IndexedDB): when you reopen you can restore your work",
    "Salvataggio automatico non disponibile": "Autosave not available",
@@ -3490,15 +3616,18 @@ const I18N = (() => {
    "Servono almeno 2 fori inclusi nel gruppo attivo.": "At least 2 included shots are needed in the active group.",
    "Servono almeno 3 colpi per l'asse di dispersione.": "At least 3 shots are needed for the dispersion axis.",
    "Servono almeno 3 fori non allineati.": "At least 3 non-collinear holes are needed.",
+   "Servono almeno 3 fori.": "At least 3 shots are needed.",
    "Servono almeno 5 colpi inclusi.": "At least 5 included shots are needed.",
    "Sessione": "Session",
    "Sessione Shoot Analyzer": "Shoot Analyzer session",
    "Sessione caricata": "Session loaded",
    "Sessione creata con una versione più recente": "Session created with a newer version",
    "Sessione salvata (e archiviata)": "Session saved (and archived)",
+   "Sessione salvata in ZIP (e archiviata)": "ZIP session saved (and archived)",
    "Shoot Analyzer": "Shoot Analyzer",
    "Shoot Analyzer {0} · {1} · {2}": "Shoot Analyzer {0} · {1} · {2}",
    "Shoot Analyzer {0} — archivio esportato il {1}": "Shoot Analyzer {0} — archive exported on {1}",
+   "Shoot Analyzer {0} — sessione salvata il {1}": "Shoot Analyzer {0} — session saved on {1}",
    "Shoot Analyzer · bersaglio di autoverifica": "Shoot Analyzer · self-check target",
    "Significato di termini, misure e grafici, con formule ed esempi (tasto H)": "Meaning of terms, measurements and charts, with formulas and examples (key H; in Italian)",
    "Silhouette metalliche": "Metallic silhouettes",
@@ -3530,6 +3659,7 @@ const I18N = (() => {
    "Tacca lunga e numero ogni quanti passi": "Long mark and number every how many steps",
    "Tacchino": "Turkey",
    "Taglia": "Size",
+   "Taglia la foto al rettangolo: definitivo (rotazione, prospettiva e distorsione vengono incorporate nella nuova foto, la scala non cambia)": "Cuts the photo to the rectangle: permanent (rotation, perspective and distortion are built into the new photo, the scale does not change)",
    "Tema chiaro / scuro (T)": "Light / dark theme (T)",
    "Temperatura": "Temperature",
    "Temperatura (°C)": "Temperature (°C)",
@@ -3542,6 +3672,8 @@ const I18N = (() => {
    "Trascina per ridimensionare il pannello · doppio clic: larghezza predefinita · frecce ←/→": "Drag to resize the panel · double-click: default width · arrows ←/→",
    "Trascina sull'immagine per spostare il bersaglio del gruppo attivo; Shift+trascina per ruotarlo (Esc per finire)": "Drag on the image to move the active group's target; Shift+drag to rotate it (Esc to finish)",
    "Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.": "Drag a point to move it · right-click a point to delete it · <kbd>Alt</kbd>+click to add a shot on top of an existing point (overlapping shots) · wheel = zoom · <kbd>Shift</kbd>+wheel = loupe magnification (×2–×12, also from the menu next to «Loupe») · drag the background or middle button = pan.",
+   "Trascina un rettangolo sulla foto per tenere solo quella parte (Invio = applica, Esc = annulla)": "Drag a rectangle on the photo to keep only that part (Enter = apply, Esc = cancel)",
+   "Trascina un rettangolo sulla foto.": "Drag a rectangle on the photo.",
    "Tutti i gruppi": "All groups",
    "UR {0}%": "RH {0}%",
    "Uguale": "Same",
@@ -3557,7 +3689,7 @@ const I18N = (() => {
    "Unità salto": "Jump unit",
    "Unità vento": "Wind unit",
    "Unità: {0}{1} · origine: {2} · cerchio = raggio medio attorno al centro gruppo (✕), stessa scala per tutti.": "Unit: {0}{1} · origin: {2} · circle = mean radius around the group centre (✕), same scale for all.",
-   "Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .json).": "Use the «Load photo» button or drop a JPG/PNG file here (or a .json session).",
+   "Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .zip o .json).": "Use the «Load photo» button or drop a JPG/PNG file here (or a .zip or .json session).",
    "V-spread (MIL)": "V-spread (MIL)",
    "V-spread (mm)": "V-spread (mm)",
    "V-spread (vert.)": "V-spread (vert.)",
@@ -3578,12 +3710,17 @@ const I18N = (() => {
    "Vuoto = distanza a cui è stato sparato il gruppo": "Empty = distance at which the group was shot",
    "X dal punto di mira (mm)": "X from the point of aim (mm)",
    "Y dal punto di mira (mm, + = alto)": "Y from the point of aim (mm, + = up)",
+   "ZIP danneggiato": "damaged ZIP",
+   "ZIP non leggibile: ": "Unreadable ZIP: ",
    "ZIP salvato: {0} sessioni, {1} MB": "ZIP saved: {0} sessions, {1} MB",
    "Zona vitale (ellisse)": "Vital zone (ellipse)",
    "Zona {0}": "Zone {0}",
    "Zone allargate del raggio del foro: un foro che tocca la linea vale la zona migliore.": "Zones enlarged by the hole radius: a hole touching the line scores the better zone.",
    "Zone di punteggio": "Scoring zones",
    "[{0}] {1} colpi{2}{3}": "[{0}] {1} shots{2}{3}",
+   "a destra": "to the right",
+   "a favore": "tailwind",
+   "a sinistra": "to the left",
    "al centro del reticolo": "at the centre of the reticle",
    "almeno 2 fori e scala": "at least 2 shots and scale",
    "alto": "high",
@@ -3594,6 +3731,7 @@ const I18N = (() => {
    "anelli: {0}": "rings: {0}",
    "antiorario": "counter-clockwise",
    "archivio oltre 4 GB": "archive larger than 4 GB",
+   "asse a {0}° dalla verticale": "axis at {0}° from vertical",
    "automatiche": "automatic",
    "az {0}° · elev {1}° · griglia {2} {3}": "az {0}° · elev {1}° · grid {2} {3}",
    "barilotto": "barrel",
@@ -3609,6 +3747,7 @@ const I18N = (() => {
    "centro di ogni gruppo": "centre of each group",
    "centro gruppo": "group centre",
    "cerchio ⌀ {0} {1}": "circle ⌀ {0} {1}",
+   "circa circolare": "roughly circular",
    "clic: spiegazione nell'help tecnico": "click: explanation in the technical help",
    "click": "clicks",
    "click di alzo": "elevation clicks",
@@ -3619,10 +3758,13 @@ const I18N = (() => {
    "come indicata dallo strumento": "as shown by the instrument",
    "condizioni atmosferiche": "weather conditions",
    "considera il valore un limite superiore": "treat the value as an upper bound",
+   "contro": "headwind",
    "controllo": "check",
    "corretta con un rettangolo di {0} × {1} mm": "corrected with a {0} × {1} mm rectangle",
    "cuscinetto": "pincushion",
+   "da destra": "from the right",
    "da ore {0}": "from {0} o'clock",
+   "da sinistra": "from the left",
    "da verificare": "to be checked",
    "da {0} a {1}": "from {0} to {1}",
    "dal centro gruppo": "from the group centre",
@@ -3636,6 +3778,7 @@ const I18N = (() => {
    "diagonale ↖ (alto-sinistra / basso-destra)": "diagonal ↖ (upper left / lower right)",
    "diagonale ↗ (alto-destra / basso-sinistra)": "diagonal ↗ (upper right / lower left)",
    "direzione": "direction",
+   "direzione non indicata": "direction not given",
    "discreta": "fair",
    "diversa per gruppo": "different for each group",
    "dope_card_{0}.csv": "dope_card_{0}.csv",
@@ -3648,6 +3791,8 @@ const I18N = (() => {
    "foro {0}": "shot {0}",
    "foto": "photo",
    "foto.{0}": "photo.{0}",
+   "frontale": "headwind",
+   "frontale 0": "head/tail 0",
    "grani": "grains",
    "gruppi": "groups",
    "gruppi della munizione (σ combinata)": "groups of the ammunition (pooled σ)",
@@ -3657,16 +3802,20 @@ const I18N = (() => {
    "hPa": "hPa",
    "in": "in",
    "in @100 yd (SMOA)": "in @100 yd (SMOA)",
+   "in coda": "tailwind",
    "in uso": "in use",
    "km/h": "km/h",
    "la carica": "the charge",
    "la temperatura": "the temperature",
+   "laterale 0": "crosswind 0",
+   "laterale {0} {1} {2}": "crosswind {0} {1} {2}",
    "le distanze dal centro non seguono la distribuzione di Rayleigh (p {0})": "the distances from the centre do not follow the Rayleigh distribution (p {0})",
    "lunghezza": "length",
    "maiale": "pig",
    "marca, n° ricariche…": "brand, number of reloads…",
    "marca, peso gr, tipo (il calibro è nei parametri)": "brand, weight gr, type (the caliber is in the parameters)",
    "meno di 5 colpi – statistiche indicative": "fewer than 5 shots – indicative statistics",
+   "metodo di compressione {0} non supportato": "compression method {0} not supported",
    "mira {0} {1}": "aim {0} {1}",
    "mm": "mm",
    "mm dal punto di mira (Y↑)": "mm from the point of aim (Y↑)",
@@ -3674,7 +3823,9 @@ const I18N = (() => {
    "mph": "mph",
    "nessun gruppo": "no group",
    "no": "no",
+   "nome del profilo (vuoto = automatico)": "profile name (empty = automatic)",
    "non calibrata": "not calibrated",
+   "non è un file ZIP": "not a ZIP file",
    "numero ogni": "number every",
    "orario": "clockwise",
    "ore {0}": "{0} o'clock",
@@ -3699,6 +3850,7 @@ const I18N = (() => {
    "punto di mira": "point of aim",
    "punto di mira ⊕": "aiming point ⊕",
    "punto di mira, scala e valore click (dope)": "point of aim, scale and click value (dope)",
+   "questo browser non sa decomprimere lo ZIP": "this browser cannot decompress the ZIP",
    "raggio medio": "mean radius",
    "raggio medio atteso": "expected mean radius",
    "reticolo_{0}.png": "reticle_{0}.png",
@@ -3710,6 +3862,7 @@ const I18N = (() => {
    "sessione corrente": "current session",
    "sessione.json": "session.json",
    "shoot-analyzer_archivio_{0}.zip": "shoot-analyzer_archive_{0}.zip",
+   "shoot-analyzer_profili_{0}.json": "shoot-analyzer_profiles_{0}.json",
    "showSaveFilePicker non utilizzabile, uso il download:": "showSaveFilePicker not usable, falling back to download:",
    "sinistra": "left",
    "solo k1: per k2 servono 3 linee e 12 punti": "k1 only: k2 needs 3 lines and 12 points",
@@ -3717,6 +3870,7 @@ const I18N = (() => {
    "tacchino": "turkey",
    "tarato a": "calibrated at",
    "tipo": "type",
+   "tiratore": "shooter",
    "title=\"Correzione da applicare alle torrette\"": "title=\"Correction to dial on the turrets\"",
    "totali, flyer inclusi": "total, flyers included",
    "transazione annullata": "transaction aborted",
@@ -3760,6 +3914,9 @@ const I18N = (() => {
    "{0} nel gruppo su {1} sparati{2}": "{0} in the group out of {1} fired{2}",
    "{0} nel gruppo{1}": "{0} in the group{1}",
    "{0} nel gruppo{1}{2}": "{0} in the group{1}{2}",
+   "{0} profili esportati.": "{0} profiles exported.",
+   "{0} profili importati.": "{0} profiles imported.",
+   "{0} punti (mire o fori) resterebbero fuori: allarga il rettangolo.": "{0} points (aims or shots) would be left outside: enlarge the rectangle.",
    "{0} punti persi · −0 {1} · −1 {2} · −3 {3} · mancati {4} (5 punti ciascuno)": "{0} points down · −0 {1} · −1 {2} · −3 {3} · misses {4} (5 points each)",
    "{0} px/mm · incertezza ≈ ±{1}%": "{0} px/mm · uncertainty ≈ ±{1}%",
    "{0} scaldacanna": "{0} foulers",
@@ -3770,6 +3927,7 @@ const I18N = (() => {
    "{0} {1} dalla mira{2}": "{0} {1} from the aim{2}",
    "{0} {1} sopra il centro": "{0} {1} above the centre",
    "{0} {1} sotto il centro": "{0} {1} below the centre",
+   "{0} {1} {2}": "{0} {1} {2}",
    "{0} · ES {1} · raggio medio {2} {3}": "{0} · ES {1} · mean radius {2} {3}",
    "{0} · cal. {1}": "{0} · cal. {1}",
    "{0} · foro {1} · {2}; {3} {4}": "{0} · hole {1} · {2}; {3} {4}",
@@ -3791,11 +3949,16 @@ const I18N = (() => {
    "«Taratura attuale»: con pochi colpi e scostamento piccolo l'intervallo è approssimato e può risultare troppo stretto.": "«Current zero»: with few shots and a small offset the interval is approximate and may be too narrow.",
    "«Taratura attuale»: inserisci il punto di mira del gruppo.": "«Current zero»: enter the point of aim of the group.",
    "— coefficienti salvati —": "— saved coefficients —",
+   "— nessun profilo salvato —": "— no saved profiles —",
+   "— scegli un profilo —": "— choose a profile —",
    "← Torna all'analisi": "← Back to analysis",
+   "↶ Annulla ritaglio": "↶ Undo crop",
    "↶ Undo": "↶ Undo",
    "↷ Redo": "↷ Redo",
    "↺ Ripristina": "↺ Restore",
    "⇢ Applica correzione virtuale": "⇢ Apply virtual correction",
+   "⇧ Importa profili": "⇧ Import profiles",
+   "⇩ Esporta profili": "⇩ Export profiles",
    "⊕ Centro gruppo": "⊕ Group centre",
    "⌫ Elimina ultimo": "⌫ Delete last",
    "▦ Griglia": "▦ Grid",
@@ -3804,7 +3967,9 @@ const I18N = (() => {
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante. In realtà vento e differenze di velocità la fanno crescere con la distanza: {0}. «Taratura attuale» non calcolabile: lo scostamento a un'altra distanza dipende dalla balistica.": "⚠ Distance different from that of the group: angular dispersion assumed constant. In reality wind and velocity spread make it grow with distance: {0}. «Current zero» cannot be computed: the offset at another distance depends on ballistics.",
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante; «taratura attuale» non calcolabile.": "⚠ Distance different from the group's: angular dispersion assumed constant; «current zero» cannot be computed.",
    "⚠ Nella foto il rettangolo è {0}: controlla di non aver invertito larghezza e altezza ({1} × {2} mm).": "⚠ In the photo the rectangle is {0}: check that you have not swapped width and height ({1} × {2} mm).",
+   "✂ Ritaglia": "✂ Crop",
    "✋ Mano": "✋ Pan",
+   "✓ Applica ritaglio": "✓ Apply crop",
    "✓ Correzione virtuale attiva (togli)": "✓ Virtual correction on (remove)",
    "✓ Verifica il gruppo attivo": "✓ Check the active group",
    "✥ Sposta col mouse": "✥ Move with the mouse",
@@ -3816,9 +3981,10 @@ const I18N = (() => {
    "＋ Importa sessioni nello storico": "＋ Import sessions into history",
    "＋ Nuovo gruppo": "＋ New group",
    "🎯 Bersaglio di prova (PDF)": "🎯 Test target (PDF)",
+   "💾 Salva profilo": "💾 Save profile",
    "💾 Salva sessione JSON": "💾 Save JSON session",
    "📂 Carica foto": "📂 Load photo",
-   "📂 Carica sessione JSON": "📂 Open JSON session",
+   "📂 Carica sessione": "📂 Open session",
    "📄 CSV dope card": "📄 Dope card CSV",
    "📄 CSV fori": "📄 Shots CSV",
    "📄 CSV gruppi": "📄 Groups CSV",
@@ -3835,6 +4001,7 @@ const I18N = (() => {
    "🖼 Reticolo (PNG)": "🖼 Reticle (PNG)",
    "🗑 Tutto": "🗑 All",
    "🗜 Esporta archivio (ZIP)": "🗜 Export archive (ZIP)",
+   "🗜 Salva sessione ZIP": "🗜 Save ZIP session",
    "🧲 Snap": "🧲 Snap"
   }/*END-EN-DICT*/;
   const LANGS = ["it", "en"];
@@ -3887,7 +4054,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.12.0";
+const APP_VERSION = "1.13.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -4547,6 +4714,8 @@ function draw() {
   drawPerspGuide();
   drawLensGuide();
   drawRefGuide();
+  drawCropGuide();
+  drawAimCross(cc);   // croce estesa con lo strumento Mira (dalla 1.13.0)
   if (state.hover) drawCaliberCursor(ctx2d, state.hover.x, state.hover.y, caliberCursorR(cc));   // cerchio del calibro sul cursore
   if (loupeActive()) drawLoupe(cc);
 }
@@ -5107,7 +5276,7 @@ function deleteRef(ref) {
 
 /* --------------------------- INTERAZIONE MOUSE --------------------------- */
 /** Strumenti temporanei: alla fine (o con Esc) si torna alla modalità precedente; i punti non si prendono. */
-const TOOL_MODES = ["align", "persp", "tgt", "lens", "ref"];
+const TOOL_MODES = ["align", "persp", "tgt", "lens", "ref", "crop"];
 let ptr = null;  // { id, button, sx, sy, lastX, lastY, moved, target, mode:'point'|'pan' }
 function localXY(e) { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
 /** Il punto (coordinate mondo) cade dentro la foto? (con la foto ruotata il contorno non è allineato agli assi) */
@@ -5126,6 +5295,7 @@ canvas.addEventListener("pointerdown", e => {
   // «Sposta sagoma» (dalla 1.10.0): trascinare sposta il bersaglio del gruppo attivo, Shift+trascinare lo ruota
   const tg = activeGroup(), tcc = calcContext();
   if (state.mode === "tgt" && e.button === 0 && tg && tg.poa && tcc.pxPerMm) { ptr.kind = "tgt"; ptr.rot = e.shiftKey; ptr.t0 = tgtOf(tg); ptr.w0 = toImage(x, y); ptr.ppm = tcc.pxPerMm; }
+  if (state.mode === "crop" && e.button === 0) { ptr.kind = "crop"; ptr.w0 = toImage(x, y); }
   if (hit) { state.selected = hit; refreshLists(); requestDraw(); }
   e.preventDefault();
 });
@@ -5138,6 +5308,8 @@ canvas.addEventListener("pointermove", e => {
     if (ptr.kind === "point") {
       const p = refPoint(ptr.target);
       if (p) { const q = clampToImage(toImage(x, y)); p.x = q.x; p.y = q.y; refreshResults(); }
+    } else if (ptr.kind === "crop") {
+      state.cropRect = cropRectNorm(ptr.w0, toImage(x, y)); refreshCrop();
     } else if (ptr.kind === "tgt") {
       const g = activeGroup(), w = toImage(x, y);
       if (ptr.rot) {
@@ -5157,7 +5329,7 @@ canvas.addEventListener("pointerup", e => {
   const { x, y } = localXY(e);
   const p = ptr; ptr = null;
   if ((p.kind === "point" || p.kind === "tgt") && p.moved) { commit(); requestDraw(); return; }
-  if (p.kind === "tgt") return;
+  if (p.kind === "tgt" || p.kind === "crop") return;
   if (!p.moved && p.button === 0 && !p.target) handleClick(toImage(x, y), e.altKey);
   updateCursor(x, y);
 });
@@ -5243,6 +5415,7 @@ function setMode(m) {
   if (m !== "align") state.alignP1 = null;
   if (m !== "persp") state.perspPts = [];
   if (m !== "lens") state.lensLines = [];
+  if (m !== "crop") state.cropRect = null;
   state.mode = m;
   $("bAlign").classList.toggle("primary", m === "align");
   $("bPersp").classList.toggle("primary", m === "persp");
@@ -5250,7 +5423,7 @@ function setMode(m) {
   $("bRef").classList.toggle("primary", m === "ref");
   if ($("bLens")) $("bLens").classList.toggle("primary", m === "lens");
   document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
-  updateHint();
+  updateHint(); refreshCrop();
   canvas.style.cursor = m === "pan" ? "grab" : m === "tgt" ? "move" : "crosshair";
 }
 function updateHint() {
@@ -5266,6 +5439,7 @@ function updateHint() {
       : _t("Raddrizza: clicca il SECONDO punto sulla stessa linea, il più lontano possibile dal primo. Esc = annulla."),
     tgt: _t("Sposta sagoma: trascina per spostare il bersaglio del gruppo attivo, Shift+trascina per ruotarlo attorno al suo centro. Esc = fine."),
     lens: lensHint(),
+    crop: _t("Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla."),
     ref: state.calib.r1 && !state.calib.r2 ? _t("Riferimento di controllo: clicca il secondo estremo.") : _t("Riferimento di controllo: clicca i due estremi di una lunghezza nota diversa da quella della scala (es. il diametro di un anello). Esc = annulla."),
     persp: _T`Prospettiva: clicca i 4 angoli del rettangolo di ${fmt(parseFloat($("perspW").value), 0)} × ${fmt(parseFloat($("perspH").value), 0)} mm, in qualsiasi ordine (${state.perspPts.length}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.`,
   };
@@ -5292,6 +5466,7 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
   if (typing) return;
   if (k === "escape") { if (TOOL_MODES.includes(state.mode)) setMode(state.prevMode); return; }
+  if (k === "enter" && state.mode === "crop") { e.preventDefault(); applyCrop(); return; }
   if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); updateHint(); requestDraw(); return; }
   if (state.mode === "lens" && (k === "enter" || k === "backspace")) {
     e.preventDefault();
@@ -5357,6 +5532,7 @@ async function setImage(name, dataUrl) {
   const bitmap = await createImageBitmap(img);
   if (state.image && state.image.bitmap.close) state.image.bitmap.close();
   state.image = { name, w: bitmap.width, h: bitmap.height, dataUrl, bitmap };
+  state.cropUndo = null; state.cropRect = null;   // una foto nuova chiude l'«Annulla ritaglio» (applyCrop lo reimposta)
   baseCache.clear(); srcCache.clear(); perspMemo.key = "";
   state.persp = null; state.perspPts = []; state.lens = null; state.lensLines = [];
   state.base = { w: bitmap.width, h: bitmap.height, bitmap }; state.baseKey = "orig";
@@ -5561,7 +5737,7 @@ function hullRow(r) {
    Le etichette della prima colonna dei risultati diventano link: il passaggio del mouse mostra la spiegazione breve
    (title), il clic apre l'help tecnico sulla voce del glossario. Abbinamento per testo tradotto (_t), così vale in
    entrambe le lingue senza toccare i modelli dei risultati. */
-const TERM_LINKS = [["Group size (c-c)", "gl-es"], ["Bordo-bordo esterno", "gl-bordo"], ["Raggio medio", "gl-mr"], ["H-spread (orizz.)", "gl-spread"],
+const TERM_LINKS = [["Group size (c-c)", "gl-es"], ["Forma del gruppo", "gl-asse"], ["Correzione", "gl-centro"], ["Bordo-bordo esterno", "gl-bordo"], ["Raggio medio", "gl-mr"], ["H-spread (orizz.)", "gl-spread"],
   ["V-spread (vert.)", "gl-spread"], ["FOM", "gl-fom"], ["SD distanze dal centro", "gl-sd"], ["SD radiale √(σx²+σy²)", "gl-sd"], ["CEP (50%)", "gl-cep"],
   ["R95", "gl-r95"], ["R99", "gl-r95"], ["Asse maggiore", "gl-asse"], ["Rapporto d'aspetto", "gl-rapporto"], ["Scostamento centro gruppo", "gl-centro"],
   ["Convex hull", "gl-hull"]];
@@ -5579,6 +5755,7 @@ function linkTerms(box) {
     const id = map.get(t) || (/^(Ellisse|Ellipse) /.test(t) ? "gl-ellisse" : null);
     if (id && !td.hasAttribute("colspan")) wrap(td, id);
   });
+  box.querySelectorAll(".rc-t").forEach(el => { const id = map.get(el.textContent.trim()); if (id) wrap(el, id); });
   box.querySelectorAll(".scoreline > b:first-child").forEach(b => wrap(b, "gl-punteggio"));
   box.querySelectorAll(".dope > b:first-of-type").forEach(b => wrap(b, "gl-dope"));
   box.querySelectorAll(".civ").forEach(sp => { if (!sp.dataset.gl) { sp.dataset.gl = "gl-ic"; sp.classList.add("glc"); sp.title = (sp.title ? sp.title + " — " : "") + hint; } });
@@ -5610,7 +5787,7 @@ function calName(n) { return I18N.lang === "en" ? n.replace(/(\d),(\d)/g, "$1.$2
 const clickTxt = (n, dir) => n === 0 ? "0" : `${n} ${_t(DIR_SHORT[dir])}`;
 
 /* ----------------------------- UI PANNELLO ----------------------------- */
-function refresh() { refreshLists(); refreshResults(); refreshRotation(); refreshPersp(); refreshLens(); refreshScoreUI(); updateHint(); updateButtons(); requestDraw(); }
+function refresh() { refreshLists(); refreshResults(); refreshRotation(); refreshPersp(); refreshLens(); refreshCrop(); refreshScoreUI(); updateHint(); updateButtons(); requestDraw(); }
 function updateButtons() {
   $("bUndo").disabled = undoStack.idx <= 0;
   $("bRedo").disabled = undoStack.idx >= undoStack.stack.length - 1;
@@ -5627,6 +5804,7 @@ function refreshLoadForm() {
   document.querySelectorAll("#ldForm [data-k]").forEach(el => {
     if (el !== document.activeElement && el.value !== (L[el.dataset.k] ?? "")) el.value = L[el.dataset.k] ?? "";
   });
+  refreshWindDial(); refreshProfiles();
   const tot = parseInt(L.shotsTotal, 10), n = g ? inc(g).length : 0, all = g ? g.shots.length : 0;
   $("ldShotsInfo").textContent = tot > 0 ? _T`${n} nel gruppo${tot > n ? ` · ${esclusi(tot - n)}` : ""}${tot < all ? _t(" · ⚠ meno dei fori marcati") : ""}` : _T`${n} nel gruppo${all > n ? _T` · ${esclusi(all - n)} dal calcolo` : ""}`;
 }
@@ -5746,7 +5924,11 @@ function refreshResults() {
   else if (state.calib.p1 && !state.calib.p2) { cs.className = "status warn"; cs.textContent = _t("Clicca il secondo punto di calibrazione."); }
   else { cs.className = "status warn"; cs.textContent = _t("Non calibrato: seleziona «Scala» e clicca due punti a distanza nota."); }
 
-  const out = $("results"); out.innerHTML = "";
+  const out = $("results");
+  // dettagli aperti o chiusi dall'utente dopo l'ultimo disegno (lo stato «open» cambia subito, l'evento toggle arriva dopo)
+  if (document.documentElement.dataset.density !== "detail")
+    out.querySelectorAll("details[data-card], details.meas").forEach(d => { if (d.open !== !!d.dataset.o) { const k = d.dataset.card || "meas"; if (d.open) CARD_OPEN.add(k); else CARD_OPEN.delete(k); } });
+  out.innerHTML = "";
   for (const g of state.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
     const r = Calc.analyze(inc(g), g.poa, gcc);
@@ -5757,49 +5939,18 @@ function refreshResults() {
     if (nw && r.n > 0) html += `<div class="nwarn">⚠ ${nw}</div>`;
     if (r.n < 2) html += _T`<div class="muted">Servono almeno 2 fori.</div>`;
     else if (!r.mm) html += _T`<div class="muted">Calibra la scala per ottenere le misure. (ES = ${fmt(r.px.es, 0)} px)</div>`;
-    else {
-      html += _T`<table>
-        <tr><td>Group size (c-c)</td><td class="v"><b>${fmtLen(r.mm.es)}</b><br>${fmtAng(r.ang?.es)}</td></tr>
-        ${esEqHTML(r)}
-        <tr class="sec2"><td>Bordo-bordo esterno</td><td class="v">${fmtLen(r.mm.esEdge)}</td></tr>
-        <tr><td>Raggio medio</td><td class="v">${fmtLen(r.mm.mr)}<br>${fmtAng(r.ang?.mr)}${r.ci ? _T`<br><span class="civ" title="Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))">IC ${fmt(r.ci.level * 100, 0)}% atteso: ${fmtCI(r.ci.mrExp)}</span>` : ""}</td></tr>
-        <tr><td title="Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)">H-spread (orizz.)</td><td class="v">${fmtLA(r.mm.w, r.ang?.w)}</td></tr>
-        <tr><td title="Dispersione verticale: dal colpo più basso al più alto (c-c)">V-spread (vert.)</td><td class="v">${fmtLA(r.mm.h, r.ang?.h)}</td></tr>
-        <tr class="sec2"><td title="Figure of Merit: media tra H-spread e V-spread">FOM</td><td class="v">${fmtLA(r.mm.fom, r.ang?.fom)}</td></tr>
-        <tr><td colspan="2" class="sub2">Statistiche${r.n < 5 ? _t(" · ⚠ poco affidabili con meno di 5 colpi") : ""}</td></tr>
-        <tr class="sec2"><td title="Deviazione standard delle distanze dei fori dal centro gruppo">SD distanze dal centro</td><td class="v">${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}</td></tr>
-        <tr class="sec2"><td title="Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale">SD radiale √(σx²+σy²)</td><td class="v">${fmtLA(r.mm.rsd, r.ang?.rsd)}</td></tr>
-        <tr><td title="Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)">CEP (50%)</td><td class="v">${fmtLA(r.mm.cep, r.ang?.cep)}${r.ci ? _T`<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.cep)}</span>` : ""}</td></tr>
-        <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.r95)}</span>` : ""}</td></tr>
-        <tr class="sec2"><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}${r.ci ? `<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(r.ci.r99)}</span>` : ""}</td></tr>
-      </table>
-      <div class="muted note2" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi${r.ci ? _T`; IC ${fmt(r.ci.level * 100, 0)}% di σ: ${fmtCI(r.ci.sigma, 2)}` : ""}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.</div>
-      ${shapeRows(r)}`;
-      html += hullRow(r) + measHTML(g, gcc, r) + diagHTML(g);
-    }
-    { const si = scoreHere(g); if (si) html += _T`<div class="scoreline" style="margin-top:6px"><b>Punteggio</b> (${esc(si.t.name)}): <b>${scoreSummaryText(si)}</b></div>`; }
-    if (r.mm && r.n >= 1) {
-      if (!g.poa) html += _T`<div class="muted" style="margin-top:6px">Aggiungi il punto di mira per la correzione.</div>`;
-      else {
-        const o = r.offset;
-        const h = o.dx === 0 ? "" : _T`${fmt(Math.abs(o.dx), 1)} mm a ${o.dx > 0 ? _t("destra") : _t("sinistra")}`;
-        const v = o.dy === 0 ? "" : _T`${fmt(Math.abs(o.dy), 1)} mm in ${o.dy > 0 ? _t("alto") : _t("basso")}`;
-        html += _T`<table style="margin-top:4px"><tr><td>Scostamento centro gruppo</td><td class="v">${[v, h].filter(Boolean).join("<br>") || "0"}${r.ci ? _T`<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ±${fmt(r.ci.center.hy, 1)} mm vert. · ±${fmt(r.ci.center.hx, 1)} mm orizz.</span>` : ""}</td></tr></table>`;
-        if (r.correction) {
-          const c = r.correction;
-          const cic = correctionCIText(r);
-          html += _T`<div class="corr">↻ ${correctionText(c)}</div>
-            ${cic ? `<div class="civ" style="margin-top:3px" title="Intervallo di confidenza della posizione del centro gruppo (t di Student per asse) tradotto in click">${cic.text}${cic.unsure ? _t(" · su un asse l'intervallo comprende lo zero: la correzione su quell'asse non è certa") : ""}</div>` : ""}
-            <div class="muted" style="font-size:11.5px;margin-top:3px">Esatto: ${fmt(c.vAng, 2)} ${c.unit} ${_t(c.vDir)} / ${fmt(c.hAng, 2)} ${c.unit} ${_t(c.hDir)} · ${fmt(c.clickValue, 3)} ${c.unit}/click</div>
-            <div class="btns" style="margin:5px 0 0"><button class="btn vcorr${state.virtCorr ? " on" : ""}" data-vcorr title="${_t("Mostra sulla foto, in trasparenza, dove sarebbero andati i fori con i click indicati (arrotondati). Solo visualizzazione: dati e risultati non cambiano; esatto alla distanza del gruppo.")}">${state.virtCorr ? _t("✓ Correzione virtuale attiva (togli)") : _t("⇢ Applica correzione virtuale")}</button></div>`;
-        } else html += _T`<div class="muted">Inserisci distanza di tiro e valore click.</div>`;
-        html += dopeHTML(g, gcc);
-      }
-    }
+    else html += resultCards(g, gcc, r);
+    if (r.mm && r.n >= 2) html += measHTML(g, gcc, r) + diagHTML(g);
+    else if (r.n < 2 || !r.mm) html += resultCards(g, gcc, r, true);
     box.innerHTML = html; out.appendChild(box);
   }
   out.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
-  if (document.documentElement.dataset.density === "detail") out.querySelectorAll("details.meas").forEach(d => { d.open = true; });
+  // dettagli delle card: restano aperti/chiusi tra un aggiornamento e l'altro; con densità «Dettagliata» tutti aperti
+  const det = document.documentElement.dataset.density === "detail";
+  out.querySelectorAll("details[data-card], details.meas").forEach(d => {
+    const k = d.dataset.card || "meas";
+    d.open = det || CARD_OPEN.has(k); d.dataset.o = d.open ? "1" : "";
+  });
   refreshLive();
   linkTerms(out);
   updateButtons();
@@ -5994,6 +6145,398 @@ function influenceCell(v) {
   const t = r => Math.max(v.mm ? 0.05 : 0.5, 0.02 * r), cls = (x, r) => x > t(r) ? "inf-w" : x < -t(r) ? "inf-b" : "inf-0";
   const f = x => (x > 0 ? "+" : x < 0 ? "−" : "") + fmt(Math.abs(x), v.mm ? 1 : 0);
   return `<span class="${cls(v.es, v.base.es)}" title="${_t("Group size con questo foro − senza")}">${f(v.es)}</span> / <span class="${cls(v.mr, v.base.mr)}" title="${_t("Raggio medio con questo foro − senza")}">${f(v.mr)}</span>`;
+}
+
+/* ===================== 1.13.0: CROCE DELLA MIRA, QUADRANTE DEL VENTO, PROFILI DI RICARICA ===================== */
+/** Croce estesa del cursore con lo strumento Mira: prolunga i bracci del cursore fino ai bordi della foto, tratteggiata. */
+function drawAimCross(cc) {
+  const h = state.hover;
+  if (state.mode !== "poa" || !h || !state.image || ptr) return;
+  const g = ctx2d, gap = Math.max(14, caliberCursorR(cc) + 4), W = canvas.width / dpr, H = canvas.height / dpr;
+  g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  imagePath(g, toScreen); g.clip();
+  const x = Math.floor(h.x) + 0.5, y = Math.floor(h.y) + 0.5;   // al centro del pixel: linee nitide
+  const segs = [[0, y, x - gap, y], [x + gap, y, W, y], [x, 0, x, y - gap], [x, y + gap, x, H]];
+  for (const [col, w, dash] of [["rgba(0,0,0,.55)", 2.5, [7, 5]], ["rgba(255,255,255,.9)", 1, [7, 5]]]) {
+    g.strokeStyle = col; g.lineWidth = w; g.setLineDash(dash); g.beginPath();
+    for (const [x0, y0, x1, y1] of segs) if (Math.hypot(x1 - x0, y1 - y0) > 1) { g.moveTo(x0, y0); g.lineTo(x1, y1); }
+    g.stroke();
+  }
+  g.restore();
+}
+
+/* --- quadrante del vento (sostituisce il menu delle ore) --- */
+function windDialHTML(L) {
+  const h = +L.windDir || 0, cx = 60, cy = 60, R = 44, pos = k => ({ x: cx + R * Math.sin(k * Math.PI / 6), y: cy - R * Math.cos(k * Math.PI / 6) });
+  let s = `<svg viewBox="0 0 120 120" class="wdial" role="radiogroup" aria-label="${_t("Direzione del vento a ore")}">
+    <circle cx="${cx}" cy="${cy}" r="${R}" class="wd-ring"/>
+    <line x1="${cx}" y1="${cy - 8}" x2="${cx}" y2="${cy - R + 12}" class="wd-aim"/><text x="${cx}" y="${cy - 20}" class="wd-lbl" text-anchor="middle">${_t("bersaglio")}</text>
+    <path d="M${cx} ${cy - 7} L${cx - 6} ${cy + 6} L${cx + 6} ${cy + 6} Z" class="wd-me"><title>${_t("tiratore")}</title></path>`;
+  if (h) {
+    const a = pos(h), ux = (cx - a.x) / R, uy = (cy - a.y) / R, s0 = { x: a.x + ux * 12, y: a.y + uy * 12 }, e = { x: cx - ux * 13, y: cy - uy * 13 };
+    s += `<line x1="${s0.x.toFixed(1)}" y1="${s0.y.toFixed(1)}" x2="${e.x.toFixed(1)}" y2="${e.y.toFixed(1)}" class="wd-arrow"/>
+      <path d="M${(e.x + ux * 2).toFixed(1)} ${(e.y + uy * 2).toFixed(1)} L${(e.x - ux * 7 - uy * 5).toFixed(1)} ${(e.y - uy * 7 + ux * 5).toFixed(1)} L${(e.x - ux * 7 + uy * 5).toFixed(1)} ${(e.y - uy * 7 - ux * 5).toFixed(1)} Z" class="wd-head"/>`;
+  }
+  for (let k = 1; k <= 12; k++) {
+    const p = pos(k);
+    s += `<g class="wd-h${k === h ? " on" : ""}" data-h="${k}" role="radio" aria-checked="${k === h}" tabindex="0"><title>${_T`ore ${k}`}</title><circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="9"/><text x="${p.x.toFixed(1)}" y="${(p.y + 3.5).toFixed(1)}" text-anchor="middle">${k}</text></g>`;
+  }
+  return s + "</svg>";
+}
+function windInfoText(L) {
+  const h = +L.windDir || 0;
+  if (!h) return _t("Clicca l'ora da cui soffia il vento (ore 12 = dal bersaglio verso di te). Clic di nuovo per toglierla.");
+  const c = Calc.windComponents(L.wind, h), u = L.windUnit || "m/s";
+  const name = { 12: _t("contro"), 3: _t("da destra"), 6: _t("a favore"), 9: _t("da sinistra") }[h];
+  let t = _T`Ore ${h}${name ? ` (${name})` : ""}`;
+  if (c) {
+    const lat = Math.abs(c.cross) < 0.005 ? _t("laterale 0") : _T`laterale ${fmt(Math.abs(c.cross), 1)} ${u} ${c.cross > 0 ? _t("da destra") : _t("da sinistra")}`;
+    const fr = Math.abs(c.head) < 0.005 ? _t("frontale 0") : _T`${c.head > 0 ? _t("frontale") : _t("in coda")} ${fmt(Math.abs(c.head), 1)} ${u}`;
+    t += ` · ${lat} · ${fr}`;
+  } else t += _t(" · inserisci la velocità per le componenti");
+  return t;
+}
+function refreshWindDial() {
+  const g = activeGroup(), L = g && g.load ? g.load : defaultLoad(), box = $("windDial");
+  box.innerHTML = windDialHTML(L) + `<div class="wd-info" id="windInfo">${windInfoText(L)}</div>`;
+  box.querySelectorAll("g[data-h]").forEach(el => {
+    const pick = () => setWindDir(+el.dataset.h === (+L.windDir || 0) ? "" : el.dataset.h);
+    el.addEventListener("click", pick);
+    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(); } });
+  });
+}
+function setWindDir(v) {
+  const sel = $("ld-windDir"); sel.value = String(v); sel.dispatchEvent(new Event("change"));
+}
+
+/* --- profili di ricarica (componenti + calibro), salvati nel browser --- */
+const PROFILE_KEY = "shootAnalyzer.loadProfiles", PROFILE_FIELDS = ["case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer"];
+function getProfiles() { try { const a = JSON.parse(localStorage.getItem(PROFILE_KEY) || "[]"); return Array.isArray(a) ? a.filter(p => p && p.name) : []; } catch { return []; } }
+function putProfiles(a) { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(a)); return true; } catch { toast(_t("Impossibile salvare i profili nel browser.")); return false; } }
+/** Profilo dai dati del gruppo attivo e dal calibro dei parametri. */
+function profileFromCurrent(name) {
+  const g = activeGroup(), L = g && g.load ? g.load : defaultLoad(), p = params(), o = { name };
+  for (const k of PROFILE_FIELDS) o[k] = L[k] ?? "";
+  Object.assign(o, { caliber: p.caliber, caliberUnit: p.caliberUnit, caliberPreset: $("caliberPreset").value });
+  return o;
+}
+/** Nome proposto: calibro · palla · polvere carica. */
+function profileAutoName(o) {
+  const e = CALIBERS.flatMap(([, l]) => l).find(([id]) => id === o.caliberPreset);
+  const cal = e ? calName(e[1]) : `${fmt(+o.caliber, 2)} ${o.caliberUnit}`;
+  return [cal, o.bullet, [o.powder, o.charge ? `${(+o.charge).toLocaleString(I18N.locale(), { maximumFractionDigits: 2 })} gr` : ""].filter(Boolean).join(" ")].filter(s => String(s).trim()).join(" · ");
+}
+const sameProfile = (a, b) => PROFILE_FIELDS.every(k => String(a[k] ?? "") === String(b[k] ?? "")) && Math.abs((+a.caliber || 0) - (+b.caliber || 0)) < 1e-9 && a.caliberUnit === b.caliberUnit;
+function saveProfile() {
+  const inp = $("ldProfName"), o = profileFromCurrent("");
+  if (!PROFILE_FIELDS.some(k => k !== "jumpUnit" && String(o[k]).trim())) { toast(_t("Compila almeno un dato di ricarica prima di salvare il profilo.")); return; }
+  o.name = inp.value.trim() || profileAutoName(o); o.savedAt = new Date().toISOString();
+  const a = getProfiles(), i = a.findIndex(p => p.name === o.name);
+  if (i >= 0) a[i] = o; else a.push(o);
+  a.sort((x, y) => x.name.localeCompare(y.name));
+  if (putProfiles(a)) { inp.value = ""; refreshProfiles(); toast(i >= 0 ? _T`Profilo «${o.name}» aggiornato.` : _T`Profilo «${o.name}» salvato.`); }
+}
+function applyProfile(name) {
+  const o = getProfiles().find(p => p.name === name), g = activeGroup();
+  if (!o || !g) return false;
+  g.load = g.load || defaultLoad();
+  for (const k of PROFILE_FIELDS) g.load[k] = o[k] ?? "";
+  if (+o.caliber > 0) {
+    setParams({ caliber: o.caliber, caliberUnit: o.caliberUnit || "mm" });
+    if (o.caliberPreset && [...$("caliberPreset").options].some(op => op.value === o.caliberPreset)) $("caliberPreset").value = o.caliberPreset;
+    syncCaliberPreset();
+  }
+  commit();
+  toast(_T`Profilo «${o.name}» applicato al gruppo «${g.name}».`);
+  return true;
+}
+function deleteProfile(name) {
+  const a = getProfiles(), b = a.filter(p => p.name !== name);
+  if (b.length === a.length) return;
+  if (putProfiles(b)) { refreshProfiles(); toast(_T`Profilo «${name}» eliminato.`); }
+}
+function refreshProfiles() {
+  const sel = $("ldProfile"), a = getProfiles(), cur = profileFromCurrent(""), match = a.find(p => sameProfile(p, cur));
+  sel.innerHTML = `<option value="">${a.length ? _t("— scegli un profilo —") : _t("— nessun profilo salvato —")}</option>` + a.map(p => `<option value="${esc(p.name)}">${esc(p.name)}</option>`).join("");
+  sel.value = match ? match.name : "";
+  $("bProfDel").disabled = !sel.value; $("bProfExp").disabled = !a.length;
+}
+async function exportProfiles() {
+  const a = getProfiles(); if (!a.length) return;
+  const blob = new Blob([JSON.stringify({ format: "shoot-analyzer-load-profiles", version: 1, app: APP_VERSION, profiles: a }, null, 1)], { type: "application/json" });
+  if (await FileStore.saveBlob(_T`shoot-analyzer_profili_${stamp()}.json`, blob)) toast(_T`${a.length} profili esportati.`);
+}
+/** Importa profili da JSON (unisce per nome: quelli con lo stesso nome vengono sostituiti). → numero importati. */
+function importProfilesText(text) {
+  let o; try { o = JSON.parse(text); } catch { toast(_t("File dei profili non valido.")); return 0; }
+  const list = Array.isArray(o) ? o : o && o.format === "shoot-analyzer-load-profiles" && Array.isArray(o.profiles) ? o.profiles : null;
+  if (!list) { toast(_t("File dei profili non valido.")); return 0; }
+  const a = getProfiles(); let n = 0;
+  for (const p of list) {
+    if (!p || typeof p.name !== "string" || !p.name.trim()) continue;
+    const q = { name: p.name.trim() }; for (const k of PROFILE_FIELDS) q[k] = p[k] == null ? "" : String(p[k]);
+    q.caliber = +p.caliber > 0 ? +p.caliber : ""; q.caliberUnit = p.caliberUnit === "in" ? "in" : "mm"; q.caliberPreset = typeof p.caliberPreset === "string" ? p.caliberPreset : ""; q.savedAt = p.savedAt || "";
+    const i = a.findIndex(x => x.name === q.name); if (i >= 0) a[i] = q; else a.push(q); n++;
+  }
+  a.sort((x, y) => x.name.localeCompare(y.name));
+  if (n && putProfiles(a)) { refreshProfiles(); toast(_T`${n} profili importati.`); }
+  return n;
+}
+
+/* ===================== 1.13.0: RITAGLIO DEFINITIVO DELLA FOTO ===================== */
+/* Il ritaglio «cuoce» nella nuova foto ciò che si vede (rotazione, prospettiva, distorsione corrette) e tiene solo il
+   rettangolo scelto, a 1 pixel mondo = 1 pixel: la scala non cambia, i punti si spostano dell'origine del rettangolo.
+   La storia (undo) riparte dalla foto ritagliata; «Annulla ritaglio» ripristina foto e punti di prima finché non si
+   carica un'altra foto. */
+function cropRectNorm(a, b) {
+  const B = worldBBox(), cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const x0 = Math.round(cl(Math.min(a.x, b.x), B.x0, B.x1)), x1 = Math.round(cl(Math.max(a.x, b.x), B.x0, B.x1));
+  const y0 = Math.round(cl(Math.min(a.y, b.y), B.y0, B.y1)), y1 = Math.round(cl(Math.max(a.y, b.y), B.y0, B.y1));
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+/** Punti che il rettangolo taglierebbe: mire e fori (obbligatori) e punti di scala/controllo (che possono restare fuori). */
+function cropOutside(r) {
+  const out = p => p && (p.x < r.x || p.y < r.y || p.x > r.x + r.w || p.y > r.y + r.h);
+  const shots = state.groups.reduce((n, g) => n + g.shots.filter(out).length + (out(g.poa) ? 1 : 0), 0);
+  const cal = [state.calib.p1, state.calib.p2, state.calib.r1, state.calib.r2].filter(out).length;
+  return { shots, cal };
+}
+function refreshCrop() {
+  const r = state.cropRect, el = $("cropStatus");
+  $("bCrop").classList.toggle("primary", state.mode === "crop");
+  $("bCropApply").disabled = !r || r.w < 16 || r.h < 16;
+  $("bCropUndo").disabled = !state.cropUndo;
+  if (r && r.w >= 16 && r.h >= 16) {
+    const o = cropOutside(r);
+    el.className = "status " + (o.shots ? "warn" : "ok");
+    el.textContent = _T`Rettangolo ${r.w} × ${r.h} px` + (o.shots ? _T` · ⚠ ${o.shots} punti (mire o fori) restano fuori: allarga il rettangolo` : "")
+      + (o.cal && !o.shots ? _T` · ${o.cal} punti di scala/controllo restano fuori dalla foto (la scala non cambia)` : "");
+  } else if (state.cropUndo) { el.className = "status ok"; el.textContent = _T`Foto ritagliata: ${state.image.w} × ${state.image.h} px.`; }
+  else { el.className = "status"; el.textContent = state.mode === "crop" ? _t("Trascina un rettangolo sulla foto.") : _t("Foto intera."); }
+}
+function drawCropGuide() {
+  const r = state.cropRect;
+  if (!r || state.mode !== "crop") return;
+  const g = ctx2d, a = toScreen({ x: r.x, y: r.y }), b = toScreen({ x: r.x + r.w, y: r.y + r.h });
+  g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.fillStyle = "rgba(0,0,0,.55)"; g.beginPath(); g.rect(0, 0, canvas.width / dpr, canvas.height / dpr); g.rect(a.x, a.y, b.x - a.x, b.y - a.y); g.fill("evenodd");
+  for (const [col, w, d] of [["rgba(0,0,0,.8)", 3, []], ["#fde047", 1.5, [6, 4]]]) { g.strokeStyle = col; g.lineWidth = w; g.setLineDash(d); g.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); }
+  g.restore();
+  label(g, a.x + 4, a.y + 14, `${r.w} × ${r.h} px`, "#a16207", 12);
+}
+/** Applica il ritaglio: nuova foto, punti spostati, prospettiva/distorsione/rotazione incorporate. */
+async function applyCrop() {
+  const r = state.cropRect;
+  if (!r || r.w < 16 || r.h < 16 || !state.base || state.busy) return false;
+  const o = cropOutside(r);
+  if (o.shots) { toast(_T`${o.shots} punti (mire o fori) resterebbero fuori: allarga il rettangolo.`); return false; }
+  const prev = { name: state.image.name, dataUrl: state.image.dataUrl, snap: snapshot(), calDist: $("calDist").value, calUnit: $("calUnit").value };
+  // scala dal rettangolo della prospettiva: diventa una scala a 2 punti (lato superiore del rettangolo), che resta valida
+  if (!(state.calib.p1 && state.calib.p2) && state.persp && perspR()) {
+    const R = perspR();
+    state.calib = { ...state.calib, p1: imgToWorld({ x: R.ox, y: R.oy }), p2: imgToWorld({ x: R.ox + R.wMm * R.k, y: R.oy }) };
+    setParams({ calDist: R.wMm, calUnit: "mm" });
+  }
+  const c = document.createElement("canvas"); c.width = r.w; c.height = r.h;
+  const g = c.getContext("2d");
+  const jpeg = /^data:image\/jpe?g/i.test(state.image.dataUrl);
+  if (jpeg) { g.fillStyle = "#fff"; g.fillRect(0, 0, r.w, r.h); }
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  paintImage(g, 1, -r.x, -r.y, { x0: r.x, y0: r.y, x1: r.x + r.w, y1: r.y + r.h });
+  const dataUrl = jpeg ? c.toDataURL("image/jpeg", 0.95) : c.toDataURL("image/png");
+  const shift = p => { if (p) { p.x -= r.x; p.y -= r.y; } };
+  [state.calib.p1, state.calib.p2, state.calib.r1, state.calib.r2].forEach(shift);
+  for (const gr of state.groups) { shift(gr.poa); gr.shots.forEach(shift); }
+  const keep = { calib: state.calib, groups: state.groups, activeGroupId: state.activeGroupId };
+  await setImage(prev.name, dataUrl);
+  Object.assign(state, keep); state.rot = 0; state.cropRect = null; state.cropUndo = prev;
+  holeMemo.clear(); measMemo.clear(); diagMemo.clear();
+  setMode(state.prevMode && !TOOL_MODES.includes(state.prevMode) ? state.prevMode : "pan");
+  resetHistory(); fitView(); refreshCrop();
+  toast(_T`Foto ritagliata a ${r.w} × ${r.h} px. «Annulla ritaglio» la ripristina finché non carichi un'altra foto.`);
+  return true;
+}
+async function undoCrop() {
+  const u = state.cropUndo; if (!u) return;
+  await setImage(u.name, u.dataUrl);
+  restore(u.snap);
+  setParams({ calDist: u.calDist, calUnit: u.calUnit });
+  state.cropUndo = null; state.cropRect = null;
+  holeMemo.clear(); measMemo.clear(); diagMemo.clear();
+  await ensureBase(); resetHistory(); fitView(); refreshCrop();
+  toast(_t("Ritaglio annullato: foto e punti come prima."));
+}
+
+/* ===================== 1.13.0: RISULTATI A CARD ===================== */
+const CARD_OPEN = new Set();   // card con i dettagli aperti (per chiave, comune a tutti i gruppi)
+/** Card: titolo (termine del glossario), valore principale, riga secondaria, righe visibili e dettagli espandibili. */
+function rcard(key, title, main, sub, rows, more, cls = "") {
+  return `<div class="rcard ${cls}" data-key="${key}"><div class="rc-t">${title}</div>${main ? `<div class="rc-main">${main}</div>` : ""}${sub ? `<div class="rc-sub">${sub}</div>` : ""}`
+    + (rows ? `<table class="rc-rows">${rows}</table>` : "")
+    + (more ? `<details class="rc-more" data-card="${key}"><summary>${_t("Dettagli")}</summary>${more}</details>` : "") + "</div>";
+}
+const ciSpan = (r, x, d = 1) => r.ci ? `<br><span class="civ">${_T`IC ${fmt(r.ci.level * 100, 0)}%: ${fmtCI(x, d)}`}</span>` : "";
+/** Card dei risultati di un gruppo (dalla 1.13.0). onlyAside = solo le card che non richiedono misure (punteggio, vento). */
+function resultCards(g, gcc, r, onlyAside = false) {
+  const C = [];
+  if (!onlyAside) {
+    // rosata
+    C.push(rcard("es", _t("Group size (c-c)"), fmtLen(r.mm.es), fmtAng(r.ang?.es), esEqHTML(r),
+      _T`<table>
+        <tr><td>Bordo-bordo esterno</td><td class="v">${fmtLen(r.mm.esEdge)}</td></tr>
+        <tr><td title="Dispersione orizzontale: dal colpo più a sinistra al più a destra (c-c)">H-spread (orizz.)</td><td class="v">${fmtLA(r.mm.w, r.ang?.w)}</td></tr>
+        <tr><td title="Dispersione verticale: dal colpo più basso al più alto (c-c)">V-spread (vert.)</td><td class="v">${fmtLA(r.mm.h, r.ang?.h)}</td></tr>
+        <tr><td title="Figure of Merit: media tra H-spread e V-spread">FOM</td><td class="v">${fmtLA(r.mm.fom, r.ang?.fom)}</td></tr>
+      </table>` + hullRow(r)));
+    // dispersione
+    C.push(rcard("mr", _t("Raggio medio"), fmtLen(r.mm.mr), fmtAng(r.ang?.mr) + (r.ci ? _T`<br><span class="civ" title="Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))">IC ${fmt(r.ci.level * 100, 0)}% atteso: ${fmtCI(r.ci.mrExp)}</span>` : ""),
+      _T`<tr><td title="Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)">CEP (50%)</td><td class="v">${fmtLA(r.mm.cep, r.ang?.cep)}${ciSpan(r, r.ci && r.ci.cep)}</td></tr>
+        <tr><td title="Raggio previsto che contiene il 95% dei colpi">R95</td><td class="v">${fmtLA(r.mm.r95, r.ang?.r95)}${ciSpan(r, r.ci && r.ci.r95)}</td></tr>`,
+      _T`<table>
+        <tr><td title="Raggio previsto che contiene il 99% dei colpi">R99</td><td class="v">${fmtLA(r.mm.r99, r.ang?.r99)}${ciSpan(r, r.ci && r.ci.r99)}</td></tr>
+        <tr><td title="Deviazione standard delle distanze dei fori dal centro gruppo">SD distanze dal centro</td><td class="v">${fmtLA(r.mm.sdRadii, r.ang?.sdRadii)}</td></tr>
+        <tr><td title="Radial standard deviation: √(σx² + σy²), con σx e σy deviazioni standard orizzontale e verticale">SD radiale √(σx²+σy²)</td><td class="v">${fmtLA(r.mm.rsd, r.ang?.rsd)}</td></tr>
+      </table>
+      <div class="muted" style="font-size:11px;margin-top:2px">CEP/R95/R99: raggi previsti attorno al centro gruppo, modello circolare normale (σ = ${fmt(r.mm.sigma, 2)} mm, stima corretta per pochi colpi${r.ci ? _T`; IC ${fmt(r.ci.level * 100, 0)}% di σ: ${fmtCI(r.ci.sigma, 2)}` : ""}). Gli intervalli di confidenza (χ²) sono asimmetrici, per questo sono indicati come «min–max» e non come «±». Il group size (ES) non ha un intervallo esatto e non viene stimato.${r.n < 5 ? _t(" Con meno di 5 colpi queste statistiche sono poco affidabili.") : ""}</div>`));
+    // centro e correzione
+    C.push(corrCard(g, gcc, r));
+    // forma
+    C.push(rcard("shape", _t("Forma del gruppo"), r.shape ? `${fmt(r.shape.ratio, 2)} : 1` : "", r.shape ? (r.shape.ratio < 1.3 ? _t("circa circolare") : _T`asse a ${fmt(r.shape.bearing, 0)}° dalla verticale`) : _t("Servono almeno 3 fori."), "", r.shape ? shapeRows(r) : ""));
+  }
+  else if (r.mm && r.n >= 1) C.push(corrCard(g, gcc, r));   // un solo foro: correzione comunque disponibile
+  const si = scoreHere(g);
+  if (si) C.push(rcard("score", `<span class="scoreline"><b>${_t("Punteggio")}</b></span>`, scoreSummaryText(si), esc(si.t.name), "", ""));
+  const w = windCard(g, r);
+  if (w) C.push(w);
+  return C.length ? `<div class="rcards">${C.join("")}</div>` : "";
+}
+function corrCard(g, gcc, r) {
+  if (!g.poa) return rcard("corr", _t("Correzione"), "", _t("Aggiungi il punto di mira per la correzione."), "", "");
+  const o = r.offset;
+  const h = o.dx === 0 ? "" : _T`${fmt(Math.abs(o.dx), 1)} mm a ${o.dx > 0 ? _t("destra") : _t("sinistra")}`;
+  const v = o.dy === 0 ? "" : _T`${fmt(Math.abs(o.dy), 1)} mm in ${o.dy > 0 ? _t("alto") : _t("basso")}`;
+  const rows = _T`<tr><td>Scostamento centro gruppo</td><td class="v">${[v, h].filter(Boolean).join("<br>") || "0"}${r.ci ? _T`<br><span class="civ">IC ${fmt(r.ci.level * 100, 0)}%: ±${fmt(r.ci.center.hy, 1)} mm vert. · ±${fmt(r.ci.center.hx, 1)} mm orizz.</span>` : ""}</td></tr>`;
+  if (!r.correction) return rcard("corr", _t("Correzione"), "", _t("Inserisci distanza di tiro e valore click."), rows, dopeHTML(g, gcc), "wide");
+  const c = r.correction, cic = correctionCIText(r);
+  const main = `<div class="corr">↻ ${correctionText(c)}</div>`;
+  const sub = (cic ? `<div class="civ" title="${_t("Intervallo di confidenza della posizione del centro gruppo (t di Student per asse) tradotto in click")}">${cic.text}${cic.unsure ? _t(" · su un asse l'intervallo comprende lo zero: la correzione su quell'asse non è certa") : ""}</div>` : "")
+    + `<div class="btns" style="margin:5px 0 0"><button class="btn vcorr${state.virtCorr ? " on" : ""}" data-vcorr title="${_t("Mostra sulla foto, in trasparenza, dove sarebbero andati i fori con i click indicati (arrotondati). Solo visualizzazione: dati e risultati non cambiano; esatto alla distanza del gruppo.")}">${state.virtCorr ? _t("✓ Correzione virtuale attiva (togli)") : _t("⇢ Applica correzione virtuale")}</button></div>`;
+  const more = _T`<div class="muted" style="font-size:11.5px">Esatto: ${fmt(c.vAng, 2)} ${c.unit} ${_t(c.vDir)} / ${fmt(c.hAng, 2)} ${c.unit} ${_t(c.hDir)} · ${fmt(c.clickValue, 3)} ${c.unit}/click</div>`;
+  return rcard("corr", _t("Correzione"), main, sub, rows, more + dopeHTML(g, gcc), "wide");
+}
+/** Card del vento: dati inseriti, componenti e scostamento orizzontale misurato (nessun calcolo della deriva). */
+function windCard(g, r) {
+  const L = g.load || {}, h = +L.windDir || 0, sp = L.wind === "" || L.wind == null ? null : +L.wind;
+  if (!h && !(sp > 0)) return "";
+  const u = L.windUnit || "m/s", c = Calc.windComponents(sp, h);
+  const main = sp != null && isFinite(sp) ? `${fmt(sp, 1)} ${u}` : "–";
+  const sub = h ? _T`da ore ${h}` : _t("direzione non indicata");
+  let rows = "";
+  if (c) rows += _T`<tr><td>Componente laterale</td><td class="v">${fmt(Math.abs(c.cross), 1)} ${u}${Math.abs(c.cross) >= 0.005 ? ` ${c.cross > 0 ? _t("da destra") : _t("da sinistra")}` : ""}</td></tr>
+    <tr><td>Componente frontale</td><td class="v">${fmt(Math.abs(c.head), 1)} ${u}${Math.abs(c.head) >= 0.005 ? ` ${c.head > 0 ? _t("contro") : _t("in coda")}` : ""}</td></tr>`;
+  if (r && r.offset) rows += _T`<tr><td title="Scostamento orizzontale del centro gruppo dalla mira, misurato: include vento, taratura e altri effetti">Centro gruppo (orizz.)</td><td class="v">${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx >= 0 ? _t("a destra") : _t("a sinistra")}</td></tr>`;
+  return rcard("wind", _t("Vento"), main, sub, rows, `<div class="muted" style="font-size:11px">${_t("La deriva dovuta al vento non è calcolata: servirebbero coefficiente balistico, velocità e atmosfera. Lo scostamento del centro gruppo è quello misurato.")}</div>`);
+}
+
+/* ===================== 1.13.0: FILE ZIP DI SESSIONE (FORMATO DELL'APP) E LETTURA DEGLI ZIP ===================== */
+/* Una sessione = un .zip: manifest.json (tipo e versione del formato), la sessione JSON SENZA foto incorporata con il
+   nome del file della foto, la foto originale così com'è, CSV di fori e gruppi e un LEGGIMI. Si riapre con «Carica
+   sessione» e si importa nello storico del confronto o nell'archivio; si leggono anche gli ZIP dell'archivio (più
+   sessioni) e quelli ricompressi da Windows/macOS (metodo deflate, con DecompressionStream del browser). */
+const ZIP_KIND = "shoot-analyzer-session", ZIP_VERSION = 1;
+/** Legge uno ZIP (store o deflate, senza ZIP64) → Map nome → Uint8Array. */
+async function readZip(blob) {
+  const buf = new Uint8Array(await blob.arrayBuffer()), dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  let e = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 65535); i--) if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; }
+  if (e < 0) throw new Error(_t("non è un file ZIP"));
+  const n = dv.getUint16(e + 10, true); let p = dv.getUint32(e + 16, true);
+  const out = new Map(), dec = new TextDecoder();
+  for (let k = 0; k < n; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error(_t("ZIP danneggiato"));
+    const method = dv.getUint16(p + 10, true), csize = dv.getUint32(p + 20, true), nl = dv.getUint16(p + 28, true), xl = dv.getUint16(p + 30, true), cl = dv.getUint16(p + 32, true);
+    const lo = dv.getUint32(p + 42, true), name = dec.decode(buf.subarray(p + 46, p + 46 + nl));
+    p += 46 + nl + xl + cl;
+    if (name.endsWith("/")) continue;
+    const start = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true), raw = buf.subarray(start, start + csize);
+    if (method === 0) out.set(name, raw);
+    else if (method === 8) {
+      if (typeof DecompressionStream === "undefined") throw new Error(_t("questo browser non sa decomprimere lo ZIP"));
+      const s = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      out.set(name, new Uint8Array(await new Response(s).arrayBuffer()));
+    } else throw new Error(_T`metodo di compressione ${method} non supportato`);
+  }
+  return out;
+}
+const MIME_OF = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", bmp: "image/bmp", gif: "image/gif" };
+/** Sessioni contenute in uno ZIP (di sessione o d'archivio), con la foto reincorporata come dataURL. */
+async function sessionsFromZip(blob) {
+  const Z = await readZip(blob), dec = new TextDecoder(), out = [];
+  const names = [...Z.keys()].filter(n => /(^|\/)(sessione|session)\.json$/i.test(n));
+  if (Z.has("manifest.json")) { try { const m = JSON.parse(dec.decode(Z.get("manifest.json"))); if (m.session && Z.has(m.session) && !names.includes(m.session)) names.push(m.session); } catch { /* manifest illeggibile: bastano i nomi */ } }
+  for (const n of names) {
+    let s; try { s = JSON.parse(dec.decode(Z.get(n))); } catch { continue; }
+    if (s.app !== "ShootAnalyzer" || !Array.isArray(s.groups)) continue;
+    const dir = n.includes("/") ? n.slice(0, n.lastIndexOf("/") + 1) : "", f = s.image && s.image.file;
+    const photo = f && Z.get(dir + f);
+    if (photo) s.image = { ...s.image, dataUrl: await blobToDataUrl(new Blob([photo], { type: MIME_OF[f.split(".").pop().toLowerCase()] || "application/octet-stream" })) };
+    out.push(s);
+  }
+  return out;
+}
+/** File scelti (.json e .zip) → { sessions: [{ s, name }], bad }. */
+async function sessionsFromFiles(files) {
+  const sessions = []; let bad = 0;
+  for (const f of files) {
+    if (/\.zip$/i.test(f.name) || f.type === "application/zip" || f.type === "application/x-zip-compressed") {
+      try { const L = await sessionsFromZip(f); if (!L.length) bad++; L.forEach(s => sessions.push({ s, name: f.name })); } catch { bad++; }
+      continue;
+    }
+    let s; try { s = JSON.parse(await readAs(f, "text")); } catch { bad++; continue; }
+    if (s.app !== "ShootAnalyzer" || !Array.isArray(s.groups)) { bad++; continue; }
+    sessions.push({ s, name: f.name });
+  }
+  return { sessions, bad };
+}
+/** File ZIP della sessione corrente. → Blob */
+async function buildSessionZip() {
+  const ses = buildSession(false), d = new Date(), photo = dataUrlToBlob(state.image.dataUrl), photoName = _T`foto.${extOf(photo.type)}`;
+  ses.image = { ...ses.image, dataUrl: null, file: photoName };
+  const sesName = _t("sessione.json"), src = sessionSource(ses), G = csvGroupsTable(src);
+  const manifest = { kind: ZIP_KIND, version: ZIP_VERSION, app: "ShootAnalyzer", appVersion: APP_VERSION, savedAt: ses.savedAt, session: sesName, photo: photoName,
+    image: state.image.name, groups: state.groups.map(g => ({ name: g.name, shots: g.shots.length })) };
+  return makeZip([
+    { name: "manifest.json", data: JSON.stringify(manifest, null, 1), date: d },
+    { name: sesName, data: JSON.stringify(ses, null, 1), date: d },
+    { name: photoName, data: photo, date: d },
+    { name: _t("fori.csv"), data: csvShots(src), date: d },
+    { name: _t("gruppi.csv"), data: csvDoc(G.head, G.rows), date: d },
+    { name: _t("LEGGIMI.txt"), data: [
+      _T`Shoot Analyzer ${APP_VERSION} — sessione salvata il ${d.toLocaleString(I18N.locale())}`,
+      _t("Per riaprirla: «Carica sessione» e scegli questo file .zip (foto e misure insieme)."),
+      _t("Per confrontarla: «＋ Importa sessioni nello storico» nella vista grafici, o «＋ Aggiungi sessioni» all'archivio."),
+      _t("  manifest.json  tipo e versione del formato"),
+      _t("  sessione.json  punti, parametri, gruppi e dati di ricarica (la foto è il file accanto)"),
+      _t("  foto.*         foto del bersaglio"),
+      _t("  fori.csv       una riga per foro · gruppi.csv  una riga per gruppo"), ""].join("\r\n"), date: d },
+  ]);
+}
+async function saveSessionZip() {
+  if (!state.image) { toast(_t("Niente da salvare: carica prima un'immagine.")); return; }
+  const base = (state.image.name || _t("sessione")).replace(/\.[^.]+$/, "");
+  if (await FileStore.saveBlob(`${base}_${stamp()}.zip`, await buildSessionZip())) {
+    state.savedSig = workSignature();
+    toast(_t("Sessione salvata in ZIP (e archiviata)"));
+    archiveCurrent(); doAutosave();
+  }
+}
+/** «Carica sessione»: JSON o ZIP. Uno ZIP con più sessioni (archivio) non si apre: va nello storico o nell'archivio. */
+async function openSessionFile(f) {
+  if (!/\.zip$/i.test(f.name)) { await loadSessionText(await readAs(f, "text")); return; }
+  let L; try { L = await sessionsFromZip(f); } catch (e) { toast(_t("ZIP non leggibile: ") + (e && e.message || e)); return; }
+  if (!L.length) { toast(_t("Lo ZIP non contiene sessioni di Shoot Analyzer.")); return; }
+  if (L.length > 1) { toast(_T`Lo ZIP contiene ${L.length} sessioni (archivio): importale nello storico del confronto o nell'archivio.`); return; }
+  await loadSessionText(JSON.stringify(L[0]));
 }
 
 /* -------------------- DATI DI RICARICA: testi per le esportazioni -------------------- */
@@ -7298,12 +7841,12 @@ function drawTrend(cv, W, H, rows, vals, ma, N, unit, metric) {
 }
 /** Importa una o più sessioni JSON nello storico (solo riepiloghi dei gruppi). */
 async function importHistory(files) {
-  let added = 0, skipped = 0;
-  for (const f of files) {
-    let s; try { s = JSON.parse(await readAs(f, "text")); } catch { skipped++; continue; }
-    if (s.app !== "ShootAnalyzer" || !s.groups) { skipped++; continue; }
+  let added = 0;
+  const R = await sessionsFromFiles(files);   // .json e .zip (dalla 1.13.0)
+  let skipped = R.bad;
+  for (const { s, name } of R.sessions) {
     const ctx = sessionCtx(s);   // scala manuale o dal rettangolo della prospettiva
-    const src = `${(s.image && s.image.name) || f.name}`;
+    const src = `${(s.image && s.image.name) || name}`;
     for (const g of s.groups) {
       const shots = (g.shots || []).filter(x => !x.excluded);
       if (shots.length < 2 || !ctx.pxPerMm || !(ccG(ctx, g).distMm > 0)) { skipped++; continue; }
@@ -7943,10 +8486,9 @@ function archiveEntry(ses, imageKey) {
 }
 /** Aggiunge all'archivio sessioni salvate in precedenza (file .json). */
 async function addFilesToArchive(files) {
-  let added = 0, noImg = 0, bad = 0;
-  for (const f of files) {
-    let s; try { s = JSON.parse(await readAs(f, "text")); } catch { bad++; continue; }
-    if (s.app !== "ShootAnalyzer" || !Array.isArray(s.groups)) { bad++; continue; }
+  let added = 0, noImg = 0;
+  const R = await sessionsFromFiles(files), bad = R.bad;   // .json e .zip (dalla 1.13.0)
+  for (const { s } of R.sessions) {
     let key = null;
     if (s.image && s.image.dataUrl) {
       key = imageKeyOf(s.image.name, s.image.w, s.image.h, s.image.dataUrl);
@@ -8169,7 +8711,8 @@ $("ver").textContent = "v" + APP_VERSION;
 $("bLoad").onclick = () => $("fImg").click();
 $("fImg").onchange = e => { const f = e.target.files[0]; if (f) loadImageFile(f).catch(err => toast(_t("Impossibile aprire l'immagine: ") + err.message)); e.target.value = ""; };
 $("bOpen").onclick = () => $("fJson").click();
-$("fJson").onchange = async e => { const f = e.target.files[0]; if (f) await loadSessionText(await readAs(f, "text")); e.target.value = ""; };
+$("fJson").onchange = async e => { const f = e.target.files[0]; if (f) await openSessionFile(f); e.target.value = ""; };
+$("bSaveZip").onclick = saveSessionZip;
 $("bSave").onclick = saveSession;
 $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bDelLast").onclick = deleteLast; $("bClear").onclick = clearAll;
@@ -8206,6 +8749,17 @@ $("ellipseOn").addEventListener("change", () => { requestDraw(); drawCharts(); }
 $("hullOn").addEventListener("change", () => { requestDraw(); drawCharts(); scheduleAutosave(); });
 $("heatOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
 $("esLabelOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
+$("bCrop").onclick = () => setMode(state.mode === "crop" ? state.prevMode : "crop");
+$("bCropApply").onclick = () => applyCrop();
+$("bCropUndo").onclick = () => undoCrop();
+$("ldProfile").addEventListener("change", e => { if (e.target.value) applyProfile(e.target.value); refreshProfiles(); });
+$("bProfSave").onclick = saveProfile;
+$("ldProfName").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); saveProfile(); } });
+$("bProfDel").onclick = () => { const v = $("ldProfile").value; if (v) deleteProfile(v); };
+$("bProfExp").onclick = exportProfiles;
+$("bProfImp").onclick = () => $("fProf").click();
+$("fProf").onchange = async e => { const f = e.target.files[0]; if (f) importProfilesText(await f.text()); e.target.value = ""; };
+$("caliber").addEventListener("change", () => refreshProfiles());
 $("corrArrowOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
 $("livePanelOn").addEventListener("change", () => { refreshLive(); scheduleAutosave(); });
 $("densSel").addEventListener("change", e => setDensity(e.target.value));
@@ -8284,7 +8838,7 @@ $("bTgtReset").onclick = () => setTgt({ dx: 0, dy: 0, rot: 0 });
 $("bTgtMove").onclick = () => setMode(state.mode === "tgt" ? state.prevMode : "tgt");
 $("chPerShot").addEventListener("change", () => { refreshLists(); scheduleAutosave(); });
 $("scoreDec").addEventListener("change", () => { refreshResults(); refreshLists(); refreshScoreUI(); requestDraw(); scheduleAutosave(); });
-document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg), #side select:not([data-k]), #anaView select:not(#anaGroup), #anaView input[type=number]")
+document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg), #side select:not([data-k]):not(#ldProfile):not(#densSel), #anaView select:not(#anaGroup), #anaView input[type=number]")
   .forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); refreshScoreUI(); requestDraw(); scheduleAutosave(); }));
 
 // drag & drop
@@ -8292,7 +8846,7 @@ document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg), 
 ["dragleave", "drop"].forEach(t => work.addEventListener(t, e => { e.preventDefault(); if (t === "dragleave" && work.contains(e.relatedTarget)) return; work.classList.remove("dragover"); }));
 work.addEventListener("drop", async e => {
   const f = e.dataTransfer.files[0]; if (!f) return;
-  if (/\.json$/i.test(f.name) || f.type === "application/json") await loadSessionText(await readAs(f, "text"));
+  if (/\.(json|zip)$/i.test(f.name) || f.type === "application/json") await openSessionFile(f);   // .zip dalla 1.13.0
   else if (f.type.startsWith("image/")) await loadImageFile(f).catch(err => toast(_t("Impossibile aprire l'immagine: ") + err.message));
   else toast(_t("Formato non supportato"));
 });
@@ -9070,7 +9624,7 @@ window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc
   VIEWCONE, coneData, corData, corLevels, targetSpec, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
   applyLens, worldToRaw, rawToWorld, fitLensFromLines, lensParams, setMode,
   flyerTest, holeScaleCheck, refScaleCheck, measInfo, diagInfo, diagMemo, RT_VIEW, calibQuality,
-  correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap };
+  correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getProfiles, saveProfile, applyProfile, deleteProfile, importProfilesText, profileAutoName, setWindDir, refreshWindDial, applyCrop, undoCrop, cropRectNorm, cropOutside, readZip, sessionsFromZip, buildSessionZip, saveSessionZip, openSessionFile, CARD_OPEN, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap };
 </script>
 </body>
 </html>

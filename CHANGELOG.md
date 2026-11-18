@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.13.0] - 2026-11-18
+### Aggiunto
+- **Profili di ricarica** (Ricarica e condizioni): nome + bossolo, polvere, carica, palla, salto dalle righe, innesco e
+  calibro; scelta da menu (compila il gruppo attivo e imposta il calibro), salvataggio con nome automatico, eliminazione,
+  esporta/importa JSON; salvati nel browser.
+- **Croce estesa** del cursore con lo strumento Mira: prolungamenti tratteggiati fino ai bordi della foto, staccati dal
+  cursore.
+- **Ritaglio della foto** (Orientamento) definitivo: rettangolo trascinato, rotazione/prospettiva/distorsione incorporate,
+  scala invariata (1 px = 1 px), punti traslati; scala dalla prospettiva convertita in 2 punti; «Annulla ritaglio» fino
+  alla foto successiva.
+- **Risultati a card** (Group size, Raggio medio, Correzione, Forma, Punteggio, Vento) con «Dettagli» espandibili che
+  restano aperti; titoli collegati al glossario; densità compatta = solo valori principali, dettagliata = tutto aperto.
+- **Quadrante del vento** cliccabile (anche da tastiera) al posto del menu delle ore, con componenti laterale e frontale
+  (`Calc.windComponents`); card «Vento» con lo scostamento orizzontale misurato (nessun calcolo di deriva).
+- **Sessione ZIP**: un file con manifest, sessione JSON, foto originale, CSV e LEGGIMI; «Carica sessione», storico del
+  confronto, archivio e trascinamento accettano gli ZIP (anche d'archivio e ricompressi deflate).
+### Cambiato
+- «Carica sessione JSON» → «Carica sessione» (.zip o .json). Help tecnico: sezione «Ritaglio, profili di ricarica e file
+  ZIP»; guida rapida e traduzioni.
+- Test: 655 verifiche del motore, 53 scenari UI.
+
 ## [1.12.0] - 2026-11-18
 ### Aggiunto
 - **Etichette senza sovrapposizioni** sull'immagine: numeri dei fori, group size, scala e nomi dei gruppi scelgono tra 8
