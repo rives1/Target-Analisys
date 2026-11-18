@@ -542,7 +542,7 @@ test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione
   assert.match(await page.textContent("#results"), new RegExp(`Punteggio.*${si.total} / 50`));
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Punteggio \(ISSF 10 m pistola ad aria\): \d+ \/ 50/);
   const csvF = await page.evaluate(() => window.__SA.csvShots()), csvG = await page.evaluate(() => window.__SA.csvGroups());
-  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\)$/);
+  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\);Carica del foro \(gr\)$/);
   assert.match(csvG, new RegExp(`;ISSF 10 m pistola ad aria;${si.total};50;`));
   // bersaglio personalizzato
   await page.selectOption("#scoreTarget", "custom");
@@ -1253,6 +1253,190 @@ test("bersaglio di autoverifica: PDF, foto del bersaglio stampato, misura e veri
   ok2(/da rivedere/.test(await page.textContent("#ttResult")), "codice diverso: misura da rivedere");
   await page.fill("#ttCode", "12"); await page.click("#bTtCheck");
   ok2(/Inserisci il codice/.test(await page.textContent("#ttResult")), "codice non valido");
+});
+
+/* ------------------------------ 1.10.0 ------------------------------ */
+const SI = page => page.evaluate(() => { const S = window.__SA, g = S.state.groups.find(x => x.id === S.state.activeGroupId);
+  const si = S.scoreInfo(g, S.calcContext(), S.targetSpec(S.params())); return si && { total: si.total, max: si.max, kind: si.kind, cells: g.shots.map(q => { const v = si.byId.get(q.id); return v.label != null ? v.label : v.value; }) }; });
+test("etichetta del group size sull'immagine e grafici 3 per riga", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  ok2(await page.isChecked("#esLabelOn"), "attiva di default");
+  const s1 = await canvasSig(page);
+  await page.uncheck("#esLabelOn"); await page.waitForTimeout(100);
+  ok2(await canvasSig(page) !== s1, "l'etichetta compare e scompare");
+  ok2(await page.evaluate(() => window.__SA.buildSession().params.esLabelOn === false), "scelta nella sessione");
+  await page.check("#esLabelOn");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.evaluate(() => getComputedStyle(document.getElementById("charts")).gridTemplateColumns.split(" ").length), 3, "3 grafici per riga");
+});
+
+test("sagome: IPSC con spostamento e rotazione, IDPA, silhouette, zona vitale, decimale ISSF, probabilità", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.selectOption("#caliberUnit", "mm"); await setField(page, "#caliber", 9);
+  await expandAll(page);
+  await page.selectOption("#scoreTarget", "ipsc");
+  ok2(await page.isVisible("#ipscPF") && !(await page.isVisible("#scoreDec")), "opzioni IPSC, niente decimale");
+  let r = await SI(page);
+  assert.deepStrictEqual(r.cells, ["A", "A", "A", "A", "A"], "gruppo 30 mm a destra: tutto A"); assert.strictEqual(r.total, 25);
+  // bersaglio spostato 60 mm a sinistra: i fori (30–35 mm) sono a 90–95 mm dal centro → C (A larga ±75 mm + raggio del foro)
+  await setField(page, "#tgtDx", -60);
+  r = await SI(page); assert.deepStrictEqual(r.cells, ["C", "C", "C", "C", "C"], "zona C"); assert.strictEqual(r.total, 15, "minor: C = 3");
+  await page.selectOption("#ipscPF", "major"); r = await SI(page); assert.strictEqual(r.total, 20, "major: C = 4");
+  ok2(/20 \/ 25 punti · A 0 · C 5/.test(await page.textContent("#results")), "riepilogo nei risultati");
+  // trascinamento col mouse: sposta; Shift+trascina: ruota; annulla
+  await page.click("#bTgtMove");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.mode), "tgt");
+  const a = await screenOf(page, { x: 200, y: 400 });
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x + 60, a.y, { steps: 4 }); await page.mouse.up();
+  const t1 = await page.evaluate(() => window.__SA.tgtOf(window.__SA.state.groups[0]));
+  ok2(t1.dx > -60, "trascinato a destra: " + t1.dx);
+  await page.keyboard.down("Shift"); await page.mouse.move(a.x + 200, a.y); await page.mouse.down(); await page.mouse.move(a.x + 200, a.y + 80, { steps: 4 }); await page.mouse.up(); await page.keyboard.up("Shift");
+  ok2(Math.abs((await page.evaluate(() => window.__SA.tgtOf(window.__SA.state.groups[0]))).rot) > 1, "Shift+trascina ruota");
+  await page.keyboard.press("Control+z");
+  near((await page.evaluate(() => window.__SA.tgtOf(window.__SA.state.groups[0]))).rot, 0, 1e-9, "annulla la rotazione");
+  await key(page, "Escape");
+  ok2(await page.evaluate(() => window.__SA.state.mode !== "tgt"), "Esc esce dallo strumento");
+  ok2(await page.evaluate(() => JSON.stringify(window.__SA.buildSession().groups[0].tgt).includes("dx")), "posizione nella sessione");
+  // probabilità sulla sagoma: righe per zona e punti attesi; A + C + D = a segno
+  await page.selectOption("#hitShape", "target");
+  await page.waitForFunction(() => /Zona A/.test(document.getElementById("hitOut").textContent));
+  const ht = await page.textContent("#hitOut");
+  ok2(/Zona C/.test(ht) && /Zona D/.test(ht) && /A segno/.test(ht) && /Punti attesi per colpo/.test(ht), "tabella della sagoma: " + ht.slice(0, 200));
+  await page.click("#bTgtReset");
+  // IDPA: punti persi
+  await page.selectOption("#scoreTarget", "idpa");
+  r = await SI(page); assert.strictEqual(r.kind, "idpa"); assert.deepStrictEqual(r.cells, ["−0", "−0", "−0", "−0", "−0"], "−0 attorno al centro (cerchio da 8\")");
+  await setField(page, "#tgtDy", 600); r = await SI(page);
+  assert.deepStrictEqual(r.cells, ["M", "M", "M", "M", "M"], "sagoma spostata 60 cm in alto: mancati"); assert.strictEqual(r.total, 25, "5 punti persi per mancato");
+  await page.click("#bTgtReset");
+  // silhouette e zona vitale: colpito/mancato
+  await page.selectOption("#scoreTarget", "sil-chicken"); await page.selectOption("#silScale", "0.2");
+  ok2(await page.isVisible("#silScale"), "scala visibile");
+  r = await SI(page); assert.strictEqual(r.kind, "sil"); ok2(r.cells.every(c => c === "✗"), "pollo 1/5 (≈ 6,7 × 5,6 cm): 30 mm a destra = mancato");
+  await page.selectOption("#scoreTarget", "vital"); await page.selectOption("#vitalPreset", "large");
+  assert.strictEqual(await page.inputValue("#vitalW"), "29");
+  r = await SI(page); ok2(r.cells.every(c => c === "✓"), "zona vitale ⌀ 29 cm: colpiti");
+  await setField(page, "#vitalW", 5); await setField(page, "#vitalH", 5);
+  assert.strictEqual(await page.inputValue("#vitalPreset"), "custom", "misura scritta a mano: personalizzata");
+  r = await SI(page); ok2(r.cells.every(c => c === "✗"), "⌀ 5 cm: mancati");
+  // decimale ISSF
+  await page.selectOption("#scoreTarget", "issf25p"); await page.check("#scoreDec");
+  r = await SI(page);
+  const exp = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0], cc = S.calcContext(), t = S.Calc.SCORE_TARGETS.issf25p;
+    return g.shots.map(q => S.Calc.decimalScore(S.Calc.dist(q, g.poa) / cc.pxPerMm, cc.caliberMm, t)); });
+  assert.deepStrictEqual(r.cells, exp, "valori decimali per foro");
+  near(r.total, exp.reduce((a, b) => a + b, 0), 1e-6, "totale decimale"); near(r.max, 54.5, 1e-9, "massimo 10,9 × 5");
+  ok2(/\d,\d/.test(await page.textContent("#points")), "decimali nella tabella dei punti");
+});
+
+test("correlazioni ricarica/condizioni e ladder con carica per foro", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  // 4 gruppi della stessa munizione con carica crescente: il gruppo sale di 2 mm ogni 0,5 gr
+  await page.evaluate(() => { const S = window.__SA, st = S.state, g0 = st.groups[0];
+    g0.load = { ...g0.load, bullet: "SMK 168", powder: "N140", charge: "43,5", temp: "10" };
+    for (let i = 1; i < 4; i++) { const g = JSON.parse(JSON.stringify(g0)); g.id = 500 + i; g.name = "C" + i; g.load.charge = String(43.5 + 0.5 * i).replace(".", ","); g.load.temp = String(10 + 5 * i);
+      g.poa = { ...g0.poa }; g.shots = g0.shots.map((q, j) => ({ ...q, id: 600 + i * 10 + j, y: q.y - 8 * i })); st.groups.push(g); }
+    S.commit(); });
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  let C = await page.evaluate(() => window.__SA.corData());
+  assert.strictEqual(C.pts.length, 4, "4 gruppi");
+  const exp = await page.evaluate(() => { const S = window.__SA, cc = S.calcContext(); const ys = S.state.groups.map(g => S.Calc.dope(g.shots, g.poa, { ...cc, distMm: 100000 }).v.mil);
+    return S.Calc.linReg([43.5, 44, 44.5, 45], ys); });
+  near(C.reg.b, exp.b, 1e-9, "pendenza come il calcolo indipendente"); near(C.reg.b, -0.04, 1e-3, "2 mm a 100 m ogni 0,5 gr = −0,04 MIL/gr");
+  ok2(/Pendenza/.test(await page.textContent("#corBody")), "riepilogo");
+  await page.selectOption("#corPair", "vtemp"); C = await page.evaluate(() => window.__SA.corData());
+  assert.strictEqual(C.reg, null, "temperatura: munizione completa (carica compresa), un gruppo per munizione");
+  await page.selectOption("#corLoad", "*"); C = await page.evaluate(() => window.__SA.corData());
+  near(C.reg.b, -0.004, 1e-4, "alzo ↔ temperatura (5 °C ogni gruppo)");
+  await page.selectOption("#corPair", "vscharge"); C = await page.evaluate(() => window.__SA.corData());
+  near(C.reg.b, 0, 1e-9, "V-spread uguale: pendenza 0"); ok2(/comprende lo zero/.test(await page.textContent("#corBody")), "nessuna relazione");
+  // ladder: un gruppo, carica scritta per foro
+  await key(page, "Escape"); await page.waitForFunction(() => !window.__SA.anaOpen());
+  await page.check("#chPerShot");
+  for (let i = 0; i < 5; i++) {
+    const sel = `#points input[data-dial="ch"] >> nth=${i}`;
+    await page.fill(sel, String(44 + 0.2 * i)); await page.dispatchEvent(sel, "change");
+  }
+  const chs = await page.evaluate(() => window.__SA.state.groups.find(g => g.id === window.__SA.state.activeGroupId).shots.map(q => q.ch));
+  assert.deepStrictEqual(chs.map(v => Math.round(v * 10) / 10), [44, 44.2, 44.4, 44.6, 44.8], "carica per foro salvata");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await page.selectOption("#corPair", "ladder"); C = await page.evaluate(() => window.__SA.corData());
+  assert.strictEqual(C.pts.filter(p => p.x >= 44 && p.x <= 44.81 && p.x !== 44.5 && p.x !== 45).length >= 5, true, "un punto per foro con la sua carica");
+  ok2(/non indica «nodi»/.test(await page.textContent("#corBody")), "nessun nodo automatico");
+});
+
+test("cono di dispersione: σ angolare, distanze entro 2×, mappa e 3D ruotabile", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  let C = await page.evaluate(() => window.__SA.coneData());
+  const sig = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0], d = S.Calc.dispersion(g.shots); return d.sigma / S.calcContext().pxPerMm / 100; });
+  near(C.sigma, sig, 1e-9, "σ in MIL = σ mm / distanza in m");
+  assert.deepStrictEqual(C.dists, [50, 100, 150, 200], "distanze automatiche: ½, 1, 1½, 2 volte");
+  await setField(page, "#coneDists", "100; 300; 150");
+  C = await page.evaluate(() => window.__SA.coneData());
+  assert.deepStrictEqual(C.dists, [100, 150], "oltre 2× esclusa"); assert.deepStrictEqual(C.dropped, [300]);
+  ok2(/Distanze escluse/.test(await page.textContent("#coneBody")), "avviso");
+  const t = await page.textContent("#coneBody"), R95 = 2 * Math.sqrt(-2 * Math.log(0.05)) * sig * 150;
+  ok2(t.includes(R95.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })), "R95 a 150 m proporzionale alla distanza");
+  ok2((await page.evaluate(() => window.__SA.CH.hits.conemap.length)) === 10, "5 fori × 2 distanze");
+  await page.locator("#chCone3d").scrollIntoViewIfNeeded();
+  const b = await page.locator("#chCone3d").boundingBox(), az0 = await page.evaluate(() => window.__SA.VIEWCONE.az);
+  await page.mouse.move(b.x + 100, b.y + 100); await page.mouse.down(); await page.mouse.move(b.x + 180, b.y + 100, { steps: 3 }); await page.mouse.up();
+  ok2(await page.evaluate(() => window.__SA.VIEWCONE.az) !== az0, "trascinando il cono ruota");
+  await page.selectOption("#coneSrc", "load");
+  ok2(await page.evaluate(() => window.__SA.coneData().rows.length) >= 1, "gruppi della munizione");
+});
+
+test("distorsione dell'obiettivo: calibrazione da linee, punti riportati, sessione e annulla", async page => {
+  // foto sintetica con barilotto noto: righe dritte deformate e un «foro» nero in una posizione ideale nota
+  const K1 = -0.08, W0 = 1200, H0 = 900;
+  const dataUrl = await page.evaluate(([K1, W, H]) => { const c = document.createElement("canvas"); c.width = W; c.height = H; const g = c.getContext("2d");
+    const L = { k1: K1, k2: 0, cx: W / 2, cy: H / 2, rn: Math.hypot(W / 2, H / 2) }, D = q => window.__SA.Calc.distortPoint(q, L);
+    g.fillStyle = "#fff"; g.fillRect(0, 0, W, H); g.strokeStyle = "#000"; g.lineWidth = 3;
+    for (const y of [80, 820]) { g.beginPath(); for (let x = 40; x <= W - 40; x += 10) { const p = D({ x, y }); x === 40 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y); } g.stroke(); }
+    for (const x of [80, 1120]) { g.beginPath(); for (let y = 40; y <= H - 40; y += 10) { const p = D({ x, y }); y === 40 ? g.moveTo(p.x, p.y) : g.lineTo(p.x, p.y); } g.stroke(); }
+    return c.toDataURL("image/png"); }, [K1, W0, H0]);
+  await page.setInputFiles("#fImg", { name: "lens.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 1200);
+  const Lp = { k1: K1, k2: 0, cx: W0 / 2, cy: H0 / 2, rn: Math.hypot(W0 / 2, H0 / 2) };
+  const dist = q => { const dx = q.x - Lp.cx, dy = q.y - Lp.cy, r2 = (dx * dx + dy * dy) / (Lp.rn * Lp.rn), f = 1 + Lp.k1 * r2; return { x: Lp.cx + dx * f, y: Lp.cy + dy * f }; };
+  // scala e un foro messi PRIMA della correzione (sulle posizioni distorte)
+  await key(page, "2"); await clickAt(page, dist({ x: 100, y: 820 })); await clickAt(page, dist({ x: 1100, y: 820 }));
+  await setField(page, "#calDist", 1000); await page.selectOption("#calUnit", "mm");
+  await key(page, "4"); await clickAt(page, dist({ x: 1050, y: 150 }));
+  await page.click("#bLens");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.mode), "lens");
+  const lines = [[...Array(7)].map((_, i) => ({ x: 100 + i * 160, y: 80 })), [...Array(7)].map((_, i) => ({ x: 100 + i * 160, y: 820 })), [...Array(6)].map((_, i) => ({ x: 80, y: 60 + i * 150 }))];
+  for (const l of lines) { for (const q of l) await clickAt(page, dist(q)); await page.keyboard.press("Enter"); }
+  ok2(/Linee: 3/.test(await page.textContent("#lensLinesInfo")), "linee contate");
+  await page.click("#bLensFit");
+  await page.waitForFunction(() => window.__SA.state.lens && window.__SA.state.baseKey.startsWith("lens:"), null, { timeout: 30000 });
+  const L = await page.evaluate(() => window.__SA.state.lens);
+  near(L.k1, K1, 0.01, "k1 stimato dai clic"); ok2(/k1 \+ k2|solo k1/.test(await page.textContent("#lensInfo")), "riepilogo della stima");
+  // il foro e la scala sono riportati sulla foto corretta: vicini alle posizioni ideali
+  const st = await page.evaluate(() => ({ s: window.__SA.state.groups[0].shots[0], c: window.__SA.state.calib }));
+  near(Math.hypot(st.s.x - 1050, st.s.y - 150), 0, 3, "foro riportato nella posizione senza distorsione");
+  near(Math.hypot(st.c.p2.x - st.c.p1.x, st.c.p2.y - st.c.p1.y), 1000, 4, "segmento di scala raddrizzato: 1000 px");
+  ok2(/Correzione attiva/.test(await page.textContent("#lensStatus")), "stato");
+  const sess = await page.evaluate(() => window.__SA.buildSession(false));
+  assert.strictEqual(sess.format, 4); near(sess.lens.k1, L.k1, 1e-12, "coefficienti nella sessione");
+  // annulla: si torna alla foto originale e ai punti distorti
+  await page.keyboard.press("Control+z");
+  await page.waitForFunction(() => !window.__SA.state.lens);
+  const s0 = await page.evaluate(() => window.__SA.state.groups[0].shots[0]), d0 = dist({ x: 1050, y: 150 });
+  near(Math.hypot(s0.x - d0.x, s0.y - d0.y), 0, 3, "annulla: foro di nuovo sulla foto originale");
+  // coefficienti scritti a mano e rimozione
+  await setField(page, "#lensK1", K1); await page.click("#bLensApply");
+  await page.waitForFunction(() => window.__SA.state.lens);
+  await page.click("#bLensOff"); await page.waitForFunction(() => !window.__SA.state.lens);
+  near(Math.hypot((await page.evaluate(() => window.__SA.state.groups[0].shots[0])).x - d0.x, 0), 0, 3, "rimossa: punti sulla foto originale");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

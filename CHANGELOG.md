@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.10.0] - 2026-11-18
+### Aggiunto
+- **Etichetta del group size** (ES centro-centro in mm e nell'unità dei click) sopra ogni gruppo, sull'immagine e nella
+  Result Card; interruttore in Parametri di tiro, attiva di default.
+- **Sagome** in «Zone di punteggio»: IPSC e IPSC Mini (A/C/D, fattore di potenza minor/major), IDPA (−0/−1/−3, punti
+  persi, mancato = 5), silhouette metalliche pollo/maiale/tacchino/montone (pieno formato, 1/2, 1/5; ingombro IHMSA),
+  zona vitale (ellisse a misura, taglie indicative 22/27/29 cm). Regola del bordo del foro per IPSC/IDPA, centro del foro
+  per silhouette e zona vitale. Contorni non quotati nelle fonti ricostruiti e dichiarati approssimati (scelta concordata).
+  Sagoma centrata sulla mira, **spostabile e ruotabile** per gruppo (campi numerici o «✥ Sposta col mouse», Shift = ruota).
+- **Probabilità di colpire su una sagoma**: per zona, «a segno» e punti attesi per colpo, con IC (densità normale
+  integrata su un raster delle zone).
+- **Punteggio decimale ISSF** (fino a 10,9), nella tabella, nei totali, nel CSV e nella Result Card.
+- **Correlazioni ricarica e condizioni** (vista grafici): alzo necessario vs carica e temperatura, brandeggio necessario vs
+  vento trasversale, V-spread vs carica e temperatura; regressione con pendenza, IC t, p-value, R²; stessa munizione e
+  distanza, anche con lo storico. **Ladder/OCW**: colonna «Carica» per foro (opzionale) e grafico per foro con media e
+  IC per carica; nessun «nodo» automatico (scelta concordata).
+- **Cono di dispersione** (vista grafici): σ angolare del gruppo attivo o combinata dei gruppi della munizione; mappa
+  d'impatto a distanze scelte (fori e cerchi CEP/R95 alla stessa scala) e cono 3D ruotabile con colpi simulati e piani
+  di sezione; distanze limitate a 2 volte la più lunga tirata (scelta concordata).
+- **Correzione della distorsione dell'obiettivo** (Orientamento e prospettiva): modello radiale di Brown-Conrady (k1, k2),
+  calibrazione cliccando punti lungo linee dritte (metodo «plumb line»), applicata prima di prospettiva e scala con i punti
+  riportati; coefficienti scrivibili a mano e salvabili per fotocamera. Sessioni con distorsione: formato 4.
+- Motore: `decimalScore`, sagome (`ipscShape`, `idpaShape`, `silShape`, `vitalShape`, `shapeZone`, `shapeRaster`,
+  `rasterProbs`, `hitShapeProbability`), `linReg`, `crossWind`, `distortPoint`, `undistortPoint`, `fitLens`.
+### Cambiato
+- Grafici del gruppo nella vista a schermo intero: 3 per riga (2 o 1 su schermi stretti).
+- CSV fori: colonna «Carica del foro (gr)».
+- Help tecnico: sezioni «Sagome e punteggio decimale», «Correlazioni e ladder», «Cono di dispersione», «Distorsione
+  dell'obiettivo»; guida rapida e traduzioni inglesi aggiornate.
+- Test: 541 verifiche del motore, 42 scenari UI.
+
 ## [1.9.0] - 2026-11-17
 ### Aggiunto
 - **Heatmap della densità** (Parametri di tiro, spenta all'avvio, salvata nella sessione): densità della **normale

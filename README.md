@@ -60,6 +60,11 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Densità**: heatmap della normale bivariata sull'immagine e superficie 3D ruotabile; **coordinate polari** dei fori (senza diagnosi automatiche).
 - **Confronto visivo tra rosate**: gruppi della sessione e dello storico sovrapposti o affiancati, sulla mira o sul centro gruppo, in mm o in MOA/MIL.
 - **Reticolo e holdover**: reticoli generici (MIL, MIL-DOT, MOA, passo personalizzato), FFP/SFP, tacca da usare per ogni distanza della dope card tenendo conto dei click sulle torrette; PNG.
+- **Etichetta del group size** accanto a ogni gruppo sull'immagine e nella Result Card.
+- **Sagome**: IPSC (A/C/D, minor/major), IDPA (punti persi), silhouette metalliche (pieno formato, 1/2, 1/5), zona vitale; spostabili e ruotabili sulla foto, usate per punteggio e probabilità di colpire. **Punteggio decimale ISSF** (fino a 10,9).
+- **Correlazioni ricarica/condizioni**: alzo vs carica e temperatura, brandeggio vs vento trasversale, V-spread vs carica e temperatura (regressione con IC della pendenza); **ladder/OCW** con carica per singolo foro, senza «nodi» automatici.
+- **Cono di dispersione**: lo stesso gruppo a distanze diverse (mappa 2D e cono 3D con piani di sezione), angolo costante, entro 2 volte la distanza tirata.
+- **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
@@ -72,7 +77,9 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 
 ### Limiti
 
-- La correzione prospettica richiede un rettangolo reale di dimensioni note nella foto e un bersaglio piano: non corregge la distorsione dell'obiettivo (grandangoli, «effetto barile») né un foglio piegato o ondulato.
+- La correzione prospettica richiede un rettangolo reale di dimensioni note nella foto e un bersaglio piano: non corregge un foglio piegato o ondulato. La distorsione dell'obiettivo (dalla 1.10.0) è corretta solo nella componente radiale (k1, k2), calibrata da linee dritte cliccate dall'utente.
+- Sagome: contorni IPSC Mini, zona C IPSC, collo/spalle/zona −1 IDPA e silhouette metalliche ricostruiti dai disegni (approssimati, dichiarato nell'app); taglie della zona vitale indicative.
+- Cono di dispersione: modello ad angolo costante, limitato a 2 volte la distanza più lunga tirata; niente balistica.
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
 - Il riconoscimento dei flyer usa la distanza dal centro: in gruppi molto allungati può segnalare i fori alle estremità.
@@ -131,11 +138,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (210 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (541 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (37 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (42 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

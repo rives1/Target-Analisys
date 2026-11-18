@@ -404,4 +404,65 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   near(Calc.holdover(1, 0, { unit: "MOA" }).v, 3.43774677, 1e-6, "1 MIL = 3,4377 MOA");
 }
 
+// ---------------- 1.10.0: sagome, decimale, regressione, distorsione ----------------
+{
+  // punteggio decimale ISSF (50 m carabina: 10 ⌀ 10,4, passo 16 sul diametro, foro 5,6 mm)
+  const t50 = Calc.SCORE_TARGETS.issf50r;
+  near(Calc.decimalScore(4.8, 5.6, t50), 10.4, 1e-9, "50 m: 10,4 entro 4,8 mm"); near(Calc.decimalScore(4.81, 5.6, t50), 10.3, 1e-9, "oltre 4,8 mm: 10,3");
+  near(Calc.decimalScore(5.6, 5.6, t50), 10.3, 1e-9, "10,3 entro 5,6 mm"); near(Calc.decimalScore(0, 5.6, t50), 10.9, 1e-9, "centro: 10,9");
+  near(Calc.decimalScore(8.0, 5.6, t50), 10.0, 1e-9, "bordo del 10: 10,0"); near(Calc.decimalScore(8.01, 5.6, t50), 9.9, 1e-9, "appena fuori: 9,9");
+  eq(Calc.decimalScore(500, 5.6, t50), 0, "fuori bersaglio: 0");
+  for (let d = 0; d < 90; d += 0.37) eq(Math.floor(Calc.decimalScore(d, 5.6, t50)), Calc.shotScore(d, 5.6, t50).value, `parte intera = punteggio intero (d ${d.toFixed(2)})`);
+  const tAR = Calc.SCORE_TARGETS.issf10ar;
+  near(Calc.decimalScore(0.25, 4.5, tAR), 10.9, 1e-9, "aria 10 m: 10,9 entro 0,25 mm"); near(Calc.decimalScore(0.26, 4.5, tAR), 10.8, 1e-9, "aria 10 m: 10,8");
+  // IPSC: zone e regola del bordo
+  const I = Calc.ipscShape();
+  near(I.bbox.x1 - I.bbox.x0, 450, 1e-9, "IPSC largo 45 cm"); near(I.bbox.y1 - I.bbox.y0, 570, 1e-9, "IPSC alto 57 cm");
+  eq(Calc.shapeZone(I, { x: 0, y: 0 }), 0, "centro della zona A"); eq(Calc.shapeZone(I, { x: 0, y: -200 }), 1, "sotto la A: C");
+  eq(Calc.shapeZone(I, { x: 0, y: -300 }), 2, "in basso: D"); eq(Calc.shapeZone(I, { x: 0, y: -400 }), -1, "sotto la sagoma: mancato");
+  eq(Calc.shapeZone(I, { x: 78, y: 0 }), 1, "3 mm fuori dalla A: C"); eq(Calc.shapeZone(I, { x: 78, y: 0 }, 4.5), 0, "foro da 9 mm che tocca la linea: A");
+  near(Calc.ipscShape(true).bbox.x1 - Calc.ipscShape(true).bbox.x0, 300, 1e-9, "Mini largo 30 cm");
+  // IDPA: cerchi −0 quotati
+  const P = Calc.idpaShape();
+  eq(P.zones[Calc.shapeZone(P, { x: 0, y: 0 })].label, "−0", "centro del corpo: −0");
+  eq(P.zones[Calc.shapeZone(P, { x: 0, y: 106 })].label, "−1", "appena fuori dal cerchio da 8\": −1");
+  eq(P.zones[Calc.shapeZone(P, { x: 0, y: 12 * 25.4 })].label, "−0", "centro della testa: −0");
+  eq(P.zones[Calc.shapeZone(P, { x: 8 * 25.4, y: -10 * 25.4 })].label, "−3", "bordo del corpo: −3");
+  // silhouette: ingombro IHMSA in scala
+  for (const [a, h, w] of [["chicken", 11.10, 13.25], ["pig", 14.25, 22.25], ["turkey", 23, 19], ["ram", 26.7, 32.25]]) for (const sc of [1, 0.5, 0.2]) {
+    const S = Calc.silShape(a, sc); near(S.bbox.x1 - S.bbox.x0, w * 25.4 * sc, 1e-6, `${a} ${sc}: larghezza`); near(S.bbox.y1 - S.bbox.y0, h * 25.4 * sc, 1e-6, `${a} ${sc}: altezza`);
+    eq(Calc.shapeZone(S, { x: 0, y: 0 }), 0, `${a}: baricentro sulla piastra`); }
+  // integrazione sul raster: cerchio (zona vitale) contro la formula di Rice; ellisse contro Monte Carlo
+  const Vt = Calc.vitalShape(200, 200), RV = Calc.shapeRaster(Vt, 1, 0);
+  near(Calc.rasterProbs(RV, 0, 0, 50)[0], Calc.hitCircle(0, 100, 50), 2e-3, "cerchio centrato"); near(Calc.rasterProbs(RV, 60, -20, 40)[0], Calc.hitCircle(Math.hypot(60, 20), 100, 40), 2e-3, "cerchio decentrato");
+  near(Calc.rasterProbs(Calc.shapeRaster(Calc.vitalShape(300, 300), 0.5, 0), 0, 0, 50)[0], Calc.hitCircle(0, 75, 50), 2e-3, "sagoma riportata a un'altra distanza (×0,5)");
+  near(Calc.rasterProbs(RV, 0, 0, 1e-6)[0], 1, 1e-9, "σ ≈ 0 al centro"); near(Calc.rasterProbs(RV, 500, 0, 1)[0], 0, 1e-12, "lontanissimo: 0");
+  const RI = Calc.shapeRaster(I, 1, 0), PI = Calc.rasterProbs(RI, 0, 0, 80), sum = PI.reduce((a, b) => a + b, 0);
+  ok(PI[0] > PI[1] && sum < 1 && sum > 0.95, "IPSC: A più probabile, totale < 1");
+  near(Calc.rasterProbs(Calc.shapeRaster(I, 1, 0), 0, 0, 1e4).reduce((a, b) => a + b, 0), (45 * 57 - 4 * 15 * 19 / 2) * 100 / (2 * Math.PI * 1e8), 2e-7, "σ enorme: densità × area della sagoma (1995 cm²)");
+  const HP = Calc.hitShapeProbability({ n: 10, s2: 2500, sigma: 50, R: RV, dx: 0, dy: 0 });
+  ok(HP.any.lo <= HP.any.p && HP.any.p <= HP.any.hi && HP.any.hi - HP.any.lo > 0.05, "IC della probabilità sulla sagoma");
+  // regressione lineare: valori noti
+  const R1 = Calc.linReg([1, 2, 3, 4, 5], [2.1, 3.9, 6.2, 7.8, 10.1]);
+  near(R1.b, 1.99, 1e-9, "pendenza"); near(R1.a, 0.05, 1e-9, "intercetta"); near(R1.r2, 0.998, 1e-3, "R²");
+  near(R1.se, Math.sqrt(0.107 / 3 / 10), 1e-6, "errore standard della pendenza (SSE 0,107, 3 g.d.l.)");
+  ok(R1.lo > 0 && R1.p < 0.001, "pendenza significativa");
+  const R0 = Calc.linReg([1, 2, 3, 4], [1, 3, 1, 3]); ok(R0.lo < 0 && R0.hi > 0, "nessuna relazione: IC comprende 0");
+  eq(Calc.linReg([1, 1, 1], [1, 2, 3]), null, "x tutti uguali"); eq(Calc.linReg([1, 2], [1, 2]), null, "meno di 3 punti");
+  near(Calc.crossWind(3.6, "km/h", 3), 1, 1e-12, "3,6 km/h da ore 3 = 1 m/s da destra"); near(Calc.crossWind(5, "m/s", 9), -5, 1e-12, "da ore 9: da sinistra");
+  near(Calc.crossWind(5, "m/s", 12), 0, 1e-12, "da ore 12: nessuna componente trasversale"); near(Calc.crossWind(10, "mph", 3), 4.4704, 1e-9, "mph");
+  // distorsione: andata e ritorno, stima da linee
+  const L = { k1: -0.12, k2: 0.03, cx: 2000, cy: 1500, rn: 2500 };
+  for (const q of [{ x: 0, y: 0 }, { x: 3999, y: 2999 }, { x: 2100, y: 1400 }]) { const r = Calc.undistortPoint(Calc.distortPoint(q, L), L); near(Math.hypot(r.x - q.x, r.y - q.y), 0, 1e-6, "andata e ritorno"); }
+  const d0 = Calc.distortPoint({ x: 4000, y: 1500 }, L); ok(d0.x < 4000, "barilotto: i bordi rientrano");
+  const lines = [];
+  for (const y of [300, 900, 2700]) { const l = []; for (let x = 200; x <= 3800; x += 400) l.push(Calc.distortPoint({ x, y }, L)); lines.push(l); }
+  { const l = []; for (let y = 200; y <= 2800; y += 300) l.push(Calc.distortPoint({ x: 400, y }, L)); lines.push(l); }
+  const F2 = Calc.fitLens(lines, 4000, 3000, true);
+  near(F2.k1, -0.12, 1e-4, "k1 stimato"); near(F2.k2, 0.03, 1e-4, "k2 stimato"); ok(F2.rmsBefore > 10 && F2.rmsAfter < 0.01, "linee di nuovo dritte");
+  const F1 = Calc.fitLens(lines.map(l => l.map(q => Calc.undistortPoint(q, L))), 4000, 3000, false);
+  near(F1.k1, 0, 1e-4, "foto senza distorsione: k1 ≈ 0");
+  near(Calc.lineSS([{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 0 }]), 2 / 3, 1e-12, "minimi quadrati totali");
+}
+
 console.log(`OK — ${passed} verifiche superate`);
