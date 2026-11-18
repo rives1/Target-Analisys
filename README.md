@@ -11,6 +11,8 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 
 ## Come usarla
 
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf).
+
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
 

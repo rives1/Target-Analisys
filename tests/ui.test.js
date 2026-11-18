@@ -1661,6 +1661,7 @@ test("croce estesa della mira, quadrante del vento e profili di ricarica", async
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   // croce: con lo strumento Mira l'immagine cambia rispetto a Scala con il cursore nello stesso punto
+  await key(page, "l");   // lente spenta: la croce deve seguire il cursore anche senza lente (correzione 1.13.1)
   const h = await screenOf(page, { x: 200, y: 400 });
   await key(page, "2"); await page.mouse.move(h.x, h.y); await page.waitForTimeout(80); const a = await canvasSig(page);
   await key(page, "3"); await page.mouse.move(h.x + 1, h.y); await page.mouse.move(h.x, h.y); await page.waitForTimeout(80); const b = await canvasSig(page);

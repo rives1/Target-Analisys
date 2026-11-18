@@ -14,3 +14,9 @@ sessione_*.json
 
 # Appunti personali (non fanno parte del progetto)
 feature-request.md
+
+# manuale: file intermedi della generazione
+docs/manuale/img/
+docs/manuale/heads.json
+docs/manuale/pages.json
+docs/manuale/manuale.pdf

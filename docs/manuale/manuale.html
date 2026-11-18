@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Shoot Analyzer · Manuale d'uso</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  * { box-sizing: border-box; }
+  body { font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; font-size: 10.6pt; line-height: 1.55; color: #1f2933; margin: 0; }
+  h1, h2, h3, h4 { font-family: "Inter", "Segoe UI", Arial, sans-serif; color: #0f2747; line-height: 1.25; }
+  h1.chap { font-size: 22pt; margin: 0 0 4mm; padding-top: 2mm; border-bottom: 2.5pt solid #2563eb; padding-bottom: 2mm; page-break-before: always; break-before: page; }
+  h1.chap .n { color: #2563eb; margin-right: 3mm; }
+  h2 { font-size: 14pt; margin: 7mm 0 2mm; break-after: avoid; }
+  h3 { font-size: 11.5pt; margin: 5mm 0 1.5mm; break-after: avoid; color: #1e3a5f; }
+  p { margin: 0 0 2.6mm; text-align: justify; hyphens: auto; }
+  ul, ol { margin: 0 0 3mm; padding-left: 6mm; } li { margin-bottom: 1mm; }
+  figure { margin: 3mm 0 4mm; text-align: center; break-inside: avoid; }
+  figure img { max-width: 100%; border: 0.6pt solid #cbd5e1; border-radius: 2mm; }
+  figure.w70 img { max-width: 70%; } .chart { display: grid; grid-template-columns: 1fr 46%; gap: 5mm; align-items: start; break-inside: avoid; } .chart figure { margin: 0; } h2 + .chart { margin-top: 1mm; } figure.w55 img { max-width: 55%; } figure.w45 img { max-width: 45%; } figure.w85 img { max-width: 85%; }
+  figcaption { font-size: 8.8pt; color: #52606d; margin-top: 1.5mm; font-style: italic; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; align-items: start; }
+  .two figure { margin-top: 0; }
+  .box { border-radius: 2mm; padding: 3mm 4mm; margin: 3mm 0 4mm; break-inside: avoid; }
+  .box p:last-child, .box ul:last-child { margin-bottom: 0; }
+  .ex { background: #eff6ff; border-left: 3pt solid #2563eb; }
+  .ex::before { content: "Esempio"; display: block; font-weight: 700; color: #1d4ed8; font-size: 9pt; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1mm; }
+  .tip { background: #ecfdf5; border-left: 3pt solid #16a34a; }
+  .tip::before { content: "Consiglio"; display: block; font-weight: 700; color: #15803d; font-size: 9pt; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1mm; }
+  .warn { background: #fff7ed; border-left: 3pt solid #ea580c; }
+  .warn::before { content: "Attenzione"; display: block; font-weight: 700; color: #c2410c; font-size: 9pt; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1mm; }
+  .help { background: #f5f3ff; border-left: 3pt solid #7c3aed; }
+  .help::before { content: "Come aiuta il tiratore"; display: block; font-weight: 700; color: #6d28d9; font-size: 9pt; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1mm; }
+  table { border-collapse: collapse; width: 100%; margin: 2mm 0 4mm; font-size: 9.4pt; break-inside: auto; }
+  th { background: #0f2747; color: #fff; text-align: left; padding: 1.6mm 2mm; font-weight: 600; }
+  td { border-bottom: 0.5pt solid #d9e2ec; padding: 1.5mm 2mm; vertical-align: top; }
+  tr { break-inside: avoid; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  td:first-child { font-weight: 600; color: #0f2747; }
+  kbd { font-family: Consolas, monospace; font-size: 8.8pt; border: 0.6pt solid #9aa5b1; border-bottom-width: 1.4pt; border-radius: 1mm; padding: 0 1.2mm; background: #fff; }
+  .btn { display: inline-block; font-size: 9pt; border: 0.6pt solid #9aa5b1; border-radius: 1.2mm; padding: 0 1.5mm; background: #f1f5f9; white-space: nowrap; }
+  .lead { font-size: 11.5pt; color: #334e68; }
+  .cover { height: 255mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+  .cover .top { margin-top: 30mm; }
+  .cover h1 { font-size: 38pt; margin: 0; color: #0f2747; border: 0; }
+  .cover .sub { font-size: 16pt; color: #2563eb; margin-top: 3mm; }
+  .cover .desc { font-size: 12pt; color: #334e68; margin-top: 10mm; max-width: 140mm; }
+  .cover img { width: 100%; border-radius: 3mm; border: 0.6pt solid #cbd5e1; }
+  .cover .foot { font-size: 9.5pt; color: #52606d; }
+  .toc { page-break-after: always; }
+  .toc h1 { font-size: 22pt; border-bottom: 2.5pt solid #2563eb; padding-bottom: 2mm; }
+  .toc ol { list-style: none; padding: 0; }
+  .toc li { display: flex; align-items: baseline; margin: 0 0 1.6mm; font-size: 10.5pt; }
+  .toc li.sub { padding-left: 8mm; font-size: 9.6pt; color: #334e68; margin-bottom: 0.8mm; }
+  .toc li a { color: inherit; text-decoration: none; }
+  .toc li .dots { flex: 1; border-bottom: 0.8pt dotted #9aa5b1; margin: 0 2mm; transform: translateY(-1mm); }
+  .toc li .pg { min-width: 8mm; text-align: right; }
+  svg text { font-family: "Inter", "Segoe UI", Arial, sans-serif; }
+  .diagram { border: 0.6pt solid #cbd5e1; border-radius: 2mm; background: #fff; padding: 2mm; }
+  .formula { text-align: center; font-size: 11pt; margin: 2mm 0 3mm; color: #0f2747; }
+  .nobreak { break-inside: avoid; }
+  .small { font-size: 9pt; color: #52606d; }
+</style>
+</head>
+<body>
+
+<!-- =============================== COPERTINA =============================== -->
+<section class="cover">
+  <div class="top">
+    <h1>Shoot Analyzer</h1>
+    <div class="sub">Manuale d'uso · versione 1.13</div>
+    <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
+  </div>
+  <img src="imgj/04_panoramica.jpg" alt="">
+  <div class="foot">Shoot Analyzer è un'applicazione gratuita che funziona interamente nel browser, senza internet e senza installazione. Le schermate di questo manuale sono state prese dall'applicazione vera, su un bersaglio di esempio da 100 m con tre gruppi di 5 colpi.</div>
+</section>
+
+<!-- =============================== INDICE =============================== -->
+<section class="toc">
+  <h1>Indice</h1>
+  <ol id="toc"></ol>
+</section>
+
+<!-- =============================== 1 =============================== -->
+<h1 class="chap" id="c1"><span class="n">1</span>Che cos'è e a che cosa serve</h1>
+<p class="lead">Shoot Analyzer prende la foto di un bersaglio già sparato e ti dice, con numeri e disegni, quanto è stretta la rosata, dove è finita rispetto al punto mirato e quanti click devi dare alle torrette per centrare.</p>
+<p>Al poligono di solito si guarda il cartoncino, si misura «a occhio» o con il calibro il gruppo più largo e si annota. Funziona, ma ci sono tre problemi: la misura col calibro è lenta, a occhio si sbaglia facilmente il centro del gruppo e, soprattutto, un solo numero (il group size) racconta poco. Due gruppi da 20 mm possono essere molto diversi: uno con quattro colpi in un buco e uno «scappato», un altro con cinque colpi distribuiti uniformemente.</p>
+<p>Con l'applicazione fai così: fotografi il bersaglio, indichi una distanza nota sulla foto (per esempio due tacche di un righello), clicchi il punto che hai mirato e il centro di ogni foro. Da quel momento l'applicazione calcola tutto da sola e aggiorna i risultati a ogni clic.</p>
+
+<h2>Che cosa ottieni</h2>
+<ul>
+  <li><b>Misure della rosata</b>: group size (la distanza tra i due fori più lontani), raggio medio, dispersione orizzontale e verticale, in millimetri, pollici, MOA e MIL.</li>
+  <li><b>Correzione</b>: di quanti click spostare alzo e brandeggio per portare il centro della rosata sul punto mirato, con l'indicazione di quanto quella correzione è sicura.</li>
+  <li><b>Previsioni</b>: entro quale cerchio cadranno la metà o il 95% dei colpi, quale probabilità hai di colpire un bersaglio di una certa misura, anche a un'altra distanza.</li>
+  <li><b>Grafici</b> che mostrano la forma della rosata, la direzione verso cui «tirano» i colpi, l'andamento nel tempo, il confronto fra cariche di polvere diverse, la tabella delle correzioni per distanza (dope card).</li>
+  <li><b>Archivio e confronti</b>: salvi ogni sessione e la confronti con le precedenti.</li>
+  <li><b>Esportazioni</b>: un'immagine riassuntiva da condividere, un report PDF, file per Excel.</li>
+</ul>
+
+<h2>Come si avvia</h2>
+<p>L'applicazione è un unico file, <b>index.html</b>. Lo apri con un doppio clic: si avvia nel browser (Chrome, Edge, Firefox o Safari) e funziona anche senza connessione. Puoi anche usare la versione pubblicata su internet, che è identica. Nessun dato esce dal tuo computer: foto e misure restano nel browser o nei file che salvi tu.</p>
+
+<div class="box tip"><p>La prima volta prova con una foto qualsiasi di un tuo bersaglio, seguendo il capitolo 4 passo per passo: in cinque minuti avrai i primi risultati e capirai la logica. Le funzioni avanzate puoi scoprirle dopo, con calma.</p></div>
+
+<h2>Precisione e accuratezza: due parole da tenere a mente</h2>
+<p>In tutto il manuale useremo due idee diverse, che spesso si confondono:</p>
+<ul>
+  <li><b>Precisione</b> (o raggruppamento): quanto i colpi stanno vicini <i>tra loro</i>. Dipende dall'arma, dalle munizioni e da come tiri. Si migliora con il lavoro su carica, tecnica, appoggio.</li>
+  <li><b>Accuratezza</b> (o centratura): quanto il <i>centro</i> della rosata è vicino al punto mirato. Si sistema semplicemente con i click delle torrette.</li>
+</ul>
+<figure class="w85">
+<svg class="diagram" viewBox="0 0 640 190" width="100%">
+  <g font-size="12" text-anchor="middle">
+  <g transform="translate(80,85)"><circle r="55" fill="#f1f5f9" stroke="#334e68"/><circle r="35" fill="none" stroke="#334e68"/><circle r="15" fill="#1f2933"/>
+    <g fill="#2563eb"><circle cx="2" cy="-3" r="4"/><circle cx="-4" cy="3" r="4"/><circle cx="5" cy="4" r="4"/><circle cx="-2" cy="-6" r="4"/><circle cx="1" cy="1" r="4"/></g>
+    <text y="80" fill="#0f2747" font-weight="700">Preciso e accurato</text><text y="96" fill="#52606d">l'obiettivo</text></g>
+  <g transform="translate(240,85)"><circle r="55" fill="#f1f5f9" stroke="#334e68"/><circle r="35" fill="none" stroke="#334e68"/><circle r="15" fill="#1f2933"/>
+    <g fill="#2563eb"><circle cx="30" cy="-28" r="4"/><circle cx="25" cy="-24" r="4"/><circle cx="33" cy="-22" r="4"/><circle cx="28" cy="-31" r="4"/><circle cx="31" cy="-26" r="4"/></g>
+    <text y="80" fill="#0f2747" font-weight="700">Preciso, non accurato</text><text y="96" fill="#52606d">bastano i click</text></g>
+  <g transform="translate(400,85)"><circle r="55" fill="#f1f5f9" stroke="#334e68"/><circle r="35" fill="none" stroke="#334e68"/><circle r="15" fill="#1f2933"/>
+    <g fill="#2563eb"><circle cx="-30" cy="10" r="4"/><circle cx="25" cy="-24" r="4"/><circle cx="5" cy="35" r="4"/><circle cx="-12" cy="-30" r="4"/><circle cx="22" cy="18" r="4"/></g>
+    <text y="80" fill="#0f2747" font-weight="700">Accurato, non preciso</text><text y="96" fill="#52606d">serve lavorare sul gruppo</text></g>
+  <g transform="translate(560,85)"><circle r="55" fill="#f1f5f9" stroke="#334e68"/><circle r="35" fill="none" stroke="#334e68"/><circle r="15" fill="#1f2933"/>
+    <g fill="#2563eb"><circle cx="40" cy="-10" r="4"/><circle cx="10" cy="-40" r="4"/><circle cx="35" cy="-35" r="4"/><circle cx="18" cy="-12" r="4"/><circle cx="45" cy="-30" r="4"/></g>
+    <text y="80" fill="#0f2747" font-weight="700">Né l'uno né l'altro</text><text y="96" fill="#52606d">prima il gruppo, poi i click</text></g>
+  </g>
+</svg>
+<figcaption>La precisione si legge dalle misure di dispersione (group size, raggio medio, CEP); l'accuratezza dallo scostamento del centro gruppo e dalla correzione in click.</figcaption>
+</figure>
+<p>L'applicazione misura separatamente le due cose. Questo è importante: un gruppo «lontano dal centro» non è un gruppo cattivo, è solo un gruppo che chiede qualche click.</p>
+
+<!-- =============================== 2 =============================== -->
+<h1 class="chap" id="c2"><span class="n">2</span>Prima di iniziare: la foto giusta</h1>
+<p class="lead">L'applicazione misura sulla foto: una buona foto vale più di qualsiasi calcolo. Bastano pochi accorgimenti.</p>
+<ol>
+  <li><b>Fotografa dritto.</b> Il telefono deve essere parallelo al foglio, sopra il centro del bersaglio. Una foto di sbieco «schiaccia» il bersaglio in una direzione e le misure si deformano. Se proprio non puoi, l'applicazione ha una correzione della prospettiva (capitolo 13).</li>
+  <li><b>Includi un riferimento di lunghezza nota.</b> Un righello appoggiato sul foglio, la griglia stampata del bersaglio, il bordo di un foglio A4 (210 × 297 mm). Senza un riferimento l'applicazione non può sapere quanti millimetri vale un pixel.</li>
+  <li><b>Riempi l'inquadratura</b> con la parte che ti serve, ma senza tagliare il riferimento. Più pixel ha ogni foro, più precisa è la marcatura del suo centro: un foro dovrebbe misurare almeno 8–10 pixel di diametro nella foto.</li>
+  <li><b>Luce uniforme, niente ombre nette</b> sui fori. Evita il flash diretto su carta lucida.</li>
+  <li><b>Foglio piano.</b> Un cartoncino piegato o ondulato deforma le distanze; appoggialo su un tavolo o fissalo bene al pannello.</li>
+  <li><b>Usa lo zoom ottico, non avvicinarti troppo</b> con un grandangolo: i bordi della foto si curvano (distorsione dell'obiettivo). Anche questa si può correggere, ma è meglio evitarla.</li>
+</ol>
+<div class="box ex"><p>Un bersaglio da 100 m largo 32 cm fotografato con un telefono a 12 megapixel (4000 pixel di larghezza) occupando tutta la foto dà circa 12 pixel per millimetro: un foro di .308 (7,8 mm) misura quasi 100 pixel. Ottimo. Se invece fotografi il bersaglio da lontano e occupa un quarto della foto, il foro misura 25 pixel: ancora buono. Sotto i 10 pixel l'applicazione ti avvisa che la risoluzione è bassa.</p></div>
+<div class="box tip"><p>Se tiri spesso sullo stesso tipo di bersaglio, stampaci sopra (o incollaci) un piccolo righello o due crocette a distanza nota, per esempio 100 mm: la calibrazione diventa un gesto di due secondi e sempre ugualmente precisa.</p></div>
+
+<!-- =============================== 3 =============================== -->
+<h1 class="chap" id="c3"><span class="n">3</span>Lo schermo dell'applicazione</h1>
+<p>Lo schermo è diviso in due parti. A sinistra c'è la <b>foto</b>, con sopra la barra degli strumenti; a destra il <b>pannello</b> con tutte le sezioni (si allarga o si stringe trascinando la linea verticale che lo separa dalla foto).</p>
+<figure><img src="imgj/04_panoramica.jpg"><figcaption>La schermata principale con tre gruppi già misurati. In alto a sinistra la barra degli strumenti, in alto a destra della foto il pannello dei valori in tempo reale, a destra il pannello con le sezioni.</figcaption></figure>
+<h2>La barra degli strumenti</h2>
+<table>
+<tr><th style="width:28%">Pulsante</th><th>A che cosa serve</th></tr>
+<tr><td>Carica foto</td><td>Apre la foto del bersaglio (JPG, PNG, WEBP, BMP). Puoi anche trascinare il file sulla finestra.</td></tr>
+<tr><td>Mano <kbd>1</kbd></td><td>Sposta la foto trascinandola; la rotella del mouse ingrandisce. Anche in questa modalità puoi trascinare i punti già inseriti.</td></tr>
+<tr><td>Scala <kbd>2</kbd></td><td>Clicchi i due estremi di una distanza nota (calibrazione, capitolo 5).</td></tr>
+<tr><td>Mira <kbd>3</kbd></td><td>Clicchi il punto che hai mirato. Il cursore mostra una croce che si allunga fino ai bordi della foto, comoda per allinearti alle righe del bersaglio.</td></tr>
+<tr><td>Foro <kbd>4</kbd></td><td>Clicchi il centro di ciascun foro. Il cerchio tratteggiato sul cursore è grande quanto il calibro: ti aiuta a centrare il foro e a verificare che la scala sia giusta.</td></tr>
+<tr><td>Raddrizza <kbd>5</kbd> · Prospettiva <kbd>6</kbd></td><td>Raddrizzano una foto storta o di sbieco (capitolo 13).</td></tr>
+<tr><td>Undo / Redo</td><td>Annulla e ripristina (<kbd>Ctrl</kbd>+<kbd>Z</kbd>, <kbd>Ctrl</kbd>+<kbd>Y</kbd>). Si torna indietro di molti passi.</td></tr>
+<tr><td>Elimina ultimo · Tutto</td><td>Toglie l'ultimo foro (o la mira) del gruppo attivo; «Tutto» cancella tutti i punti, dopo una conferma.</td></tr>
+<tr><td>Adatta <kbd>F</kbd></td><td>Rimette la foto intera nella finestra.</td></tr>
+<tr><td>Lente <kbd>L</kbd> · ×4</td><td>Una lente di ingrandimento segue il cursore mentre clicchi i punti: indispensabile per centrare bene i fori. Il menu sceglie l'ingrandimento (da ×2 a ×12).</td></tr>
+<tr><td>Griglia <kbd>G</kbd></td><td>Disegna una griglia in MIL o MOA centrata sulla mira (capitolo 10).</td></tr>
+<tr><td>Snap <kbd>M</kbd></td><td>Quando clicchi vicino a un foro, il punto si aggancia da solo al centro della macchia scura del foro. Tieni premuto <kbd>Alt</kbd> per cliccare senza aggancio.</td></tr>
+</table>
+<h2>Il pannello a destra</h2>
+<p>Le sezioni del pannello si aprono e si chiudono con un clic sul titolo. All'avvio è aperta solo «Calibrazione scala»: le altre si aprono quando servono. In ordine:</p>
+<table>
+<tr><th style="width:32%">Sezione</th><th>Contenuto</th></tr>
+<tr><td>Orientamento e prospettiva</td><td>Rotazione della foto, ritaglio, distorsione dell'obiettivo, correzione della prospettiva.</td></tr>
+<tr><td>Calibrazione scala</td><td>La distanza nota e lo stato della calibrazione, con il semaforo di qualità.</td></tr>
+<tr><td>Parametri di tiro</td><td>Distanza, calibro, valore del click, che cosa disegnare sulla foto.</td></tr>
+<tr><td>Gruppi</td><td>Le rosate presenti sulla foto; quella evidenziata è il «gruppo attivo».</td></tr>
+<tr><td>Ricarica e condizioni</td><td>Dati della munizione e del meteo del gruppo attivo, profili di ricarica, quadrante del vento.</td></tr>
+<tr><td>Risultati</td><td>Le misure di ogni gruppo, in forma di schede («card»).</td></tr>
+<tr><td>Zone di punteggio</td><td>Anelli di bersagli ISSF, sagome IPSC/IDPA/silhouette, punteggio di ogni foro.</td></tr>
+<tr><td>Probabilità di colpire</td><td>Quanti colpi su 100 entrerebbero in un bersaglio di una certa misura.</td></tr>
+<tr><td>Punti del gruppo attivo</td><td>La tabella di tutti i punti: coordinate, distanze, click, esclusione dei colpi.</td></tr>
+<tr><td>Dati</td><td>Salvare, aprire, esportare, archivio delle sessioni, bersaglio di autoverifica.</td></tr>
+<tr><td>Guida rapida e scorciatoie</td><td>Un promemoria sempre a portata di mano.</td></tr>
+</table>
+<p>In fondo al pannello il pulsante <span class="btn">📊 Grafici e confronto tra gruppi</span> (tasto <kbd>A</kbd>) apre la vista dei grafici a schermo intero (capitolo 12). In alto ci sono la lingua (italiano o inglese), il tema chiaro o scuro, la densità delle informazioni e il pulsante ⚙ per riordinare le sezioni (capitolo 15).</p>
+
+<!-- =============================== 4 =============================== -->
+<h1 class="chap" id="c4"><span class="n">4</span>La prima analisi in sei passi</h1>
+<p class="lead">Vediamo tutto il percorso con il bersaglio di esempio: un foglio da 100 m con tre visuel, tre gruppi da 5 colpi di .308 Winchester con tre cariche diverse.</p>
+
+<h2>Passo 1 · Carica la foto</h2>
+<p>Premi <span class="btn">📂 Carica foto</span> (oppure <kbd>Ctrl</kbd>+<kbd>O</kbd>, oppure trascina il file sulla finestra). La foto compare intera; l'applicazione passa da sola allo strumento «Scala», perché la prima cosa da fare è dirle quanto è grande la foto nella realtà.</p>
+<figure class="w70"><img src="imgj/01_foto_caricata.jpg"><figcaption>La foto appena caricata. In basso a sinistra un suggerimento dice sempre che cosa fare in quel momento.</figcaption></figure>
+
+<h2>Passo 2 · Calibra la scala</h2>
+<p>Con lo strumento <b>Scala</b> clicca due punti di cui conosci la distanza reale: qui l'inizio del righello (0) e la tacca dei 180 mm. Scrivi poi la distanza nel campo «Distanza nota tra i 2 punti» e scegli l'unità (mm, cm o pollici). Una linea verde tratteggiata con la misura conferma la calibrazione.</p>
+<div class="two">
+<figure><img src="imgj/02_scala_primo_punto.jpg"><figcaption>Il primo punto è sullo zero del righello; il secondo si clicca sulla tacca scelta.</figcaption></figure>
+<figure><img src="imgj/03_sezione_scala.jpg"><figcaption>La sezione «Calibrazione scala» con il semaforo di qualità (verde) e i dettagli.</figcaption></figure>
+</div>
+
+<h2>Passo 3 · Compila i parametri di tiro</h2>
+<p>Apri «Parametri di tiro» e inserisci almeno: <b>distanza</b> (100 m), <b>calibro</b> (scegli «.308 Win» dal menu: imposta da solo 7,82 mm) e <b>valore del click</b> della tua ottica (0,1 MIL, oppure 1/4 di MOA). Senza distanza e click l'applicazione misura comunque la rosata, ma non può darti la correzione.</p>
+
+<h2>Passo 4 · Clicca il punto di mira</h2>
+<p>Premi <kbd>3</kbd> (strumento <b>Mira</b>) e clicca il punto che hai mirato, di solito il centro del visuel. Le linee tratteggiate che partono dal cursore arrivano fino ai bordi della foto: allineale alle righe o agli anelli del bersaglio per trovare il centro con precisione.</p>
+<figure class="w55"><img src="imgj/05_mira_croce.jpg"><figcaption>Lo strumento Mira con la croce estesa del cursore: le linee orizzontale e verticale toccano le tacche del visuel.</figcaption></figure>
+
+<h2>Passo 5 · Clicca i fori</h2>
+<p>Premi <kbd>4</kbd> (strumento <b>Foro</b>) e clicca il <b>centro</b> di ogni foro. La lente ti aiuta a essere preciso; con lo Snap attivo il punto si aggancia da solo al centro della macchia del foro. A ogni clic i risultati si aggiornano e il pannello in alto a destra della foto mostra subito numero di fori, group size e raggio medio.</p>
+<div class="box tip"><p>Se due colpi sono finiti nello stesso foro (o quasi), clicca il secondo tenendo premuto <kbd>Alt</kbd>: così l'applicazione non pensa che tu voglia spostare il punto già esistente. Un foro sbagliato si sposta trascinandolo, si cancella con il tasto destro del mouse.</p></div>
+
+<h2>Passo 6 · Leggi i risultati</h2>
+<p>La sezione «Risultati» mostra le schede del gruppo: la dimensione della rosata, la sua dispersione, la correzione in click. Nell'esempio il gruppo 1 è largo 17,7 mm (0,18 MIL) e la correzione dice <b>1 click GIÙ e 2 click SINISTRA</b>. Il capitolo 8 spiega ogni numero.</p>
+<figure class="w70"><img src="imgj/14_risultati.jpg"><figcaption>Le schede dei risultati del gruppo 1.</figcaption></figure>
+<p>Per un secondo gruppo sulla stessa foto premi <span class="btn">＋ Nuovo gruppo</span> nella sezione «Gruppi»: ha un colore diverso, il suo punto di mira e i suoi fori. Infine salva con <span class="btn">🗜 Salva sessione ZIP</span> nella sezione «Dati»: un unico file con foto e misure che potrai riaprire quando vuoi.</p>
+
+<!-- =============================== 5 =============================== -->
+<h1 class="chap" id="c5"><span class="n">5</span>La calibrazione della scala</h1>
+<p class="lead">La scala dice all'applicazione quanti pixel della foto corrispondono a un millimetro reale. Tutte le misure in millimetri, MOA e MIL dipendono da lei: è il passaggio più importante.</p>
+<h2>Come scegliere i due punti</h2>
+<ul>
+  <li><b>Il più lontani possibile.</b> Ogni clic ha un'incertezza di circa un pixel. Su un segmento lungo 100 pixel un pixel è l'1%, su 1000 pixel è lo 0,1%. Usa la lunghezza nota più lunga che hai nella foto.</li>
+  <li><b>Sullo stesso piano del bersaglio.</b> Un righello appoggiato su uno spessore o un riferimento lontano dal foglio darebbe una scala diversa.</li>
+  <li><b>Su tacche nette</b>: lo zero e una tacca grande del righello, gli angoli di un quadrato della griglia, i bordi di un foglio.</li>
+</ul>
+<div class="box ex"><p>Calibri su un segmento di 150 pixel: l'incertezza è circa ±0,9%. Un gruppo da 20 mm sarà misurato tra 19,8 e 20,2 mm solo per colpa della scala. Se usi un segmento di 900 pixel l'incertezza scende a ±0,16% e lo stesso gruppo è misurato al centesimo di millimetro.</p></div>
+
+<h2>Il semaforo della qualità</h2>
+<figure class="w55"><img src="imgj/03_sezione_scala.jpg"><figcaption>Lo stato della calibrazione: semaforo, scala in pixel per millimetro, incertezza e inquadratura reale.</figcaption></figure>
+<table>
+<tr><th style="width:18%">Colore</th><th>Che cosa significa</th></tr>
+<tr><td style="color:#15803d">Verde</td><td>Incertezza della scala entro ±0,5%: puoi fidarti delle misure.</td></tr>
+<tr><td style="color:#a16207">Giallo</td><td>Incertezza fino a ±1%, oppure i fori sono piccoli nella foto (meno di 8 pixel). Le misure vanno bene per il tiro sportivo, ma potresti fare meglio.</td></tr>
+<tr><td style="color:#b91c1c">Rosso</td><td>Incertezza oltre l'1%, oppure un controllo segnala un probabile errore (vedi sotto). Ricontrolla prima di fidarti dei numeri.</td></tr>
+</table>
+<p>Sotto il semaforo l'applicazione mostra anche l'<b>inquadratura reale</b> della foto (per esempio «32 cm × 24 cm»). Serve a scoprire gli errori di unità: se scrivi 180 pensando ai millimetri ma l'unità è «cm», la foto risulterebbe larga più di 3 metri e l'applicazione ti avvisa.</p>
+
+<h2>Due controlli automatici</h2>
+<p><b>Diametro dei fori.</b> Se hai inserito il calibro, l'applicazione misura nella foto il diametro dei fori e lo confronta con il calibro. Nella carta i fori sono di solito un po' più piccoli della palla, quindi un rapporto tra il 70% e il 130% è normale; fuori da questo intervallo è probabile che la scala, la sua unità o il calibro siano sbagliati.</p>
+<p>Questo controllo ha un limite: due o più fori che si toccano diventano nella foto un'unica macchia, più grande di un foro. Con gruppi molto stretti (proprio i più belli!) l'avviso può quindi scattare anche se la scala è giusta. In quel caso verifica la scala con il riferimento di controllo: se torna, puoi ignorare l'avviso sul diametro.</p>
+<p><b>Riferimento di controllo.</b> Il pulsante <span class="btn">📏 Riferimento di controllo</span> ti fa cliccare un'altra lunghezza nota (per esempio il diametro di un anello). L'applicazione la misura con la scala attuale e ti dice se torna. È un ottimo modo per verificare una calibrazione importante, per esempio prima di una gara.</p>
+<div class="box warn"><p>Senza calibrazione l'applicazione lavora in pixel: vedi la forma del gruppo e i grafici, ma nessuna misura in millimetri, MOA o MIL e nessuna correzione in click.</p></div>
+
+<!-- =============================== 6 =============================== -->
+<h1 class="chap" id="c6"><span class="n">6</span>I parametri di tiro</h1>
+<p class="lead">Pochi campi, ma ognuno cambia qualcosa di preciso. Qui vediamo che cosa e perché.</p>
+<figure class="w55"><img src="imgj/11_parametri.jpg"><figcaption>La sezione «Parametri di tiro».</figcaption></figure>
+
+<h3>Distanza di tiro</h3>
+<p>Ogni gruppo ha la sua distanza (un nuovo gruppo parte da quella del gruppo attivo). La distanza <b>non cambia le misure in millimetri</b>, ma serve per tutto ciò che è un angolo: MOA, MIL e quindi i click. Lo stesso gruppo da 10 mm vale 0,1 MIL a 100 m e 0,05 MIL a 200 m.</p>
+<div class="box ex"><p>Un MIL è un millimetro ogni metro di distanza: a 100 m vale 100 mm (10 cm), a 300 m 300 mm. Un MOA vale circa 29 mm a 100 m (circa 1 pollice a 100 yard). Se hai un'ottica da 0,1 MIL per click, a 100 m ogni click sposta il colpo di 10 mm; a 50 m di 5 mm.</p></div>
+
+<h3>Calibro</h3>
+<p>È il diametro della <b>palla</b> (non dell'anima della canna): il menu ha i calibri più comuni, oppure scrivi il valore. Il calibro serve a:</p>
+<ul>
+  <li>disegnare il cerchio del foro sulla foto e sul cursore (se il cerchio è molto più grande o più piccolo del foro vero, la scala è sbagliata);</li>
+  <li>calcolare il group size <b>bordo-bordo</b> (= centro-centro + calibro);</li>
+  <li>il punteggio (un colpo che tocca l'anello vale quell'anello) e lo snap.</li>
+</ul>
+
+<h3>Valore click mirino</h3>
+<p>Quanto si sposta il colpo per ogni click della torretta: 0,1 MIL, 1/4 MOA, 1/8 MOA e così via. Serve solo per tradurre la correzione in click. Sbagliarlo significa dare il doppio o la metà dei click necessari: controllalo sul manuale della tua ottica.</p>
+
+<h3>Marcatura ± px</h3>
+<p>Quanto pensi di sbagliare cliccando il centro di un foro: 1,5 pixel a mano e 0,5 pixel con lo snap sono valori ragionevoli. Servono solo per l'<b>incertezza di misura</b> (capitolo 8): non cambiano le misure.</p>
+
+<h3>Che cosa disegnare sulla foto</h3>
+<p>Le caselle «Ellisse di dispersione», «Convex hull», «Etichetta del group size», «Freccia di correzione», «Pannello valori in tempo reale», «Heatmap della densità» e «Griglia angolare» accendono e spengono i disegni sulla foto (capitolo 10). Non cambiano nessun numero.</p>
+
+<h3>Intervalli di confidenza</h3>
+<p>Scegli 90, 95 o 99%. Più alto è il livello, più larghi sono gli intervalli: «sono più sicuro, ma dico una cosa meno precisa». Il 95% è lo standard.</p>
+
+<div class="box tip"><p>Distanza, calibro e valore click si dimenticano facilmente quando si cambia arma o poligono. Se un risultato sembra strano (correzioni enormi, cerchio del foro grande come mezzo visuel), controlla per prima cosa questi tre campi.</p></div>
+
+<!-- =============================== 7 =============================== -->
+<h1 class="chap" id="c7"><span class="n">7</span>Gruppi, ricarica e condizioni</h1>
+<h2>Più gruppi sulla stessa foto</h2>
+<p>Un gruppo è una rosata: il suo punto di mira e i suoi fori. Sulla stessa foto puoi averne quanti vuoi (tre cariche diverse, tre distanze, prima e dopo una correzione). Il <b>gruppo attivo</b> è quello evidenziato nella sezione «Gruppi»: i nuovi punti vanno a lui. Cliccando un gruppo nell'elenco diventa attivo; la ✕ lo elimina; il nome si modifica direttamente.</p>
+<figure class="w55"><img src="imgj/12_gruppi.jpg"><figcaption>Tre gruppi con i loro colori. Quello con il bordo è il gruppo attivo.</figcaption></figure>
+
+<h2>Ricarica e condizioni</h2>
+<p>Per ogni gruppo puoi annotare data, bossolo, polvere e carica, palla, salto dalle righe (la distanza della palla dall'inizio della rigatura), innesco, meteo, temperatura, umidità, pressione, vento, colpi sparati, colpi di scaldacanna e note. Non sono obbligatori, ma valgono oro: finiscono nella Result Card, nel report e nei CSV, e permettono i grafici «Precisione e ricarica», «Correlazioni» e la dope card filtrata per munizione.</p>
+<figure class="w55"><img src="imgj/13_ricarica.jpg"><figcaption>La sezione «Ricarica e condizioni» con il profilo di ricarica, i dati della munizione e il quadrante del vento.</figcaption></figure>
+<p>Quando crei un nuovo gruppo, copia tutti i dati del gruppo attivo: se la sessione è la stessa, devi correggere solo ciò che cambia (per esempio la carica).</p>
+
+<h2>I profili di ricarica</h2>
+<p>Se usi sempre le stesse cartucce non serve riscrivere tutto ogni volta. Compila bossolo, polvere, carica, palla, salto e innesco, scegli il calibro e premi <span class="btn">💾 Salva profilo</span>. Se non scrivi un nome, l'applicazione lo compone da sola, per esempio «.308 Win · Sierra MatchKing 168 gr · Vihtavuori N140 44,5 gr». La prossima volta sceglilo dal menu: i dati vengono copiati nel gruppo attivo e il calibro impostato. Data, meteo, vento e note non fanno parte del profilo, perché cambiano ogni giorno.</p>
+<ul>
+  <li>Un profilo con lo stesso nome viene <b>aggiornato</b>.</li>
+  <li>Il menu riconosce il profilo in uso: se cambi un dato, torna su «— scegli un profilo —».</li>
+  <li><span class="btn">⇩ Esporta profili</span> e <span class="btn">⇧ Importa profili</span> li portano su un altro computer: i profili sono salvati nel browser, non nella sessione.</li>
+</ul>
+
+<h2>Il quadrante del vento</h2>
+<p>Il vento si indica come le ore di un orologio, guardando verso il bersaglio: <b>ore 12</b> è vento che arriva dal bersaglio verso di te (contro), <b>ore 3</b> da destra, <b>ore 6</b> alle spalle (a favore), <b>ore 9</b> da sinistra. Clicca l'ora sul quadrante; un secondo clic la toglie. Accanto vedi subito come si divide il vento:</p>
+<figure class="w85">
+<svg class="diagram" viewBox="0 0 640 210" width="100%">
+  <g transform="translate(120,105)">
+    <circle r="80" fill="#f1f5f9" stroke="#9aa5b1"/>
+    <g font-size="12" text-anchor="middle" fill="#334e68"><text y="-86">12</text><text x="92" y="4">3</text><text y="98">6</text><text x="-92" y="4">9</text><text x="49" y="-72">1</text><text x="80" y="-40">2</text></g>
+    <path d="M0 -14 L-9 8 L9 8 Z" fill="#1f2933"/><text y="26" font-size="10" text-anchor="middle" fill="#52606d">tiratore</text>
+    <line x1="69" y1="-40" x2="12" y2="-7" stroke="#0284c7" stroke-width="4"/><path d="M8 -5 L22 -6 L16 -16 Z" fill="#0284c7"/>
+    <text x="0" y="-48" font-size="10" text-anchor="middle" fill="#52606d">↑ bersaglio</text>
+  </g>
+  <g transform="translate(320,40)" font-size="13" fill="#1f2933">
+    <text font-weight="700" fill="#0f2747">Vento 4 m/s da ore 2</text>
+    <text y="30">Laterale: 4 × sin 60° = <tspan font-weight="700">3,5 m/s da destra</tspan></text>
+    <text y="52" fill="#52606d" font-size="11.5">→ è questo che sposta il colpo a sinistra</text>
+    <text y="84">Frontale: 4 × cos 60° = <tspan font-weight="700">2,0 m/s contro</tspan></text>
+    <text y="106" fill="#52606d" font-size="11.5">→ rallenta appena la palla, effetto piccolo</text>
+    <text y="140" font-size="11.5" fill="#52606d">Ore 3 e 9: tutto laterale · ore 12 e 6: tutto frontale</text>
+  </g>
+</svg>
+<figcaption>Come il quadrante scompone il vento. Non serve fare il conto: l'applicazione lo mostra accanto al quadrante e nella scheda «Vento».</figcaption>
+</figure>
+<div class="box help"><p>Annotare vento e temperatura gruppo per gruppo permette poi, nei grafici «Correlazioni», di vedere quanto il vento laterale ha spostato i tuoi colpi e quanto la temperatura cambia l'alzo necessario: informazioni che valgono per la prossima gara.</p></div>
+<div class="box warn"><p>L'applicazione non calcola la deriva teorica del vento: servirebbero coefficiente balistico, velocità e condizioni atmosferiche. La scheda «Vento» mostra il vento che hai inserito, le sue componenti e lo scostamento orizzontale <i>misurato</i> del gruppo, che comprende anche la taratura dell'ottica.</p></div>
+
+<!-- =============================== 8 =============================== -->
+<h1 class="chap" id="c8"><span class="n">8</span>I risultati, spiegati semplice</h1>
+<p class="lead">Ogni gruppo ha le sue schede. Ognuna mostra in grande il valore principale; con «Dettagli» si aprono i valori secondari (e restano aperti finché non li chiudi).</p>
+<figure class="w70"><img src="imgj/15_risultati_dettagli.jpg"><figcaption>Le schede del gruppo 1 con i dettagli aperti. I termini sottolineati, se cliccati, aprono la spiegazione nell'help tecnico.</figcaption></figure>
+
+<h2>Le misure della rosata</h2>
+<figure>
+<svg class="diagram" viewBox="0 0 640 270" width="100%">
+  <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#dc2626"/></marker></defs>
+  <g transform="translate(170,135)">
+    <circle r="110" fill="none" stroke="#9aa5b1" stroke-dasharray="3 4"/><text x="0" y="-115" font-size="11" text-anchor="middle" fill="#52606d">R95: qui dentro 95 colpi su 100</text>
+    <circle r="52" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="7 4"/><text x="58" y="-42" font-size="11" fill="#7c3aed">CEP: metà dei colpi</text>
+    <circle r="44" fill="none" stroke="#16a34a" stroke-width="1.5"/><text x="-110" y="62" font-size="11" fill="#16a34a">raggio medio</text>
+    <g fill="#2563eb" stroke="#fff" stroke-width="1.5"><circle cx="-62" cy="-28" r="9"/><circle cx="40" cy="-30" r="9"/><circle cx="22" cy="38" r="9"/><circle cx="-18" cy="22" r="9"/><circle cx="62" cy="10" r="9"/></g>
+    <line x1="-62" y1="-28" x2="62" y2="10" stroke="#dc2626" stroke-width="2" marker-end="url(#ar)"/>
+    <text x="-20" y="-40" font-size="11.5" fill="#dc2626" font-weight="700">group size (ES)</text>
+    <path d="M-7 -7 L7 7 M7 -7 L-7 7" stroke="#0f2747" stroke-width="2.5"/><text x="8" y="-6" font-size="10" fill="#0f2747">centro gruppo</text>
+  </g>
+  <g transform="translate(360,30)" font-size="12" fill="#1f2933">
+    <text font-weight="700" fill="#dc2626">Group size (ES)</text><text y="17">distanza tra i due fori più lontani, centro-centro</text>
+    <text y="45" font-weight="700" fill="#16a34a">Raggio medio</text><text y="62">distanza media dei fori dal centro del gruppo</text>
+    <text y="90" font-weight="700" fill="#7c3aed">CEP</text><text y="107">cerchio che conterrà metà dei prossimi colpi</text>
+    <text y="135" font-weight="700" fill="#52606d">R95 · R99</text><text y="152">cerchi per 95 e 99 colpi su 100</text>
+    <text y="180" font-weight="700" fill="#0f2747">H-spread · V-spread</text><text y="197">larghezza e altezza del gruppo</text>
+    <text y="225" font-size="11" fill="#52606d">Tutti i cerchi sono centrati sul centro gruppo,</text><text y="240" font-size="11" fill="#52606d">non sul punto mirato.</text>
+  </g>
+</svg>
+<figcaption>Che cosa misurano i numeri principali.</figcaption>
+</figure>
+
+<h3>Group size (c-c)</h3>
+<p>È la misura «classica»: la distanza tra i centri dei due fori più lontani (in inglese <i>Extreme Spread</i>, ES). La scheda la dà in millimetri, pollici, MOA e MIL. Nel dettaglio trovi anche il <b>bordo-bordo esterno</b>, cioè quanto misureresti col calibro dall'esterno dei due fori (centro-centro + calibro).</p>
+<p>Pregio: è facile e tutti la capiscono. Difetto: dipende da <b>due soli colpi</b> e cresce con il numero di colpi. Un gruppo da 3 colpi sembra sempre migliore di uno da 10 della stessa arma. Per questo la scheda mostra l'<b>ES equivalente</b>: quanto sarebbe largo in media lo stesso gruppo se avessi sparato 5 o 10 colpi.</p>
+<div class="box ex"><p>Il gruppo 1 dell'esempio, 5 colpi, ha ES 17,7 mm. L'applicazione indica «ES equivalente 10 colpi: 22,0 mm». Vuol dire: se domani spari 10 colpi con la stessa arma e la stessa munizione, aspettati un gruppo intorno ai 22 mm, non ai 17,7. Non è un peggioramento: è la statistica.</p></div>
+
+<h3>Raggio medio</h3>
+<p>La distanza media dei fori dal centro del gruppo. Usa <b>tutti</b> i colpi, non solo i due peggiori, quindi è più stabile del group size: se vuoi confrontare due cariche o due giornate, guarda prima questo numero.</p>
+
+<h3>H-spread, V-spread e FOM</h3>
+<p>La larghezza (orizzontale) e l'altezza (verticale) del gruppo, e la loro media (FOM, <i>Figure of Merit</i>). Se il V-spread è molto più grande dell'H-spread il gruppo è «verticale»: con una carabina spesso indica variazioni di velocità (carica, temperatura) o un appoggio non costante.</p>
+
+<h3>CEP, R95 e R99</h3>
+<p>Qui l'applicazione fa una previsione: guardando la tua rosata stima come si distribuiranno i <b>prossimi</b> colpi. Il <b>CEP</b> è il raggio del cerchio, centrato sul centro gruppo, dentro cui finirà metà dei colpi; R95 e R99 sono i cerchi per 95 e 99 colpi su 100. Sono i numeri giusti per rispondere a domande pratiche come «con questa precisione, quanto deve essere grande un bersaglio per colpirlo quasi sempre?».</p>
+
+<h3>Che cos'è un intervallo di confidenza (IC)</h3>
+<p>Sotto molti valori trovi una riga sottile «IC 95%: 3,9–11,2 mm». Significa: con i pochi colpi che hai sparato, il valore «vero» della tua arma sta, con buona probabilità, fra quei due numeri. Con 5 colpi l'intervallo è largo, con 20 colpi si stringe. Non è un difetto dell'applicazione: è l'onesta ammissione che 5 colpi dicono poco.</p>
+<div class="box ex"><p>Il CEP del gruppo 1 è 6,0 mm, con IC 95% da 3,9 a 11,2 mm. Un altro gruppo, sparato con un'altra carica, ha CEP 4,5 mm con IC 3,0–8,5 mm. Sembra migliore, ma i due intervalli si sovrappongono molto: con 5 colpi a testa <b>non puoi dire</b> quale carica sia più precisa. Spara altri gruppi prima di decidere.</p></div>
+<div class="box warn"><p>Con meno di 5 colpi le statistiche sono solo indicative e l'applicazione lo scrive in rosso. Il consiglio, per le prove di carica e di arma, è di usare almeno 5 colpi per gruppo, meglio 10.</p></div>
+
+<h3>SD delle distanze e SD radiale</h3>
+<p>Misure di quanto i fori «oscillano»: la prima è la variabilità delle distanze dal centro, la seconda combina la variabilità orizzontale e verticale. Interessano soprattutto a chi confronta i propri dati con quelli di altri programmi o della letteratura.</p>
+
+<h2>Forma del gruppo</h2>
+<p>La scheda «Forma del gruppo» dice quanto la rosata è allungata (<b>rapporto d'aspetto</b>: 1 : 1 è rotonda, 2 : 1 è lunga il doppio che larga) e in quale direzione (in gradi dalla verticale). Un gruppo rotondo è il caso normale. Un gruppo nettamente allungato in verticale fa pensare a variazioni di velocità; in orizzontale a vento o a una presa non costante; in diagonale spesso a come la carabina rincula sull'appoggio.</p>
+<div class="box warn"><p>Con pochi colpi il rapporto d'aspetto viene quasi sempre più alto del vero: un gruppo da 5 colpi «allungato» 1,5 : 1 può benissimo essere rotondo. Diventa significativo con 10 colpi o più.</p></div>
+
+<h2>La correzione in click</h2>
+<figure class="w85">
+<svg class="diagram" viewBox="0 0 640 230" width="100%">
+  <defs><marker id="ag" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="#0d9488"/></marker></defs>
+  <g transform="translate(150,125)">
+    <circle r="90" fill="#f8fafc" stroke="#cbd5e1"/><circle r="50" fill="#1f2933"/><circle r="25" fill="none" stroke="#e5e7eb"/>
+    <g stroke="#e11d48" stroke-width="2.5" fill="none"><circle r="9"/><path d="M-16 0 H-5 M5 0 H16 M0 -16 V-5 M0 5 V16"/></g>
+    <g fill="#93c5fd" stroke="#2563eb" stroke-width="1.5"><circle cx="70" cy="-35" r="7"/><circle cx="82" cy="-50" r="7"/><circle cx="92" cy="-33" r="7"/><circle cx="78" cy="-24" r="7"/><circle cx="88" cy="-44" r="7"/></g>
+    <path d="M76 -42 L90 -28 M90 -42 L76 -28" stroke="#0f2747" stroke-width="2.5"/>
+    <line x1="83" y1="-35" x2="10" y2="-3" stroke="#0d9488" stroke-width="2.5" marker-end="url(#ag)"/>
+    <line x1="0" y1="0" x2="83" y2="0" stroke="#64748b" stroke-dasharray="4 3"/><line x1="83" y1="0" x2="83" y2="-35" stroke="#64748b" stroke-dasharray="4 3"/>
+    <text x="42" y="16" font-size="11" text-anchor="middle" fill="#334e68">17,8 mm a destra</text>
+    <text x="92" y="-8" font-size="11" fill="#334e68">9,2 mm in alto</text>
+  </g>
+  <g transform="translate(330,40)" font-size="12.5" fill="#1f2933">
+    <text font-weight="700" fill="#0f2747">A 100 m con click da 0,1 MIL (= 10 mm):</text>
+    <text y="28">Orizzontale: 17,8 mm ÷ 10 = 1,78 → <tspan font-weight="700">2 click SINISTRA</tspan></text>
+    <text y="52">Verticale: 9,2 mm ÷ 10 = 0,92 → <tspan font-weight="700">1 click GIÙ</tspan></text>
+    <text y="84" font-size="11.5" fill="#52606d">La correzione va sempre nel verso opposto</text>
+    <text y="100" font-size="11.5" fill="#52606d">allo scostamento: gruppo a destra → click a sinistra.</text>
+    <text y="132" font-size="11.5" fill="#52606d">I click sono arrotondati all'intero: dopo la correzione</text>
+    <text y="148" font-size="11.5" fill="#52606d">il centro resta entro mezzo click (5 mm) dalla mira.</text>
+  </g>
+</svg>
+<figcaption>Dallo scostamento del centro gruppo ai click. L'applicazione fa il conto esatto con gli angoli, ma il risultato è lo stesso del calcolo a mente.</figcaption>
+</figure>
+<p>La scheda «Correzione» mostra in evidenza i click da dare (nell'esempio «1 click GIÙ, 2 click SINISTRA») e sotto lo <b>scostamento</b> del centro gruppo dal punto mirato (9,2 mm in alto, 17,8 mm a destra). Nei dettagli trovi il valore esatto in MIL o MOA, prima dell'arrotondamento.</p>
+<p>La riga «IC 95%: verticale 1 GIÙ · orizzontale 1–3 SX» è molto utile: dice di quanti click potrebbe sbagliare la correzione, visto che il centro è stimato da pochi colpi. Se l'intervallo comprende lo zero su un asse (per esempio «verticale 0–2 GIÙ»), su quell'asse la correzione non è certa: meglio sparare un altro gruppo prima di toccare la torretta.</p>
+<div class="box ex"><p>Con 3 colpi il centro del gruppo è incerto: l'intervallo può essere «0–4 click». Con 10 colpi lo stesso gruppo darebbe «1–3 click». Per tarare l'ottica, quindi, spara almeno 5 colpi e correggi sul centro del gruppo, non sull'ultimo foro.</p></div>
+<h3>Correzione sulla foto e correzione virtuale</h3>
+<p>Sulla foto una <b>freccia verde acqua</b> parte dal centro del gruppo e arriva, con una piccola croce e la scritta «dopo i click», nel punto in cui andrebbe il gruppo dopo la correzione. Il pulsante <span class="btn">⇢ Applica correzione virtuale</span> ridisegna in trasparenza tutti i fori spostati: vedi come sarebbe stata la rosata con l'ottica già tarata. È solo un disegno: i dati non cambiano.</p>
+<figure class="w55"><img src="imgj/07_correzione_virtuale.jpg"><figcaption>Correzione virtuale attiva: i fori tratteggiati in verde acqua mostrano dove sarebbero finiti i colpi con i click indicati.</figcaption></figure>
+<h3>Dope (click impostati)</h3>
+<p>Se nella tabella dei punti indichi i click che avevi sulle torrette quando hai sparato ogni colpo (colonne «Alzo» e «Brand.»), la scheda mostra anche la <b>dope</b>: i click da impostare per colpire il punto mirato a quella distanza. È la base della dope card (capitolo 12).</p>
+
+<h2>Le schede Punteggio e Vento</h2>
+<p>Se hai scelto un bersaglio nelle zone di punteggio, la scheda «Punteggio» mostra il totale del gruppo. Se hai indicato il vento, la scheda «Vento» riporta velocità, direzione, componenti e scostamento orizzontale misurato.</p>
+
+<h2>Qualità della misura e diagnostica</h2>
+<p>Sotto le schede trovi due righe in più.</p>
+<p><b>Incertezza di misura.</b> Quanto potrebbero cambiare i numeri <i>di questo gruppo</i> per gli errori di clic e di scala (non per la statistica). L'applicazione «rimisura» migliaia di volte il gruppo spostando un po' ogni punto e guarda di quanto variano i risultati. Se l'intervallo è stretto (per esempio ES 16,9–18,5 mm) la misura è buona; se è largo, migliora la foto o la scala. I fori difficili (strappati, sovrapposti) si segnano con il pulsante ◐ nella tabella dei punti: per loro l'incertezza è tripla.</p>
+<p><b>Diagnostica del modello.</b> Alcune previsioni (CEP, R95, probabilità di colpire) suppongono che i colpi si distribuiscano «a nuvola rotonda» attorno al centro, come succede normalmente. Da 5 colpi in su l'applicazione controlla se la tua rosata rispetta questa ipotesi: se il gruppo è molto allungato o sembra avere due centri distinti, lo segnala. Con meno di 10 colpi questi controlli vedono solo i casi evidenti.</p>
+<div class="box help"><p>L'avviso «possibili due centri distinti» è prezioso: spesso significa che a metà gruppo qualcosa è cambiato (ottica che ha ceduto, canna che si è scaldata, cambio di posizione). Guarda nella tabella l'ordine dei colpi per capire quando.</p></div>
+
+<!-- =============================== 9 =============================== -->
+<h1 class="chap" id="c9"><span class="n">9</span>La tabella dei punti e i colpi «scappati»</h1>
+<p class="lead">La sezione «Punti del gruppo attivo» elenca tutti i punti del gruppo con le loro misure. Serve a controllare, correggere ed escludere.</p>
+<figure><img src="imgj/16_tabella_punti.jpg"><figcaption>La tabella dei punti del gruppo 2 (pannello allargato).</figcaption></figure>
+<table>
+<tr><th style="width:24%">Colonna</th><th>Significato</th></tr>
+<tr><td>Tipo</td><td>Scala A/B, Mira, Centro gruppo (riga evidenziata), Foro 1, 2… Il ⚠ indica un possibile flyer; il pulsante ◐ segna un foro difficile da marcare.</td></tr>
+<tr><td>Escl.</td><td>Spuntata, il foro resta sulla foto (tratteggiato) ma non entra nei calcoli. Tasto rapido: <kbd>X</kbd> sul foro selezionato.</td></tr>
+<tr><td>Alzo · Brand.</td><td>I click che avevi sulle torrette per quel colpo. Un nuovo foro riprende quelli del precedente.</td></tr>
+<tr><td>X · Y</td><td>Posizione in mm rispetto al punto mirato (X positivo = a destra, Y positivo = in alto).</td></tr>
+<tr><td>Da mira · Da centro</td><td>Distanza dal punto mirato e dal centro del gruppo.</td></tr>
+<tr><td>Direz.</td><td>Direzione dal centro del gruppo, in gradi (0° = in alto, in senso orario) e con le sigle della bussola.</td></tr>
+<tr><td>Effetto ES / RM</td><td>Quanto quel foro allarga (in rosso) o stringe (in verde) group size e raggio medio. Per un foro escluso: che cosa succederebbe rimettendolo.</td></tr>
+<tr><td>Click ↕ · Click ↔</td><td>I click che porterebbero quel singolo foro sulla mira. La correzione da dare è quella della riga «Centro gruppo».</td></tr>
+<tr><td>Punti</td><td>Il punteggio del foro, se hai scelto un bersaglio.</td></tr>
+</table>
+<p>Cliccando una riga il punto si evidenzia sulla foto. Al contrario, un <b>doppio clic su un foro</b> nella foto apre la tabella sulla sua riga, che lampeggia. Passando con il mouse sopra un foro, un riquadro mostra subito numero, distanza dalla mira, direzione a ore, click impostati e punteggio.</p>
+<figure class="w55"><img src="imgj/06_tooltip_live.jpg"><figcaption>Il riquadro che compare passando sopra il foro 3, e in alto a destra il pannello dei valori in tempo reale.</figcaption></figure>
+
+<h2>I flyer: quando un colpo «non c'entra»</h2>
+<p>Un <b>flyer</b> è un colpo che sembra non appartenere al gruppo. Da 5 colpi in su l'applicazione confronta ogni foro con gli altri e lo segnala con ⚠ e un cerchio arancione se è troppo lontano per essere un normale colpo di quel gruppo. Il controllo tiene conto della forma: in un gruppo allungato i colpi alle estremità dell'asse lungo non vengono segnalati, quelli «di lato» sì.</p>
+<div class="box warn"><p>Escludere un colpo è una scelta tua, non dell'applicazione. Fallo solo se conosci il motivo: colpo «tirato», cartuccia difettosa, primo colpo a canna fredda e pulita. Escludere i colpi solo perché allargano il gruppo (i «rossi» della colonna Effetto) rende tutte le statistiche ottimiste e ti fa prendere decisioni sbagliate, per esempio scegliere una carica che non è davvero migliore.</p></div>
+<div class="box ex"><p>Nella colonna «Effetto ES / RM» il foro 5 del gruppo 3 mostra «+3,1 / +0,9» in rosso: togliendolo il group size scenderebbe di 3,1 mm. Ma ricordi di aver tirato quel colpo mentre arrivava una raffica? Allora puoi escluderlo e annotarlo. Non ricordi nulla di strano? Lascialo: fa parte della tua rosata.</p></div>
+
+<!-- =============================== 10 =============================== -->
+<h1 class="chap" id="c10"><span class="n">10</span>Che cosa vedi sulla foto</h1>
+<p>Oltre a mira e fori, l'applicazione disegna sulla foto alcuni aiuti visivi. Si accendono e spengono in «Parametri di tiro».</p>
+<table>
+<tr><th style="width:26%">Disegno</th><th>Che cosa mostra</th></tr>
+<tr><td>Croce rossa</td><td>Il punto mirato del gruppo.</td></tr>
+<tr><td>Cerchi colorati numerati</td><td>I fori, con il diametro del calibro. Tratteggiati e barrati se esclusi; cerchio arancione se possibili flyer.</td></tr>
+<tr><td>× e cerchio sottile</td><td>Il centro del gruppo e il cerchio del raggio medio.</td></tr>
+<tr><td>Linea tratteggiata tra due fori</td><td>Il group size: congiunge i due fori più lontani. Sopra il gruppo, l'etichetta con il suo valore.</td></tr>
+<tr><td>Freccia verde acqua</td><td>La correzione: dal centro del gruppo al punto previsto dopo i click.</td></tr>
+<tr><td>Ellisse tratteggiata</td><td>L'ellisse di dispersione: dentro ci dovrebbe finire il 95% dei colpi (o la percentuale scelta). Mostra forma e orientamento del gruppo.</td></tr>
+<tr><td>Poligono (convex hull)</td><td>Il poligono più piccolo che racchiude tutti i fori. La sua area è nei risultati.</td></tr>
+<tr><td>Heatmap</td><td>Una «nuvola» colorata: più è intensa, più è probabile che lì arrivi il prossimo colpo.</td></tr>
+<tr><td>Griglia angolare</td><td>Linee ogni 0,1 MIL (o il passo che scegli) centrate sulla mira, per leggere a occhio scostamenti in angolo.</td></tr>
+</table>
+<div class="two">
+<figure><img src="imgj/08_ellisse_hull.jpg"><figcaption>Ellisse di dispersione e convex hull del gruppo 1, chiaramente allungato in diagonale.</figcaption></figure>
+<figure><img src="imgj/09_heatmap.jpg"><figcaption>La stessa rosata con la heatmap: la zona più intensa è dove il modello si aspetta il maggior numero di colpi.</figcaption></figure>
+</div>
+<figure class="w55"><img src="imgj/10_griglia.jpg"><figcaption>La griglia angolare ogni 0,1 MIL a 100 m (= 10 mm per riga): il gruppo 2 è circa 0,1–0,2 MIL a destra e in alto.</figcaption></figure>
+<p>Le etichette (numeri dei fori, nomi dei gruppi, group size) si dispongono da sole per non coprire fori e croci; se non c'è posto vicino, una sottile linea le collega al loro punto.</p>
+<h2>Il pannello dei valori in tempo reale</h2>
+<p>Nell'angolo in alto a destra della foto un piccolo riquadro mostra, per il gruppo attivo, numero di fori, group size e raggio medio, aggiornati a ogni clic, più l'avviso «meno di 5 colpi – statistiche indicative». Comodo mentre marchi i fori, senza guardare il pannello. Si chiude con ✕ e si riaccende in «Parametri di tiro».</p>
+
+<!-- =============================== 11 =============================== -->
+<h1 class="chap" id="c11"><span class="n">11</span>Punteggio e probabilità di colpire</h1>
+<h2>Zone di punteggio</h2>
+<p>La sezione «Zone di punteggio» disegna gli anelli di un bersaglio attorno al punto di mira di ogni gruppo e calcola il punteggio di ogni foro. Puoi scegliere i bersagli ISSF (10 m aria compressa, 50 m carabina, 25/50 m pistola, 300 m), un bersaglio personalizzato (diametro del 10 e passo degli anelli), oppure una sagoma: IPSC, IDPA, silhouette metalliche, zona vitale per la caccia. Con le sagome puoi spostare e ruotare il bersaglio sulla foto.</p>
+<div class="two">
+<figure><img src="imgj/19_punteggio.jpg"><figcaption>La sezione con un bersaglio personalizzato.</figcaption></figure>
+<figure><img src="imgj/20_anelli.jpg"><figcaption>Gli anelli disegnati attorno alla mira e il punteggio vicino a ogni foro.</figcaption></figure>
+</div>
+<p>Il punteggio segue le regole delle gare: conta l'anello <b>toccato dal bordo</b> del foro, quindi serve il calibro giusto. I colpi «sulla linea», per cui la foto non permette di decidere con sicurezza, sono segnati con ≈: in gara decide il calibro di controllo. Per i bersagli ISSF si può attivare il punteggio decimale (10,9 e così via).</p>
+<div class="box warn"><p>Gli anelli sono centrati sul punto mirato che hai cliccato: un errore di clic sulla mira sposta tutti gli anelli. Usa lente e croce estesa per centrarla bene.</p></div>
+
+<h2>Probabilità di colpire</h2>
+<figure class="w55"><img src="imgj/21_probabilita.jpg"><figcaption>La sezione «Probabilità di colpire».</figcaption></figure>
+<p>Qui fai una domanda pratica: «Con la precisione che ho mostrato oggi, quanti colpi su 100 entrerebbero in un bersaglio di questa misura?». Scegli un cerchio o un rettangolo, le sue dimensioni e la distanza (anche diversa da quella di tiro: la rosata viene ingrandita in proporzione). L'applicazione risponde con due scenari:</p>
+<ul>
+  <li><b>con la correzione applicata</b>: come se avessi già dato i click indicati;</li>
+  <li><b>con la taratura attuale</b>: con il gruppo dove si trova oggi, magari spostato dal centro.</li>
+</ul>
+<div class="box ex"><p>Un cacciatore vuole sapere se può tirare a un capriolo a 200 m (numeri indicativi). La zona vitale è circa un cerchio da 15 cm. Con la sua rosata di oggi a 100 m l'applicazione dice «con la correzione applicata: 97 colpi su 100 (IC 92–99)». Con l'ottica non tarata, invece, «84 su 100». Messaggio chiaro: prima di partire, tara l'ottica.</p></div>
+<p>Anche qui c'è un intervallo di confidenza: con pochi colpi la stima è incerta. E ricorda che a 200 m conteranno anche vento e caduta, che l'applicazione non conosce: la probabilità riguarda solo la dispersione.</p>
+
+<!-- =============================== 12 =============================== -->
+<h1 class="chap" id="c12"><span class="n">12</span>I grafici: che cosa dicono e come aiutano</h1>
+<p class="lead">Il pulsante <span class="btn">📊 Grafici e confronto tra gruppi</span> (tasto <kbd>A</kbd>) apre una vista a schermo intero. In alto scegli il gruppo attivo; <kbd>Esc</kbd> o «← Torna all'analisi» riportano alla foto. Passando il mouse sui punti dei grafici compaiono i valori.</p>
+<figure><img src="imgj/30_vista_grafici.jpg"><figcaption>La vista grafici: in alto i grafici del gruppo attivo, più in basso confronto, dope card, ricarica, correlazioni, cono, confronto visivo e reticolo.</figcaption></figure>
+
+<h2>Dispersione</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> I fori senza la foto, su un foglio a quadretti in millimetri, centrati sul centro del gruppo (la ×). La croce rossa è il punto mirato. Il cerchio pieno è il raggio medio, quello tratteggiato il CEP; l'ellisse puntinata contiene il 95% dei colpi attesi.</p>
+<p><b>Come leggerlo.</b> Guarda tre cose: quanto sono grandi i cerchi (la precisione), quanto è allungata l'ellisse e in che direzione (la forma), quanto è lontana la croce rossa dalla × (la correzione). Senza i disegni del bersaglio sotto, la forma si capisce molto meglio che sulla foto.</p>
+</div><figure class="side"><img src="imgj/31_dispersione.jpg"><figcaption>Il grafico di dispersione del gruppo 2.</figcaption></figure></div><div class="box help"><p>Un'ellisse molto verticale come quella dell'esempio, dopo più gruppi con la stessa munizione, è un indizio da seguire: variazioni di velocità tra un colpo e l'altro. Vale la pena controllare la costanza della carica, la seduta della palla o la temperatura delle cartucce.</p></div>
+
+<h2>Istogramma delle distanze</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> Le barre contano i fori in fasce di distanza dal centro del gruppo (o dal punto mirato, se lo scegli nel menu). La linea continua è il raggio medio, quella tratteggiata il CEP.</p>
+<p><b>Come leggerlo.</b> Una rosata «normale» ha pochi fori proprio al centro, la maggior parte a media distanza e pochi lontani. Una barra isolata molto a destra è un colpo lontano dagli altri: controlla se è un flyer. Con 5 colpi l'istogramma è solo indicativo; diventa interessante unendo molti colpi.</p>
+</div><figure class="side"><img src="imgj/32_istogramma.jpg"><figcaption>Quanti fori cadono a ogni distanza dal centro gruppo.</figcaption></figure></div>
+<h2>Orologio</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> Un quadrante a ore come quello del vento: gli spicchi indicano la direzione di ogni colpo, la freccia quella del centro gruppo. Puoi riferirlo al punto mirato (dove «tira» l'arma) o al centro gruppo (verso dove scappano i colpi).</p>
+<p><b>Come leggerlo.</b> «I colpi tendono a ore 2»: il gruppo è in alto a destra della mira. È il modo più immediato per capire la correzione senza guardare i numeri. Riferito al centro gruppo, colpi che scappano sempre nella stessa direzione indicano un difetto di tecnica ripetuto (per esempio uno «strappo» del grilletto con la pistola).</p>
+</div><figure class="side"><img src="imgj/33_orologio.jpg"><figcaption>La direzione in cui vanno i colpi, rispetto al punto mirato.</figcaption></figure></div>
+<h2>Coordinate polari</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> Ogni foro con la sua direzione (angolo) e la sua distanza dal centro, prima su un cerchio e poi su un grafico «srotolato» (angolo in orizzontale, distanza in verticale). Le linee orizzontali sono raggio medio, CEP e R95 attesi.</p>
+<p><b>Come leggerlo.</b> Serve a vedere se i colpi lontani si concentrano in un settore. Attenzione: con pochi colpi è normalissimo che ci siano settori vuoti; l'applicazione non trae conclusioni da sola, e non dovresti trarne nemmeno tu con meno di 10–15 colpi.</p>
+</div><figure class="side"><img src="imgj/34_polare.jpg"><figcaption>Angolo e distanza di ogni foro dal centro gruppo, in cerchio e «srotolati».</figcaption></figure></div>
+<h2>Densità 3D</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> Una superficie in tre dimensioni: l'altezza indica quanto è probabile che un colpo arrivi in quel punto. Si ruota trascinando con il mouse; un doppio clic torna alla vista iniziale.</p>
+<p><b>Come leggerlo.</b> Una montagna alta e stretta è un gruppo preciso; bassa e larga, un gruppo disperso; allungata come una cresta, un gruppo allungato. È la stessa informazione dell'ellisse, ma molto intuitiva da mostrare a chi non ama i numeri.</p>
+</div><figure class="side"><img src="imgj/35_densita3d.jpg"><figcaption>La «montagna» della probabilità; i punti neri sono i fori.</figcaption></figure></div>
+<h2>Diagnostica del modello (QQ-plot)</h2>
+<div class="chart"><div><p><b>Che cosa mostra.</b> Ogni punto è un foro: in orizzontale la distanza dal centro che il modello si aspetterebbe, in verticale quella reale, dalla più piccola alla più grande.</p>
+<p><b>Come leggerlo.</b> Se i punti stanno vicini alla diagonale tratteggiata, la rosata si comporta come previsto e CEP, R95 e probabilità sono affidabili. Un ultimo punto molto sopra la diagonale è un colpo più lontano del previsto (un possibile flyer). Una serie di punti che si allontana sistematicamente dalla diagonale indica una rosata «strana» (allungata o con due centri): il testo sotto il grafico lo spiega.</p>
+</div><figure class="side"><img src="imgj/36_qq.jpg"><figcaption>Le distanze reali dei fori contro quelle attese.</figcaption></figure></div>
+<h2>Confronto tra gruppi e andamento nel tempo</h2>
+<figure><img src="imgj/37_confronto.jpg"><figcaption>La tabella di confronto con i gruppi della sessione e dello storico, e sotto l'andamento nel tempo.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Una tabella con tutti i gruppi della sessione e quelli importati da sessioni precedenti (lo «storico»), ordinati per data: numero di colpi, group size, raggio medio, FOM, CEP, differenza rispetto al gruppo precedente. Il menu «Metrica» sceglie il valore da confrontare, in mm o in angolo. Sotto, il grafico dell'andamento nel tempo con una media mobile (la linea tratteggiata, media degli ultimi gruppi).</p>
+<p><b>Come leggerlo.</b> Il miglior gruppo è sottolineato. La media mobile è più importante dei singoli punti: un singolo gruppo bello o brutto può essere fortuna; una media che scende per settimane è un miglioramento vero.</p>
+<div class="box help"><p>È lo strumento per tenere un «diario» del tuo tiro: importa ogni sessione salvata (con <span class="btn">＋ Importa sessioni nello storico</span>, file .zip o .json) e guarda se i cambiamenti (nuova ottica, nuovo appoggio, allenamento a secco) producono un effetto reale. Confronta in angolo (MOA o MIL) quando i gruppi sono a distanze diverse.</p></div>
+
+<h2>Dope card</h2>
+<figure><img src="imgj/38_dope.jpg"><figcaption>La dope card: alzo e brandeggio per ogni distanza, con il grafico dell'alzo.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Per ogni distanza a cui hai sparato (con i click registrati nella tabella dei punti), i click di alzo e brandeggio da impostare per colpire il punto mirato, in click, MIL e MOA, con il loro intervallo di confidenza, la data e le condizioni. Si filtra per munizione. Il grafico mostra come cresce l'alzo con la distanza.</p>
+<p><b>Come leggerlo.</b> Ogni riga è una correzione «provata sul campo», non calcolata da un programma balistico. Più gruppi a una distanza, più è affidabile. Esportabile in CSV e PNG da stampare e attaccare al calcio.</p>
+<div class="box ex"><p>Hai tirato a 100, 200 e 300 m con la stessa munizione e la dope card dice: 100 m 0 click, 200 m +6 click, 300 m +14 click. Alla prossima uscita a 300 m imposti 14 click di alzo e sei già quasi al centro. Le distanze non tirate non vengono inventate: l'applicazione non ha un calcolatore balistico.</p></div>
+
+<h2>Precisione e ricarica</h2>
+<figure><img src="imgj/39_carica.jpg"><figcaption>Il CEP per ogni carica di polvere, con il suo intervallo di confidenza.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Per ogni carica di polvere (o per ogni salto dalle righe, la profondità di seduta) il CEP o il raggio medio, unendo tutti i gruppi con quel valore, con la barra dell'intervallo di confidenza.</p>
+<p><b>Come leggerlo.</b> Cerchi il punto più basso. Ma guarda le barre: se si sovrappongono, la differenza può essere casuale e l'applicazione lo scrive. Indica come «migliore» un livello solo quando la differenza è chiara.</p>
+<div class="box help"><p>È il grafico per lo sviluppo di una ricarica: spari gruppi da 5 colpi con cariche crescenti di 0,3–0,5 grani e vedi dove la rosata si stringe. Se le barre si sovrappongono, aggiungi gruppi solo alle cariche promettenti invece di cambiare tutto.</p></div>
+
+<h2>Correlazioni e ladder</h2>
+<figure><img src="imgj/40_correlazioni.jpg"><figcaption>L'alzo necessario in funzione della carica, con la retta di tendenza.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Un grafico a punti con una retta che riassume la tendenza. Puoi scegliere: alzo necessario e carica, alzo e temperatura, brandeggio e vento laterale, V-spread e carica, V-spread e temperatura. La modalità <b>ladder</b> mostra l'altezza di ogni singolo foro in funzione della sua carica (si inserisce la carica foro per foro).</p>
+<p><b>Come leggerlo.</b> Sotto il grafico l'applicazione dice di quanto cambia, per esempio, l'alzo per ogni grano di polvere o per ogni grado di temperatura, e se la relazione è statisticamente chiara. Nella ladder si cercano le «zone piatte»: cariche vicine i cui colpi finiscono alla stessa altezza, segno che lì la munizione è meno sensibile alle piccole variazioni.</p>
+<div class="box ex"><p>Con il vento laterale annotato in più sessioni, il grafico «Brandeggio ↔ vento trasversale» potrebbe dire: «circa 0,1 MIL ogni 1 m/s a 100 m». È una regola pratica tua, ricavata dalle tue munizioni, da usare in gara per correggere a occhio.</p></div>
+
+<h2>Cono di dispersione</h2>
+<figure class="w85"><img src="imgj/41_cono.jpg"><figcaption>Lo stesso gruppo proiettato ad altre distanze: mappa e cono 3D.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Come si allargherebbe la rosata a distanze diverse, supponendo che la dispersione in angolo resti la stessa: un cono che parte dalla bocca dell'arma. Per ogni distanza la tabella dà CEP e R95 attesi. Si limita a due volte la distanza tirata.</p>
+<p><b>Come leggerlo.</b> Serve a farsi un'idea («a 200 m il mio gruppo sarà circa il doppio»). È un limite inferiore: a distanza maggiore vento e variazioni di velocità allargano la rosata più del semplice angolo.</p>
+
+<h2>Confronto visivo tra rosate</h2>
+<figure class="w85"><img src="imgj/42_confronto_visivo.jpg"><figcaption>Più gruppi sovrapposti, sullo stesso punto di mira.</figcaption></figure>
+<p><b>Che cosa mostra.</b> I fori di più gruppi (della sessione e dello storico) sovrapposti o affiancati, allineati sul punto di mira o sul centro gruppo, in millimetri o in angolo.</p>
+<p><b>Come leggerlo.</b> Sovrapposti sul punto di mira vedi se lo zero è stabile tra una giornata e l'altra; sovrapposti sul centro gruppo confronti solo la forma e la grandezza. In angolo puoi confrontare gruppi a distanze diverse.</p>
+
+<h2>Reticolo e holdover</h2>
+<figure class="w85"><img src="imgj/43_reticolo.jpg"><figcaption>Il reticolo con le tacche da usare a ogni distanza della dope card.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Il disegno di un reticolo generico (MIL, MIL-DOT, MOA o personalizzato) con indicate le tacche da usare per ogni distanza della dope card, tenendo conto dei click già impostati. Funziona con reticoli al primo piano focale e, inserendo la taratura, al secondo piano focale. Si ingrandisce con la rotella.</p>
+<p><b>Come leggerlo.</b> Ti dice «a 300 m mira con la tacca 1,4 MIL sotto il centro» invece di girare le torrette: utile nelle gare con bersagli a distanze diverse. Esportabile in PNG da tenere sul telefono.</p>
+
+<!-- =============================== 13 =============================== -->
+<h1 class="chap" id="c13"><span class="n">13</span>Sistemare la foto: rotazione, ritaglio, prospettiva, obiettivo</h1>
+<p>La sezione «Orientamento e prospettiva» corregge le foto non perfette.</p>
+<figure class="w55"><img src="imgj/17_orientamento.jpg"><figcaption>La sezione «Orientamento e prospettiva».</figcaption></figure>
+<h3>Rotazione</h3>
+<p>Se la foto è storta, «alto» e «destra» non coincidono con quelli del bersaglio e la correzione mescolerebbe alzo e brandeggio. Ruota di 90° con i pulsanti, scrivi un angolo, oppure usa <span class="btn">📐 Raddrizza con 2 punti</span> (tasto <kbd>5</kbd>): clicchi due punti su una linea del bersaglio che deve essere orizzontale o verticale e la foto si raddrizza. I punti già inseriti ruotano con la foto; le distanze non cambiano.</p>
+<h3>Ritaglio</h3>
+<p>Per togliere le parti inutili della foto premi <span class="btn">✂ Ritaglia</span>, trascina un rettangolo attorno alla parte da tenere e premi Invio (o <span class="btn">✓ Applica ritaglio</span>). Mire e fori devono restare dentro il rettangolo; i punti della scala possono restare fuori, perché la scala è già calcolata e non cambia.</p>
+<figure class="w55"><img src="imgj/23_ritaglio.jpg"><figcaption>Il rettangolo del ritaglio: la parte scura verrà eliminata.</figcaption></figure>
+<p>Il ritaglio è <b>definitivo</b>: la nuova foto incorpora rotazione e correzioni e tutte le misure restano identiche. Fino a quando non carichi un'altra foto puoi tornare indietro con <span class="btn">↶ Annulla ritaglio</span>. Per conservarlo, salva la sessione in ZIP (o in JSON con l'immagine inclusa).</p>
+<h3>Distorsione dell'obiettivo</h3>
+<p>I grandangoli dei telefoni curvano le linee vicino ai bordi (le righe dritte diventano «a botte»). Con <span class="btn">Calibra da linee</span> clicchi almeno 3 punti lungo 2 o più linee che nella realtà sono dritte (bordi del foglio, righe della griglia), poi <span class="btn">Calcola</span>. I coefficienti si possono salvare con un nome (per esempio il modello del telefono) e riusare.</p>
+<h3>Prospettiva</h3>
+<p>Per una foto scattata di sbieco: scegli le dimensioni reali di un rettangolo presente nella foto (un foglio A4 è perfetto), premi <span class="btn">⬚ Correggi con 4 punti</span> (tasto <kbd>6</kbd>) e clicca i quattro angoli. La foto viene «raddrizzata» come se fosse stata scattata di fronte, e la scala viene impostata dal rettangolo stesso.</p>
+<div class="box warn"><p>Queste correzioni non fanno miracoli: un foglio piegato o ondulato non si raddrizza. La foto fatta bene, dritta e con il foglio piano, resta la soluzione migliore.</p></div>
+
+<!-- =============================== 14 =============================== -->
+<h1 class="chap" id="c14"><span class="n">14</span>Salvare, esportare e archiviare</h1>
+<figure class="w55"><img src="imgj/18_dati.jpg"><figcaption>La sezione «Dati».</figcaption></figure>
+<h3>Sessione ZIP: il formato consigliato</h3>
+<p><span class="btn">🗜 Salva sessione ZIP</span> crea un unico file con dentro la foto originale, tutti i punti, i parametri, i dati di ricarica e due file per Excel (fori e gruppi). È il file da conservare: lo riapri con <span class="btn">📂 Carica sessione</span> (o trascinandolo sulla finestra) e lo puoi importare nello storico del confronto o nell'archivio. Puoi aprirlo anche con Esplora risorse, come qualsiasi ZIP, per guardare la foto o i CSV.</p>
+<h3>Sessione JSON</h3>
+<p><span class="btn">💾 Salva sessione JSON</span> salva gli stessi dati in un file di testo. Con «Includi l'immagine nella sessione» spuntato contiene anche la foto; senza, per riaprirlo devi prima caricare la stessa foto. È il formato delle versioni precedenti, sempre leggibile.</p>
+<h3>Result Card e Report PDF</h3>
+<p>Il pulsante in cima al pannello <span class="btn">🖼 Esporta Result Card (PNG)</span> crea un'immagine riassuntiva del gruppo attivo o di tutti i gruppi, perfetta da mandare via chat o pubblicare. <span class="btn">📑 Report PDF</span> crea un documento A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto e dope card.</p>
+<figure class="w70"><img src="imgj/26_result_card.jpg"><figcaption>Una Result Card con tutti i gruppi della sessione.</figcaption></figure>
+<h3>CSV e testo</h3>
+<p><span class="btn">📄 CSV fori</span> e <span class="btn">📄 CSV gruppi</span> si aprono con Excel o LibreOffice (in italiano usano il punto e virgola e la virgola decimale). <span class="btn">📋 Copia risultati (testo)</span> copia un riepilogo da incollare in un messaggio.</p>
+<h3>Salvataggio automatico e archivio</h3>
+<p>Il lavoro viene salvato nel browser poco dopo ogni modifica: se chiudi per errore, alla riapertura l'applicazione propone «Ripristina». Ogni salvataggio di sessione viene anche aggiunto all'<b>archivio</b> del browser; <span class="btn">🗜 Esporta archivio (ZIP)</span> crea un unico file con tutte le sessioni e un riepilogo di tutti i gruppi.</p>
+<div class="box warn"><p>Salvataggio automatico, archivio e profili stanno nel browser: si perdono cancellando i dati di navigazione e non passano da un computer all'altro. I file che salvi tu (ZIP, JSON) sono la vera copia di sicurezza.</p></div>
+<h3>Bersaglio di autoverifica</h3>
+<p>Vuoi sapere quanto è precisa tutta la catena (stampa, foto, clic, calcoli)? <span class="btn">🎯 Bersaglio di prova (PDF)</span> crea un bersaglio da stampare con fori disegnati in posizioni note. Lo stampi al 100%, lo fotografi, lo misuri come un bersaglio vero e premi <span class="btn">✓ Verifica il gruppo attivo</span>: l'applicazione confronta le tue misure con i valori esatti e ti dice di quanto sbagli, foro per foro.</p>
+
+<!-- =============================== 15 =============================== -->
+<h1 class="chap" id="c15"><span class="n">15</span>Personalizzare l'applicazione</h1>
+<ul>
+  <li><b>Lingua</b>: italiano o inglese, dal menu in alto (l'help tecnico resta in italiano).</li>
+  <li><b>Tema</b>: chiaro o scuro con 🌙/☀️ o il tasto <kbd>T</kbd>; lo scuro è comodo al poligono di sera.</li>
+  <li><b>Densità delle informazioni</b>: «Compatta» mostra solo i valori principali con spazi ridotti, «Standard» è quella normale, «Dettagliata» apre tutti i dettagli.</li>
+  <li><b>Layout del pannello</b> (⚙): sposta le sezioni su e giù e nascondi quelle che non usi. «Ripristina layout» torna all'ordine originale.</li>
+  <li><b>Larghezza del pannello</b>: trascina la linea verticale tra foto e pannello; doppio clic per la larghezza predefinita.</li>
+</ul>
+<div class="two">
+<figure><img src="imgj/24_compatta.jpg"><figcaption>I risultati con la densità «Compatta».</figcaption></figure>
+<figure><img src="imgj/25_layout.jpg"><figcaption>Il pannello del layout: ordine e visibilità delle sezioni.</figcaption></figure>
+</div>
+<p>Queste scelte vengono ricordate dal browser, non dalla sessione.</p>
+
+<h2>Mouse e tastiera</h2>
+<table>
+<tr><th style="width:36%">Azione</th><th>Come</th></tr>
+<tr><td>Spostare la foto</td><td>Trascina lo sfondo (strumento Mano) o tieni premuto il tasto centrale</td></tr>
+<tr><td>Ingrandire</td><td>Rotella del mouse; <kbd>Shift</kbd>+rotella cambia l'ingrandimento della lente</td></tr>
+<tr><td>Spostare un punto</td><td>Trascinalo</td></tr>
+<tr><td>Eliminare un punto</td><td>Tasto destro sul punto, oppure selezionalo e premi <kbd>Canc</kbd></td></tr>
+<tr><td>Eliminare l'ultimo foro</td><td><kbd>Backspace</kbd></td></tr>
+<tr><td>Foro sopra un punto esistente</td><td><kbd>Alt</kbd>+clic</td></tr>
+<tr><td>Escludere/includere il foro selezionato</td><td><kbd>X</kbd></td></tr>
+<tr><td>Strumenti</td><td><kbd>1</kbd> Mano · <kbd>2</kbd> Scala · <kbd>3</kbd> Mira · <kbd>4</kbd> Foro · <kbd>5</kbd> Raddrizza · <kbd>6</kbd> Prospettiva · <kbd>Esc</kbd> annulla lo strumento</td></tr>
+<tr><td>Annulla / ripristina</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td></tr>
+<tr><td>Vista e aiuti</td><td><kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>M</kbd> snap · <kbd>T</kbd> tema</td></tr>
+<tr><td>Finestre</td><td><kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico · <kbd>Esc</kbd> chiude</td></tr>
+<tr><td>File</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd> apri foto · <kbd>Ctrl</kbd>+<kbd>S</kbd> salva sessione</td></tr>
+</table>
+
+<!-- =============================== 16 =============================== -->
+<h1 class="chap" id="c16"><span class="n">16</span>Mappa delle relazioni: che cosa cambia che cosa</h1>
+<p class="lead">Una tabella da consultare quando ti chiedi «se cambio questo, che cosa si muove?».</p>
+<table>
+<tr><th style="width:21%">Dato inserito</th><th style="width:40%">Risultati che cambia</th><th>Grafici e altro</th></tr>
+<tr><td>Scala (2 punti + distanza nota)</td><td>Tutte le misure in mm, pollici, MOA, MIL; correzione in click; punteggio; probabilità</td><td>Tutti i grafici in mm o angolo; semaforo; controllo dei fori; inquadratura</td></tr>
+<tr><td>Distanza di tiro (per gruppo)</td><td>Valori in MOA e MIL; correzione in click; dope</td><td>Dope card, cono, reticolo, confronti in angolo, correlazioni</td></tr>
+<tr><td>Calibro</td><td>Bordo-bordo; punteggio (anello toccato); controllo diametro fori</td><td>Cerchi dei fori e del cursore; snap</td></tr>
+<tr><td>Valore e unità del click</td><td>Solo il numero di click (correzione, tabella punti, dope)</td><td>Dope card e reticolo in click</td></tr>
+<tr><td>Punto di mira</td><td>Scostamento, correzione, punteggio, «Da mira», probabilità con taratura attuale</td><td>Croce rossa e freccia; orologio; anelli e sagome; confronto visivo sulla mira</td></tr>
+<tr><td>Fori (posizione)</td><td>Tutto: misure, statistiche, centro, correzione, flyer, diagnostica</td><td>Tutti i grafici del gruppo; confronto; ricarica; correlazioni</td></tr>
+<tr><td>Esclusione di un foro</td><td>Misure e statistiche senza quel foro (il punteggio lo conta comunque)</td><td>Grafici, confronto, CSV (il foro resta elencato come escluso)</td></tr>
+<tr><td>Foro difficile ◐</td><td>Solo l'incertezza di misura</td><td>—</td></tr>
+<tr><td>Click impostati per foro</td><td>Dope del gruppo</td><td>Dope card, reticolo, ladder</td></tr>
+<tr><td>Carica / salto dalle righe</td><td>—</td><td>Precisione e ricarica, correlazioni, ladder, filtri per munizione</td></tr>
+<tr><td>Temperatura</td><td>—</td><td>Correlazioni (alzo e V-spread con la temperatura)</td></tr>
+<tr><td>Vento (velocità, ore)</td><td>Scheda Vento</td><td>Correlazione brandeggio ↔ vento trasversale</td></tr>
+<tr><td>Livello di confidenza</td><td>Larghezza di tutti gli intervalli</td><td>Barre dei grafici di ricarica e dope</td></tr>
+<tr><td>Ellisse, hull, heatmap, griglia, etichette, freccia</td><td>Nessuno (solo disegno; l'area dell'hull compare nei risultati)</td><td>Disegni sulla foto e nella Result Card</td></tr>
+<tr><td>Rotazione, prospettiva, distorsione, ritaglio</td><td>Direzioni «alto/destra», quindi correzione e H/V-spread; la prospettiva anche le distanze</td><td>Tutti i grafici orientati</td></tr>
+</table>
+
+<!-- =============================== 17 =============================== -->
+<h1 class="chap" id="c17"><span class="n">17</span>Problemi frequenti</h1>
+<table>
+<tr><th style="width:36%">Che cosa vedi</th><th>Causa probabile e rimedio</th></tr>
+<tr><td>Misure enormi o minuscole, cerchio del foro grande come il visuel</td><td>Distanza nota o unità della scala sbagliata (mm al posto di cm). Controlla «Calibrazione scala» e l'inquadratura indicata.</td></tr>
+<tr><td>Semaforo rosso «i fori misurano il 40% del calibro»</td><td>Scala o calibro sbagliati: verifica entrambi.</td></tr>
+<tr><td>Semaforo rosso per il diametro dei fori con un gruppo molto stretto</td><td>I fori che si toccano vengono misurati come una sola macchia. Controlla la scala con il «Riferimento di controllo»: se torna, l'avviso è da ignorare.</td></tr>
+<tr><td>Correzione nella direzione sbagliata</td><td>Foto ruotata o capovolta: raddrizzala. Oppure hai cliccato la mira di un altro visuel.</td></tr>
+<tr><td>Click raddoppiati o dimezzati rispetto alla realtà</td><td>Valore del click sbagliato (0,1 MIL contro 0,05, 1/4 MOA contro 1/8), oppure distanza sbagliata.</td></tr>
+<tr><td>Non riesco a mettere un foro sopra un altro</td><td>Il clic prende il punto esistente: usa <kbd>Alt</kbd>+clic.</td></tr>
+<tr><td>Il punto si aggancia nel posto sbagliato</td><td>Lo snap ha trovato un'altra macchia (una riga spessa, un numero): clicca con <kbd>Alt</kbd> o spegni lo snap (<kbd>M</kbd>).</td></tr>
+<tr><td>«La sessione non contiene l'immagine»</td><td>Hai salvato un JSON senza foto: carica prima la stessa foto, poi la sessione. In futuro usa la sessione ZIP.</td></tr>
+<tr><td>Le statistiche sono in rosso «poco affidabili»</td><td>Meno di 5 colpi: non è un errore, è un avviso. Spara gruppi più numerosi.</td></tr>
+<tr><td>Le scorciatoie da tastiera non funzionano</td><td>Il cursore è in un campo di testo del pannello: clicca sulla foto.</td></tr>
+<tr><td>Ho perso i profili o l'archivio</td><td>Sono nel browser: si perdono cancellando i dati di navigazione o cambiando browser. Esporta i profili e salva le sessioni su file.</td></tr>
+</table>
+
+<!-- =============================== 18 =============================== -->
+<h1 class="chap" id="c18"><span class="n">18</span>Glossario essenziale</h1>
+<table>
+<tr><th style="width:26%">Termine</th><th>Significato, in parole semplici</th></tr>
+<tr><td>Rosata, gruppo</td><td>L'insieme dei fori sparati mirando allo stesso punto.</td></tr>
+<tr><td>Punto di mira (POA)</td><td>Il punto che hai mirato.</td></tr>
+<tr><td>Centro gruppo (POI)</td><td>La posizione media dei fori: dove l'arma manda in media i colpi.</td></tr>
+<tr><td>Group size (ES)</td><td>Distanza tra i centri dei due fori più lontani.</td></tr>
+<tr><td>Bordo-bordo</td><td>Group size + calibro: quello che misuri con il calibro dall'esterno dei fori.</td></tr>
+<tr><td>Raggio medio</td><td>Distanza media dei fori dal centro gruppo. Più stabile del group size.</td></tr>
+<tr><td>H-spread, V-spread</td><td>Larghezza e altezza del gruppo.</td></tr>
+<tr><td>FOM</td><td>Media di larghezza e altezza.</td></tr>
+<tr><td>CEP</td><td>Raggio del cerchio che conterrà metà dei prossimi colpi.</td></tr>
+<tr><td>R95, R99</td><td>Raggi dei cerchi per 95 e 99 colpi su 100.</td></tr>
+<tr><td>σ (sigma)</td><td>La «misura base» della dispersione da cui l'applicazione ricava CEP, R95 e probabilità.</td></tr>
+<tr><td>Intervallo di confidenza (IC)</td><td>L'intervallo in cui, con buona probabilità, sta il valore vero, visto che i colpi sono pochi.</td></tr>
+<tr><td>Flyer</td><td>Colpo che sembra non appartenere al gruppo.</td></tr>
+<tr><td>MOA</td><td>Minuto d'angolo: circa 29 mm a 100 m, circa 1 pollice a 100 yard.</td></tr>
+<tr><td>MIL (mrad)</td><td>Milliradiante: 1 mm ogni metro, quindi 10 cm a 100 m.</td></tr>
+<tr><td>Click</td><td>Uno scatto della torretta dell'ottica: di solito 0,1 MIL o 1/4 MOA.</td></tr>
+<tr><td>Alzo, brandeggio</td><td>Correzione verticale e orizzontale delle torrette.</td></tr>
+<tr><td>Dope</td><td>I click da impostare per centrare a una certa distanza.</td></tr>
+<tr><td>Holdover</td><td>Mirare con una tacca del reticolo invece di girare le torrette.</td></tr>
+<tr><td>Ladder, OCW</td><td>Prove di carica con cariche crescenti per trovare la zona meno sensibile alle variazioni.</td></tr>
+<tr><td>Salto dalle righe</td><td>Distanza tra la palla e l'inizio della rigatura con la cartuccia camerata (profondità di seduta).</td></tr>
+<tr><td>Ellisse di dispersione</td><td>L'ovale che contiene una certa percentuale di colpi attesi; mostra la forma del gruppo.</td></tr>
+<tr><td>Convex hull</td><td>Il poligono più piccolo che racchiude tutti i fori.</td></tr>
+</table>
+<div class="box tip"><p>Per le formule e le spiegazioni tecniche complete c'è l'help tecnico integrato (tasto <kbd>H</kbd>), con glossario, formule ed esempi svolti calcolati dall'applicazione stessa.</p></div>
+<figure class="w70"><img src="imgj/44_help.jpg"><figcaption>L'help tecnico integrato.</figcaption></figure>
+
+</body>
+</html>

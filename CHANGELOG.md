@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.1] - 2026-11-18
+### Aggiunto
+- **Manuale d'uso** in PDF (`docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf`, 52 pagine, italiano): flusso di lavoro,
+  ogni sezione e campo, relazioni tra dati inseriti, risultati e grafici, lettura di ogni grafico con esempi, problemi
+  frequenti e glossario; schermate dell'app reale. Sorgente e script per rigenerarlo in `docs/manuale/` (`build.sh`).
+### Corretto
+- La croce estesa dello strumento Mira non seguiva il cursore con la lente spenta (mancava il ridisegno al movimento).
+- Test UI della croce eseguito con la lente spenta.
+
 ## [1.13.0] - 2026-11-18
 ### Aggiunto
 - **Profili di ricarica** (Ricarica e condizioni): nome + bossolo, polvere, carica, palla, salto dalle righe, innesco e

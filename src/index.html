@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.13.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.13.1 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -4054,7 +4054,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.13.0";
+const APP_VERSION = "1.13.1";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -5302,7 +5302,7 @@ canvas.addEventListener("pointerdown", e => {
 canvas.addEventListener("pointermove", e => {
   const { x, y } = localXY(e);
   state.hover = { x, y };
-  if (!ptr) { updateCursor(x, y); updateHoleTip(x, y); if ((state.loupe && state.mode !== "pan" || state.mode === "shot" || state.alignP1 || state.perspPts.length) && state.image) requestDraw(); return; }
+  if (!ptr) { updateCursor(x, y); updateHoleTip(x, y); if ((state.loupe && state.mode !== "pan" || state.mode === "shot" || state.mode === "poa" || state.alignP1 || state.perspPts.length) && state.image) requestDraw(); return; }
   if (!ptr.moved && Math.hypot(x - ptr.sx, y - ptr.sy) > DRAG_THRESHOLD) { ptr.moved = true; $("holeTip").hidden = true; }
   if (ptr.moved) {
     if (ptr.kind === "point") {
