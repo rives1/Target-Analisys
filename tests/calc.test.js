@@ -465,4 +465,62 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   near(Calc.lineSS([{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 0 }]), 2 / 3, 1e-12, "minimi quadrati totali");
 }
 
+// ---------------- 1.11.0: Mahalanobis, ES equivalente, diagnostica, incertezza di misura ----------------
+{
+  const g = Calc.rng(11);
+  // p-value del test F uniformi nel modello, anche con gruppo molto allungato (σx = 4σy)
+  const ps = [];
+  for (let k = 0; k < 3000; k++) ps.push(Calc.flyersMahal([...Array(8)].map(() => ({ x: 4 * g.gauss(), y: g.gauss() })))[3].p);
+  ps.sort((a, b) => a - b);
+  for (const q of [0.05, 0.25, 0.5, 0.75]) near(ps[Math.floor(q * ps.length)], q, 0.03, `p-value uniforme (quantile ${q})`);
+  // estremità di un gruppo allungato: flyer per il criterio euclideo, non per Mahalanobis; un colpo fuori asse sì
+  const L = [{ x: -40, y: 0.5 }, { x: -20, y: -1 }, { x: -5, y: 0.8 }, { x: 5, y: -0.6 }, { x: 15, y: 1 }, { x: 25, y: -0.4 }, { x: 60, y: 0.3 }];
+  ok(Calc.flyers(L, 2)[6].flagged, "euclideo: falso flyer all'estremità");
+  ok(!Calc.flyersMahal(L)[6].flagged, "Mahalanobis: estremità lungo l'asse non è flyer");
+  const L2 = L.slice(0, 6).concat([{ x: 0, y: 12 }]);
+  ok(Calc.flyersMahal(L2)[6].flagged && Calc.flyersMahal(L2)[6].p < 0.05 / 7, "colpo fuori dall'asse: flyer");
+  eq(Calc.flyersMahal(L.slice(0, 4)), null, "meno di 5 colpi");
+  { const ps5 = []; for (let k = 0; k < 3000; k++) ps5.push(Calc.flyersMahal([...Array(5)].map(() => ({ x: g.gauss(), y: 2 * g.gauss() })))[0].p);
+    ps5.sort((a, b) => a - b); near(ps5[Math.floor(0.1 * ps5.length)], 0.1, 0.03, "5 colpi (ν = 2): p-value uniforme"); }
+  // coda di F(2, ν): confronto con integrazione numerica della densità
+  { const nu = 5, x = 3.7; let I = 0; const f = t => Math.pow(1 + 2 * t / nu, -nu / 2 - 1); for (let t = x, h = 1e-3; t < 4000; t += h) I += h * (f(t) + f(t + h)) / 2;
+    near(I, Math.pow(1 + 2 * x / nu, -nu / 2), 1e-4, "coda di F(2, ν) in forma chiusa"); }
+  // ES equivalente
+  near(Calc.esFactor(2), Math.sqrt(Math.PI), 1e-3, "n = 2: √π");
+  for (const n of [3, 5, 10]) { let m = 0; const N = 40000; for (let k = 0; k < N; k++) m += Calc.extremeSpread([...Array(n)].map(() => ({ x: g.gauss(), y: g.gauss() }))).d; near(m / N, Calc.esFactor(n), 0.015, `E[ES_${n}]/σ della tabella`); }
+  near(Calc.esEquivalent(Calc.esFactor(10), 10, 5), Calc.esFactor(5), 1e-12, "ES medio a 10 → ES medio a 5");
+  ok(Calc.esEquivalent(30, 10, 5) < 30 && Calc.esEquivalent(30, 3, 5) > 30, "più colpi → ES più grande");
+  eq(Calc.esEquivalent(30, 1, 5), null, "n = 1");
+  for (let n = 3; n <= 50; n++) ok(Calc.ES_E[n] > Calc.ES_E[n - 1], `tabella crescente (${n})`);
+  // diagnostica: modello giusto → p non piccoli in media; due centri e stringing riconosciuti
+  let small = 0;
+  for (let k = 0; k < 40; k++) { const D = Calc.modelDiagnostics([...Array(10)].map(() => ({ x: g.gauss(), y: g.gauss() })), { sims: 300, seed: k }); if (D.gof.p < 0.05) small++; }
+  ok(small <= 6, `test di adattamento: pochi falsi allarmi nel modello (${small}/40)`);
+  const two = [...Array(6)].map(() => ({ x: 0.3 * g.gauss() - 3, y: 0.3 * g.gauss() })).concat([...Array(6)].map(() => ({ x: 0.3 * g.gauss() + 3, y: 0.3 * g.gauss() })));
+  const D2 = Calc.modelDiagnostics(two, { sims: 500 }); ok(D2.two.p < 0.01, "due centri distinti"); eq(D2.two.split.length, 6, "divisione 6 + 6");
+  ok(Calc.modelDiagnostics([...Array(10)].map(() => ({ x: 0.2 * g.gauss(), y: 3 * g.gauss() })), { sims: 500 }).aniso.p < 0.01, "stringing verticale");
+  eq(Calc.modelDiagnostics([...Array(7)].map(() => ({ x: g.gauss(), y: g.gauss() }))).two, null, "due centri solo da 8 colpi");
+  eq(Calc.modelDiagnostics([{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: 2, y: 0 }, { x: 1, y: 3 }]), null, "meno di 5 colpi");
+  const Dq = Calc.modelDiagnostics([...Array(6)].map((_, i) => ({ x: Math.cos(i), y: Math.sin(2 * i) })));
+  ok(Dq.qq.every((v, i) => i === 0 || (v.q > Dq.qq[i - 1].q && v.r >= Dq.qq[i - 1].r)), "QQ ordinato");
+  // invarianza: stesso p dopo rotazione, traslazione e scala
+  const P = [...Array(9)].map(() => ({ x: g.gauss(), y: 2 * g.gauss() })), T = P.map(p => ({ x: 100 + 7 * (p.x * 0.6 - p.y * 0.8), y: -50 + 7 * (p.x * 0.8 + p.y * 0.6) }));
+  const A1 = Calc.modelDiagnostics(P), A2 = Calc.modelDiagnostics(T);
+  near(A1.aniso.ratio, A2.aniso.ratio, 1e-9, "rapporto degli assi invariante"); near(A1.gof.A, A2.gof.A, 1e-9, "Anderson–Darling invariante"); eq(A1.two.p, A2.two.p, "due centri invariante");
+  // incertezza di misura: senza errori intervallo nullo; con errore di scala ES scala con k
+  const Q = [{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 10, y: 30 }, { x: 25, y: 12 }, { x: 5, y: 8 }];
+  const M0 = Calc.measurementMC({ pts: Q, u: Q.map(() => 0), k: 0.5, uK: 0, poa: { x: 0, y: -40 }, uPoa: 0 });
+  const E0 = Calc.extremeSpread(Q).d * 0.5;
+  near(M0.es.lo, E0, 1e-9, "senza errori: ES esatto"); near(M0.es.hi, E0, 1e-9, "senza errori: intervallo nullo");
+  near(M0.off.lo, Math.hypot(16, 50) * 0.5, 1e-9, "scostamento dalla mira");
+  const M1 = Calc.measurementMC({ pts: Q, u: Q.map(() => 0), k: 0.5, uK: 0.01, level: 0.95 });
+  near(M1.es.hi / E0 - 1, 1.96 * 0.01, 0.004, "errore di scala 1%: ES ±2% (95%)");
+  const M2 = Calc.measurementMC({ pts: Q, u: Q.map(() => 1), k: 0.5, uK: 0 });
+  ok(M2.es.lo < E0 && M2.es.hi > E0 && M2.mr.hi > M2.mr.lo, "marcatura ±1 px: intervallo attorno al valore");
+  ok(M2.sigmaComb.hi > M2.sigma.hi && M2.sigmaComb.lo < M2.sigma.lo, "combinato più largo di quello di misura");
+  // diametro del foro: disco di raggio 10 px su sfondo chiaro, senza vincolo di area
+  { const w = 101, h = 101, lum = new Uint8Array(w * h).fill(220); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.hypot(x + 0.5 - 50.5, y + 0.5 - 50.5) <= 10) lum[y * w + x] = 20;
+    const D = Calc.holeDiameter(lum, w, h, 52, 49, { rSearch: 30 }); near(D.d, 20, 0.6, "diametro del disco"); near(D.x, 50.5, 0.05, "centro"); }
+}
+
 console.log(`OK — ${passed} verifiche superate`);

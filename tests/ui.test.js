@@ -1439,6 +1439,115 @@ test("distorsione dell'obiettivo: calibrazione da linee, punti riportati, sessio
   near(Math.hypot((await page.evaluate(() => window.__SA.state.groups[0].shots[0])).x - d0.x, 0), 0, 3, "rimossa: punti sulla foto originale");
 });
 
+/* ------------------------------ 1.11.0 ------------------------------ */
+/** Foto con fori neri di diametro dPx nelle posizioni date (sfondo bianco). */
+async function loadHolesImg(page, holes, dPx) {
+  const dataUrl = await page.evaluate(([holes, dPx]) => { const c = document.createElement("canvas"); c.width = 800; c.height = 600; const g = c.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, 800, 600); g.fillStyle = "#111"; for (const h of holes) { g.beginPath(); g.arc(h.x, h.y, dPx / 2, 0, Math.PI * 2); g.fill(); }
+    return c.toDataURL("image/png"); }, [holes, dPx]);
+  await page.setInputFiles("#fImg", { name: "fori.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.name === "fori.png");
+}
+const HOLES = [{ x: 420, y: 230 }, { x: 470, y: 260 }, { x: 405, y: 290 }, { x: 455, y: 205 }, { x: 430, y: 330 }];
+test("verifica incrociata della scala: diametro dei fori e riferimento di controllo", async page => {
+  await loadHolesImg(page, HOLES, 30);   // 30 px a 4 px/mm = 7,5 mm
+  await expandAll(page);
+  await page.selectOption("#caliberUnit", "mm"); await setField(page, "#caliber", 7.62);
+  await setupGroup(page, POA, HOLES.map(h => ({ x: h.x + 3, y: h.y - 2 })));
+  let H = await page.evaluate(() => window.__SA.holeScaleCheck(window.__SA.calcContext()));
+  assert.strictEqual(H.n, 5); near(H.mm, 7.5, 0.4, "diametro mediano misurato"); ok2(!H.bad, "coerente");
+  ok2(/Fori misurati: ⌀ mediano/.test(await page.textContent("#calStatus")), "riga di controllo");
+  ok2(await page.evaluate(() => window.__SA.state.groups[0].shots.every(s => s.snap)), "fori agganciati dallo snap: marcati");
+  // distanza nota scritta in cm invece che in mm: la scala è 10× più piccola → i fori misurano il 10% del calibro... qui 1000%
+  await page.selectOption("#calUnit", "cm");
+  H = await page.evaluate(() => window.__SA.holeScaleCheck(window.__SA.calcContext()));
+  ok2(H.bad && H.ratio > 5, "unità sbagliata: allarme (" + H.ratio + ")");
+  ok2(/scala o calibro probabilmente sbagliati/.test(await page.textContent("#calStatus")), "avviso visibile");
+  await page.selectOption("#calUnit", "mm");
+  // riferimento di controllo: 200 px = 50 mm con la scala di 4 px/mm
+  await page.click("#bRef"); assert.strictEqual(await page.evaluate(() => window.__SA.state.mode), "ref");
+  await clickAt(page, { x: 150, y: 450 }); await clickAt(page, { x: 350, y: 450 });
+  ok2(await page.evaluate(() => window.__SA.state.mode !== "ref"), "finito dopo 2 punti");
+  await setField(page, "#refLen", 50);
+  let R = await page.evaluate(() => { const S = window.__SA, cc = S.calcContext(); return S.refScaleCheck(cc, S.calibQuality(cc)); });
+  near(R.meas, 50, 0.01, "misurato con la scala"); ok2(!R.bad, "coerente");
+  await setField(page, "#refLen", 45);
+  R = await page.evaluate(() => { const S = window.__SA, cc = S.calcContext(); return S.refScaleCheck(cc, S.calibQuality(cc)); });
+  ok2(R.bad && Math.abs(R.diff - 50 / 45 + 1) < 1e-6, "11% di differenza: allarme");
+  ok2(/Riferimento di controllo: misurato/.test(await page.textContent("#calStatus")), "riga del riferimento");
+  ok2(await page.evaluate(() => !!window.__SA.buildSession().calib.r2), "riferimento nella sessione");
+  await key(page, "Control+z");
+  ok2(await page.evaluate(() => !window.__SA.state.calib.r2), "annulla il secondo punto del riferimento");
+});
+
+test("incertezza di misura, foro difficile, ES equivalente", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const r = await page.textContent("#results");
+  ok2(/Incertezza di misura \(95%\): ES/.test(r), "blocco nei risultati");
+  ok2(/ES equivalente/.test(r) && /10 colpi/.test(r) && !/5 colpi \d/.test(r), "5 colpi: solo l'equivalente a 10");
+  const e = await page.evaluate(() => { const S = window.__SA, a = analyzeA(); function analyzeA() { const g = S.state.groups[0], cc = S.calcContext(); return S.Calc.analyze(g.shots, g.poa, cc); } return S.Calc.esEquivalent(a.mm.es, 5, 10); });
+  ok2(r.includes(e.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })), "valore dell'ES equivalente");
+  const M0 = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0]; return S.measInfo(g, S.calcContext()); });
+  ok2(M0.es.hi > M0.es.lo, "intervallo non nullo");
+  await page.click("#points button[data-hard] >> nth=0");
+  ok2(await page.evaluate(() => window.__SA.state.groups[0].shots[0].hard === true), "foro difficile");
+  const M1 = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0]; return S.measInfo(g, S.calcContext()); });
+  near(M1.u[0], 4.5, 1e-9, "a mano 1,5 px × 3"); near(M1.u[1], 1.5, 1e-9, "gli altri 1,5 px");
+  ok2(await page.evaluate(() => window.__SA.buildSession().groups[0].shots[0].hard === true), "nella sessione");
+  await setField(page, "#markHand", 0); await setField(page, "#markSnap", 0);
+  const M2 = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0]; return S.measInfo(g, S.calcContext()); });
+  ok2(M2.es.hi - M2.es.lo < M1.es.hi - M1.es.lo, "senza marcatura resta solo la scala: intervallo più stretto");
+});
+
+test("flyer con Mahalanobis: niente falsi flyer alle estremità di un gruppo allungato", async page => {
+  await loadTarget(page);
+  const line = [{ x: 260, y: 300 }, { x: 330, y: 298 }, { x: 380, y: 303 }, { x: 420, y: 299 }, { x: 460, y: 302 }, { x: 500, y: 300 }, { x: 640, y: 301 }];
+  await setupGroup(page, { x: 400, y: 400 }, line);
+  let T = await page.evaluate(() => window.__SA.flyerTest(window.__SA.state.groups[0].shots, 2));
+  ok2(T.every(f => f.method === "mahal") && !T.some(f => f.flagged), "estremità lungo l'asse: nessun flyer");
+  ok2(await page.evaluate(() => window.__SA.Calc.flyers(window.__SA.state.groups[0].shots, 2)[6].flagged), "il criterio euclideo l'avrebbe segnalato");
+  ok2(/test di Mahalanobis/.test(await page.textContent("#points")), "nota sotto la tabella");
+  await clickAt(page, { x: 420, y: 340 });   // colpo fuori dall'asse
+  T = await page.evaluate(() => window.__SA.flyerTest(window.__SA.state.groups[0].shots, 2));
+  ok2(T[7].flagged, "colpo fuori asse: flyer");
+  const tip = await page.getAttribute("#points .flyer", "title");
+  ok2(/Mahalanobis/.test(tip), "tooltip: " + tip);
+});
+
+test("diagnostica del modello: due centri, QQ-plot e avviso", async page => {
+  await loadTarget(page);
+  const A = [{ x: 380, y: 250 }, { x: 396, y: 262 }, { x: 370, y: 270 }, { x: 394, y: 238 }, { x: 378, y: 284 }],
+    B = A.map(p => ({ x: p.x + 220, y: p.y + 4 }));
+  await setupGroup(page, { x: 300, y: 400 }, [...A, ...B]);
+  await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; }, null, { timeout: 15000 });
+  const D = await page.evaluate(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return { two: D.two.p, an: D.aniso.p, n: D.qq.length }; });
+  ok2(D.two < 0.05, "due centri: p " + D.two); assert.strictEqual(D.n, 10);
+  await page.waitForFunction(() => /Modello circolare normale poco adatto/.test(document.getElementById("results").textContent));
+  ok2(/due centri distinti/.test(await page.textContent("#results")), "avviso con il motivo");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.qq.length), 10, "QQ-plot: un punto per foro");
+  ok2(/Rayleigh/.test(await page.textContent("#chQQNote")), "nota del QQ-plot");
+});
+
+test("reticolo: zoom con rotella, pulsanti, trascinamento e doppio clic", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await page.selectOption("#rtSrc", "active");
+  await page.locator("#chReticle").scrollIntoViewIfNeeded();
+  const b = await page.locator("#chReticle").boundingBox();
+  await page.mouse.move(b.x + b.width * 0.7, b.y + b.height / 2); await page.mouse.wheel(0, -300); await page.waitForTimeout(100);
+  const v1 = await page.evaluate(() => ({ ...window.__SA.RT_VIEW }));
+  ok2(v1.zoom > 1 && v1.cx > 0, "rotella: ingrandisce verso il cursore");
+  await page.mouse.down(); await page.mouse.move(b.x + b.width * 0.5, b.y + b.height / 2, { steps: 3 }); await page.mouse.up();
+  ok2(await page.evaluate(() => window.__SA.RT_VIEW.cx) > v1.cx, "trascinando si sposta la vista");
+  await page.click("#bRtIn"); near(await page.evaluate(() => window.__SA.RT_VIEW.zoom), v1.zoom * 1.5, 1e-9, "pulsante +");
+  await page.dblclick("#chReticle"); assert.deepStrictEqual(await page.evaluate(() => ({ ...window.__SA.RT_VIEW })), { zoom: 1, cx: 0, cy: 0 }, "doppio clic: vista intera");
+  await page.click("#bRtOut"); assert.strictEqual(await page.evaluate(() => window.__SA.RT_VIEW.zoom), 1, "non si riduce sotto la vista intera");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };

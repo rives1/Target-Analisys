@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.11.0] - 2026-11-18
+### Aggiunto
+- **Verifica incrociata della scala**: diametro di ogni foro misurato nella foto (macchia scura senza vincolo di area,
+  diametro equivalente), mediana confrontata con il calibro, allarme fuori da 70–130%; **riferimento di controllo**
+  («📏»: due punti a distanza nota, es. un anello) con allarme se la differenza supera l'incertezza (k = 2). Il riferimento
+  segue prospettiva, distorsione, annulla e sessione.
+- **Incertezza di misura** nei risultati (simulazione): marcatura per foro (1,5 px a mano, 0,5 px con lo snap, ×3 sui
+  fori segnati come difficili ◐), mira e scala → intervalli di ES, raggio medio, scostamento, σ e σ/CEP combinati con
+  l'incertezza statistica. I fori ricordano se sono stati agganciati dallo snap.
+- **Diagnostica del modello**: QQ-plot Rayleigh nella vista grafici e tre test con p-value per simulazione dal modello
+  (adattamento Anderson–Darling, anisotropia/stringing, due centri da 8 colpi); avviso nei risultati se p < 5%, con nota
+  sulla bassa potenza sotto 10 colpi.
+- **ES equivalente** a 5 e 10 colpi: ES · E_m / E_n con la tabella E[ES_n]/σ (n = 2–50) calcolata per simulazione.
+- **Zoom del reticolo**: rotella, trascinamento, doppio clic e pulsanti ＋ － ⟲.
+### Cambiato
+- **Flyer**: test di Mahalanobis leave-one-out con p-value F (previsione di Hotelling) e correzione di Bonferroni, da 5
+  colpi; il criterio radiale k·SD (falsi flyer in oltre il 90% dei gruppi normali, verificato per simulazione) e il campo
+  «Soglia flyer» sono stati tolti (scelta concordata).
+- Help tecnico: sezioni «Verifica incrociata della scala», «Incertezza di misura», «Diagnostica del modello»,
+  «ES equivalente», flyer riscritto; guida rapida e traduzioni.
+- Test: 624 verifiche del motore, 47 scenari UI.
+
 ## [1.10.0] - 2026-11-18
 ### Aggiunto
 - **Etichetta del group size** (ES centro-centro in mm e nell'unità dei click) sopra ogni gruppo, sull'immagine e nella

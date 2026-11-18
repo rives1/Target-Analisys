@@ -37,7 +37,9 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Forma del gruppo**: angolo dell'asse maggiore, rapporto d'aspetto, **ellisse di dispersione** (50–99%).
 - **Probabilità di colpire** un cerchio o un rettangolo, anche a un'altra distanza: probabilità per colpo e «colpi su 100» con intervallo di confidenza, con la correzione applicata e con la taratura attuale.
 - **Correzione**: click per asse dal centro gruppo al punto di mira, con intervallo di confidenza; click anche per ogni foro nella tabella punti.
-- **Flyer**: segnalati automaticamente (⚠, da 5 fori) ed escludibili dal calcolo.
+- **Flyer**: segnalati automaticamente (⚠, da 5 fori) con il test di Mahalanobis leave-one-out (criterio ellittico, F di Hotelling, Bonferroni) ed escludibili dal calcolo.
+- **Verifica incrociata della scala**: diametro mediano dei fori contro il calibro e riferimento di controllo di lunghezza nota.
+- **Incertezza di misura** per simulazione (marcatura per foro, fori «difficili», errore di scala) accanto agli IC statistici; **diagnostica del modello** (QQ-plot Rayleigh, test di adattamento, stringing e due centri); **ES equivalente** a 5 e 10 colpi.
 - **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
 - **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, meteo, temperatura, umidità, pressione, vento, colpi sparati, scaldacanna, note.
 - **Orientamento**: rotazione della foto (raddrizza con 2 punti, angolo libero, ±90°); punti e direzioni seguono il bersaglio raddrizzato.
@@ -82,7 +84,7 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - Cono di dispersione: modello ad angolo costante, limitato a 2 volte la distanza più lunga tirata; niente balistica.
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
-- Il riconoscimento dei flyer usa la distanza dal centro: in gruppi molto allungati può segnalare i fori alle estremità.
+- Il test dei flyer sbaglia in circa il 5% dei gruppi ma con pochi colpi ha poca potenza: segnala solo colpi molto lontani (a 8 σ: 22% con 5 colpi, 98% con 10). I test della diagnostica hanno poca potenza sotto 10 colpi.
 - Salvataggio automatico e archivio stanno nel browser (IndexedDB): si perdono cancellando i dati del sito e non passano da un browser o PC all'altro. «Salva sessione» resta il salvataggio vero. Da `file://` IndexedDB funziona in Chrome ed Edge; negli altri browser, se non è disponibile, l'app lo segnala.
 - Il punteggio è stimato dalla foto: per i colpi «sulla linea» (≈) decide il calibro di controllo; il punteggio decimale dei bersagli elettronici non è calcolato.
 
@@ -104,7 +106,7 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 | SD distanze dal centro | deviazione standard campionaria delle distanze dal centroide |
 | SD radiale | √(σx² + σy²), σ campionarie per asse |
 | CEP / R95 / R99 | σ̂·√(−2 ln(1−p)) con σ̂ = √((σx²+σy²)/2) / c(ν=2(n−1)): 1,1774 / 2,4477 / 3,0349 σ̂ |
-| Flyer | leave-one-out: (d − media) / SD delle distanze degli altri fori dal loro centro > k (default 2), n ≥ 5 |
+| Flyer | leave-one-out Mahalanobis: (m − 2)/(2(m − 1)) · m/(m + 1) · d² ~ F(2, m − 2), m = n − 1; flyer se p < 5%/n, n ≥ 5 |
 | Direzione | atan2(dx, dy) in gradi, 0° = alto, senso orario, 16 settori (N, NNE, … NNO) |
 | IC di σ | [σ̂·√(ν/χ²_{ν,1−α/2}), σ̂·√(ν/χ²_{ν,α/2})], σ̂² = (σx²+σy²)/2, ν = 2(n−1); CEP/R95/R99 e raggio medio atteso (σ·√(π/2)) in proporzione |
 | IC del centro gruppo | per asse ± t_{n−1,1−α/2}·s/√n, tradotto in click di correzione |
@@ -138,11 +140,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (541 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (624 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (42 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (47 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```
