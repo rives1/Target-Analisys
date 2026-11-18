@@ -160,7 +160,6 @@ const GROUPS = [
   // probabilità
   await openOnly("sec-hit"); await shotEl("#sec-hit", "21_probabilita");
   // calibrazione qualità
-  await openOnly("sec-calib"); await shotEl("#calStatus", "22_semaforo");
   // ritaglio
   await page.setViewportSize({ width: 1440, height: 900 });
   await ev(() => { document.getElementById("sideFoot").style.display = ""; document.getElementById("toast").style.visibility = ""; });
@@ -188,7 +187,7 @@ const GROUPS = [
   await key("a"); await page.waitForFunction(() => window.__SA.anaOpen()); await page.waitForTimeout(800);
   await ev(() => { document.getElementById("toast").classList.remove("show"); }); await page.waitForTimeout(300);
   await shotPage("30_vista_grafici");
-  for (const [sel, n] of [["#chScatter", "31_dispersione"], ["#chHist", "32_istogramma"], ["#chClock", "33_orologio"], ["#chPolar", "34_polare"], ["#ch3d", "35_densita3d"], ["#chQQ", "36_qq"]])
+  for (const [sel, n] of [["#chScatter", "31_dispersione"], ["#chHist", "32_istogramma"], ["#chClock", "33_orologio"], ["#chPolar", "34_polare"], ["#ch3d", "35_densita3d"], ["#chQQ", "36_qq"], ["#chStab", "45_stabilita"], ["#chStabC", "46_centro_progressivo"]])
     await shotEl(`#charts > div:has(${sel})`, n).catch(async () => shotEl(sel, n));
   await ev(() => { document.querySelector(".ana-head").style.position = "static"; });
   await shotEl("#cmpBox", "37_confronto", { wait: 400 });

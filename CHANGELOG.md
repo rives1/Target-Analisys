@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.14.0] - 2026-11-18
+### Aggiunto
+- **Stabilità colpo dopo colpo** (`Calc.stability`): group size, raggio medio e centro dei primi k colpi nell'ordine di
+  sparo; fascia del group size atteso per caso (2000 sequenze simulate con il σ della serie); test globale «il gruppo
+  si apre» sulla frazione ES_k/ES_n con correzione per i confronti multipli (falsi allarmi ≈ 5%) e colpo dell'apertura;
+  spostamento del punto d'impatto (regressione di x e y sul numero del colpo, Bonferroni). Grafici a gradini e
+  traiettoria del centro nella vista grafici, scheda «Stabilità» nei risultati (da 5 colpi).
+- **Ordine di sparo** modificabile con ↑/↓ nella tabella dei punti (annullabile, salvato nella sessione).
+- **Report PDF con testo vero**: testo e tabelle in Helvetica/Helvetica-Bold (WinAnsi, metriche AFM, nessun font
+  incorporato), selezionabili e cercabili, contenuti compressi, segnalibri, metadati (Titolo, Soggetto, Parole chiave,
+  ShootAnalyzerCalibration, ShootAnalyzerModel, lingua). Nuove sezioni: Calibrazione (metodo, punti, distanza nota,
+  px/mm e mm/px, incertezza e semaforo, inquadratura, verifiche, rotazione, prospettiva, distorsione, marcatura),
+  Colpi analizzati (marcati, inclusi, esclusi, flyer, marcatura), Modello statistico e incertezza (σ con IC e gradi di
+  libertà, coefficienti, metodi degli intervalli, test dei flyer, diagnostica, incertezza di misura, stabilità).
+  Tutti i grafici: polare, densità 3D, QQ-plot, stabilità, centro colpo dopo colpo, correlazioni, cono, confronto
+  visivo, reticolo.
+### Cambiato
+- Rettangolo di riferimento della prospettiva: il preset «Quadrato 10 × 10 mm» diventa «Quadrato 100 × 100 mm»; le
+  sessioni con il vecchio preset tengono le misure e passano a «Personalizzato».
+- Manuale d'uso aggiornato alla 1.14 (`docs/manuale/Manuale_Shoot_Analyzer_v1.14.pdf`, 58 pagine).
+- Test: 678 verifiche del motore, 54 scenari UI (testo del PDF estratto e controllato).
+
 ## [1.13.1] - 2026-11-18
 ### Aggiunto
 - **Manuale d'uso** in PDF (`docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf`, 52 pagine, italiano): flusso di lavoro,

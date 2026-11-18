@@ -564,4 +564,29 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   near(W(5, 3).cross, Calc.crossWind(5, "m/s", 3), 1e-12, "coerente con crossWind in m/s");
 }
 
+/* ---------------- 1.14.0: stabilità colpo dopo colpo ---------------- */
+{
+  let sd = 4242; const u = () => (sd = (sd * 16807) % 2147483647) / 2147483647, gs = () => Math.sqrt(-2 * Math.log(u())) * Math.cos(2 * Math.PI * u());
+  eq(Calc.stability([{ x: 0, y: 0 }, { x: 1, y: 1 }]), null, "meno di 3 colpi: null");
+  const P3 = [{ x: 0, y: 0 }, { x: 3, y: 4 }, { x: 0, y: 8 }], S3 = Calc.stability(P3, { sims: 300 });
+  eq(S3.steps.map(s => s.es), [5, 8], "ES progressivo (3-4-5 e poi 8)");
+  near(S3.steps[0].c.x, 1.5, 1e-12, "centro dei primi 2"); eq(S3.open, null, "sotto 5 colpi niente test"); eq(S3.drift, null, "né deriva");
+  const P = Array.from({ length: 12 }, () => ({ x: 10 * gs(), y: 10 * gs() })), S = Calc.stability(P, { sims: 800 });
+  P.slice(1).forEach((_, i) => near(S.steps[i].es, Calc.extremeSpread(P.slice(0, i + 2)).d, 1e-12, "ES dei primi " + (i + 2)));
+  near(S.steps[11 - 1].mr, Calc.meanRadius(P, Calc.centroid(P)), 1e-12, "raggio medio finale");
+  ok(S.band.every((b, i) => b.lo <= b.med && b.med <= b.hi && (i === 0 || b.med >= S.band[i - 1].med - 1e-9)), "fascia ordinata e mediana crescente");
+  near(S.band[3].med / S.sigma, 3.0, 0.15, "mediana di ES_5 / sigma (circa 3, media tabellata 3,07)");
+  eq(JSON.stringify(Calc.stability(P, { sims: 800 })), JSON.stringify(S), "riproducibile (seme fisso)");
+  // falsi positivi sotto l'ipotesi nulla (colpi tutti uguali in distribuzione): circa il 5%
+  let fo = 0, fd = 0; const R = 160;
+  for (let r = 0; r < R; r++) { const Q = Array.from({ length: 8 }, () => ({ x: gs(), y: gs() })), T = Calc.stability(Q, { sims: 400, seed: r + 7 }); if (T.open.p < 0.05) fo++; if (Math.min(T.drift.x.p, T.drift.y.p) < 0.05) fd++; }
+  ok(fo / R < 0.12 && fd / R < 0.12, `falsi allarmi: apertura ${fo}/${R}, deriva ${fd}/${R}`);
+  // apertura netta: 6 colpi stretti, poi 3 larghi
+  const O = [...Array.from({ length: 6 }, () => ({ x: 2 * gs(), y: 2 * gs() })), { x: 40, y: -30 }, { x: -45, y: 25 }, { x: 30, y: 45 }], SO = Calc.stability(O, { sims: 1000 });
+  ok(SO.open.p < 0.05 && SO.open.from === 7, "si apre dal 7° colpo: " + JSON.stringify(SO.open));
+  // deriva: 1 unità a colpo verso destra con sigma 1
+  const Dr = Array.from({ length: 12 }, (_, i) => ({ x: i + gs(), y: gs() })), SD = Calc.stability(Dr, { sims: 200 });
+  ok(SD.drift.x.p < 0.01 && Math.abs(SD.drift.x.slope - 1) < 0.35, "deriva orizzontale rilevata: " + JSON.stringify(SD.drift.x));
+}
+
 console.log(`OK — ${passed} verifiche superate`);

@@ -479,9 +479,11 @@ test("probabilità di colpire: cerchio, rettangolo, altra distanza, testo e sess
   await page.evaluate(t => window.__SA.loadSessionText(t), sess);
   assert.strictEqual(await page.inputValue("#hitShape"), "rect");
   assert.strictEqual(await page.inputValue("#hitDist"), "200");
-  // preset 10 × 10 e 30 × 30 mm del rettangolo di riferimento
-  await page.selectOption("#perspPreset", "10x10");
-  assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH")], ["10", "10"]);
+  // preset 100 × 100 e 30 × 30 mm del rettangolo di riferimento (il 10 × 10 della 1.13 diventa «Personalizzato»)
+  await page.selectOption("#perspPreset", "100x100");
+  assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH")], ["100", "100"]);
+  await page.evaluate(() => window.__SA.setParams({ perspW: 10, perspH: 10, perspPreset: "10x10" }));
+  assert.deepStrictEqual([await page.inputValue("#perspPreset"), await page.inputValue("#perspW")], ["custom", "10"], "vecchio preset 10 × 10");
   await page.selectOption("#perspPreset", "30x30");
   assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH")], ["30", "30"]);
 });
@@ -1017,7 +1019,7 @@ test("snap al centro del foro, Alt+clic senza snap, tasto M, cerchio del calibro
 
 /* ------------------------------ 1.8.0 ------------------------------ */
 /** Controlla la struttura di un PDF: intestazione, xref coerente (ogni offset punta al suo oggetto), pagine e immagini. */
-function checkPdf(buf) {
+function checkPdf(buf, jpegPerPage = false) {
   const t = buf.toString("latin1");
   assert.ok(t.startsWith("%PDF-1.4\n"), "intestazione PDF");
   assert.ok(/%%EOF\n$/.test(t), "fine del file");
@@ -1027,9 +1029,24 @@ function checkPdf(buf) {
   const lines = t.slice(sx + m[0].length).split("\n").slice(0, n);
   lines.slice(1).forEach((l, i) => { const off = +l.slice(0, 10); assert.ok(t.startsWith(`${i + 1} 0 obj`, off), `offset dell'oggetto ${i + 1}`); });
   const pages = (t.match(/\/Type \/Page /g) || []).length;
-  assert.strictEqual((t.match(/\/Filter \/DCTDecode/g) || []).length, pages, "un'immagine JPEG per pagina");
+  if (jpegPerPage) assert.strictEqual((t.match(/\/Filter \/DCTDecode/g) || []).length, pages, "un'immagine JPEG per pagina");
   assert.ok(t.includes(`/Count ${pages}`), "conteggio delle pagine");
   return pages;
+}
+/** Testo del PDF (dalla 1.14.0): flussi FlateDecode decompressi, stringhe dei Tj decodificate in cp1252, una riga per Tj. */
+function pdfText(buf) {
+  const zlib = require("zlib"), t = buf.toString("latin1"), out = [];
+  const cp = [0x20ac, 0, 0x201a, 0x192, 0x201e, 0x2026, 0x2020, 0x2021, 0x2c6, 0x2030, 0x160, 0x2039, 0x152, 0, 0x17d, 0, 0, 0x2018, 0x2019, 0x201c, 0x201d, 0x2022, 0x2013, 0x2014, 0x2dc, 0x2122, 0x161, 0x203a, 0x153, 0, 0x17e, 0x178];
+  const re = /<< \/Length (\d+) \/Filter \/FlateDecode >>\nstream\n/g; let m;
+  while ((m = re.exec(t))) {
+    const start = m.index + m[0].length, data = buf.subarray(start, start + +m[1]);
+    const s = zlib.inflateSync(data).toString("latin1");
+    for (const mm of s.matchAll(/\(((?:\\.|[^\\)])*)\) Tj/g)) {
+      const raw = mm[1].replace(/\\([0-7]{3}|.)/g, (_, e) => /^[0-7]{3}$/.test(e) ? String.fromCharCode(parseInt(e, 8)) : e);
+      out.push([...raw].map(ch => { const c = ch.charCodeAt(0); return c >= 128 && c < 160 ? String.fromCharCode(cp[c - 128] || 63) : ch; }).join(""));
+    }
+  }
+  return out.join("\n");
 }
 test("convex hull: area e perimetro nei risultati, sull'immagine, nei CSV", async page => {
   await loadTarget(page);
@@ -1116,7 +1133,17 @@ test("report PDF: file valido, una o più pagine, nome e contenuto", async page 
   assert.match(d1.suggestedFilename(), /^bersaglio_report_\d{4}-\d\d-\d\d--\d\d-\d\d\.pdf$/);
   const b1 = require("fs").readFileSync(await d1.path());
   const p1 = checkPdf(b1);
-  ok2(p1 >= 1 && p1 <= 3, `gruppo attivo: ${p1} pagine`);
+  ok2(p1 >= 2 && p1 <= 5, `gruppo attivo: ${p1} pagine`);
+  // testo vero (1.14.0): sezioni, metadati della calibrazione, colpi, modello statistico; font standard; Info
+  const T1 = pdfText(b1), s1 = b1.toString("latin1");
+  for (const w of ["Calibrazione", "Metodo", "2 punti: A", "Incertezza della scala", "COLPI ANALIZZATI", "5 marcati · 5 analizzati · 0 esclusi", "MODELLO STATISTICO E INCERTEZZA",
+    "normale circolare bivariata", "Test dei flyer", "Diagnostica del modello", "Incertezza di misura", "Stabilità colpo dopo colpo", "Livello di confidenza", "nota per il report", "Group size (c-c)"])
+    ok2(T1.includes(w), "testo nel PDF: " + w);
+  ok2(/sigma per asse/.test(T1) && !/[σ√]/.test(T1), "simboli fuori da WinAnsi sostituiti");
+  ok2(/\/BaseFont \/Helvetica \/Encoding \/WinAnsiEncoding/.test(s1) && /\/BaseFont \/Helvetica-Bold/.test(s1), "font standard");
+  ok2(/\/ShootAnalyzerCalibration <FEFF/.test(s1) && /\/Subject <FEFF/.test(s1) && /\/Lang <FEFF/.test(s1), "metadati Info e lingua");
+  ok2((s1.match(/\/Filter \/DCTDecode/g) || []).length >= 4, "foto e grafici come immagini");
+  ok2(/\/Outlines \d+ 0 R/.test(s1), "segnalibri");
   // tutti i gruppi, con confronto e dope card: più pagine
   await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
   for (const q of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, q);
@@ -1128,6 +1155,8 @@ test("report PDF: file valido, una o più pagine, nome e contenuto", async page 
   const [d2] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
   const p2 = checkPdf(require("fs").readFileSync(await d2.path()));
   ok2(p2 > p1, `tutti i gruppi: ${p2} pagine`);
+  const T2 = pdfText(require("fs").readFileSync(await d2.path()));
+  ok2(T2.includes("Confronto tra gruppi") && T2.includes("Gruppo 2"), "sezioni d'insieme e secondo gruppo");
   assert.match(await page.textContent("#toast"), /Report PDF salvato/);
   assert.strictEqual(await page.evaluate(() => document.documentElement.dataset.theme), theme1, "tema ripristinato dopo il report");
 });
@@ -1228,7 +1257,7 @@ test("bersaglio di autoverifica: PDF, foto del bersaglio stampato, misura e veri
   ok2(code >= 1000 && code <= 9999, "codice nuovo");
   assert.strictEqual(dl.suggestedFilename(), `bersaglio_prova_SA-${code}.pdf`);
   const buf = require("fs").readFileSync(await dl.path());
-  assert.strictEqual(checkPdf(buf), 1, "una pagina");
+  assert.strictEqual(checkPdf(buf, true), 1, "una pagina");
   ok2(buf.toString("latin1").includes("/Width 2480 /Height 3508"), "A4 a 300 dpi");
   // «foto» del bersaglio stampato: lo stesso disegno a 100 dpi
   const DPI = 100, k = DPI / 25.4;
@@ -1759,7 +1788,7 @@ test("risultati a card e file ZIP di sessione: salva, riapri, storico, ZIP compr
   await setField(page, "#shotDist", 100);
   await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; });
   const keys = await page.$$eval("#results .rcard", a => a.map(e => e.dataset.key));
-  assert.deepStrictEqual(keys, ["es", "mr", "corr", "shape"], "card");
+  assert.deepStrictEqual(keys, ["es", "mr", "corr", "shape", "stab"], "card (stabilità da 5 colpi)");
   ok2(/3 click SINISTRA/.test(await page.textContent('#results .rcard[data-key="corr"] .rc-main')), "correzione in evidenza");
   ok2(!(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table')), "dettagli chiusi");
   await page.click('#results .rcard[data-key="mr"] .rc-more > summary');
@@ -1808,6 +1837,40 @@ function deflateZip(buf) {
   const cd = Buffer.concat(cen), end = Buffer.alloc(22); end.writeUInt32LE(0x06054b50, 0); end.writeUInt16LE(n, 8); end.writeUInt16LE(n, 10); end.writeUInt32LE(cd.length, 12); end.writeUInt32LE(off, 16);
   return Buffer.concat([...out, cd, end]);
 }
+
+test("stabilità colpo dopo colpo e ordine di sparo", async page => {
+  await loadTarget(page);
+  const PTS = [{ x: 304, y: 270 }, { x: 345, y: 230 }, { x: 270, y: 250 }, { x: 330, y: 290 }, { x: 290, y: 205 }, { x: 470, y: 120 }, { x: 140, y: 380 }];
+  await setupGroup(page, POA, PTS);
+  const S0 = await page.evaluate(() => window.__SA.stabInfo(window.__SA.state.groups[0]));
+  assert.strictEqual(S0.steps.length, 6, "dal 2° al 7° colpo");
+  const es = await page.evaluate(() => { const C = window.__SA.Calc, P = window.__SA.state.groups[0].shots; return P.slice(1).map((_, i) => C.extremeSpread(P.slice(0, i + 2)).d); });
+  S0.steps.forEach((s, i) => near(s.es, es[i], 1e-9, "ES progressivo " + (i + 2)));
+  ok2(S0.open && S0.open.from === 6 && S0.open.p < 0.05, "si apre dal 6° colpo: " + JSON.stringify(S0.open));
+  ok2(/si apre dal colpo 6/.test(await page.textContent('#results .rcard[data-key="stab"]')), "card dei risultati");
+  // grafici
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await page.waitForTimeout(300);
+  ok2(await page.isVisible("#chStab") && await page.isVisible("#chStabC"), "grafici visibili");
+  ok2(/Il gruppo si apre dal colpo 6/.test(await page.textContent("#chStabNote")), "nota del grafico");
+  ok2(/Distanza massima dal centro finale/.test(await page.textContent("#chStabCNote")), "nota della traiettoria");
+  ok2(await page.evaluate(() => window.__SA.CH.hits.stab.length === 6 && window.__SA.CH.hits.stabc.length === 6), "punti con tooltip");
+  await key(page, "Escape");
+  // riordino: il colpo largo spostato all'inizio → nessuna apertura tardiva
+  await page.evaluate(() => { document.getElementById("sec-points").open = true; });
+  const id6 = (await S(page)).g.shots[5].id;
+  for (let i = 0; i < 5; i++) await page.click(`#points button[data-mv*='"id":${id6}'][data-d="-1"]`);
+  const g1 = (await S(page)).g;
+  assert.strictEqual(g1.shots[0].id, id6, "foro spostato al primo posto");
+  ok2(await page.isDisabled(`#points button[data-mv*='"id":${id6}'][data-d="-1"]`), "primo: ↑ disattivato");
+  const S1 = await page.evaluate(() => window.__SA.stabInfo(window.__SA.state.groups[0]));
+  ok2(!(S1.open.p < 0.05) || S1.open.from !== 6, "con l'ordine cambiato la diagnosi cambia");
+  near(S1.steps[S1.steps.length - 1].es, S0.steps[S0.steps.length - 1].es, 1e-9, "il group size finale non dipende dall'ordine");
+  await page.evaluate(() => window.__SA.undo());
+  ok2((await S(page)).g.shots[0].id !== id6, "lo spostamento si annulla con Annulla");
+  const ses = await page.evaluate(() => window.__SA.buildSession());
+  ok2(Array.isArray(ses.groups[0].shots), "ordine salvato nella sessione (ordine dell'array)");
+});
 
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {

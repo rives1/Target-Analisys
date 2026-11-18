@@ -11,7 +11,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 
 ## Come usarla
 
-Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.13.pdf).
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.14.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.14.pdf).
 
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
@@ -57,7 +57,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Pannello a sezioni comprimibili**: all'apertura è aperta solo Calibrazione scala; Gruppi e Risultati si aprono da sole al primo punto inserito.
 - **Click di alzo e brandeggio per foro** (ripresi dal foro precedente) e **dope card**: click da impostare per distanza, dai gruppi della sessione e dello storico, filtrati per munizione; CSV e PNG da stampare. Solo le distanze tirate (niente interpolazione senza modello balistico).
 - **Precisione e ricarica**: CEP o raggio medio angolare per **carica di polvere** o per **salto dalle righe** (profondità di seduta), con gruppi combinati e intervallo di confidenza; un livello è indicato come migliore solo se il suo intervallo non si sovrappone agli altri (nessun «nodo» dichiarato su gruppi piccoli).
-- **Report PDF** A4 (pulsante accanto alla Result Card): foto, misure con IC, grafici, tabella dei fori, ricarica e note, confronto, dope card, precisione; generato offline, senza librerie.
+- **Report PDF** A4 (pulsante accanto alla Result Card): foto, calibrazione, colpi analizzati, misure con IC, modello statistico, grafici, tabella dei fori, ricarica e note, confronto, dope card, precisione, correlazioni, cono, reticolo; testo vero, generato offline, senza librerie.
 - **Convex hull** dei fori (sull'immagine e nel grafico, area e perimetro nei risultati e nei CSV).
 - **Glossario contestuale**: nei risultati i termini (CEP, FOM, σ…) mostrano una spiegazione breve e con un clic aprono la voce dell'help tecnico.
 - **Snap al centro del foro** (riconoscimento della macchia vicino al clic, con controlli di plausibilità) e **cerchio del calibro** sul cursore per verificare la scala.
@@ -77,6 +77,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Ritaglio** definitivo della foto (scala invariata) e **croce estesa** del cursore per la mira.
 - **Risultati a card** con dettagli espandibili.
 - **Sessione ZIP**: foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio.
+- **Stabilità colpo dopo colpo**: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto; ordine di sparo modificabile.
+- **Report PDF con testo vero** (selezionabile), con calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -96,6 +98,8 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - Freccia e correzione virtuale valgono alla distanza del gruppo e mostrano solo lo spostamento del centro: il gruppo successivo avrà comunque un centro casuale. La colonna «Effetto ES / RM» descrive il gruppo, non è un criterio di esclusione.
 - Densità, layout del pannello e profili di ricarica sono salvati nel browser (localStorage), non nella sessione.
 - Il ritaglio è definitivo: dopo il caricamento di un'altra foto non si annulla più; conservalo salvando la sessione con la foto (ZIP o JSON con immagine). Le foto JPEG ritagliate sono ricodificate al 95%.
+- La stabilità colpo dopo colpo presuppone che l'ordine dei fori sia quello di sparo; con 5–8 colpi i test vedono solo effetti forti.
+- Report PDF: font standard senza simboli come σ, √, ≈ (scritti a parole); foto e grafici sono immagini JPEG.
 - La card «Vento» non calcola la deriva (serve un calcolatore balistico): mostra vento inserito, componenti e scostamento misurato.
 - Il test dei flyer sbaglia in circa il 5% dei gruppi ma con pochi colpi ha poca potenza: segnala solo colpi molto lontani (a 8 σ: 22% con 5 colpi, 98% con 10). I test della diagnostica hanno poca potenza sotto 10 colpi.
 - Salvataggio automatico e archivio stanno nel browser (IndexedDB): si perdono cancellando i dati del sito e non passano da un browser o PC all'altro. «Salva sessione» resta il salvataggio vero. Da `file://` IndexedDB funziona in Chrome ed Edge; negli altri browser, se non è disponibile, l'app lo segnala.
@@ -153,11 +157,11 @@ specifiche_target_analyzer.md   specifica di progetto (revisione 2)
 CHANGELOG.md                    storia delle versioni
 ```
 
-Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (655 verifiche, inclusi
+Il motore di calcolo (`<script id="calc-engine">`) è puro e testato con Node.js senza dipendenze (678 verifiche, inclusi
 confronti con le tavole statistiche e una simulazione Monte Carlo della copertura degli intervalli di confidenza).
 `tests/i18n.test.js` controlla che ogni testo del codice abbia la traduzione inglese con gli stessi segnaposto
 (eseguito da `npm run test:calc`).
-L'interfaccia è collaudata end-to-end con Playwright (53 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
+L'interfaccia è collaudata end-to-end con Playwright (54 scenari, pagina aperta da `file://`, nessuna richiesta di rete ammessa).
 L'applicazione non usa Node: serve solo per i test.
 
 ```

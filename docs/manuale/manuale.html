@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.13</div>
+    <div class="sub">Manuale d'uso · versione 1.14</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -419,7 +419,7 @@
 <figure><img src="imgj/16_tabella_punti.jpg"><figcaption>La tabella dei punti del gruppo 2 (pannello allargato).</figcaption></figure>
 <table>
 <tr><th style="width:24%">Colonna</th><th>Significato</th></tr>
-<tr><td>Tipo</td><td>Scala A/B, Mira, Centro gruppo (riga evidenziata), Foro 1, 2… Il ⚠ indica un possibile flyer; il pulsante ◐ segna un foro difficile da marcare.</td></tr>
+<tr><td>Tipo</td><td>Scala A/B, Mira, Centro gruppo (riga evidenziata), Foro 1, 2… Il ⚠ indica un possibile flyer; il pulsante ◐ segna un foro difficile da marcare; ↑ e ↓ spostano il foro prima o dopo nell'ordine di sparo.</td></tr>
 <tr><td>Escl.</td><td>Spuntata, il foro resta sulla foto (tratteggiato) ma non entra nei calcoli. Tasto rapido: <kbd>X</kbd> sul foro selezionato.</td></tr>
 <tr><td>Alzo · Brand.</td><td>I click che avevi sulle torrette per quel colpo. Un nuovo foro riprende quelli del precedente.</td></tr>
 <tr><td>X · Y</td><td>Posizione in mm rispetto al punto mirato (X positivo = a destra, Y positivo = in alto).</td></tr>
@@ -431,6 +431,10 @@
 </table>
 <p>Cliccando una riga il punto si evidenzia sulla foto. Al contrario, un <b>doppio clic su un foro</b> nella foto apre la tabella sulla sua riga, che lampeggia. Passando con il mouse sopra un foro, un riquadro mostra subito numero, distanza dalla mira, direzione a ore, click impostati e punteggio.</p>
 <figure class="w55"><img src="imgj/06_tooltip_live.jpg"><figcaption>Il riquadro che compare passando sopra il foro 3, e in alto a destra il pannello dei valori in tempo reale.</figcaption></figure>
+
+<h2>L'ordine di sparo</h2>
+<p>Il numero di ogni foro è l'ordine in cui lo hai cliccato, e l'applicazione lo considera l'<b>ordine di sparo</b>. Conta per l'analisi della stabilità colpo dopo colpo (capitolo 12). Se hai cliccato i fori in un altro ordine, correggilo con le frecce ↑ e ↓ nella colonna «Tipo»: il foro cambia numero anche sulla foto. Se non ricordi l'ordine, non importa per tutte le altre misure: group size, raggio medio, CEP e correzione non dipendono dall'ordine.</p>
+<div class="box tip"><p>Il modo più semplice per avere l'ordine giusto è numerare a matita i fori al poligono, man mano che spari (o fotografare il bersaglio dopo ogni colpo), e poi cliccarli in quell'ordine.</p></div>
 
 <h2>I flyer: quando un colpo «non c'entra»</h2>
 <p>Un <b>flyer</b> è un colpo che sembra non appartenere al gruppo. Da 5 colpi in su l'applicazione confronta ogni foro con gli altri e lo segnala con ⚠ e un cerchio arancione se è troppo lontano per essere un normale colpo di quel gruppo. Il controllo tiene conto della forma: in un gruppo allungato i colpi alle estremità dell'asse lungo non vengono segnalati, quelli «di lato» sì.</p>
@@ -512,6 +516,21 @@
 <div class="chart"><div><p><b>Che cosa mostra.</b> Ogni punto è un foro: in orizzontale la distanza dal centro che il modello si aspetterebbe, in verticale quella reale, dalla più piccola alla più grande.</p>
 <p><b>Come leggerlo.</b> Se i punti stanno vicini alla diagonale tratteggiata, la rosata si comporta come previsto e CEP, R95 e probabilità sono affidabili. Un ultimo punto molto sopra la diagonale è un colpo più lontano del previsto (un possibile flyer). Una serie di punti che si allontana sistematicamente dalla diagonale indica una rosata «strana» (allungata o con due centri): il testo sotto il grafico lo spiega.</p>
 </div><figure class="side"><img src="imgj/36_qq.jpg"><figcaption>Le distanze reali dei fori contro quelle attese.</figcaption></figure></div>
+<h2>Stabilità colpo dopo colpo</h2>
+<div class="chart"><div>
+<p><b>Che cosa mostra.</b> Come cresce il gruppo colpo dopo colpo, nell'ordine di sparo: la linea spessa a gradini è il group size dei primi 2, 3, 4… colpi, quella tratteggiata il raggio medio. La fascia colorata mostra dove dovrebbe stare il group size <b>per puro caso</b>, se tutti i colpi venissero dalla stessa rosata.</p>
+<p><b>Come leggerlo.</b> Il group size cresce sempre aggiungendo colpi: non è un segnale di allarme. Lo diventa quando la linea resta a lungo in fondo alla fascia (gruppo «troppo bello») e poi salta in alto: l'applicazione lo controlla con un test e, se il salto è oltre il caso, scrive «il gruppo si apre dal colpo 6» con una linea rossa verticale.</p>
+</div><figure class="side"><img src="imgj/45_stabilita.jpg"><figcaption>Group size e raggio medio progressivi con la fascia attesa.</figcaption></figure></div>
+<div class="box help"><p>Se il gruppo si apre sempre dopo 5–6 colpi, la causa è spesso la canna che si scalda o la posizione che cede con la stanchezza: prova serie più brevi con pause, oppure annota la temperatura della canna.</p></div>
+
+<h2>Centro gruppo colpo dopo colpo</h2>
+<div class="chart"><div>
+<p><b>Che cosa mostra.</b> Dove si trova il centro del gruppo dopo 2, 3, 4… colpi, rispetto al punto di mira (la croce rossa). I numeri sono il numero di colpi.</p>
+<p><b>Come leggerlo.</b> All'inizio il centro «balla», poi si assesta: è normale. Se invece cammina sempre nella stessa direzione, il punto d'impatto si sta spostando durante la serie. L'applicazione lo verifica e scrive, per esempio, «0,8 mm a colpo verso l'alto».</p>
+</div><figure class="side"><img src="imgj/46_centro_progressivo.jpg"><figcaption>La traiettoria del centro gruppo.</figcaption></figure></div>
+<div class="box ex"><p>Spari 10 colpi senza pause e il centro sale di quasi un millimetro a colpo: è un indizio tipico di canna che si scalda. Prima di correggere lo zero, sparane altri a canna fredda: la correzione giusta è quella della canna nelle condizioni in cui spari il primo colpo.</p></div>
+<div class="box warn"><p>Con 5–8 colpi questi controlli vedono solo gli effetti forti, e tutto ha senso solo se l'ordine dei fori è davvero quello di sparo.</p></div>
+
 <h2>Confronto tra gruppi e andamento nel tempo</h2>
 <figure><img src="imgj/37_confronto.jpg"><figcaption>La tabella di confronto con i gruppi della sessione e dello storico, e sotto l'andamento nel tempo.</figcaption></figure>
 <p><b>Che cosa mostra.</b> Una tabella con tutti i gruppi della sessione e quelli importati da sessioni precedenti (lo «storico»), ordinati per data: numero di colpi, group size, raggio medio, FOM, CEP, differenza rispetto al gruppo precedente. Il menu «Metrica» sceglie il valore da confrontare, in mm o in angolo. Sotto, il grafico dell'andamento nel tempo con una media mobile (la linea tratteggiata, media degli ultimi gruppi).</p>
@@ -564,7 +583,7 @@
 <h3>Distorsione dell'obiettivo</h3>
 <p>I grandangoli dei telefoni curvano le linee vicino ai bordi (le righe dritte diventano «a botte»). Con <span class="btn">Calibra da linee</span> clicchi almeno 3 punti lungo 2 o più linee che nella realtà sono dritte (bordi del foglio, righe della griglia), poi <span class="btn">Calcola</span>. I coefficienti si possono salvare con un nome (per esempio il modello del telefono) e riusare.</p>
 <h3>Prospettiva</h3>
-<p>Per una foto scattata di sbieco: scegli le dimensioni reali di un rettangolo presente nella foto (un foglio A4 è perfetto), premi <span class="btn">⬚ Correggi con 4 punti</span> (tasto <kbd>6</kbd>) e clicca i quattro angoli. La foto viene «raddrizzata» come se fosse stata scattata di fronte, e la scala viene impostata dal rettangolo stesso.</p>
+<p>Per una foto scattata di sbieco: scegli le dimensioni reali di un rettangolo presente nella foto (un foglio A4 è perfetto; ci sono anche i quadrati da 30 e 100 mm, comodi con le griglie stampate), premi <span class="btn">⬚ Correggi con 4 punti</span> (tasto <kbd>6</kbd>) e clicca i quattro angoli. La foto viene «raddrizzata» come se fosse stata scattata di fronte, e la scala viene impostata dal rettangolo stesso.</p>
 <div class="box warn"><p>Queste correzioni non fanno miracoli: un foglio piegato o ondulato non si raddrizza. La foto fatta bene, dritta e con il foglio piano, resta la soluzione migliore.</p></div>
 
 <!-- =============================== 14 =============================== -->
@@ -575,7 +594,15 @@
 <h3>Sessione JSON</h3>
 <p><span class="btn">💾 Salva sessione JSON</span> salva gli stessi dati in un file di testo. Con «Includi l'immagine nella sessione» spuntato contiene anche la foto; senza, per riaprirlo devi prima caricare la stessa foto. È il formato delle versioni precedenti, sempre leggibile.</p>
 <h3>Result Card e Report PDF</h3>
-<p>Il pulsante in cima al pannello <span class="btn">🖼 Esporta Result Card (PNG)</span> crea un'immagine riassuntiva del gruppo attivo o di tutti i gruppi, perfetta da mandare via chat o pubblicare. <span class="btn">📑 Report PDF</span> crea un documento A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto e dope card.</p>
+<p>Il pulsante in cima al pannello <span class="btn">🖼 Esporta Result Card (PNG)</span> crea un'immagine riassuntiva del gruppo attivo o di tutti i gruppi, perfetta da mandare via chat o pubblicare.</p>
+<p><span class="btn">📑 Report PDF</span> crea un documento A4 completo, con <b>testo vero</b>: puoi selezionarlo, copiarlo in un'email e cercarlo, ed è nitido in stampa. Contiene:</p>
+<ul>
+  <li>la foto con i punti e i dati principali (distanza, calibro, click, colpi analizzati);</li>
+  <li>la <b>calibrazione</b>: come è stata fatta la scala, quanti pixel per millimetro, con quale incertezza, e le verifiche;</li>
+  <li>per ogni gruppo: <b>colpi analizzati ed esclusi</b>, misure e correzione, il <b>modello statistico</b> usato e quanto sono incerti i numeri, i dati di ricarica, tutti i grafici (anche stabilità e centro colpo dopo colpo) e la tabella dei fori;</li>
+  <li>infine, se ci sono dati: confronto tra gruppi, dope card, ricarica, correlazioni, cono, confronto visivo e reticolo.</li>
+</ul>
+<p>Il PDF usa i caratteri standard presenti in ogni lettore PDF: per questo alcuni simboli matematici sono scritti a parole (per esempio «sigma» invece di σ). I titoli sono anche segnalibri, per saltare subito al gruppo che ti interessa.</p>
 <figure class="w70"><img src="imgj/26_result_card.jpg"><figcaption>Una Result Card con tutti i gruppi della sessione.</figcaption></figure>
 <h3>CSV e testo</h3>
 <p><span class="btn">📄 CSV fori</span> e <span class="btn">📄 CSV gruppi</span> si aprono con Excel o LibreOffice (in italiano usano il punto e virgola e la virgola decimale). <span class="btn">📋 Copia risultati (testo)</span> copia un riepilogo da incollare in un messaggio.</p>
@@ -627,6 +654,7 @@
 <tr><td>Calibro</td><td>Bordo-bordo; punteggio (anello toccato); controllo diametro fori</td><td>Cerchi dei fori e del cursore; snap</td></tr>
 <tr><td>Valore e unità del click</td><td>Solo il numero di click (correzione, tabella punti, dope)</td><td>Dope card e reticolo in click</td></tr>
 <tr><td>Punto di mira</td><td>Scostamento, correzione, punteggio, «Da mira», probabilità con taratura attuale</td><td>Croce rossa e freccia; orologio; anelli e sagome; confronto visivo sulla mira</td></tr>
+<tr><td>Ordine dei fori (↑/↓)</td><td>Nessuna misura: solo l'analisi colpo dopo colpo</td><td>Stabilità e centro colpo dopo colpo, scheda «Stabilità»</td></tr>
 <tr><td>Fori (posizione)</td><td>Tutto: misure, statistiche, centro, correzione, flyer, diagnostica</td><td>Tutti i grafici del gruppo; confronto; ricarica; correlazioni</td></tr>
 <tr><td>Esclusione di un foro</td><td>Misure e statistiche senza quel foro (il punteggio lo conta comunque)</td><td>Grafici, confronto, CSV (il foro resta elencato come escluso)</td></tr>
 <tr><td>Foro difficile ◐</td><td>Solo l'incertezza di misura</td><td>—</td></tr>
