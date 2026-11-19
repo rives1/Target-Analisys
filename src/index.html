@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.15.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.16.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -76,6 +76,23 @@
   .wdial g[data-h]:hover circle, .wdial g[data-h]:focus circle { stroke: #0284c7; stroke-width: 2; outline: none; }
   .wdial g[data-h].on circle { fill: #0284c7; stroke: #0284c7; } .wdial g[data-h].on text { fill: #fff; }
   .wd-info { font-size: 12px; color: var(--muted); line-height: 1.4; }
+  /* ---------- 1.16.0: indici di qualità ---------- */
+  .qi-note { font-size: 11.5px; margin-bottom: 6px; }
+  .qi-head { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+  .qi-num { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .qi-of { font-size: 13px; color: var(--muted); }
+  .qi-cls { font-weight: 700; font-size: 14px; }
+  .qi-bar { position: relative; height: 10px; border-radius: 5px; margin: 7px 0 3px; border: 1px solid var(--line);
+    background: linear-gradient(90deg, rgba(185,28,28,.22) 0 40%, rgba(194,65,12,.20) 40% 60%, rgba(161,98,7,.20) 60% 75%, rgba(21,128,61,.18) 75% 90%, rgba(21,128,61,.34) 90% 100%); }
+  .qi-bar .qi-tick { position: absolute; top: -2px; bottom: -2px; width: 1px; background: var(--muted); opacity: .6; }
+  .qi-bar .qi-ci { position: absolute; top: 2px; bottom: 2px; background: rgba(37,99,235,.35); border-radius: 3px; }
+  .qi-bar .qi-mark { position: absolute; top: -4px; bottom: -4px; width: 3px; margin-left: -1.5px; background: var(--ink); border-radius: 2px; }
+  .qi-scale { position: relative; height: 12px; font-size: 10px; color: var(--muted); margin: 0 6px; }
+  .qi-scale span { position: absolute; transform: translateX(-50%); }
+  .qi-na { color: var(--muted); font-style: italic; }
+  .res.sess { border-top: 2px solid var(--line); padding-top: 8px; margin-top: 6px; }
+  .res.sess h3 { font-size: 14px; }
+  .qi-orig { font-size: 10.5px; color: var(--muted); display: block; }
   /* ---------- 1.15.0 ---------- */
   #toolbar .zoomctl { display: inline-flex; align-items: center; gap: 1px; }
   #toolbar .zoomctl button { padding: 6px 7px; }
@@ -719,6 +736,40 @@
     </section>
 
     <section>
+      <details class="box" id="sec-quality">
+        <summary>Indice di qualità (GQI / TQI)</summary>
+        <div class="muted qi-note">Un punteggio 0–100 relativo ai riferimenti scelti qui: è un criterio dell'applicazione, non uno standard statistico. Il GQI misura solo la compattezza; il TQI aggiunge la centratura sulla mira.</div>
+        <div class="row"><label for="qiGqiOn" title="Group Quality Index: compattezza della rosata (precisione), indipendente da dove cade rispetto alla mira"><input type="checkbox" id="qiGqiOn" checked> GQI · compattezza</label></div>
+        <div class="row">
+          <label for="qiMrRef" title="Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.">MR di riferimento (GQI = 80)</label>
+          <input id="qiMrRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
+          <select id="qiMrUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
+        </div>
+        <div class="row"><label for="qiTqiOn" title="Target Quality Index: combina compattezza (GQI) e centratura del gruppo sulla mira (AQI). Serve il punto di mira."><input type="checkbox" id="qiTqiOn"> TQI · compattezza + centratura</label></div>
+        <div class="row">
+          <label for="qiDRef" title="Distanza angolare centro gruppo–mira a cui corrisponde AQI = 80">Centratura di riferimento (AQI = 80)</label>
+          <input id="qiDRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
+          <select id="qiDUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
+        </div>
+        <div class="row">
+          <label for="qiWP" title="Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%">Peso precisione · accuratezza</label>
+          <input id="qiWP" type="number" min="0" max="100" step="5" value="70" style="width:60px"><span class="muted">% · <span id="qiWA">30</span>%</span>
+        </div>
+        <div class="row">
+          <label for="qiDec">Punteggio</label>
+          <select id="qiDec"><option value="0" selected>intero 0–100</option><option value="1">con un decimale</option></select>
+        </div>
+        <div class="row"><label for="qiCiOn" title="Intervallo del punteggio dall'intervallo di confidenza del raggio medio (χ² del modello circolare normale)"><input type="checkbox" id="qiCiOn" checked> Intervalli di confidenza (se disponibili)</label></div>
+        <div class="row">
+          <label for="qiClasses">Classificazione</label>
+          <select id="qiClasses"><option value="5" selected>Cinque classi</option></select>
+        </div>
+        <div class="muted" id="qiClassInfo" style="font-size:11.5px"></div>
+        <div class="status warn" id="qiValid" hidden></div>
+      </details>
+    </section>
+
+    <section>
       <details class="box" id="sec-score">
         <summary>Zone di punteggio</summary>
         <div class="row">
@@ -863,6 +914,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.</p>
           <p data-i18n><b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.</p>
           <p data-i18n><b>Novità 1.14</b>: <b>stabilità colpo dopo colpo</b> (vista grafici e scheda dei risultati: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto e traiettoria del centro); <b>ordine di sparo</b> modificabile con ↑/↓ nella tabella dei punti; <b>report PDF con testo vero</b> (selezionabile e cercabile) con metadati della calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici; preset del rettangolo di riferimento <b>100 × 100 mm</b>.</p>
           <p data-i18n><b>Novità 1.13</b>: <b>profili di ricarica</b> salvati nel browser (Ricarica e condizioni: componenti e calibro, esportabili); <b>croce estesa</b> del cursore con lo strumento Mira; <b>ritaglio</b> della foto (Orientamento: definitivo, con «Annulla ritaglio» finché non carichi un'altra foto); <b>risultati a card</b> con dettagli espandibili; <b>quadrante del vento</b> con componenti laterale e frontale; <b>sessione ZIP</b> (foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio).</p>
@@ -1085,6 +1137,7 @@
       <a data-to="h-dope">Click impostati e dope card</a>
       <a data-to="h-carica">Carica, seduta e precisione («nodi»)</a>
       <a data-to="h-hull">Convex hull</a>
+      <a data-to="h-gqi">Indice di qualità GQI / TQI</a>
       <a data-to="h-pdf">Report PDF</a>
       <a data-to="h-snap">Snap al centro del foro</a>
       <a data-to="h-grafici">Come leggere i grafici</a>
@@ -1160,6 +1213,9 @@
 <tr id="gl-salto"><td>Salto dalle righe (jump)</td><td>Distanza dell'ogiva della palla dall'inizio delle righe con la cartuccia camerata: misura della profondità di seduta.</td><td>Dati di ricarica, precisione e ricarica</td></tr>
 <tr id="gl-alone"><td>Alone di incertezza</td><td>Cerchio attorno al centro marcato di un foro che contiene la posizione vera con probabilità del 95%, per l'incertezza di marcatura <i>u</i> (1σ per asse in px della foto: a mano, con lo snap, ×3 sui fori difficili). Raggio R = u·√(−2·ln(1 − 0,95)) ≈ 2,45·u (distribuzione di Rayleigh). È solo grafica: coordinate e calcoli non cambiano; l'effetto sui risultati è nell'«Incertezza di misura».</td><td>Immagine (Parametri di tiro)</td></tr>
 <tr id="gl-righello"><td>Righello (misura libera)</td><td>Distanza tra due punti cliccati: px della foto ÷ scala = mm (÷ 25,4 = pollici); dimensione angolare esatta 2·atan(L / 2D) alla distanza del gruppo attivo, in MOA e MRAD; orientamento in gradi dall'orizzontale (+ = sale verso destra) e scarto dall'asse più vicino. Non crea fori e non cambia la scala.</td><td>Strumento 📏 (tasto R)</td></tr>
+<tr id="gl-gqi"><td>GQI (Group Quality Index)</td><td>Punteggio 0–100 della compattezza: 100·exp[−ln(1,25)·(MR/MR<sub>rif</sub>)²], 80 quando il raggio medio angolare atteso è uguale al riferimento scelto. Criterio dell'app, relativo al riferimento; l'attendibilità è il suo intervallo, separato.</td><td>Risultati (card GQI, sessione)</td></tr>
+<tr id="gl-tqi"><td>TQI (Target Quality Index)</td><td>p·GQI + (1 − p)·AQI: compattezza e centratura sulla mira insieme; AQI = 100·exp[−ln(1,25)·(D/D<sub>rif</sub>)²] con D distanza angolare centro gruppo–mira. Facoltativo; richiede il punto di mira.</td><td>Risultati (se attivo)</td></tr>
+<tr id="gl-ripet"><td>Ripetibilità tra gruppi</td><td>Dispersione dei centri dei gruppi rispetto alla loro mira (click tolti), con quella attesa per caso e un test F. Indicatore separato dal GQI.</td><td>Risultati (sessione)</td></tr>
 </tbody></table>
 </section>
 
@@ -1355,6 +1411,23 @@ Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 
 <p><b>Esempio</b>: 5 colpi per carica danno ν = 8; l'intervallo 95% di σ va da circa 0,68·s a 1,92·s. Due cariche con CEP 0,6 e 0,9 MOA hanno intervalli che si sovrappongono largamente: la differenza non è dimostrata. Con 3 gruppi da 10 colpi (ν = 54) l'intervallo va da circa 0,84·s a 1,23·s.</p>
 </section>
 
+<section id="h-gqi">
+<h3>Indice di qualità: GQI, AQI, TQI e ripetibilità</h3>
+<p>Il <b>GQI</b> (Group Quality Index) riassume la <b>compattezza</b> di una rosata in un numero da 0 a 100, <b>relativo a un riferimento che scegli tu</b> (sezione «Indice di qualità»): non è uno standard statistico né un giudizio assoluto, ma un modo leggibile di dire «quanto questo gruppo è stretto rispetto a quello che considero buono».</p>
+<div class="formula">GQI = 100 · exp[ −ln(1,25) · (MR / MR<sub>rif</sub>)² ]
+MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 41 · MR = 3·MR<sub>rif</sub> → 13</div>
+<ul>
+  <li><b>MR</b> è il raggio medio <b>angolare</b> (atan(mm / distanza), in MOA o MRAD): gruppi a distanze diverse si confrontano direttamente.</li>
+  <li>L'app usa il raggio medio <b>atteso</b> σ̂·√(π/2) del modello circolare normale, con σ̂ corretto per pochi colpi (lo stesso σ di CEP e R95). Il raggio medio misurato dal centro del gruppo è più piccolo del vero di un fattore √((n−1)/n): −18% con 3 colpi, −11% con 5, −5% con 10, perché il centro è stimato dagli stessi fori. Usarlo darebbe punteggi gonfiati ai gruppi corti. Il valore misurato resta visibile accanto.</li>
+  <li><b>Classi</b> sul punteggio non arrotondato: Ottimo ≥ 90 · Buono ≥ 75 · Discreto ≥ 60 · Scarso ≥ 40 · Insufficiente &lt; 40.</li>
+  <li><b>Attendibilità</b>: separata dal punteggio. L'intervallo di confidenza χ² del raggio medio (stesso metodo di CEP e R95) si traduce nel punteggio: GQI<sub>min</sub> = f(MR<sub>max</sub>), GQI<sub>max</sub> = f(MR<sub>min</sub>). Un gruppo da 3 colpi e uno da 30 possono avere lo stesso GQI; il primo avrà un intervallo molto più largo. Nessuna penalità sul punteggio per il numero di colpi.</li>
+  <li>Un solo colpo: nessun GQI (il raggio sarebbe 0, ma un colpo non dice nulla della compattezza). Servono scala e distanza di tiro.</li>
+</ul>
+<p>L'<b>AQI</b> (Accuracy Quality Index) misura la <b>centratura</b>: stessa formula con D = distanza angolare del centro del gruppo dalla mira e D<sub>rif</sub> scelto da te. Il <b>TQI</b> (Target Quality Index, facoltativo) li combina: TQI = p · GQI + (1 − p) · AQI, con p = peso della precisione (70% predefinito). Senza punto di mira il TQI non si calcola. Ricorda che la centratura si corregge con i click: un GQI alto con un TQI basso significa «buona rosata, da centrare».</p>
+<p><b>Sessione</b>: MR<sub>sessione</sub> = Σ nᵢ·MRᵢ / Σ nᵢ (dispersione media <b>dentro</b> i gruppi, ponderata per i colpi), poi GQI<sub>sessione</sub> = f(MR<sub>sessione</sub>): non è la media dei GQI e non usa un centro comune, che mescolerebbe gli spostamenti tra i gruppi. Il TQI della sessione usa solo i gruppi con mira, sia per la compattezza sia per la centratura. L'intervallo viene dal σ combinato dei gruppi e presuppone che abbiano la stessa dispersione attesa.</p>
+<p><b>Ripetibilità tra gruppi</b> (indicatore separato, non entra nel GQI): deviazione standard per asse dei centri dei gruppi rispetto alla loro mira, tolti i click impostati, confrontata con quella attesa per il solo caso √(media σᵢ²/nᵢ). Il test F (dispersione dei centri)² / (attesa)² con 2(k−1) e Σ 2(nᵢ−1) gradi di libertà dice se i centri si spostano più di quanto spieghi il numero finito di colpi (p &lt; 0,05). Gruppi con munizioni diverse possono avere centri diversi anche per la munizione.</p>
+<p>Le impostazioni e una copia dei valori calcolati (versione GQI-TQI/1, riferimenti, pesi, soglie, MR usati) sono salvate nella sessione. Nello storico del confronto il punteggio è ricalcolato con le impostazioni attuali; se la sessione importata conteneva una valutazione diversa, appare sotto come «orig.».</p>
+</section>
 <section id="h-hull">
 <h3>Convex hull (involucro convesso)</h3>
 <p>Il <b>convex hull</b> è il poligono convesso più piccolo che contiene tutti i fori inclusi: come un elastico teso attorno ai fori. L'app ne calcola <b>area</b> (formula del laccio, in mm²) e <b>perimetro</b>, e lo disegna sull'immagine e nel grafico a dispersione se attivato nei Parametri di tiro.</p>
@@ -2973,6 +3046,104 @@ const Calc = (() => {
     return { diff, partial };
   }
 
+  /* ---------------- 1.16.0: indici di qualità GQI / TQI ----------------
+     Criterio di valutazione dell'applicazione (NON uno standard statistico): punteggio 0–100 relativo a riferimenti
+     scelti dall'utente. Tutti gli angoli in radianti; l'interfaccia converte in MOA/MIL. */
+  const QI_VERSION = "GQI-TQI/1";
+  const QI_LN = Math.log(1.25);                       // f(ref) = 100·e^(−ln 1,25) = 80
+  /** Classi qualitative: soglie sul punteggio NON arrotondato (min incluso). Struttura modificabile. */
+  const QI_CLASSES = [
+    { min: 90, key: "excellent", label: "Ottimo" }, { min: 75, key: "good", label: "Buono" }, { min: 60, key: "fair", label: "Discreto" },
+    { min: 40, key: "poor", label: "Scarso" }, { min: -Infinity, key: "insufficient", label: "Insufficiente" }];
+  const qiRefOk = v => typeof v === "number" && isFinite(v) && v > 0;
+  /** Punteggio 100·exp(−ln(1,25)·(x/ref)²) ∈ (0, 100]; null con x o ref non validi. */
+  const qiScore = (x, ref) => qiRefOk(ref) && typeof x === "number" && isFinite(x) && x >= 0 ? 100 * Math.exp(-QI_LN * (x / ref) ** 2) : null;
+  const qiClass = (score, classes = QI_CLASSES) => score == null || !isFinite(score) ? null : classes.find(c => score >= c.min) || null;
+  /** TQI = wP·GQI + (1 − wP)·AQI (pesi che sommano a 1 per costruzione). */
+  const qiTqi = (gqi, aqi, wP) => gqi == null || aqi == null || !(wP >= 0 && wP <= 1) ? null : wP * gqi + (1 - wP) * aqi;
+  const SQRT_PI_2 = Math.sqrt(Math.PI / 2);
+  /**
+   * Qualità di un gruppo. pts = fori INCLUSI (px), poa (px) o null, ctx = {pxPerMm, distMm, ciLevel},
+   * set = {mrRef, dRef (rad), wP (0–1), ci (bool)}.
+   * MR usato per il GQI = raggio medio atteso del modello circolare normale σ̂·√(π/2), con σ̂ corretto per pochi colpi
+   * (lo stesso di CEP/R95/R99): il raggio medio misurato dal centroide del gruppo è distorto verso il basso di
+   * √((n−1)/n) (−18% con 3 colpi). Il misurato è restituito come mrMeas. Angoli esatti atan(mm / D).
+   * IC: χ² di σ (confidence().mrExp) → [GQI(MR_hi), GQI(MR_lo)] (trasformazione monotona decrescente).
+   * AQI/TQI solo con il punto di mira; D = atan(|centro − mira| / D_tiro).
+   * → { version, n, ok, reason ("ref" | "none" | "one" | "scale" | "dist"), mr, mrMeas, mrCi, gqi, gqiCi, s2, nu,
+   *     d, aqi, tqi, tqiReason ("poa" | "dref" | "w") }
+   */
+  function groupQuality(pts, poa, ctx = {}, set = {}) {
+    const n = pts.length, out = { version: QI_VERSION, n, ok: false, d: null, aqi: null, tqi: null };
+    if (!qiRefOk(set.mrRef)) return { ...out, reason: "ref" };
+    if (n === 0) return { ...out, reason: "none" };
+    if (n === 1) return { ...out, reason: "one" };             // MR = 0 ma un colpo non dice nulla della compattezza
+    if (!(ctx.pxPerMm > 0)) return { ...out, reason: "scale" };
+    if (!(ctx.distMm > 0)) return { ...out, reason: "dist" };
+    const k = 1 / ctx.pxPerMm, D = ctx.distMm, A = mm => angleOfOffset(mm, D);
+    const c = centroid(pts), disp = dispersion(pts);
+    out.mrMeas = A(meanRadius(pts, c) * k);
+    out.mr = A(disp.sigma * k * SQRT_PI_2);
+    out.s2 = A(Math.sqrt((disp.sx ** 2 + disp.sy ** 2) / 2) * k) ** 2; out.nu = 2 * (n - 1);
+    out.gqi = qiScore(out.mr, set.mrRef);
+    if (set.ci !== false) {
+      const ci = confidence(pts, ctx.ciLevel || 0.95);
+      out.mrCi = { lo: A(ci.mrExp.lo * k), hi: A(ci.mrExp.hi * k), level: ci.level };
+      out.gqiCi = { lo: qiScore(out.mrCi.hi, set.mrRef), hi: qiScore(out.mrCi.lo, set.mrRef), level: ci.level };
+    }
+    out.ok = true;
+    if (!poa) out.tqiReason = "poa";
+    else {
+      out.d = A(dist(c, poa) * k);
+      if (!qiRefOk(set.dRef)) out.tqiReason = "dref";
+      else if (!(set.wP >= 0 && set.wP <= 1)) { out.aqi = qiScore(out.d, set.dRef); out.tqiReason = "w"; }
+      else { out.aqi = qiScore(out.d, set.dRef); out.tqi = qiTqi(out.gqi, out.aqi, set.wP); }
+    }
+    return out;
+  }
+  /**
+   * Qualità della sessione da più risultati di groupQuality (stessi set). GQI: MR_s = Σ nᵢ·MRᵢ / Σ nᵢ sui gruppi validi
+   * (dispersione interna, NON attorno a un centroide globale, NON media dei punteggi), GQI_s = f(MR_s); IC dal σ
+   * combinato (pooledSigma, ν = Σ 2(nᵢ − 1)) × √(π/2), valido se i gruppi hanno la stessa dispersione attesa.
+   * TQI: sui soli gruppi validi con centratura (stesso insieme per GQI_t e AQI_t), D_s = Σ nᵢ·Dᵢ / Σ nᵢ.
+   */
+  function sessionQuality(list, set = {}, level = 0.95) {
+    const valid = list.filter(q => q && q.ok), wmean = (L, key) => L.reduce((a, q) => a + q.n * q[key], 0) / L.reduce((a, q) => a + q.n, 0);
+    const excluded = {}; for (const q of list) if (q && !q.ok) excluded[q.reason] = (excluded[q.reason] || 0) + 1;
+    const out = { version: QI_VERSION, groups: list.length, excluded, gqi: null, tqi: null };
+    if (!valid.length) return out;
+    const n = valid.reduce((a, q) => a + q.n, 0), mr = wmean(valid, "mr");
+    out.gqi = { k: valid.length, n, mr, gqi: qiScore(mr, set.mrRef) };
+    const P = set.ci !== false ? pooledSigma(valid.map(q => ({ s2: q.s2, nu: q.nu })), level) : null;
+    if (P) { out.gqi.mrCi = { lo: P.lo * SQRT_PI_2, hi: P.hi * SQRT_PI_2, level }; out.gqi.gqiCi = { lo: qiScore(out.gqi.mrCi.hi, set.mrRef), hi: qiScore(out.gqi.mrCi.lo, set.mrRef), level }; }
+    const tv = valid.filter(q => q.d != null), tx = valid.length - tv.length;
+    if (tv.length && qiRefOk(set.dRef) && set.wP >= 0 && set.wP <= 1) {
+      const nt = tv.reduce((a, q) => a + q.n, 0), mrT = wmean(tv, "mr"), dT = wmean(tv, "d"), g = qiScore(mrT, set.mrRef), a = qiScore(dT, set.dRef);
+      out.tqi = { k: tv.length, n: nt, mr: mrT, d: dT, gqi: g, aqi: a, tqi: qiTqi(g, a, set.wP), noPoa: tx };
+    } else out.tqi = { k: 0, noPoa: tx };
+    return out;
+  }
+  /** Funzione di ripartizione F(d1, d2). */
+  const fcdf = (x, d1, d2) => x <= 0 ? 0 : ibeta(d1 * x / (d1 * x + d2), d1 / 2, d2 / 2);
+  /**
+   * Ripetibilità tra gruppi (indicatore SEPARATO dal GQI): dispersione dei centri dei gruppi rispetto alla propria mira
+   * (angoli, già compensati dai click impostati), confrontata con quella attesa per il solo rumore interno ai gruppi.
+   * list: [{cx, cy (rad, + = destra/alto), n, s2 (rad² per asse), nu}], k ≥ 2.
+   * s_c² = Σ|cᵢ − c̄|² / (2(k − 1)) (per asse); attesa e² = media(s2ᵢ / nᵢ); F = s_c²/e² ~ F(2(k−1), Σνᵢ) sotto l'ipotesi
+   * «i centri si spostano solo per caso» (esatta con n uguali, approssimata altrimenti) → p. σ_c corretto (c₄) con IC χ²;
+   * eccesso σ_b = √max(0, s_c² − e²) (stima puntuale della parte non spiegata dal caso).
+   */
+  function centerRepeatability(list, level = 0.95) {
+    const k = list.length; if (k < 2) return null;
+    const mx = list.reduce((a, q) => a + q.cx, 0) / k, my = list.reduce((a, q) => a + q.cy, 0) / k;
+    const nuC = 2 * (k - 1), sc2 = list.reduce((a, q) => a + (q.cx - mx) ** 2 + (q.cy - my) ** 2, 0) / nuC;
+    const e2 = list.reduce((a, q) => a + q.s2 / q.n, 0) / k, nuE = list.reduce((a, q) => a + q.nu, 0);
+    const c4 = Math.sqrt(2 / nuC) * Math.exp(lgamma((nuC + 1) / 2) - lgamma(nuC / 2)), a = (1 - level) / 2;
+    const F = e2 > 0 ? sc2 / e2 : Infinity, p = e2 > 0 ? 1 - fcdf(F, nuC, nuE) : 0;
+    return { k, mean: { x: mx, y: my }, sigmaC: Math.sqrt(sc2) / c4, sigmaCci: { lo: Math.sqrt(nuC * sc2 / chi2inv(1 - a, nuC)), hi: Math.sqrt(nuC * sc2 / chi2inv(a, nuC)), level },
+      sigmaE: Math.sqrt(e2), sigmaB: Math.sqrt(Math.max(0, sc2 - e2)), F, p, nuC, nuE };
+  }
+
   return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
@@ -2984,7 +3155,8 @@ const Calc = (() => {
     pointInPoly, distToPoly, inZone, zoneEdgeDist, shapeZone, polyCentroid, ipscShape, idpaShape, SIL, silShape, vitalShape, shapeRaster, rasterProbs, hitShapeProbability, decimalScore, linReg, crossWind, windComponents,
     distortPoint, undistortPoint, lineSS, nelderMead, fitLens,
     flyersMahal, ES_E, ES_SD, esFactor, esEquivalent, eig2, diagStats, modelDiagnostics, measurementMC, holeDiameter,
-    afterCorrection, influence, stability, measureLine, haloRadius, niceLength, differingKeys };
+    afterCorrection, influence, stability, measureLine, haloRadius, niceLength, differingKeys,
+    QI_VERSION, QI_CLASSES, qiScore, qiClass, qiTqi, qiRefOk, groupQuality, sessionQuality, centerRepeatability, fcdf };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -3041,12 +3213,16 @@ const I18N = (() => {
    " (qui le prime 6)": " (the first 6 here)",
    " (risoluzione ridotta per limiti del browser)": " (resolution reduced because of browser limits)",
    " (scelta dell'utente; restano nella tabella dei fori)": " (user's choice; they stay in the shots table)",
+   " (sul punteggio non arrotondato)": " (on the unrounded score)",
    " (un asse non è significativo)": " (one axis is not significant)",
    " ({0} dal calcolo)": " ({0} by calculation)",
+   " ({0} esclusi)": " ({0} excluded)",
    " ({0} mm alla distanza del gruppo)": " ({0} mm at the group distance)",
+   " ({0} senza mira)": " ({0} without point of aim)",
    " (×3 sui fori difficili)": " (×3 on difficult holes)",
    " <b>1 possibile flyer</b> (⚠): spunta «Escl.» per toglierlo dalle statistiche.": " <b>1 possible flyer</b> (⚠): tick «Excl.» to remove it from the statistics.",
    " <b>{0} possibili flyer</b> (⚠): spunta «Escl.» per toglierli dalle statistiche.": " <b>{0} possible flyers</b> (⚠): tick «Excl.» to remove them from the statistics.",
+   " Attenzione: i gruppi hanno munizioni diverse, quindi i centri possono differire anche per la munizione.": " Warning: the groups use different ammunition, so the centres can also differ because of the ammunition.",
    " Click ({0} {1}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>.": " Clicks ({0} {1}) to bring the point onto the aim: the correction to apply is the one of the <b>group centre</b>.",
    " Collo, spalle e zona −1 del corpo ricostruiti dal disegno: approssimati; cerchi −0 e testa quotati.": " Neck, shoulders and body −1 zone reconstructed from the drawing: approximate; −0 circles and head are dimensioned.",
    " Con meno di 10 colpi i test hanno poca potenza: l'assenza di avvisi non prova che il modello sia adatto.": " With fewer than 10 shots the tests have little power: the absence of warnings does not prove that the model fits.",
@@ -3081,6 +3257,7 @@ const I18N = (() => {
    " · due centri: da 8 colpi": " · two centres: from 8 shots",
    " · foro ⌀ {0} px": " · hole ⌀ {0} px",
    " · inserisci la velocità per le componenti": " · enter the speed for the components",
+   " · intervallo {0}–{1}": " · interval {0}–{1}",
    " · media {0}": " · average {0}",
    " · media {0}: {1}": " · average {0}: {1}",
    " · scala: dal rettangolo": " · scale: from the rectangle",
@@ -3109,6 +3286,7 @@ const I18N = (() => {
    ", {0} non registrati in qualche riga (in grigio)": ", {0} not recorded in some rows (in grey)",
    ", {0} saltati (meno di 2 fori, scala o distanza mancanti)": ", {0} skipped (fewer than 2 shots, scale or distance missing)",
    ", {0} senza foto incorporata (nello ZIP mancherà la foto)": ", {0} without embedded photo (the photo will be missing from the ZIP)",
+   ", {0} senza mira esclusi": ", {0} without point of aim excluded",
    ". Equivalente medio a 5 colpi {0} mm, a 10 colpi {1} mm": ". Average equivalent for 5 shots {0} mm, for 10 shots {1} mm",
    "0–100% (indeterminato)": "0–100% (undetermined)",
    "1 click {0}": "1 click {0}",
@@ -3152,6 +3330,7 @@ const I18N = (() => {
    "<b>Novità 1.13</b>: <b>profili di ricarica</b> salvati nel browser (Ricarica e condizioni: componenti e calibro, esportabili); <b>croce estesa</b> del cursore con lo strumento Mira; <b>ritaglio</b> della foto (Orientamento: definitivo, con «Annulla ritaglio» finché non carichi un'altra foto); <b>risultati a card</b> con dettagli espandibili; <b>quadrante del vento</b> con componenti laterale e frontale; <b>sessione ZIP</b> (foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio).": "<b>New in 1.13</b>: <b>reload profiles</b> saved in the browser (Reloading and conditions: components and caliber, exportable); <b>extended crosshair</b> of the cursor with the Aim tool; photo <b>crop</b> (Orientation: permanent, with «Undo crop» until you load another photo); <b>results as cards</b> with expandable details; <b>wind dial</b> with crosswind and head/tail components; <b>ZIP session</b> (photo and measurements in a single file, to reopen or import into the comparison and the archive).",
    "<b>Novità 1.14</b>: <b>stabilità colpo dopo colpo</b> (vista grafici e scheda dei risultati: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto e traiettoria del centro); <b>ordine di sparo</b> modificabile con ↑/↓ nella tabella dei punti; <b>report PDF con testo vero</b> (selezionabile e cercabile) con metadati della calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici; preset del rettangolo di riferimento <b>100 × 100 mm</b>.": "<b>New in 1.14</b>: <b>shot-to-shot stability</b> (charts view and results card: progressive group size with the band expected by chance, shot from which the group opens, shift of the point of impact and path of the centre); <b>firing order</b> editable with ↑/↓ in the points table; <b>PDF report with real text</b> (selectable and searchable) with calibration metadata, analysed and excluded shots, statistical model and uncertainties, and all the charts; <b>100 × 100 mm</b> preset for the reference rectangle.",
    "<b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.": "<b>New in 1.15</b>: darker group colours (no yellow, readable on white and beige paper); <b>dashed line</b> with angle and deviation from the axis after the first point of the scale and of the reference; <b>zoom field</b> with −/+ (without a mouse wheel); <b>🔒 lock</b> of point of aim, scale, reference and single holes (<kbd>K</kbd> or padlock in the table: they cannot be moved or deleted by mistake); <b>👁 hidden groups</b> on the image (Groups list); <b>scale on the photo</b> (ruler and frame with the real size, also in Result Card and report); <b>uncertainty halo</b> of the holes (Shooting parameters); <b>✕ delete the check reference</b>; numbered <b>✎ notes</b> on a hole or an area, also in the report; <b>differences between configurations</b> in the comparison (charts view, Δ column); free <b>📏 ruler</b> in mm, inches, MOA and MRAD; movable and resizable <b>🔎 detail window</b>.",
+   "<b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.": "<b>New in 1.16</b>: group <b>quality index</b>. The <b>GQI</b> (0–100, with a class Excellent…Insufficient) tells how compact the group is relative to the reference mean radius you choose in the «Quality index» section; the optional <b>TQI</b> adds centring on the point of aim. Next to the score is its reliability (interval); at the bottom of the Results the GQI and TQI of the whole session and the <b>repeatability</b> of the centres between groups. Also in the comparison, the report, the CSV and the text.",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
@@ -3177,7 +3356,11 @@ const I18N = (() => {
    "<div class=\"hitnote\">σ angolare {0} MIL (IC {1}% {2}–{3}) da {4}, {5} gradi di libertà. Modello a <b>angolo costante</b>: diametri proporzionali alla distanza. Vale vicino alle distanze tirate (la più lunga: {6}); oltre (⚠) vento, differenze di velocità e caduta fanno crescere la dispersione più in fretta: i valori sono un limite inferiore. Distanze massime: 2 × {7} = {8}.</div>": "<div class=\"hitnote\">Angular σ {0} MIL ({1}% CI {2}–{3}) from {4}, {5} degrees of freedom. <b>Constant-angle</b> model: diameters proportional to distance. It holds near the distances shot (the longest: {6}); beyond (⚠) wind, velocity differences and drop make dispersion grow faster: the values are a lower bound. Maximum distances: 2 × {7} = {8}.</div>",
    "<div class=\"hitnote\">⚠ Con meno di 5 punti la pendenza è molto incerta.</div>": "<div class=\"hitnote\">⚠ With fewer than 5 points the slope is very uncertain.</div>",
    "<div class=\"hitnote\">⚠ Distanze escluse perché oltre {0}: {1}.</div>": "<div class=\"hitnote\">⚠ Distances excluded because beyond {0}: {1}.</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">Calcolato dal raggio medio aggregato, non come media dei GQI dei gruppi; gruppi a distanze diverse sono confrontati in angolo. Misura la compattezza interna delle rosate, non quanto i loro centri restano fermi: per quello c'è la ripetibilità qui sotto, che non entra nel punteggio.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Computed from the aggregate mean radius, not as the average of the groups' GQIs; groups at different distances are compared in angle. It measures the internal compactness of the groups, not how still their centres stay: for that there is the repeatability below, which is not part of the score.</div>",
    "<div class=\"muted\" style=\"font-size:11.5px\">Esatto: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Exact: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">GQI = 100 · exp[−ln(1,25) · (MR / MR<sub>rif</sub>)²]: vale 80 quando il raggio medio è uguale al riferimento, 100 con MR = 0, 41 con MR = 2 × riferimento. MR è il raggio medio <b>atteso</b> σ̂·√(π/2) del modello circolare normale (lo stesso di CEP e R95), che non dipende dal numero di colpi: il raggio medio misurato dal centro del gruppo è più piccolo del vero di circa il 18% con 3 colpi e l'11% con 5, e darebbe punteggi gonfiati ai gruppi corti. Il punteggio dice quanto la rosata è compatta <b>rispetto al riferimento scelto</b>; l'intervallo dice quanto il punteggio è determinato dai colpi disponibili. Criterio dell'applicazione ({0}), non uno standard statistico.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">GQI = 100 · exp[−ln(1.25) · (MR / MR<sub>ref</sub>)²]: it is 80 when the mean radius equals the reference, 100 with MR = 0, 41 with MR = 2 × reference. MR is the <b>expected</b> mean radius σ̂·√(π/2) of the circular normal model (the same as CEP and R95), which does not depend on the number of shots: the mean radius measured from the group centre is smaller than the true one by about 18% with 3 shots and 11% with 5, and would give inflated scores to short groups. The score tells how compact the group is <b>relative to the chosen reference</b>; the interval tells how well the available shots determine the score. The application's own criterion ({0}), not a statistical standard.</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">TQI = {0}% · GQI + {1}% · AQI, con AQI = 100 · exp[−ln(1,25) · (D / D<sub>rif</sub>)²] e D = distanza angolare del centro del gruppo dalla mira. La centratura si corregge con i click: un TQI basso con un GQI alto vuol dire «rosata buona, da centrare». Con pochi colpi D tende a essere sovrastimato (il centro del gruppo ha la sua incertezza): nessun intervallo è calcolato per il TQI.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">TQI = {0}% · GQI + {1}% · AQI, with AQI = 100 · exp[−ln(1.25) · (D / D<sub>ref</sub>)²] and D = angular distance of the group centre from the point of aim. Centring is corrected with clicks: a low TQI with a high GQI means «good group, needs centring». With few shots D tends to be overestimated (the group centre has its own uncertainty): no interval is computed for the TQI.</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">Test F: (dispersione dei centri)² / (attesa)² con {0} e {1} gradi di libertà (esatto con gruppi dello stesso numero di colpi, approssimato altrimenti). Serve il punto di mira di ogni gruppo; i click impostati sui fori vengono tolti. Non entra nel GQI.{2}</div>": "<div class=\"muted\" style=\"font-size:11.5px\">F test: (centre dispersion)² / (expected)² with {0} and {1} degrees of freedom (exact with groups of the same number of shots, approximate otherwise). The point of aim of each group is needed; the clicks set on the holes are removed. It is not part of the GQI.{2}</div>",
    "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\" title=\"Adattamento Rayleigh p {0} · anisotropia p {1}{2}\">Diagnostica del modello: nessun segnale contro il modello circolare normale.{3}</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\" title=\"Rayleigh fit p {0} · anisotropy p {1}{2}\">Model diagnostics: no signal against the circular normal model.{3}</div>",
    "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Diagnostica del modello in calcolo…</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Model diagnostics being computed…</div>",
    "<div class=\"muted\">Calibra la scala per calcolare la probabilità.</div>": "<div class=\"muted\">Calibrate the scale to compute the probability.</div>",
@@ -3208,6 +3391,7 @@ const I18N = (() => {
    "<div class=\"qinfo\">{0} → incertezza di scala ≈ ±{1}% · inquadratura {2} × {3}": "<div class=\"qinfo\">{0} → scale uncertainty ≈ ±{1}% · field of view {2} × {3}",
    "<div class=\"qwarn\">⚠ I fori misurano in mediana ⌀ {0} mm, il {1}% del calibro ({2} mm, {3} fori): scala o calibro probabilmente sbagliati. Controlla la distanza nota della scala, la sua unità (mm / cm / in) e il calibro.</div>": "<div class=\"qwarn\">⚠ The holes measure a median ⌀ {0} mm, {1}% of the caliber ({2} mm, {3} holes): scale or caliber probably wrong. Check the known distance of the scale, its unit (mm / cm / in) and the caliber.</div>",
    "<div class=\"qwarn\">⚠ Riferimento di controllo: misurato {0} mm invece di {1} mm ({2}%, oltre l'incertezza ±{3}%): ricontrolla la scala.</div>": "<div class=\"qwarn\">⚠ Check reference: measured {0} mm instead of {1} mm ({2}%, beyond the ±{3}% uncertainty): check the scale again.</div>",
+   "<div class=\"res sess\"><h3>Sessione · tutti i gruppi di questa foto</h3><div class=\"rcards\">{0}</div></div>": "<div class=\"res sess\"><h3>Session · all groups on this photo</h3><div class=\"rcards\">{0}</div></div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Carica (gr)</th><th class=\"x\">Fori</th><th class=\"x\">Alzo medio (MIL)</th><th class=\"x\">IC {0}%</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Charge (gr)</th><th class=\"x\">Shots</th><th class=\"x\">Mean elevation (MIL)</th><th class=\"x\">{0}% CI</th></tr></thead><tbody>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th>\n      <th class=\"x\" title=\"Click di alzo da impostare (+ = in alto) e intervallo di confidenza della media\">Alzo (click)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Click di brandeggio da impostare (+ = a destra): vale per il vento di quel giorno\">Brand. (click)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Gruppo</th><th>Data</th><th>Condizioni</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Click da impostare sulla torretta per colpire il punto di mira ({1} {2}/click, + = in alto / a destra), dalla media dei fori: click impostati + correzione di ogni foro; ± = intervallo di confidenza {3}%. Solo le distanze tirate: per quelle intermedie serve un calcolatore balistico. Il brandeggio vale per il vento di quel giorno; alzo e brandeggio dipendono da munizione, temperatura e pressione.</div>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th>\n      <th class=\"x\" title=\"Elevation clicks to set (+ = up) and confidence interval of the mean\">Elev. (clicks)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Windage clicks to set (+ = right): valid for the wind of that day\">Wind. (clicks)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Group</th><th>Date</th><th>Conditions</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Clicks to set on the turret to hit the point of aim ({1} {2}/click, + = up / right), from the average of the shots: clicks set + correction of each shot; ± = {3}% confidence interval. Only the distances actually shot: for intermediate ones you need a ballistic calculator. Windage is valid for the wind of that day; elevation and windage depend on ammunition, temperature and pressure.</div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th><th class=\"x\">σ per asse (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ IC {0}% (mm)</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th><th class=\"x\">σ per axis (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ {0}% CI (mm)</th></tr></thead><tbody>",
@@ -3236,12 +3420,17 @@ const I18N = (() => {
    "<th class=\"x\" title=\"Carica di polvere di questo foro (gr) per i ladder test; vuoto = quella del gruppo\">Carica</th>": "<th class=\"x\" title=\"Powder charge of this shot (gr) for ladder tests; empty = the group's\">Charge</th>",
    "<th class=\"x\" title=\"Punteggio ({0}): anello toccato dal bordo del foro; * = 10 interno; ≈ = sulla linea\">Punti</th>": "<th class=\"x\" title=\"Score ({0}): ring touched by the edge of the hole; * = inner 10; ≈ = on the line\">Points</th>",
    "<tr><td title=\"Circular Error Probable: raggio previsto che contiene il 50% dei colpi (modello circolare normale, σ stimato dai fori)\">CEP (50%)</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Raggio previsto che contiene il 95% dei colpi\">R95</td><td class=\"v\">{2}{3}</td></tr>": "<tr><td title=\"Circular Error Probable: predicted radius containing 50% of the shots (circular normal model, σ estimated from the shots)\">CEP (50%)</td><td class=\"v\">{0}{1}</td></tr>\n        <tr><td title=\"Predicted radius containing 95% of the shots\">R95</td><td class=\"v\">{2}{3}</td></tr>",
+   "<tr><td title=\"Deviazione standard per asse dei centri dei gruppi (rispetto alla propria mira, compensati dai click impostati), stima corretta per pochi gruppi\">Dispersione dei centri</td><td class=\"v\">{0}<br><span class=\"civ\">IC {1}%: {2} – {3}</span></td></tr>\n        <tr><td title=\"Quanto si sposterebbero i centri solo per il numero finito di colpi di ogni gruppo: √(media di σᵢ²/nᵢ)\">Attesa per caso</td><td class=\"v\">{4}</td></tr>\n        <tr><td title=\"Parte della dispersione dei centri non spiegata dal caso: √max(0, s_c² − attesa²)\">Eccesso</td><td class=\"v\">{5}</td></tr>\n        <tr><td>Gruppi</td><td class=\"v\">{6}</td></tr>": "<tr><td title=\"Standard deviation per axis of the group centres (relative to their own point of aim, compensated for the clicks set), estimate corrected for few groups\">Centre dispersion</td><td class=\"v\">{0}<br><span class=\"civ\">{1}% CI: {2} – {3}</span></td></tr>\n        <tr><td title=\"How much the centres would move only because of the finite number of shots in each group: √(mean of σᵢ²/nᵢ)\">Expected by chance</td><td class=\"v\">{4}</td></tr>\n        <tr><td title=\"Part of the centre dispersion not explained by chance: √max(0, s_c² − expected²)\">Excess</td><td class=\"v\">{5}</td></tr>\n        <tr><td>Groups</td><td class=\"v\">{6}</td></tr>",
    "<tr><td title=\"Group size che lo stesso tiratore/arma darebbe in media con 5 o 10 colpi (stessa σ, modello circolare normale): l'ES cresce con il numero di colpi\">ES equivalente</td><td class=\"v\">{0}</td></tr>": "<tr><td title=\"Group size the same shooter/rifle would give on average with 5 or 10 shots (same σ, circular normal model): ES grows with the number of shots\">Equivalent ES</td><td class=\"v\">{0}</td></tr>",
+   "<tr><td title=\"Raggio medio atteso del modello circolare normale σ̂·√(π/2), corretto per il numero di colpi: è il valore usato dal GQI\">Raggio medio (stima)</td><td class=\"v\">{0}</td></tr>\n      <tr><td title=\"Media delle distanze dei fori dal centro del gruppo, come misurata\">Raggio medio misurato</td><td class=\"v\">{1}</td></tr>\n      <tr><td>Riferimento (GQI = 80)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Colpi considerati</td><td class=\"v\">{3}{4}</td></tr>\n      <tr><td title=\"Quanto il punteggio è determinato dai colpi disponibili: intervallo di confidenza del raggio medio (χ² del modello circolare normale) tradotto nel punteggio. Non cambia il punteggio.\">Attendibilità</td><td class=\"v\">{5}</td></tr>": "<tr><td title=\"Expected mean radius of the circular normal model σ̂·√(π/2), corrected for the number of shots: it is the value used by the GQI\">Mean radius (estimate)</td><td class=\"v\">{0}</td></tr>\n      <tr><td title=\"Mean of the distances of the holes from the group centre, as measured\">Measured mean radius</td><td class=\"v\">{1}</td></tr>\n      <tr><td>Reference (GQI = 80)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Shots considered</td><td class=\"v\">{3}{4}</td></tr>\n      <tr><td title=\"How well the available shots determine the score: confidence interval of the mean radius (χ² of the circular normal model) translated into the score. It does not change the score.\">Reliability</td><td class=\"v\">{5}</td></tr>",
    "<tr><td title=\"Scostamento orizzontale del centro gruppo dalla mira, misurato: include vento, taratura e altri effetti\">Centro gruppo (orizz.)</td><td class=\"v\">{0} mm {1}</td></tr>": "<tr><td title=\"Horizontal offset of the group centre from the aim, measured: includes wind, zero and other effects\">Group centre (horiz.)</td><td class=\"v\">{0} mm {1}</td></tr>",
+   "<tr><td title=\"Σ nᵢ·MRᵢ / Σ nᵢ: dispersione media DENTRO i gruppi, ponderata per i colpi (non attorno a un centro comune)\">Raggio medio aggregato</td><td class=\"v\">{0}</td></tr>\n      <tr><td>Gruppi validi</td><td class=\"v\">{1} / {2}{3}</td></tr>\n      <tr><td>Colpi validi</td><td class=\"v\">{4}</td></tr>\n      <tr><td>Riferimento (GQI = 80)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Intervallo dal σ combinato dei gruppi (χ² con ν = Σ 2(nᵢ − 1)): presuppone gruppi con la stessa dispersione attesa\">Attendibilità</td><td class=\"v\">{6}</td></tr>": "<tr><td title=\"Σ nᵢ·MRᵢ / Σ nᵢ: mean dispersion WITHIN the groups, weighted by shots (not around a common centre)\">Aggregate mean radius</td><td class=\"v\">{0}</td></tr>\n      <tr><td>Valid groups</td><td class=\"v\">{1} / {2}{3}</td></tr>\n      <tr><td>Valid shots</td><td class=\"v\">{4}</td></tr>\n      <tr><td>Reference (GQI = 80)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Interval from the pooled σ of the groups (χ² with ν = Σ 2(nᵢ − 1)): assumes groups with the same expected dispersion\">Reliability</td><td class=\"v\">{6}</td></tr>",
    "<tr><td>Colpi a segno su 100</td><td>{0}</td><td>{1}</td></tr>": "<tr><td>Hits per 100</td><td>{0}</td><td>{1}</td></tr>",
    "<tr><td>Componente laterale</td><td class=\"v\">{0} {1}{2}</td></tr>\n    <tr><td>Componente frontale</td><td class=\"v\">{3} {4}{5}</td></tr>": "<tr><td>Crosswind component</td><td class=\"v\">{0} {1}{2}</td></tr>\n    <tr><td>Head/tail component</td><td class=\"v\">{3} {4}{5}</td></tr>",
+   "<tr><td>Gruppi usati</td><td class=\"v\">{0}{1}</td></tr>\n          <tr><td>GQI degli stessi gruppi × {2}%</td><td class=\"v\">{3}</td></tr>\n          <tr><td title=\"Σ nᵢ·Dᵢ / Σ nᵢ\">AQI (centratura media {4}) × {5}%</td><td class=\"v\">{6}</td></tr>\n          <tr><td>Colpi</td><td class=\"v\">{7}</td></tr>": "<tr><td>Groups used</td><td class=\"v\">{0}{1}</td></tr>\n          <tr><td>GQI of the same groups × {2}%</td><td class=\"v\">{3}</td></tr>\n          <tr><td title=\"Σ nᵢ·Dᵢ / Σ nᵢ\">AQI (mean centring {4}) × {5}%</td><td class=\"v\">{6}</td></tr>\n          <tr><td>Shots</td><td class=\"v\">{7}</td></tr>",
    "<tr><td>IC {0}% (colpi su 100)</td><td>{1}–{2}</td><td>{3}</td></tr>": "<tr><td>CI {0}% (hits per 100)</td><td>{1}–{2}</td><td>{3}</td></tr>",
    "<tr><td>IC {0}%</td><td>{1}</td><td>{2}</td></tr>": "<tr><td>CI {0}%</td><td>{1}</td><td>{2}</td></tr>",
+   "<tr><td>Precisione · GQI × {0}%</td><td class=\"v\">{1}</td></tr>\n        <tr><td title=\"Accuracy Quality Index: centratura del centro del gruppo sulla mira, 100 = centro sulla mira, 80 = alla distanza di riferimento\">Accuratezza · AQI × {2}%</td><td class=\"v\">{3}</td></tr>\n        <tr><td>Centro gruppo – mira</td><td class=\"v\">{4}</td></tr>\n        <tr><td>Riferimento (AQI = 80)</td><td class=\"v\">{5}</td></tr>": "<tr><td>Precision · GQI × {0}%</td><td class=\"v\">{1}</td></tr>\n        <tr><td title=\"Accuracy Quality Index: centring of the group centre on the point of aim, 100 = centre on the aim, 80 = at the reference distance\">Accuracy · AQI × {2}%</td><td class=\"v\">{3}</td></tr>\n        <tr><td>Group centre – aim</td><td class=\"v\">{4}</td></tr>\n        <tr><td>Reference (AQI = 80)</td><td class=\"v\">{5}</td></tr>",
    "<tr><td>Probabilità per colpo</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>": "<tr><td>Probability per shot</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>",
    "<tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr>": "<tr><td>Group centre offset</td><td class=\"v\">{0}{1}</td></tr>",
    "<tr><td>Scostamento dalla mira</td><td class=\"v\">{0}</td></tr>": "<tr><td>Offset from the aim</td><td class=\"v\">{0}</td></tr>",
@@ -3334,6 +3523,7 @@ const I18N = (() => {
    "Brandeggio impostato (click)": "Windage set (clicks)",
    "Brandeggio necessario (MIL)": "Windage needed (MIL)",
    "Brandeggio necessario (POI orizzontale) ↔ vento trasversale": "Windage needed (horizontal POI) ↔ crosswind",
+   "Buono": "Good",
    "CEP": "CEP",
    "CEP (50%)": "CEP (50%)",
    "CEP (mm)": "CEP (mm)",
@@ -3370,6 +3560,8 @@ const I18N = (() => {
    "Carica prima un'immagine.": "Load an image first.",
    "Carica una foto per iniziare.": "Load a photo to start.",
    "Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica": "Charge: compared with the same bullet and powder. Jump to the lands (seating): with the same bullet, powder and charge",
+   "Centratura di riferimento (AQI = 80)": "Reference centring (AQI = 80)",
+   "Centratura di riferimento: inserisci un numero maggiore di zero (il TQI è sospeso).": "Reference centring: enter a number greater than zero (the TQI is suspended).",
    "Centro dei primi {0} colpi: {1} {2} {3}, {4} {5} {6}": "Centre of the first {0} shots: {1} {2} {3}, {4} {5} {6}",
    "Centro gruppo": "Group centre",
    "Centro gruppo X dalla mira (mm)": "Group centre X from aim (mm)",
@@ -3380,6 +3572,8 @@ const I18N = (() => {
    "Chiudi": "Close",
    "Chiudi (si riattiva in Visualizzazione)": "Close (turn it back on in Display)",
    "Chiudi la finestra di dettaglio": "Close the detail window",
+   "Cinque classi": "Five classes",
+   "Classificazione": "Classification",
    "Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)": "Click 2 points on a target line that should be horizontal or vertical (key 5)",
    "Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6)": "Click the 4 corners of the reference rectangle, in any order (key 6)",
    "Clicca i due estremi di un'altra lunghezza nota (es. il diametro di un anello, il lato di un quadretto): l'app la misura con la scala attuale e avvisa se non torna": "Click the two ends of another known length (e.g. the diameter of a ring, the side of a grid square): the app measures it with the current scale and warns if it does not match",
@@ -3475,6 +3669,7 @@ const I18N = (() => {
    "Direzione del vento a ore": "Wind direction as a clock position",
    "Direzione vento (ore)": "Wind direction (o'clock)",
    "Direzione: ore {0} · {1}° {2}": "Direction: {0} o'clock · {1}° {2}",
+   "Discreto": "Fair",
    "Disegna righello e cornice anche nella Result Card e nella foto del report PDF, riferiti all'area ritagliata": "Draws ruler and frame also in the Result Card and in the PDF report photo, referred to the cropped area",
    "Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)": "Draws on the photo, to scale with the target, a graduated ruler and/or the real size of the photo's sides: a reference to understand how big the target is (a calibrated scale is needed; no calculation changes)",
    "Dispersione (senza immagine, rispetto al centro gruppo)": "Scatter (without image, relative to the group centre)",
@@ -3482,6 +3677,7 @@ const I18N = (() => {
    "Dispersione circa uniforme in tutte le direzioni (rapporto tra gli assi {0}:1).": "Dispersion roughly uniform in all directions (axis ratio {0}:1).",
    "Distanza": "Distance",
    "Distanza ({0})": "Distance ({0})",
+   "Distanza angolare centro gruppo–mira a cui corrisponde AQI = 80": "Angular distance group centre–point of aim that gives AQI = 80",
    "Distanza attesa dal modello ({0})": "Distance expected from the model ({0})",
    "Distanza centro-mira (mm)": "Centre-to-aim distance (mm)",
    "Distanza dal centro gruppo (mm)": "Distance from the group centre (mm)",
@@ -3567,6 +3763,9 @@ const I18N = (() => {
    "Freccia dal centro del gruppo al punto in cui andrebbe dopo i click di correzione (arrotondati), con una crocetta; esatta alla distanza del gruppo": "Arrow from the group centre to where it would go after the correction clicks (rounded), with a small cross; exact at the group distance",
    "Freccia di correzione sulla foto": "Correction arrow on the photo",
    "GIÙ": "DOWN",
+   "GQI": "GQI",
+   "GQI della sessione": "Session GQI",
+   "GQI · compattezza": "GQI · compactness",
    "GROUP SIZE (centro-centro)": "GROUP SIZE (centre-to-centre)",
    "Giù": "Down",
    "Gli esempi numerici sono calcolati dal motore dell'app": "The numerical examples are computed by the app's engine",
@@ -3583,6 +3782,8 @@ const I18N = (() => {
    "Griglia angolare, passo": "Angular grid, step",
    "Griglia {0} {1}/linea{2} · centro: {3}": "Grid {0} {1}/line{2} · centre: {3}",
    "Griglia: servono scala calibrata e distanza di tiro.": "Grid: a calibrated scale and the shooting distance are needed.",
+   "Group Quality Index con le impostazioni attuali (sotto, «orig.» = valutazione salvata con la sessione importata, se diversa)": "Group Quality Index with the current settings (below, «orig.» = evaluation saved with the imported session, if different)",
+   "Group Quality Index: compattezza della rosata (precisione), indipendente da dove cade rispetto alla mira": "Group Quality Index: compactness of the group (precision), regardless of where it lands relative to the point of aim",
    "Group size": "Group size",
    "Group size (ES)": "Group size (ES)",
    "Group size (c-c)": "Group size (c-c)",
@@ -3593,6 +3794,7 @@ const I18N = (() => {
    "Group size con questo foro − senza": "Group size with this shot − without",
    "Group size e raggio medio progressivi colpo dopo colpo con la fascia attesa": "Progressive group size and mean radius shot by shot with the expected band",
    "Gruppi": "Groups",
+   "Gruppi e colpi": "Groups and shots",
    "Gruppo": "Group",
    "Gruppo 1": "Group 1",
    "Gruppo attivo": "Active group",
@@ -3603,9 +3805,11 @@ const I18N = (() => {
    "H-spread (orizz.)": "H-spread (horiz.)",
    "Heatmap della densità": "Density heatmap",
    "Help tecnico · termini, misure e grafici": "Technical help · terms, measurements and charts",
+   "I centri si spostano più di quanto spiega la dispersione dentro i gruppi (p = {0}).": "The centres move more than the dispersion within the groups explains (p = {0}).",
    "I colpi tendono a <b>ore {0}</b> rispetto alla mira: centro gruppo a {1} {2}, {3}° {4}. Spicchi = direzione di ogni colpo dalla mira.": "Shots tend to <b>{0} o'clock</b> relative to the aim: group centre at {1} {2}, {3}° {4}. Wedges = direction of each shot from the aim.",
    "I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.": "Your data stays on your device: the page makes no network connection at all.",
    "IC {0}%": "CI {0}%",
+   "IC {0}% del punteggio: {1}–{2}": "{0}% CI of the score: {1}–{2}",
    "IC {0}% {1}": "CI {0}% {1}",
    "IC {0}%: CEP {1} · R95 {2} · R99 {3}": "CI {0}%: CEP {1} · R95 {2} · R99 {3}",
    "IC {0}%: verticale {1} · orizzontale {2}": "CI {0}%: vertical {1} · horizontal {2}",
@@ -3653,6 +3857,9 @@ const I18N = (() => {
    "Includi nel report PDF": "Include in the PDF report",
    "Includi «{0}» nelle differenze tra configurazioni": "Include «{0}» in the differences between configurations",
    "IndexedDB non disponibile": "IndexedDB not available",
+   "Indice di qualità": "Quality index",
+   "Indice di qualità (GQI / TQI)": "Quality index (GQI / TQI)",
+   "Indice di qualità della sessione": "Session quality index",
    "Ingrandimento al quale le tacche valgono il loro valore nominale (dal manuale del cannocchiale)": "Magnification at which the marks have their nominal value (from the scope manual)",
    "Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)": "Loupe magnification relative to the view (also Shift+wheel on the image with the loupe on)",
    "Ingrandisci (anche rotella del mouse sul reticolo; trascina per spostarti)": "Zoom in (also mouse wheel on the reticle; drag to move)",
@@ -3661,8 +3868,12 @@ const I18N = (() => {
    "Inserisci distanza di tiro e valore click.": "Enter shooting distance and click value.",
    "Inserisci il calibro: il punteggio dipende dal bordo del foro.": "Enter the caliber: the score depends on the edge of the hole.",
    "Inserisci il codice stampato sul bersaglio (SA-1000…9999).": "Enter the code printed on the target (SA-1000…9999).",
+   "Insufficiente": "Insufficient",
    "Integrazione numerica sulla sagoma; l'incertezza della scala non è inclusa.": "Numerical integration over the target; the scale uncertainty is not included.",
    "Intervalli di confidenza": "Confidence intervals",
+   "Intervalli di confidenza (se disponibili)": "Confidence intervals (if available)",
+   "Intervallo del GQI": "GQI interval",
+   "Intervallo del punteggio dall'intervallo di confidenza del raggio medio (χ² del modello circolare normale)": "Score interval from the confidence interval of the mean radius (χ² of the circular normal model)",
    "Intervallo di confidenza della posizione del centro gruppo (t di Student per asse) tradotto in click": "Confidence interval of the group centre position (Student's t per axis) converted into clicks",
    "Istogramma delle distanze dal centro gruppo": "Histogram of distances from the group centre",
    "L'archivio è vuoto: salva una sessione o aggiungi sessioni salvate.": "The archive is empty: save a session or add saved sessions.",
@@ -3701,6 +3912,9 @@ const I18N = (() => {
    "MOA": "MOA",
    "MOA a tacche": "MOA hash marks",
    "MOA a tacche (ogni 2 MOA)": "MOA hash marks (every 2 MOA)",
+   "MR di riferimento (GQI = 80)": "Reference MR (GQI = 80)",
+   "MR di riferimento: inserisci un numero maggiore di zero (il calcolo del GQI è sospeso).": "Reference MR: enter a number greater than zero (the GQI calculation is suspended).",
+   "MRAD (MIL)": "MRAD (MIL)",
    "Mahalanobis leave-one-out, F(2, {0}) di Hotelling, α = 5% con correzione di Bonferroni su {1} colpi": "Mahalanobis leave-one-out, Hotelling F(2, {0}), α = 5% with Bonferroni correction over {1} shots",
    "Maiale": "Pig",
    "Major (A 5 · C 4 · D 2)": "Major (A 5 · C 4 · D 2)",
@@ -3743,6 +3957,7 @@ const I18N = (() => {
    "Munizione dei gruppi da combinare": "Ammunition of the groups to pool",
    "Munizione: {0} · click {1} {2} · + = in alto / a destra · solo distanze tirate": "Ammunition: {0} · click {1} {2} · + = up / right · only distances actually shot",
    "Nessun gruppo ha fori.": "No group has shots.",
+   "Nessun gruppo valido{0}.": "No valid group{0}.",
    "Nessun gruppo.": "No group.",
    "Nessun parametro registrato diverso": "No recorded parameter differs",
    "Nessun punto di mira": "No point of aim",
@@ -3761,6 +3976,10 @@ const I18N = (() => {
    "Nome del profilo": "Profile name",
    "Non calibrato: seleziona «Scala» e clicca due punti a distanza nota.": "Not calibrated: select «Scale» and click two points at a known distance.",
    "Non disegnati:": "Not drawn:",
+   "Non disponibile: impostazioni del TQI non valide.": "Not available: invalid TQI settings.",
+   "Non disponibile: nessun gruppo valido con il punto di mira{0}.": "Not available: no valid group with a point of aim{0}.",
+   "Non disponibile: {0}.": "Not available: {0}.",
+   "Non disponibile: {0}. Il GQI resta valido.": "Not available: {0}. The GQI remains valid.",
    "Nota: clicca un foro (la nota lo segue) o una zona del bersaglio, poi scrivi il testo nella sezione «Note sull'immagine». Esc = fine.": "Note: click a hole (the note follows it) or an area of the target, then type the text in the «Notes on the image» section. Esc = done.",
    "Nota: clicca un foro o una zona del bersaglio per aggiungere un'annotazione numerata (N)": "Note: click a hole or an area of the target to add a numbered annotation (N)",
    "Note": "Notes",
@@ -3777,6 +3996,7 @@ const I18N = (() => {
    "Origine": "Origin",
    "Orologio": "Clock",
    "Osservazione, condizione particolare…": "Observation, special condition…",
+   "Ottimo": "Excellent",
    "PDF A4 a 300 dpi con un nuovo codice: stampalo al 100% (senza «adatta alla pagina»)": "A4 PDF at 300 dpi with a new code: print it at 100% (no «fit to page»)",
    "PROBABILITÀ DI COLPIRE · {0} a {1}": "HIT PROBABILITY · {0} at {1}",
    "PUNTEGGIO · {0}": "SCORE · {0}",
@@ -3793,6 +4013,9 @@ const I18N = (() => {
    "Per riaprirla: «Carica sessione» e scegli questo file .zip (foto e misure insieme).": "To reopen it: «Open session» and choose this .zip file (photo and measurements together).",
    "Personalizzata": "Custom",
    "Personalizzato": "Custom",
+   "Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%": "Weight of precision in the TQI; accuracy gets the rest, so the sum is always 100%",
+   "Peso della precisione: inserisci un valore da 0 a 100 (il TQI è sospeso).": "Precision weight: enter a value from 0 to 100 (the TQI is suspended).",
+   "Peso precisione · accuratezza": "Weight precision · accuracy",
    "Piano focale": "Focal plane",
    "Piccola (es. capriolo, camoscio) · ⌀ 22 cm": "Small (e.g. roe deer, chamois) · ⌀ 22 cm",
    "Piccolo pannello sull'immagine con fori, group size e raggio medio del gruppo attivo, aggiornati a ogni clic": "Small panel on the image with shots, group size and mean radius of the active group, updated at every click",
@@ -3861,8 +4084,11 @@ const I18N = (() => {
    "Raggio medio": "Mean radius",
    "Raggio medio (mm)": "Mean radius (mm)",
    "Raggio medio ({0})": "Mean radius ({0})",
+   "Raggio medio aggregato": "Aggregate mean radius",
+   "Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.": "Angular mean radius that gives GQI = 80. Choose the value that is «a good group» for you with this rifle and ammunition.",
    "Raggio medio atteso": "Expected mean radius",
    "Raggio medio con questo foro − senza": "Mean radius with this shot − without",
+   "Raggio medio usato (stima σ·√(π/2))": "Mean radius used (estimate σ·√(π/2))",
    "Rapporto d'aspetto": "Aspect ratio",
    "Rapporto d'aspetto {0} : 1 · ellisse {1}% {2} × {3} mm": "Aspect ratio {0} : 1 · ellipse {1}% {2} × {3} mm",
    "Relazione": "Relation",
@@ -3898,6 +4124,8 @@ const I18N = (() => {
    "Righello: clicca due punti per misurare (la misura non cambia fori né scala; clicca ancora per una nuova misura). Esc = fine.": "Ruler: click two points to measure (the measurement changes neither holes nor scale; click again for a new measurement). Esc = done.",
    "Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)": "Ruler: measures any distance on the photo in mm, inches, MOA and MRAD with its orientation, without creating holes or changing the scale (R)",
    "Rimuovi correzione": "Remove correction",
+   "Ripetibilità tra gruppi": "Repeatability between groups",
+   "Ripetibilità tra gruppi (separata)": "Repeatability between groups (separate)",
    "Riporta la foto all'orientamento originale": "Bring the photo back to its original orientation",
    "Ripristina (Ctrl+Y)": "Redo (Ctrl+Y)",
    "Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)": "Restores the photo and the points as they were before the crop (until you load another photo)",
@@ -3921,6 +4149,7 @@ const I18N = (() => {
    "SD radiale (mm)": "Radial SD (mm)",
    "SD radiale √(σx²+σy²)": "Radial SD √(σx²+σy²)",
    "SD radiale √(σx²+σy²): {0}": "Radial SD √(σx²+σy²): {0}",
+   "SESSIONE (tutti i gruppi)": "SESSION (all groups)",
    "SHOOT ANALYZER · RETICOLO {0} · {1}{2}": "SHOOT ANALYZER · RETICLE {0} · {1}{2}",
    "SHOOT ANALYZER — {0}": "SHOOT ANALYZER — {0}",
    "SINISTRA": "LEFT",
@@ -3949,6 +4178,7 @@ const I18N = (() => {
    "Scala: clicca il PRIMO punto a distanza nota.": "Scale: click the FIRST point at a known distance.",
    "Scala: clicca il SECONDO punto.": "Scale: click the SECOND point.",
    "Scaldacanna": "Foulers",
+   "Scarso": "Poor",
    "Scegli il punto da osservare: poi clicca sulla foto": "Choose the point to watch: then click on the photo",
    "Scegli un bersaglio per disegnare gli anelli attorno al punto di mira di ogni gruppo e calcolare il punteggio.": "Choose a target to draw the rings around the point of aim of each group and compute the score.",
    "Scostamento centro gruppo": "Group centre offset",
@@ -3994,6 +4224,7 @@ const I18N = (() => {
    "Sposta prima nell'ordine di sparo": "Move earlier in the firing order",
    "Sposta sagoma: trascina per spostare il bersaglio del gruppo attivo, Shift+trascina per ruotarlo attorno al suo centro. Esc = fine.": "Move target: drag to move the active group's target, Shift+drag to rotate it around its centre. Esc = done.",
    "Sposta/zoom (1)": "Move/zoom (1)",
+   "Spostamenti dei centri compatibili con il caso (p = {0}).": "Centre shifts compatible with chance (p = {0}).",
    "Spostamento del centro del bersaglio rispetto al punto di mira del gruppo attivo (+ = a destra / in alto)": "Shift of the target centre relative to the active group's point of aim (+ = right / up)",
    "Spostamento verticale (+ = in alto)": "Vertical shift (+ = up)",
    "Stabilità colpo dopo colpo": "Shot-to-shot stability",
@@ -4013,6 +4244,9 @@ const I18N = (() => {
    "Svuota storico": "Clear history",
    "Svuotare l'archivio delle sessioni? I file già salvati sul disco non vengono toccati.": "Clear the session archive? Files already saved on disk are not touched.",
    "Svuotare lo storico del confronto?": "Clear the comparison history?",
+   "TQI": "TQI",
+   "TQI della sessione": "Session TQI",
+   "TQI · compattezza + centratura": "TQI · compactness + centring",
    "Tabella della dope card per i fogli di calcolo": "Dope card table for spreadsheets",
    "Tacca ({0})": "Mark ({0})",
    "Tacca lunga e numero ogni quanti passi": "Long mark and number every how many steps",
@@ -4021,6 +4255,8 @@ const I18N = (() => {
    "Tacchino": "Turkey",
    "Taglia": "Size",
    "Taglia la foto al rettangolo: definitivo (rotazione, prospettiva e distorsione vengono incorporate nella nuova foto, la scala non cambia)": "Cuts the photo to the rectangle: permanent (rotation, perspective and distortion are built into the new photo, the scale does not change)",
+   "Target Quality Index con le impostazioni attuali": "Target Quality Index with the current settings",
+   "Target Quality Index: combina compattezza (GQI) e centratura del gruppo sulla mira (AQI). Serve il punto di mira.": "Target Quality Index: combines compactness (GQI) and centring of the group on the point of aim (AQI). The point of aim is needed.",
    "Tema chiaro / scuro (T)": "Light / dark theme (T)",
    "Temperatura": "Temperature",
    "Temperatura (°C)": "Temperature (°C)",
@@ -4047,6 +4283,7 @@ const I18N = (() => {
    "Umidità": "Humidity",
    "Umidità (%)": "Humidity (%)",
    "Un bersaglio da stampare con fori a posizioni note: fotografalo e misuralo come un bersaglio vero (scala sul righello, mira al centro della croce, fori); la verifica confronta le tue misure con i valori esatti e mette alla prova tutta la catena di misura.": "A target to print with holes at known positions: photograph it and measure it like a real target (scale on the ruler, aiming point at the centre of the cross, holes); the check compares your measurements with the exact values and tests the whole measuring chain.",
+   "Un punteggio 0–100 relativo ai riferimenti scelti qui: è un criterio dell'applicazione, non uno standard statistico. Il GQI misura solo la compattezza; il TQI aggiunge la centratura sulla mira.": "A 0–100 score relative to the references chosen here: it is the application's own criterion, not a statistical standard. The GQI measures compactness only; the TQI adds centring on the point of aim.",
    "Un punto per gruppo; barre = intervallo di confidenza della media. Le linee uniscono solo i punti misurati: non sono una traiettoria.": "One point per group; bars = confidence interval of the mean. The lines only join the measured points: they are not a trajectory.",
    "Un solo livello: nessun confronto possibile.": "Only one level: no comparison possible.",
    "Un unico ZIP con tutte le sessioni archiviate: per ognuna sessione JSON, foto originale, CSV fori e gruppi; in più un CSV riepilogativo di tutti i gruppi": "A single ZIP with all archived sessions: for each one JSON session, original photo, shots and groups CSV; plus a summary CSV of all groups",
@@ -4067,6 +4304,7 @@ const I18N = (() => {
    "Valore click mirino": "Sight click value",
    "Valori diversi": "Different values",
    "Valori in {0}; media mobile su {1} gruppi riferita a «{2}».": "Values in {0}; moving average over {1} groups, for «{2}».",
+   "Valutazione originale salvata con la sessione ({0}, MR di riferimento {1} {2}); il valore sopra usa le impostazioni attuali": "Original evaluation saved with the session ({0}, reference MR {1} {2}); the value above uses the current settings",
    "Variabile": "Variable",
    "Vento": "Wind",
    "Vento trasversale (m/s, + = da destra)": "Crosswind (m/s, + = from the right)",
@@ -4074,6 +4312,7 @@ const I18N = (() => {
    "Verde: incertezza di scala ≤ ±0,5%. Giallo: fino a ±1% o fori sotto 8 px. Rosso: oltre ±1% o un controllo di scala in allarme.": "Green: scale uncertainty ≤ ±0.5%. Yellow: up to ±1% or holes under 8 px. Red: beyond ±1% or a scale check in alarm.",
    "Verifica: diametro dei fori": "Check: hole diameter",
    "Verifica: riferimento di controllo": "Check: control reference",
+   "Versione della formula": "Formula version",
    "Verso orizzontale": "Horizontal direction",
    "Verso verticale": "Vertical direction",
    "Vista": "View",
@@ -4137,6 +4376,7 @@ const I18N = (() => {
    "colpo": "shot",
    "colpo n°": "shot no.",
    "come indicata dallo strumento": "as shown by the instrument",
+   "con un decimale": "with one decimal",
    "condizioni atmosferiche": "weather conditions",
    "considera il valore un limite superiore": "treat the value as an upper bound",
    "contro": "headwind",
@@ -4163,11 +4403,14 @@ const I18N = (() => {
    "direzione non indicata": "direction not given",
    "discreta": "fair",
    "dispersione": "dispersion",
+   "dispersione dei centri {0} (attesa per caso {1}), p = {2} · {3} gruppi": "centre dispersion {0} (expected by chance {1}), p = {2} · {3} groups",
    "diversa per gruppo": "different for each group",
    "dope_card_{0}.csv": "dope_card_{0}.csv",
    "dope_card_{0}.png": "dope_card_{0}.png",
    "dopo i click": "after the clicks",
    "es. 0,020": "e.g. 0.020",
+   "esclusi": "excluded",
+   "esclusi: {0}": "excluded: {0}",
    "escluso": "excluded",
    "fascia: group size atteso": "band: expected group size",
    "fori": "shots",
@@ -4197,6 +4440,8 @@ const I18N = (() => {
    "in coda": "tailwind",
    "in uso": "in use",
    "incertezza ±{0} px a mano, ±{1} px con lo snap": "uncertainty ±{0} px by hand, ±{1} px with snap",
+   "intero 0–100": "integer 0–100",
+   "intervalli disattivati": "intervals turned off",
    "km/h": "km/h",
    "l'alto": "the top",
    "la carica": "the charge",
@@ -4206,6 +4451,7 @@ const I18N = (() => {
    "le distanze dal centro non seguono la distribuzione di Rayleigh (p {0})": "the distances from the centre do not follow the Rayleigh distribution (p {0})",
    "lunghezza": "length",
    "maiale": "pig",
+   "manca il punto di mira": "the point of aim is missing",
    "marca, n° ricariche…": "brand, number of reloads…",
    "marca, peso gr, tipo (il calibro è nei parametri)": "brand, weight gr, type (the caliber is in the parameters)",
    "media dei fori; IC {0}% per asse con la t di Student ({1} gradi di libertà){2}": "mean of the shots; {0}% CI per axis with Student's t ({1} degrees of freedom){2}",
@@ -4220,6 +4466,7 @@ const I18N = (() => {
    "mm dal punto di mira (Y↑)": "mm from the point of aim (Y↑)",
    "montone": "ram",
    "mph": "mph",
+   "nessun colpo valido": "no valid shot",
    "nessun gruppo": "no group",
    "nessuna apertura né spostamento oltre il caso": "no opening or shift beyond chance",
    "nessuna correzione": "no correction",
@@ -4228,6 +4475,9 @@ const I18N = (() => {
    "nome del profilo (vuoto = automatico)": "profile name (empty = automatic)",
    "non calibrata": "not calibrated",
    "non calibrata: misure in pixel, nessun valore in mm o angolo": "not calibrated: measurements in pixels, no values in mm or angle",
+   "non disponibile": "not available",
+   "non disponibile: nessun gruppo valido{0}": "not available: no valid group{0}",
+   "non disponibile: {0}": "not available: {0}",
    "non disponibili (servono 2 fori e la scala)": "not available (2 holes and the scale are needed)",
    "non eseguito (meno di 5 colpi)": "not run (fewer than 5 shots)",
    "non torna": "does not match",
@@ -4239,6 +4489,7 @@ const I18N = (() => {
    "ordine dei fori nella tabella (usato dalla stabilità colpo dopo colpo)": "order of the shots in the table (used by the shot-to-shot stability)",
    "ore {0}": "{0} o'clock",
    "ore {0}: {1} {2}": "{0} o'clock: {1} {2}",
+   "orig. {0}": "orig. {0}",
    "orizzontale": "horizontal",
    "pagina {0} di {1}": "page {0} of {1}",
    "passi": "steps",
@@ -4262,6 +4513,7 @@ const I18N = (() => {
    "questo browser non sa decomprimere lo ZIP": "this browser cannot decompress the ZIP",
    "raggio medio": "mean radius",
    "raggio medio atteso": "expected mean radius",
+   "raggio medio {0} – {1}": "mean radius {0} – {1}",
    "regolare": "regular",
    "reticolo_{0}.png": "reticle_{0}.png",
    "rettangolo della correzione prospettica {0} × {1} mm": "rectangle of the perspective correction {0} × {1} mm",
@@ -4269,6 +4521,7 @@ const I18N = (() => {
    "rettangolo {0} × {1} {2}": "rectangle {0} × {1} {2}",
    "riepilogo_gruppi.csv": "groups_summary.csv",
    "riepilogo_gruppi.csv: tutti i gruppi di tutte le sessioni in un'unica tabella.": "groups_summary.csv: all groups of all sessions in a single table.",
+   "riferimento non valido nelle impostazioni dell'indice": "invalid reference in the index settings",
    "risultati_{0}.txt": "results_{0}.txt",
    "rosata": "shot group",
    "scala non calibrata": "scale not calibrated",
@@ -4295,6 +4548,7 @@ const I18N = (() => {
    "tutti_i_gruppi": "all_groups",
    "uguale": "same",
    "umidità relativa": "relative humidity",
+   "un solo colpo valido: la compattezza non si può valutare": "only one valid shot: compactness cannot be assessed",
    "valore indicativo": "indicative value",
    "velocità": "speed",
    "velocità e direzione del vento": "wind speed and direction",
@@ -4303,6 +4557,8 @@ const I18N = (() => {
    "yd": "yd",
    "zona": "zone",
    "zona vitale {0} × {1} cm": "vital zone {0} × {1} cm",
+   "{0} (misurato {1}) · riferimento {2} · {3} colpi validi": "{0} (measured {1}) · reference {2} · {3} valid shots",
+   "{0} (ponderato per i colpi) · riferimento {1}": "{0} (weighted by shots) · reference {1}",
    "{0} / {1} punti · A {2} · C {3} · D {4} · mancati {5}": "{0} / {1} points · A {2} · C {3} · D {4} · misses {5}",
    "{0} / {1} · media {2}{3}": "{0} / {1} · mean {2}{3}",
    "{0} <b>{1} click</b> ({2} MIL{3})": "{0} <b>{1} clicks</b> ({2} MIL{3})",
@@ -4317,12 +4573,14 @@ const I18N = (() => {
    "{0} colpiti su {1} ({2}%)": "{0} hits out of {1} ({2}%)",
    "{0} dal centro gruppo": "{0} from the group centre",
    "{0} esclusi": "{0} excluded",
+   "{0} esclusi: senza punto di mira": "{0} excluded: no point of aim",
    "{0} escluso": "{0} excluded",
    "{0} fori": "{0} shots",
    "{0} fori agganciati con lo snap, {1} a mano{2}": "{0} holes snapped, {1} by hand{2}",
    "{0} fori · calibro {1} mm · stampa al 100% (scala reale, senza «adatta alla pagina»)": "{0} holes · calibre {1} mm · print at 100% (true scale, no «fit to page»)",
    "{0} gruppi": "{0} groups",
    "{0} gruppi combinati": "{0} pooled groups",
+   "{0} gruppi validi su {1} · {2} colpi{3}": "{0} valid groups of {1} · {2} shots{3}",
    "{0} gruppi · unità {1} · origine {2}.": "{0} groups · unit {1} · origin {2}.",
    "{0} gruppi · {1} colpi": "{0} groups · {1} shots",
    "{0} marcati · {1} analizzati · {2} esclusi": "{0} marked · {1} analysed · {2} excluded",
@@ -4359,6 +4617,7 @@ const I18N = (() => {
    "{0} {1} {2}": "{0} {1} {2}",
    "{0} · ES {1} · raggio medio {2} {3}": "{0} · ES {1} · mean radius {2} {3}",
    "{0} · cal. {1}": "{0} · cal. {1}",
+   "{0} · criterio dell'applicazione, non uno standard": "{0} · the application's own criterion, not a standard",
    "{0} · foro {1} · {2}; {3} {4}": "{0} · hole {1} · {2}; {3} {4}",
    "{0} · {1} colpi": "{0} · {1} shots",
    "{0} · {1} colpi · {2}": "{0} · {1} shots · {2}",
@@ -4368,22 +4627,26 @@ const I18N = (() => {
    "{0} × {1}{2}": "{0} × {1}{2}",
    "{0}% per tutti gli intervalli": "{0}% for all intervals",
    "{0}, {1}, {2}. ": "{0}, {1}, {2}. ",
+   "{0}/100 — {1} · GQI × {2}% + AQI {3} × {4}% · centro-mira {5} (rif. {6})": "{0}/100 — {1} · GQI × {2}% + AQI {3} × {4}% · centre to aim {5} (ref. {6})",
+   "{0}/100 — {1} · {2} gruppi con mira{3}": "{0}/100 — {1} · {2} groups with point of aim{3}",
    "{0}: anelli 10 → 1 da ⌀ {1} a ⌀ {2} mm attorno al punto di mira. Punteggio: vale l'anello toccato dal bordo del foro (calibro {3} mm); * = 10 interno, ≈ = sulla linea entro l'incertezza di posizione. Contano tutti i fori, anche quelli esclusi dalle statistiche.": "{0}: rings 10 → 1 from ⌀ {1} to ⌀ {2} mm around the point of aim. Scoring: a shot scores the ring touched by the edge of the hole (caliber {3} mm); * = inner 10, ≈ = on the line within the position uncertainty. All shots count, including those excluded from the statistics.",
    "{0}: sagoma a grandezza reale centrata sul punto di mira ({1}); spostala o ruotala per allinearla alla sagoma della foto. Un foro che tocca la linea vale la zona migliore (calibro {2} mm).": "{0}: full-size target centred on the point of aim ({1}); move or rotate it to align it with the target in the photo. A hole touching the line scores the better zone (caliber {2} mm).",
    "{0}: senza distanza": "{0}: no distance",
    "{0}: senza punto di mira": "{0}: no aiming point",
    "{0}: valore più piccolo con intervallo che non si sovrappone agli altri (criterio prudente).": "{0}: smallest value, with an interval that does not overlap the others (conservative criterion).",
    "{0}: {1} a grandezza reale centrata sul punto di mira; colpito se il centro del foro è dentro.": "{0}: full-size {1} centred on the point of aim; hit if the centre of the hole is inside.",
-   "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"dsel\" title=\"Righe da confrontare nella tabella «Differenze tra le configurazioni»\">Δ</th><th>Data</th><th>Gruppo</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Differenza della metrica scelta rispetto al gruppo precedente\">Δ prec.</th><th class=\"x\" title=\"Media della metrica scelta sugli ultimi N gruppi\">Media {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Valori in {4}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «{5}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>": "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"dsel\" title=\"Rows to compare in the «Differences between configurations» table\">Δ</th><th>Date</th><th>Group</th><th class=\"x\">n</th>\n      {1}\n      <th class=\"x\" title=\"Difference of the chosen metric from the previous group\">Δ prev.</th><th class=\"x\" title=\"Average of the chosen metric over the last N groups\">Avg {2}</th><th></th></tr></thead>\n    <tbody>{3}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Values in {4}; ordered by the date of the load data. In bold the best (smallest) value of each column. Δ and moving average refer to «{5}». With few shots per group, small differences may be just chance.</div>",
+   "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"dsel\" title=\"Righe da confrontare nella tabella «Differenze tra le configurazioni»\">Δ</th><th>Data</th><th>Gruppo</th><th class=\"x\">n</th>\n      {1}\n      {2}<th class=\"x\" title=\"Differenza della metrica scelta rispetto al gruppo precedente\">Δ prec.</th><th class=\"x\" title=\"Media della metrica scelta sugli ultimi N gruppi\">Media {3}</th><th></th></tr></thead>\n    <tbody>{4}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Valori in {5}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «{6}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>": "{0}<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"dsel\" title=\"Rows to compare in the «Differences between configurations» table\">Δ</th><th>Date</th><th>Group</th><th class=\"x\">n</th>\n      {1}\n      {2}<th class=\"x\" title=\"Difference of the chosen metric from the previous group\">Δ prev.</th><th class=\"x\" title=\"Average of the chosen metric over the last N groups\">Avg {3}</th><th></th></tr></thead>\n    <tbody>{4}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Values in {5}; ordered by the date of the load data. In bold the best (smallest) value of each column. Δ and moving average refer to «{6}». With few shots per group, small differences may be just chance.</div>",
    "{0}° dalla verticale · rapporto {1} : 1": "{0}° from vertical · ratio {1} : 1",
    "{0}° fuori asse": "{0}° off axis",
    "{0}° per distanza: {1} {2} (atteso {3})": "{0}th by distance: {1} {2} (expected {3})",
    "{0}° · ore {1}–{2} · {3}": "{0}° · {1}–{2} o'clock · {3}",
+   "{0}–{1} (IC {2}% del raggio medio, χ² del modello circolare normale)": "{0}–{1} ({2}% CI of the mean radius, χ² of the circular normal model)",
    "«Taratura attuale»: con pochi colpi e scostamento piccolo l'intervallo è approssimato e può risultare troppo stretto.": "«Current zero»: with few shots and a small offset the interval is approximate and may be too narrow.",
    "«Taratura attuale»: inserisci il punto di mira del gruppo.": "«Current zero»: enter the point of aim of the group.",
    "±{0}% (±1 px per punto cliccato: √2 / lunghezza in px) · qualità {1}": "±{0}% (±1 px per clicked point: √2 / length in px) · quality {1}",
    "σ per asse": "σ per axis",
    "σ per asse (mm)": "σ per axis (mm)",
+   "σ per asse dei centri dei gruppi rispetto alla loro mira · {0}": "σ per axis of the group centres relative to their point of aim · {0}",
    "— coefficienti salvati —": "— saved coefficients —",
    "— nessun profilo salvato —": "— no saved profiles —",
    "— scegli un profilo —": "— choose a profile —",
@@ -4507,7 +4770,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.15.0";
+const APP_VERSION = "1.16.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -4709,6 +4972,9 @@ function params() {
     // dalla 1.15.0: alone di incertezza, scala sulla foto, note nel report
     haloOn: $("haloOn").checked, smOn: $("smOn").checked, smKind: $("smKind").value, smLen: $("smLen").value, smUnit: $("smUnit").value, smPos: $("smPos").value,
     smExport: $("smExport").checked, notesReport: $("notesReport").checked,
+    // dalla 1.16.0: indici di qualità
+    qiGqiOn: $("qiGqiOn").checked, qiTqiOn: $("qiTqiOn").checked, qiMrRef: $("qiMrRef").value, qiMrUnit: $("qiMrUnit").value,
+    qiDRef: $("qiDRef").value, qiDUnit: $("qiDUnit").value, qiWP: $("qiWP").value, qiDec: $("qiDec").value, qiCiOn: $("qiCiOn").checked, qiClasses: $("qiClasses").value,
   };
 }
 function setParams(p) {
@@ -4719,7 +4985,8 @@ function setParams(p) {
     ipscPF: "ipscPF", silScale: "silScale", vitalPreset: "vitalPreset", vitalW: "vitalW", vitalH: "vitalH",
     visLayout: "visLayout", visRef: "visRef", visUnit: "visUnit", rtType: "rtType", rtStep: "rtStep", rtUnit: "rtUnit", rtLab: "rtLab",
     rtPlane: "rtPlane", rtCal: "rtCal", rtMag: "rtMag", rtSrc: "rtSrc", coneSrc: "coneSrc", coneDists: "coneDists", corPair: "corPair",
-    smKind: "smKind", smLen: "smLen", smUnit: "smUnit", smPos: "smPos" }))
+    smKind: "smKind", smLen: "smLen", smUnit: "smUnit", smPos: "smPos",
+    qiMrRef: "qiMrRef", qiMrUnit: "qiMrUnit", qiDRef: "qiDRef", qiDUnit: "qiDUnit", qiWP: "qiWP", qiDec: "qiDec", qiClasses: "qiClasses" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
@@ -4731,7 +4998,7 @@ function setParams(p) {
   if (p.scoreDec !== undefined) $("scoreDec").checked = !!p.scoreDec;
   if (p.chPerShot !== undefined) $("chPerShot").checked = !!p.chPerShot;
   if (p.rtWind !== undefined) $("rtWind").checked = !!p.rtWind;
-  for (const k of ["haloOn", "smOn", "smExport", "notesReport"]) if (p[k] !== undefined) $(k).checked = !!p[k];
+  for (const k of ["haloOn", "smOn", "smExport", "notesReport", "qiGqiOn", "qiTqiOn", "qiCiOn"]) if (p[k] !== undefined) $(k).checked = !!p[k];
   if (typeof syncRtControls === "function") syncRtControls();
   if (p.hitDist !== undefined) $("hitDist").value = p.hitDist > 0 ? p.hitDist : "";   // 0 = distanza di tiro (campo vuoto)
   syncGridButton();
@@ -6202,6 +6469,7 @@ function buildSession(embed = $("embedImg").checked) {
     hiddenGroups: [...state.hiddenGroups],    // dalla 1.15.0: gruppi nascosti nella vista
     history: cmpState.history,   // storico per il confronto: solo riepiloghi di gruppi di altre sessioni
     results: state.groups.map(g => ({ group: g.name, ...summarize(g) })),   // informativo, ricalcolato al caricamento
+    quality: qiSnapshot(),   // dalla 1.16.0: GQI/TQI con versione, parametri, soglie e valori usati (informativo; lo storico lo usa come valutazione originale)
   };
 }
 async function saveSession() {
@@ -6343,7 +6611,7 @@ function hullRow(r) {
 const TERM_LINKS = [["Group size (c-c)", "gl-es"], ["Forma del gruppo", "gl-asse"], ["Correzione", "gl-centro"], ["Bordo-bordo esterno", "gl-bordo"], ["Raggio medio", "gl-mr"], ["H-spread (orizz.)", "gl-spread"],
   ["V-spread (vert.)", "gl-spread"], ["FOM", "gl-fom"], ["SD distanze dal centro", "gl-sd"], ["SD radiale √(σx²+σy²)", "gl-sd"], ["CEP (50%)", "gl-cep"],
   ["R95", "gl-r95"], ["R99", "gl-r95"], ["Asse maggiore", "gl-asse"], ["Rapporto d'aspetto", "gl-rapporto"], ["Scostamento centro gruppo", "gl-centro"],
-  ["Convex hull", "gl-hull"]];
+  ["Convex hull", "gl-hull"], ["GQI", "gl-gqi"], ["TQI", "gl-tqi"], ["GQI della sessione", "gl-gqi"], ["TQI della sessione", "gl-tqi"], ["Ripetibilità tra gruppi", "gl-ripet"]];
 function linkTerms(box) {
   const map = new Map(TERM_LINKS.map(([l, id]) => [_t(l), id])), hint = _t("clic: spiegazione nell'help tecnico");
   const wrap = (el, id) => {
@@ -6531,7 +6799,7 @@ function pointTable(g, cc) {
   return { rows, k, ref, unit: cc.clickUnit, coordUnit: k && ref ? _t("mm dal punto di mira (Y↑)") : _t("pixel immagine"), flyerNote };
 }
 function refreshResults() {
-  refreshHit();
+  refreshHit(); refreshQiSettings();
   const cc = calcContext();
   // stato calibrazione
   const cs = $("calStatus");
@@ -6566,6 +6834,7 @@ function refreshResults() {
     else if (r.n < 2 || !r.mm) html += resultCards(g, gcc, r, true);
     box.innerHTML = html; out.appendChild(box);
   }
+  out.insertAdjacentHTML("beforeend", qiSessionHTML());   // GQI/TQI della sessione e ripetibilità (dalla 1.16.0)
   out.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
   // dettagli delle card: restano aperti/chiusi tra un aggiornamento e l'altro; con densità «Dettagliata» tutti aperti
   const det = document.documentElement.dataset.density === "detail";
@@ -7000,6 +7269,7 @@ const ciSpan = (r, x, d = 1) => r.ci ? `<br><span class="civ">${_T`IC ${fmt(r.ci
 /** Card dei risultati di un gruppo (dalla 1.13.0). onlyAside = solo le card che non richiedono misure (punteggio, vento). */
 function resultCards(g, gcc, r, onlyAside = false) {
   const C = [];
+  if (g.shots.length) { const QI = qiCards(g, gcc, r); if (QI) C.push(QI); }   // indici di qualità (dalla 1.16.0)
   if (!onlyAside) {
     // rosata
     C.push(rcard("es", _t("Group size (c-c)"), fmtLen(r.mm.es), fmtAng(r.ang?.es), esEqHTML(r),
@@ -7368,8 +7638,10 @@ function resultText() {
     { const cic = correctionCIText(r); if (cic) L.push(`                  ${cic.text}${cic.unsure ? _t(" (asse non significativo)") : ""}`); }
     { const ht = hitText(hitInfo(g, gcc)); if (ht) L.push(_T`  Prob. di colpire: ${ht}`); }
     { const si = scoreHere(g); if (si) L.push(_T`  Punteggio (${si.t.name}): ${scoreSummaryText(si)} — per foro: ${g.shots.map(sh => scoreCell(si.byId.get(sh.id))).join(" ")}`); }
+    for (const [k, v] of qiReportRows(g, gcc)) L.push(`  ${(k + ":").padEnd(15)} ${v}`);   // dalla 1.16.0
     { const nw = shotsWarning(r.n); if (nw && r.n > 0) L.push(`  ⚠ ${nw}`); }
   }
+  { const QS = qiReportSession(); if (QS) { L.push("", _t("SESSIONE (tutti i gruppi)")); for (const [k, v] of QS) L.push(`  ${(k + ":").padEnd(15)} ${v}`); } }
   const rows = compareRows();
   if (rows.length >= 2) {
     const unit = $("cmpUnit").value, metric = $("cmpMetric").value, N = Math.max(2, parseInt($("cmpN").value, 10) || 3);
@@ -7959,6 +8231,7 @@ function buildReport(R, groups, p, cc, now) {
     { const h = hitInfo(g, gcc), ht = h ? hitText(h) : null; if (ht) rows.push([_t("Probabilità di colpire"), ht]); }
     R.sub(_t("Misure e correzione")); R.kv(rows);
     R.sub(_t("Modello statistico e incertezza")); R.kv(modelReportRows(g, gcc, r), 330);
+    { const Q = qiReportRows(g, gcc); if (Q.length) { R.sub(_t("Indice di qualità")); R.kv(Q, 330); } }   // dalla 1.16.0
     const ll = loadLines(g);
     if (ll.length) { R.sub(_t("Ricarica e condizioni")); R.kv(ll.map(([a, b]) => [a, b])); }
     const D = chartData(g);
@@ -7989,6 +8262,7 @@ function buildReport(R, groups, p, cc, now) {
     }
   }
   // sezioni d'insieme (se ci sono dati)
+  { const QS = qiReportSession(); if (QS) { R.heading(_t("Indice di qualità della sessione")); R.kv(QS, 330); } }   // dalla 1.16.0
   const rows = compareRows();
   if (rows.length >= 2) {
     R.heading(_t("Confronto tra gruppi"));
@@ -8473,6 +8747,7 @@ function groupSummary(shots, poa, ctx, meta) {
     out.ref = poa ? "poa" : "c";
   }
   if (r.n >= 2 && r.ang && r.ang.h) out.vsMil = r.ang.h.MIL;   // dalla 1.10.0: V-spread angolare (correlazioni)
+  out.qi = qiRaw(shots, poa, ctx);   // dalla 1.16.0: MR e centratura angolari per GQI/TQI (indipendenti dai riferimenti)
   if (dp) out.dope = { n: dp.n, vMil: dp.v.mil, hMil: dp.h.mil, ciV: dp.v.ci, ciH: dp.h.ci, dialV: dp.dialV, dialH: dp.dialH, varies: dp.dialVaries, level: dp.level };
   if (r.n >= 2 && r.mm && r.ang) {
     out.mm = {}; out.MOA = {}; out.MIL = {};
@@ -8526,12 +8801,14 @@ function drawCompareTable() {
     const word = Math.abs(d) < 1e-9 ? "=" : d < 0 ? "▼" : "▲";
     return `<span title="${d < 0 ? _t("Migliore (più stretto)") : d > 0 ? _t("Peggiore (più largo)") : _t("Uguale")} del precedente">${word} ${d > 0 ? "+" : ""}${fmtA(d)} <span class="muted">(${pct > 0 ? "+" : ""}${fmt(pct, 0)}%)</span></span>`;
   };
-  const activeId = state.activeGroupId;
+  const activeId = state.activeGroupId, QS = qiSet();
+  const qiTh = (QS.gqiOn ? `<th class="x" title="${_t("Group Quality Index con le impostazioni attuali (sotto, «orig.» = valutazione salvata con la sessione importata, se diversa)")}">GQI</th>` : "") + (QS.tqiOn ? `<th class="x" title="${_t("Target Quality Index con le impostazioni attuali")}">TQI</th>` : "");
   const trs = rows.map((r, i) => `<tr class="${!r.hist && r.gid === activeId ? "active" : ""}">
       <td class="dsel"><input type="checkbox" data-dk="${esc(diffKey(r))}" ${cmpState.diffOff.has(diffKey(r)) ? "" : "checked"} aria-label="${_T`Includi «${esc(r.name)}» nelle differenze tra configurazioni`}"></td>
       <td>${dIT(r.date)}</td>
       <td><span class="dot" style="background:${r.hist ? "transparent" : r.color};border:1px solid ${r.hist ? "var(--muted)" : r.color}"></span>${esc(r.name)}${r.hist ? `<div class="muted src" title="${esc(r.source)}">${esc(r.source)}</div>` : ""}</td>
       <td class="x">${r.n}</td>${Object.keys(CMP_METRICS).map(k => `<td class="x${k === metric ? " sel" : ""}">${cell(r, k)}</td>`).join("")}
+      ${QS.gqiOn ? `<td class="x">${qiCell(r, "gqi", QS)}</td>` : ""}${QS.tqiOn ? `<td class="x">${qiCell(r, "tqi", QS)}</td>` : ""}
       <td class="x">${delta(i)}</td><td class="x">${ma[i] == null ? "–" : fmtA(ma[i])}</td>
       <td>${r.hist ? `<button data-hdel="${r.idx}" title="Togli dallo storico">✕</button>` : ""}</td></tr>`).join("");
   // sintesi: gruppo attivo vs precedente
@@ -8543,7 +8820,7 @@ function drawCompareTable() {
   } else if (ai === 0) sum = _T`<div class="cmpsum muted">Il gruppo attivo è il primo in ordine di data: nessun precedente.</div>`;
   box.innerHTML = _T`${sum}<div class="tscroll"><table class="cmp"><thead><tr><th class="dsel" title="Righe da confrontare nella tabella «Differenze tra le configurazioni»">Δ</th><th>Data</th><th>Gruppo</th><th class="x">n</th>
       ${Object.entries(CMP_METRICS).map(([k, l]) => `<th class="x${k === metric ? " sel" : ""}">${k === "es" ? "ES" : k === "mr" ? "R. medio" : _t(l)}</th>`).join("")}
-      <th class="x" title="Differenza della metrica scelta rispetto al gruppo precedente">Δ prec.</th><th class="x" title="Media della metrica scelta sugli ultimi N gruppi">Media ${N}</th><th></th></tr></thead>
+      ${qiTh}<th class="x" title="Differenza della metrica scelta rispetto al gruppo precedente">Δ prec.</th><th class="x" title="Media della metrica scelta sugli ultimi N gruppi">Media ${N}</th><th></th></tr></thead>
     <tbody>${trs}</tbody></table></div>
     <div class="muted" style="font-size:11.5px;margin-top:4px">Valori in ${unit}; ordine per data dei dati di ricarica. In grassetto il valore migliore (più piccolo) di ogni colonna. Δ e media mobile riguardano «${_t(CMP_METRICS[metric])}». Con pochi colpi per gruppo le differenze piccole possono essere solo casuali.</div>`;
   box.querySelectorAll("button[data-hdel]").forEach(b => b.addEventListener("click", () => { cmpState.history.splice(+b.dataset.hdel, 1); drawCompare(); }));
@@ -8823,8 +9100,10 @@ async function importHistory(files) {
       if (shots.length < 2 || !ctx.pxPerMm || !(ccG(ctx, g).distMm > 0)) { skipped++; continue; }
       const key = `${s.savedAt}|${src}|${g.id}`;
       if (cmpState.history.some(h => h.key === key)) continue;   // già importato
-      cmpState.history.push(groupSummary(shots, g.poa, ccG(ctx, g), { key, name: g.name, date: (g.load && g.load.date) || "", source: src, savedAt: s.savedAt || "", load: { ...(g.load || {}) },
-        cfg: analysisCfg(s.params, s, g) }));   // dalla 1.15.0: impostazioni di analisi per le differenze tra configurazioni
+      const sm = groupSummary(shots, g.poa, ccG(ctx, g), { key, name: g.name, date: (g.load && g.load.date) || "", source: src, savedAt: s.savedAt || "", load: { ...(g.load || {}) },
+        cfg: analysisCfg(s.params, s, g) });   // dalla 1.15.0: impostazioni di analisi per le differenze tra configurazioni
+      sm.qiOrig = qiOriginal(s, g, sm.qi);   // dalla 1.16.0: valutazione originale (istantanea o parametri della sessione), mai riscritta
+      cmpState.history.push(sm);
       added++;
     }
   }
@@ -9187,7 +9466,7 @@ const yesNo = b => b ? _t("sì") : _t("no");
  */
 function csvSource() {
   const cc = calcContext(), p = params();
-  return { img: state.image ? state.image.name : "", groups: state.groups, cc, t: targetSpec(p), relErr: cc.pxPerMm ? calibQuality(cc).relErr : 0 };
+  return { img: state.image ? state.image.name : "", groups: state.groups, cc, t: targetSpec(p), relErr: cc.pxPerMm ? calibQuality(cc).relErr : 0, qs: qiSet(p) };
 }
 /** Contesto di calcolo di una sessione salvata (scala manuale o dal rettangolo della prospettiva). */
 function sessionCtx(s) {
@@ -9202,7 +9481,7 @@ function sessionCtx(s) {
 function sessionSource(s) {
   const p = s.params || {};
   return { img: (s.image && s.image.name) || "", groups: (s.groups || []).map(g => ({ ...g, shots: g.shots || [] })),
-    cc: sessionCtx(s), t: targetSpec(p), relErr: 0 };
+    cc: sessionCtx(s), t: targetSpec(p), relErr: 0, qs: qiSet(p) };
 }
 const csvShots = (src = csvSource()) => { const T = csvShotsTable(src); return csvDoc(T.head, T.rows); };
 const csvGroups = (src = csvSource()) => { const T = csvGroupsTable(src); return csvDoc(T.head, T.rows); };
@@ -9245,8 +9524,8 @@ function csvGroupsTable(src) {
     _t("Vento"), _t("Unità vento"), _t("Direzione vento (ore)"), _t("Colpi sparati"), _t("Scaldacanna"), _t("Note"),
     _t("Bersaglio da gara"), _t("Punteggio"), _t("Punteggio massimo"), _t("Media punti"), _t("10 interni"),
     _t("Dope alzo (click)"), _t("Dope alzo IC ± (click)"), _t("Dope alzo (MIL)"), _t("Dope brandeggio (click)"), _t("Dope brandeggio IC ± (click)"), _t("Dope brandeggio (MIL)"),
-    _t("Convex hull area (mm²)"), _t("Convex hull perimetro (mm)"), _t("Salto dalle righe"), _t("Unità salto")];
-  const rows = [];
+    _t("Convex hull area (mm²)"), _t("Convex hull perimetro (mm)"), _t("Salto dalle righe"), _t("Unità salto"), ...QI_CSV_HEAD];
+  const rows = [], QS = src.qs || qiSet();
   for (const g of src.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
     if (!g.shots.length) continue;
@@ -9268,7 +9547,8 @@ function csvGroupsTable(src) {
       csvLoadVal(L.shotsTotal), csvLoadVal(L.foulers), L.notes || "",
       si ? si.t.name : "", si ? (si.kind === "rings" && si.t.dec ? csvNum(si.total, 1) : si.total) : "", si && si.max != null ? (si.t.dec ? csvNum(si.max, 1) : si.max) : "", si ? csvNum(si.mean, 2) : "", si && si.kind === "rings" ? si.inners : "",
       ...dopeCsv(g.poa ? Calc.dope(inc(g), g.poa, gcc) : null, gcc),
-      mm && mm.hullArea != null ? csvNum(mm.hullArea, 1) : "", mm && mm.hullArea != null ? csvNum(mm.hullPerim, 2) : "", csvLoadVal(L.jump), L.jump ? L.jumpUnit || "in" : ""]);
+      mm && mm.hullArea != null ? csvNum(mm.hullArea, 1) : "", mm && mm.hullArea != null ? csvNum(mm.hullPerim, 2) : "", csvLoadVal(L.jump), L.jump ? L.jumpUnit || "in" : "",
+      ...qiCsv(g, gcc, QS)]);
   }
   return { head, rows };
 }
@@ -10373,6 +10653,222 @@ function drawConfigDiff(all) {
     <div class="tscroll"><table class="cmp cfgdiff"><thead><tr><th>Parametro</th>${D.rows.map(r => `<th><span class="dot" style="background:${r.hist ? "transparent" : r.color};border:1px solid ${r.hist ? "var(--muted)" : r.color}"></span>${esc(r.name)}<div class="muted src">${dIT(r.date)}</div></th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div>
     <div class="muted" style="font-size:11.5px;margin-top:4px">Mostrati solo i parametri che cambiano: componenti, distanza, condizioni e impostazioni di analisi (data e note escluse). Ogni differenza è una variabile in più che può spiegare la diversità tra le rosate: con più di una, il confronto non dice quale conta.</div>`;
 }
+/* ============================== 1.16.0: INDICI DI QUALITÀ (GQI / TQI) ==============================
+   Calcolo puro in Calc (groupQuality, sessionQuality, centerRepeatability); qui impostazioni, card dei risultati,
+   card della sessione, colonne del confronto, CSV, report e istantanea nella sessione. Il GQI è un criterio
+   dell'applicazione relativo ai riferimenti scelti dall'utente, non uno standard statistico. */
+const QI_UNIT_LABEL = { MOA: "MOA", MIL: "MRAD" };
+/** Impostazioni degli indici dai parametri (correnti o di una sessione salvata). Angoli in radianti. */
+function qiSet(p = params()) {
+  const num = v => { const x = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(",", ".")); return isFinite(x) ? x : NaN; };
+  const mrUnit = p.qiMrUnit === "MIL" ? "MIL" : "MOA", dUnit = p.qiDUnit === "MIL" ? "MIL" : "MOA";
+  const mrV = num(p.qiMrRef ?? 0.5), dV = num(p.qiDRef ?? 0.5), wV = num(p.qiWP ?? 70);
+  const S = { gqiOn: p.qiGqiOn !== false, tqiOn: !!p.qiTqiOn, ci: p.qiCiOn !== false, dec: p.qiDec === "1" ? 1 : 0, mrUnit, dUnit, mrV, dV, wV,
+    mrRef: mrV > 0 ? toRad(mrV, mrUnit) : NaN, dRef: dV > 0 ? toRad(dV, dUnit) : NaN, wP: wV >= 0 && wV <= 100 ? wV / 100 : NaN, errors: [] };
+  if (!(mrV > 0)) S.errors.push(_t("MR di riferimento: inserisci un numero maggiore di zero (il calcolo del GQI è sospeso)."));
+  if (S.tqiOn && !(dV > 0)) S.errors.push(_t("Centratura di riferimento: inserisci un numero maggiore di zero (il TQI è sospeso)."));
+  if (S.tqiOn && !(wV >= 0 && wV <= 100)) S.errors.push(_t("Peso della precisione: inserisci un valore da 0 a 100 (il TQI è sospeso)."));
+  return S;
+}
+const qiCalcSet = S => ({ mrRef: S.mrRef, dRef: S.dRef, wP: S.wP, ci: S.ci });
+const qiAng = (rad, unit) => rad == null || !isFinite(rad) ? "–" : `${fmt(Calc.fromRad(rad, unit), Calc.fromRad(rad, unit) < 0.1 ? 3 : 2)} ${QI_UNIT_LABEL[unit]}`;
+const qiNum = (v, S) => v == null || !isFinite(v) ? "–" : fmt(v, S.dec);
+const qiClassL = v => { const c = Calc.qiClass(v); return c ? _t(c.label) : "–"; };
+const QI_REASON = {
+  none: "nessun colpo valido", one: "un solo colpo valido: la compattezza non si può valutare", scale: "serve la scala calibrata",
+  dist: "serve la distanza di tiro del gruppo", ref: "riferimento non valido nelle impostazioni dell'indice", poa: "manca il punto di mira",
+  dref: "centratura di riferimento non valida", w: "pesi non validi",
+};
+const qiReason = k => _t(QI_REASON[k] || k);
+/** Qualità di un gruppo con le impostazioni S (contesto del gruppo, colpi inclusi). */
+const qiOf = (g, gcc, S = qiSet()) => Calc.groupQuality(inc(g), g.poa, gcc, qiCalcSet(S));
+/** Barra graduata 0–100 con le soglie delle classi, il punteggio e (se c'è) l'intervallo. Il numero resta in evidenza. */
+function qiBar(v, ci) {
+  const pc = x => `${Math.max(0, Math.min(100, x)).toFixed(2)}%`;
+  const ticks = Calc.QI_CLASSES.filter(c => isFinite(c.min)).map(c => `<span class="qi-tick" style="left:${c.min}%"></span>`).join("");
+  const band = ci && ci.lo != null ? `<span class="qi-ci" style="left:${pc(ci.lo)};width:${pc(ci.hi - ci.lo)}"></span>` : "";
+  return `<div class="qi-bar" aria-hidden="true">${ticks}${band}<span class="qi-mark" style="left:${pc(v)}"></span></div><div class="qi-scale" aria-hidden="true">${[0, 40, 60, 75, 90, 100].map(v => `<span style="left:${v}%">${v}</span>`).join("")}</div>`;
+}
+function qiHead(v, S, label) {
+  return `<div class="qi-head" role="img" aria-label="${esc(`${label} ${qiNum(v, S)} / 100 — ${qiClassL(v)}`)}"><span class="qi-num">${qiNum(v, S)}</span><span class="qi-of">/100</span><span class="qi-cls">— ${qiClassL(v)}</span></div>`;
+}
+const qiCiText = (ci, S) => ci && ci.lo != null ? _T`IC ${fmt(ci.level * 100, 0)}% del punteggio: ${qiNum(ci.lo, S)}–${qiNum(ci.hi, S)}` : "";
+const qiFormulaHTML = () => _T`<div class="muted" style="font-size:11.5px">GQI = 100 · exp[−ln(1,25) · (MR / MR<sub>rif</sub>)²]: vale 80 quando il raggio medio è uguale al riferimento, 100 con MR = 0, 41 con MR = 2 × riferimento. MR è il raggio medio <b>atteso</b> σ̂·√(π/2) del modello circolare normale (lo stesso di CEP e R95), che non dipende dal numero di colpi: il raggio medio misurato dal centro del gruppo è più piccolo del vero di circa il 18% con 3 colpi e l'11% con 5, e darebbe punteggi gonfiati ai gruppi corti. Il punteggio dice quanto la rosata è compatta <b>rispetto al riferimento scelto</b>; l'intervallo dice quanto il punteggio è determinato dai colpi disponibili. Criterio dell'applicazione (${Calc.QI_VERSION}), non uno standard statistico.</div>`;
+/** Card GQI (e TQI se attivo) del gruppo. */
+function qiCards(g, gcc, r) {
+  const S = qiSet(); if (!S.gqiOn) return "";
+  const q = qiOf(g, gcc, S), C = [], nEx = g.shots.length - inc(g).length;
+  if (!q.ok) C.push(rcard("gqi", "GQI", "", `<span class="qi-na">${_T`Non disponibile: ${qiReason(q.reason)}.`}</span>`, "", ""));
+  else {
+    const rows = _T`<tr><td title="Raggio medio atteso del modello circolare normale σ̂·√(π/2), corretto per il numero di colpi: è il valore usato dal GQI">Raggio medio (stima)</td><td class="v">${qiAng(q.mr, S.mrUnit)}</td></tr>
+      <tr><td title="Media delle distanze dei fori dal centro del gruppo, come misurata">Raggio medio misurato</td><td class="v">${qiAng(q.mrMeas, S.mrUnit)}</td></tr>
+      <tr><td>Riferimento (GQI = 80)</td><td class="v">${qiAng(S.mrRef, S.mrUnit)}</td></tr>
+      <tr><td>Colpi considerati</td><td class="v">${q.n}${nEx ? _T` (${nEx} esclusi)` : ""}</td></tr>
+      <tr><td title="Quanto il punteggio è determinato dai colpi disponibili: intervallo di confidenza del raggio medio (χ² del modello circolare normale) tradotto nel punteggio. Non cambia il punteggio.">Attendibilità</td><td class="v">${q.gqiCi ? `${qiCiText(q.gqiCi, S)}<br><span class="civ">${_T`raggio medio ${qiAng(q.mrCi.lo, S.mrUnit)} – ${qiAng(q.mrCi.hi, S.mrUnit)}`}</span>` : _t("intervalli disattivati")}</td></tr>`;
+    C.push(rcard("gqi", "GQI", qiHead(q.gqi, S, "GQI"), qiBar(q.gqi, q.gqiCi), rows, qiFormulaHTML(), "wide qi"));
+  }
+  if (S.tqiOn) {
+    if (!q.ok) C.push(rcard("tqi", "TQI", "", `<span class="qi-na">${_T`Non disponibile: ${qiReason(q.reason)}.`}</span>`, "", ""));
+    else if (q.tqi == null) C.push(rcard("tqi", "TQI", "", `<span class="qi-na">${_T`Non disponibile: ${qiReason(q.tqiReason || "poa")}. Il GQI resta valido.`}</span>`, "", ""));
+    else {
+      const rows = _T`<tr><td>Precisione · GQI × ${fmt(S.wV, 0)}%</td><td class="v">${qiNum(q.gqi, S)}</td></tr>
+        <tr><td title="Accuracy Quality Index: centratura del centro del gruppo sulla mira, 100 = centro sulla mira, 80 = alla distanza di riferimento">Accuratezza · AQI × ${fmt(100 - S.wV, 0)}%</td><td class="v">${qiNum(q.aqi, S)}</td></tr>
+        <tr><td>Centro gruppo – mira</td><td class="v">${qiAng(q.d, S.dUnit)}</td></tr>
+        <tr><td>Riferimento (AQI = 80)</td><td class="v">${qiAng(S.dRef, S.dUnit)}</td></tr>`;
+      C.push(rcard("tqi", "TQI", qiHead(q.tqi, S, "TQI"), qiBar(q.tqi), rows,
+        _T`<div class="muted" style="font-size:11.5px">TQI = ${fmt(S.wV, 0)}% · GQI + ${fmt(100 - S.wV, 0)}% · AQI, con AQI = 100 · exp[−ln(1,25) · (D / D<sub>rif</sub>)²] e D = distanza angolare del centro del gruppo dalla mira. La centratura si corregge con i click: un TQI basso con un GQI alto vuol dire «rosata buona, da centrare». Con pochi colpi D tende a essere sovrastimato (il centro del gruppo ha la sua incertezza): nessun intervallo è calcolato per il TQI.</div>`, "wide qi"));
+    }
+  }
+  return C.join("");
+}
+/** Gruppi della sessione con le loro qualità (contesto per gruppo). */
+function qiSessionData(S = qiSet()) {
+  const cc = calcContext();
+  return state.groups.map(g => { const gcc = ccG(cc, g); return { g, gcc, q: qiOf(g, gcc, S) }; });
+}
+/** Centri dei gruppi (rad, rispetto alla propria mira, compensati dai click impostati) per la ripetibilità. */
+function qiCenters(data) {
+  const out = [];
+  for (const { g, gcc, q } of data) {
+    if (!q.ok || !g.poa) continue;
+    const pts = inc(g), c = Calc.centroid(pts), k = 1 / gcc.pxPerMm, D = gcc.distMm;
+    let cx = Math.atan((c.x - g.poa.x) * k / D), cy = Math.atan((g.poa.y - c.y) * k / D);
+    if (gcc.clickValue > 0) { cx -= toRad(mean(pts.map(s => +s.dh || 0)) * gcc.clickValue, gcc.clickUnit); cy -= toRad(mean(pts.map(s => +s.dv || 0)) * gcc.clickValue, gcc.clickUnit); }
+    out.push({ g, cx, cy, n: q.n, s2: q.s2, nu: q.nu });
+  }
+  return out;
+}
+function qiExcludedText(ex) {
+  const parts = Object.entries(ex).map(([k, n]) => `${n} · ${qiReason(k)}`);
+  return parts.length ? parts.join("; ") : "";
+}
+/** Card della sessione: GQI (e TQI) di tutti i gruppi del file aperto + ripetibilità tra gruppi (separata). */
+function qiSessionHTML() {
+  const S = qiSet(); if (!S.gqiOn || !state.groups.length) return "";
+  const data = qiSessionData(S), level = (+params().ciLevel || 95) / 100, Q = Calc.sessionQuality(data.map(d => d.q), qiCalcSet(S), level);
+  const C = [], exT = qiExcludedText(Q.excluded);
+  if (!Q.gqi) C.push(rcard("sgqi", _t("GQI della sessione"), "", `<span class="qi-na">${_T`Nessun gruppo valido${exT ? ` (${exT})` : ""}.`}</span>`, "", ""));
+  else {
+    const G = Q.gqi;
+    const rows = _T`<tr><td title="Σ nᵢ·MRᵢ / Σ nᵢ: dispersione media DENTRO i gruppi, ponderata per i colpi (non attorno a un centro comune)">Raggio medio aggregato</td><td class="v">${qiAng(G.mr, S.mrUnit)}</td></tr>
+      <tr><td>Gruppi validi</td><td class="v">${G.k} / ${Q.groups}${exT ? `<br><span class="civ">${_T`esclusi: ${exT}`}</span>` : ""}</td></tr>
+      <tr><td>Colpi validi</td><td class="v">${G.n}</td></tr>
+      <tr><td>Riferimento (GQI = 80)</td><td class="v">${qiAng(S.mrRef, S.mrUnit)}</td></tr>
+      <tr><td title="Intervallo dal σ combinato dei gruppi (χ² con ν = Σ 2(nᵢ − 1)): presuppone gruppi con la stessa dispersione attesa">Attendibilità</td><td class="v">${G.gqiCi ? qiCiText(G.gqiCi, S) : _t("intervalli disattivati")}</td></tr>`;
+    C.push(rcard("sgqi", _t("GQI della sessione"), qiHead(G.gqi, S, _t("GQI della sessione")), qiBar(G.gqi, G.gqiCi), rows,
+      _T`<div class="muted" style="font-size:11.5px">Calcolato dal raggio medio aggregato, non come media dei GQI dei gruppi; gruppi a distanze diverse sono confrontati in angolo. Misura la compattezza interna delle rosate, non quanto i loro centri restano fermi: per quello c'è la ripetibilità qui sotto, che non entra nel punteggio.</div>`, "wide qi"));
+    if (S.tqiOn) {
+      const T = Q.tqi;
+      if (S.errors.length && !(S.dRef > 0 && S.wP >= 0)) C.push(rcard("stqi", _t("TQI della sessione"), "", `<span class="qi-na">${_t("Non disponibile: impostazioni del TQI non valide.")}</span>`, "", ""));
+      else if (!T || !T.k) C.push(rcard("stqi", _t("TQI della sessione"), "", `<span class="qi-na">${_T`Non disponibile: nessun gruppo valido con il punto di mira${T && T.noPoa ? _T` (${T.noPoa} senza mira)` : ""}.`}</span>`, "", ""));
+      else C.push(rcard("stqi", _t("TQI della sessione"), qiHead(T.tqi, S, _t("TQI della sessione")), qiBar(T.tqi),
+        _T`<tr><td>Gruppi usati</td><td class="v">${T.k}${T.noPoa ? `<br><span class="civ">${_T`${T.noPoa} esclusi: senza punto di mira`}</span>` : ""}</td></tr>
+          <tr><td>GQI degli stessi gruppi × ${fmt(S.wV, 0)}%</td><td class="v">${qiNum(T.gqi, S)}</td></tr>
+          <tr><td title="Σ nᵢ·Dᵢ / Σ nᵢ">AQI (centratura media ${qiAng(T.d, S.dUnit)}) × ${fmt(100 - S.wV, 0)}%</td><td class="v">${qiNum(T.aqi, S)}</td></tr>
+          <tr><td>Colpi</td><td class="v">${T.n}</td></tr>`, "", "wide qi"));
+    }
+  }
+  // ripetibilità tra gruppi (indicatore separato)
+  const cen = qiCenters(data), R = Calc.centerRepeatability(cen, level);
+  if (R) {
+    const u = S.mrUnit, loads = new Set(cen.map(c => loadKey(c.g.load || {}, true)));
+    const verdict = R.p < 0.05 ? _T`I centri si spostano più di quanto spiega la dispersione dentro i gruppi (p = ${pTxt(R.p)}).` : _T`Spostamenti dei centri compatibili con il caso (p = ${pTxt(R.p)}).`;
+    C.push(rcard("rep", _t("Ripetibilità tra gruppi"), `${qiAng(R.sigmaC, u)}`, _T`σ per asse dei centri dei gruppi rispetto alla loro mira · ${verdict}`,
+      _T`<tr><td title="Deviazione standard per asse dei centri dei gruppi (rispetto alla propria mira, compensati dai click impostati), stima corretta per pochi gruppi">Dispersione dei centri</td><td class="v">${qiAng(R.sigmaC, u)}<br><span class="civ">IC ${fmt(R.sigmaCci.level * 100, 0)}%: ${qiAng(R.sigmaCci.lo, u)} – ${qiAng(R.sigmaCci.hi, u)}</span></td></tr>
+        <tr><td title="Quanto si sposterebbero i centri solo per il numero finito di colpi di ogni gruppo: √(media di σᵢ²/nᵢ)">Attesa per caso</td><td class="v">${qiAng(R.sigmaE, u)}</td></tr>
+        <tr><td title="Parte della dispersione dei centri non spiegata dal caso: √max(0, s_c² − attesa²)">Eccesso</td><td class="v">${qiAng(R.sigmaB, u)}</td></tr>
+        <tr><td>Gruppi</td><td class="v">${R.k}</td></tr>`,
+      _T`<div class="muted" style="font-size:11.5px">Test F: (dispersione dei centri)² / (attesa)² con ${R.nuC} e ${R.nuE} gradi di libertà (esatto con gruppi dello stesso numero di colpi, approssimato altrimenti). Serve il punto di mira di ogni gruppo; i click impostati sui fori vengono tolti. Non entra nel GQI.${loads.size > 1 ? _t(" Attenzione: i gruppi hanno munizioni diverse, quindi i centri possono differire anche per la munizione.") : ""}</div>`, "wide qi"));
+  }
+  return C.length ? _T`<div class="res sess"><h3>Sessione · tutti i gruppi di questa foto</h3><div class="rcards">${C.join("")}</div></div>` : "";
+}
+function refreshQiSettings() {
+  const S = qiSet(), box = $("qiValid");
+  $("qiWA").textContent = S.wV >= 0 && S.wV <= 100 ? fmt(100 - S.wV, 0) : "–";
+  box.hidden = !S.errors.length; box.innerHTML = S.errors.map(e => `⚠ ${esc(e)}`).join("<br>");
+  $("qiClassInfo").textContent = Calc.QI_CLASSES.map((c, i, A) => isFinite(c.min) ? `${_t(c.label)} ≥ ${c.min}` : `${_t(c.label)} < ${A[i - 1].min}`).join(" · ") + _t(" (sul punteggio non arrotondato)");
+  for (const id of ["qiDRef", "qiDUnit", "qiWP"]) $(id).disabled = !S.tqiOn;
+  for (const id of ["qiMrRef", "qiMrUnit", "qiDec", "qiCiOn", "qiClasses", "qiTqiOn"]) $(id).disabled = !S.gqiOn;
+}
+/** Valori grezzi della qualità per lo storico (indipendenti dai riferimenti) e valutazione originale. */
+function qiRaw(shots, poa, ctx) {
+  const q = Calc.groupQuality(shots, poa, ctx, { mrRef: 1, dRef: 1, wP: 0.7, ci: false });
+  return q.ok ? { version: q.version, n: q.n, mr: q.mr, mrMeas: q.mrMeas, d: q.d, s2: q.s2, nu: q.nu } : null;
+}
+/** Valutazione di una riga del confronto (sessione o storico) con le impostazioni correnti. */
+function qiRow(r, S = qiSet()) {
+  if (!r.qi) return null;
+  const g = Calc.qiScore(r.qi.mr, S.mrRef), a = r.qi.d != null ? Calc.qiScore(r.qi.d, S.dRef) : null;
+  return { gqi: g, aqi: a, tqi: S.tqiOn && a != null ? Calc.qiTqi(g, a, S.wP) : null };
+}
+/** Istantanea salvata nella sessione: versione, parametri, soglie e valori usati (non sostituisce il ricalcolo). */
+function qiSnapshot() {
+  const S = qiSet(), data = qiSessionData(S), Q = Calc.sessionQuality(data.map(d => d.q), qiCalcSet(S), (+params().ciLevel || 95) / 100);
+  const A = (rad, u) => rad == null || !isFinite(rad) ? null : Calc.fromRad(rad, u);
+  return {
+    version: Calc.QI_VERSION, gqiOn: S.gqiOn, tqiOn: S.tqiOn, mrRef: S.mrV, mrUnit: S.mrUnit, dRef: S.dV, dUnit: S.dUnit, wPrecision: S.wV, wAccuracy: 100 - S.wV,
+    mrStatistic: "sigma_hat*sqrt(pi/2)", classes: Calc.QI_CLASSES.map(c => ({ min: isFinite(c.min) ? c.min : null, label: c.label })),
+    groups: data.map(({ g, q }) => ({ id: g.id, name: g.name, n: q.n, ok: q.ok, reason: q.reason || null, mr: A(q.mr, S.mrUnit), mrMeas: A(q.mrMeas, S.mrUnit),
+      gqi: q.gqi ?? null, gqiCi: q.gqiCi ? [q.gqiCi.lo, q.gqiCi.hi] : null, d: A(q.d, S.dUnit), aqi: q.aqi, tqi: S.tqiOn ? q.tqi : null })),
+    session: Q.gqi ? { k: Q.gqi.k, n: Q.gqi.n, mr: A(Q.gqi.mr, S.mrUnit), gqi: Q.gqi.gqi, tqi: S.tqiOn && Q.tqi && Q.tqi.k ? Q.tqi.tqi : null } : null,
+  };
+}
+/** Valutazione originale di un gruppo di una sessione importata: istantanea salvata, altrimenti i suoi parametri. */
+function qiOriginal(s, g, raw) {
+  const snap = s.quality && Array.isArray(s.quality.groups) ? s.quality.groups.find(x => x.id === g.id) : null;
+  if (snap && snap.gqi != null) return { version: s.quality.version, gqi: snap.gqi, tqi: snap.tqi ?? null, mrRef: s.quality.mrRef, mrUnit: s.quality.mrUnit, from: "snapshot" };
+  const p = s.params || {};
+  if (p.qiMrRef == null || !raw) return null;
+  const S = qiSet(p), gq = Calc.qiScore(raw.mr, S.mrRef);
+  if (gq == null) return null;
+  const a = raw.d != null ? Calc.qiScore(raw.d, S.dRef) : null;
+  return { version: Calc.QI_VERSION, gqi: gq, tqi: S.tqiOn && a != null ? Calc.qiTqi(gq, a, S.wP) : null, mrRef: S.mrV, mrUnit: S.mrUnit, from: "params" };
+}
+/** Cella GQI/TQI del confronto, con la valutazione originale dello storico se diversa. */
+function qiCell(r, key, S) {
+  const v = qiRow(r, S); const x = v ? v[key] : null;
+  if (x == null) return "–";
+  const o = r.qiOrig && r.qiOrig[key] != null && Math.abs(r.qiOrig[key] - x) >= 0.5 ? r.qiOrig : null;
+  return `<span title="${esc(qiClassL(x))}">${qiNum(x, S)}</span>` + (o ? `<span class="qi-orig" title="${esc(_T`Valutazione originale salvata con la sessione (${o.version}, MR di riferimento ${fmt(o.mrRef, 2)} ${QI_UNIT_LABEL[o.mrUnit] || o.mrUnit}); il valore sopra usa le impostazioni attuali`)}">${_T`orig. ${qiNum(o[key], S)}`}</span>` : "");
+}
+/** Colonne del CSV dei gruppi (nomi fissi, come nella specifica). */
+const QI_CSV_HEAD = ["GQI", "GQI_Class", "MR_Reference", "MR_Reference_Unit", "MR_GQI", "AQI", "D_Reference", "TQI", "TQI_Class", "TQI_Weight_Precision", "Quality_Index_Version"];
+function qiCsv(g, gcc, S) {
+  if (!S.gqiOn) return QI_CSV_HEAD.map(() => "");
+  const q = Calc.groupQuality(inc(g), g.poa, gcc, qiCalcSet(S)), U = S.mrUnit;
+  const val = (v, d = 2) => v == null || !isFinite(v) ? "" : csvNum(v, d);
+  return [val(q.gqi), q.gqi != null ? qiClassL(q.gqi) : "", val(S.mrV, 3), QI_UNIT_LABEL[U], q.mr != null ? val(Calc.fromRad(q.mr, U), 4) : "",
+    S.tqiOn ? val(q.aqi) : "", S.tqiOn ? val(S.dV, 3) : "", S.tqiOn ? val(q.tqi) : "", S.tqiOn && q.tqi != null ? qiClassL(q.tqi) : "", S.tqiOn ? val(S.wV, 0) : "", Calc.QI_VERSION];
+}
+/** Righe del report per un gruppo. */
+function qiReportRows(g, gcc) {
+  const S = qiSet(); if (!S.gqiOn) return [];
+  const q = qiOf(g, gcc, S);
+  if (!q.ok) return [[_t("GQI"), _T`non disponibile: ${qiReason(q.reason)}`]];
+  const out = [[_t("GQI"), `${qiNum(q.gqi, S)}/100 — ${qiClassL(q.gqi)}`],
+    [_t("Raggio medio usato (stima σ·√(π/2))"), _T`${qiAng(q.mr, S.mrUnit)} (misurato ${qiAng(q.mrMeas, S.mrUnit)}) · riferimento ${qiAng(S.mrRef, S.mrUnit)} · ${q.n} colpi validi`]];
+  if (q.gqiCi) out.push([_t("Intervallo del GQI"), _T`${qiNum(q.gqiCi.lo, S)}–${qiNum(q.gqiCi.hi, S)} (IC ${fmt(q.gqiCi.level * 100, 0)}% del raggio medio, χ² del modello circolare normale)`]);
+  if (S.tqiOn) out.push([_t("TQI"), q.tqi != null ? _T`${qiNum(q.tqi, S)}/100 — ${qiClassL(q.tqi)} · GQI × ${fmt(S.wV, 0)}% + AQI ${qiNum(q.aqi, S)} × ${fmt(100 - S.wV, 0)}% · centro-mira ${qiAng(q.d, S.dUnit)} (rif. ${qiAng(S.dRef, S.dUnit)})` : _T`non disponibile: ${qiReason(q.tqiReason || "poa")}`]);
+  out.push([_t("Versione della formula"), _T`${Calc.QI_VERSION} · criterio dell'applicazione, non uno standard`]);
+  return out;
+}
+/** Righe del report per la sessione. */
+function qiReportSession() {
+  const S = qiSet(); if (!S.gqiOn || !state.groups.length) return null;
+  const data = qiSessionData(S), level = (+params().ciLevel || 95) / 100, Q = Calc.sessionQuality(data.map(d => d.q), qiCalcSet(S), level);
+  const rows = [], exT = qiExcludedText(Q.excluded);
+  if (!Q.gqi) rows.push([_t("GQI della sessione"), _T`non disponibile: nessun gruppo valido${exT ? ` (${exT})` : ""}`]);
+  else {
+    rows.push([_t("GQI della sessione"), `${qiNum(Q.gqi.gqi, S)}/100 — ${qiClassL(Q.gqi.gqi)}` + (Q.gqi.gqiCi ? _T` · intervallo ${qiNum(Q.gqi.gqiCi.lo, S)}–${qiNum(Q.gqi.gqiCi.hi, S)}` : "")]);
+    rows.push([_t("Raggio medio aggregato"), _T`${qiAng(Q.gqi.mr, S.mrUnit)} (ponderato per i colpi) · riferimento ${qiAng(S.mrRef, S.mrUnit)}`]);
+    rows.push([_t("Gruppi e colpi"), _T`${Q.gqi.k} gruppi validi su ${Q.groups} · ${Q.gqi.n} colpi${exT ? ` · ${_t("esclusi")}: ${exT}` : ""}`]);
+    if (S.tqiOn) rows.push([_t("TQI della sessione"), Q.tqi && Q.tqi.k ? _T`${qiNum(Q.tqi.tqi, S)}/100 — ${qiClassL(Q.tqi.tqi)} · ${Q.tqi.k} gruppi con mira${Q.tqi.noPoa ? _T`, ${Q.tqi.noPoa} senza mira esclusi` : ""}` : _t("non disponibile")]);
+  }
+  const R = Calc.centerRepeatability(qiCenters(data), level);
+  if (R) rows.push([_t("Ripetibilità tra gruppi (separata)"), _T`dispersione dei centri ${qiAng(R.sigmaC, S.mrUnit)} (attesa per caso ${qiAng(R.sigmaE, S.mrUnit)}), p = ${pTxt(R.p)} · ${R.k} gruppi`]);
+  rows.push([_t("Versione della formula"), _T`${Calc.QI_VERSION} · criterio dell'applicazione, non uno standard`]);
+  return rows;
+}
 function toggleHard(gid, id) {
   const g = state.groups.find(x => x.id === gid), s = g && g.shots.find(x => x.id === id); if (!s) return;
   s.hard = !s.hard; if (!s.hard) delete s.hard; commit();
@@ -10973,6 +11469,7 @@ $("bRefLock").onclick = () => setLock({ kind: "ref", which: "r1" }, !state.calib
 $("bRefDel").onclick = () => { if (state.calib.r1) { deleteRef({ kind: "ref", which: "r1" }); if (state.mode === "ref") setMode(state.prevMode); toast(_t("Riferimento di controllo eliminato.")); } };
 for (const id of ["smOn", "smKind", "smLen", "smUnit", "smPos", "smExport"]) $(id).addEventListener("change", () => { refreshScaleMarkUI(); requestDraw(); scheduleAutosave(); });
 $("haloOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
+for (const id of ["qiGqiOn", "qiTqiOn", "qiCiOn"]) $(id).addEventListener("change", () => { refreshResults(); scheduleAutosave(); });   // 1.16.0
 $("notesReport").addEventListener("change", () => scheduleAutosave());
 $("cmpBody").addEventListener("change", e => { const k = e.target.dataset.dk; if (!k) return; if (e.target.checked) cmpState.diffOff.delete(k); else cmpState.diffOff.add(k); drawConfigDiff(compareRows()); });
 initDetailWin();
@@ -10997,7 +11494,8 @@ window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc
   applyLens, worldToRaw, rawToWorld, fitLensFromLines, lensParams, setMode,
   flyerTest, holeScaleCheck, refScaleCheck, measInfo, diagInfo, diagMemo, RT_VIEW, calibQuality,
   correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getProfiles, saveProfile, applyProfile, stabInfo, moveShot, setParams, deleteProfile, importProfilesText, profileAutoName, setWindDir, refreshWindDial, exportReportPdf, applyCrop, undoCrop, cropRectNorm, cropOutside, readZip, sessionsFromZip, buildSessionZip, saveSessionZip, openSessionFile, CARD_OPEN, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap ,
-  isLocked, setLock, toggleLock, lockable, toggleGroupVisible, noteMarkers, addNoteAt, rulerInfo, setZoomPct, zoomStep, detail, openDetail, setDetailZoom, drawScaleMark, photoSizeMm, configDiff, analysisCfg, drawCompare, refreshLists, deleteRef, hitTest, clearAll, deleteLast, fixColor, GROUP_COLORS, allPoints };
+  isLocked, setLock, toggleLock, lockable, toggleGroupVisible, noteMarkers, addNoteAt, rulerInfo, setZoomPct, zoomStep, detail, openDetail, setDetailZoom, drawScaleMark, photoSizeMm, configDiff, analysisCfg, drawCompare, refreshLists, deleteRef, hitTest, clearAll, deleteLast, fixColor, GROUP_COLORS, allPoints ,
+  qiSet, qiOf, qiSnapshot, qiSessionData, qiCenters, qiRow, qiOriginal };
 </script>
 </body>
 </html>

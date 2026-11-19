@@ -1788,7 +1788,7 @@ test("risultati a card e file ZIP di sessione: salva, riapri, storico, ZIP compr
   await setField(page, "#shotDist", 100);
   await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; });
   const keys = await page.$$eval("#results .rcard", a => a.map(e => e.dataset.key));
-  assert.deepStrictEqual(keys, ["es", "mr", "corr", "shape", "stab"], "card (stabilità da 5 colpi)");
+  assert.deepStrictEqual(keys, ["gqi", "es", "mr", "corr", "shape", "stab", "sgqi"], "card (GQI dalla 1.16, stabilità da 5 colpi, GQI della sessione)");
   ok2(/3 click SINISTRA/.test(await page.textContent('#results .rcard[data-key="corr"] .rc-main')), "correzione in evidenza");
   ok2(!(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table')), "dettagli chiusi");
   await page.click('#results .rcard[data-key="mr"] .rc-more > summary');
@@ -2190,6 +2190,143 @@ test("1.15.0 in inglese: note, blocco, righello, scala sulla foto, differenze se
   const diff = await page.textContent("#cmpDiff");
   assert.match(diff, /Charge/); ok2(!ITALIAN.test(diff), "differenze in inglese: " + diff);
   await key(page, "Escape");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+});
+
+/* ------------------------------ 1.16.0: indici di qualità ------------------------------ */
+const qiIndep = (page, gi = 0) => page.evaluate(gi => {   // calcolo indipendente dal motore puro con le impostazioni lette dal DOM
+  const { state, Calc, calcContext } = window.__SA, g = state.groups[gi], v = id => document.getElementById(id).value;
+  const toR = (x, u) => x / Calc.fromRad(1, u), cc = calcContext(g);
+  const pts = g.shots.filter(s => !s.excluded), c = Calc.centroid(pts), d = Calc.dispersion(pts);
+  const mr = Math.atan(d.sigma / cc.pxPerMm * Math.sqrt(Math.PI / 2) / cc.distMm), ref = toR(+v("qiMrRef"), v("qiMrUnit"));
+  const gqi = 100 * Math.exp(-Math.log(1.25) * (mr / ref) ** 2);
+  const D = g.poa ? Math.atan(Math.hypot(c.x - g.poa.x, c.y - g.poa.y) / cc.pxPerMm / cc.distMm) : null, dref = toR(+v("qiDRef"), v("qiDUnit"));
+  const aqi = D == null ? null : 100 * Math.exp(-Math.log(1.25) * (D / dref) ** 2), w = +v("qiWP") / 100;
+  return { n: pts.length, mr, gqi, aqi, tqi: aqi == null ? null : w * gqi + (1 - w) * aqi };
+}, gi);
+const cardNum = (page, key, nth = 0) => page.$$eval(`#results .rcard[data-key="${key}"] .qi-num`, (els, i) => els[i] ? els[i].textContent : null, nth);
+
+test("1.16.0: GQI e TQI del gruppo, impostazioni, unità, colpi esclusi, casi particolari", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  let I = await qiIndep(page);
+  assert.strictEqual(await cardNum(page, "gqi"), String(Math.round(I.gqi)), "GQI nella card = calcolo indipendente");
+  const cls = I.gqi >= 90 ? "Ottimo" : I.gqi >= 75 ? "Buono" : I.gqi >= 60 ? "Discreto" : I.gqi >= 40 ? "Scarso" : "Insufficiente";
+  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), new RegExp(`— ${cls}`));
+  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /IC 95% del punteggio: \d+–\d+/, "attendibilità separata dal punteggio");
+  // riferimento più largo → punteggio più alto; MR = ref → 80
+  const mrMoa = await page.evaluate(m => window.__SA.Calc.fromRad(m, "MOA"), I.mr);
+  await setField(page, "#qiMrRef", mrMoa.toFixed(6));
+  assert.strictEqual(await cardNum(page, "gqi"), "80", "MR = MR_ref → 80");
+  // stesso valore fisico in MRAD → stesso punteggio
+  await setField(page, "#qiMrRef", 0.5); const g1 = await cardNum(page, "gqi");
+  await page.selectOption("#qiMrUnit", "MIL"); await setField(page, "#qiMrRef", (0.5 / 3437.746770784939 * 1000).toFixed(8));
+  assert.strictEqual(await cardNum(page, "gqi"), g1, "MOA → MRAD senza cambiare il valore fisico");
+  await page.selectOption("#qiMrUnit", "MOA"); await setField(page, "#qiMrRef", 0.5);
+  // un decimale
+  await page.selectOption("#qiDec", "1");
+  assert.strictEqual(await cardNum(page, "gqi"), I.gqi.toFixed(1).replace(".", ","), "punteggio con un decimale"); await page.selectOption("#qiDec", "0");
+  // colpo escluso: il GQI usa solo i fori inclusi
+  await clickAt(page, SHOTS[0]); await key(page, "x");
+  I = await qiIndep(page); assert.strictEqual(I.n, 4);
+  assert.strictEqual(await cardNum(page, "gqi"), String(Math.round(I.gqi)), "GQI senza il foro escluso");
+  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /4 \(1 esclusi\)/);
+  // riferimento non valido: messaggio e calcolo bloccato
+  await setField(page, "#qiMrRef", 0);
+  ok2(await page.isVisible("#qiValid"), "messaggio di validazione"); assert.match(await page.textContent("#qiValid"), /maggiore di zero/);
+  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /Non disponibile: riferimento non valido/);
+  await setField(page, "#qiMrRef", -2); assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /Non disponibile/);
+  await setField(page, "#qiMrRef", 0.5);
+  // TQI: spento di default, poi acceso; 70/30
+  ok2(!(await page.$('#results .rcard[data-key="tqi"]')), "TQI spento di default");
+  await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
+  assert.strictEqual(await cardNum(page, "tqi"), String(Math.round(I.tqi)), "TQI = 0,7·GQI + 0,3·AQI");
+  await setField(page, "#qiWP", 50); I = await qiIndep(page);
+  assert.strictEqual(await cardNum(page, "tqi"), String(Math.round(I.tqi)), "TQI con pesi 50/50"); assert.strictEqual(await page.textContent("#qiWA"), "50");
+  // gruppo senza mira: GQI sì, TQI no; un solo colpo: nessun GQI
+  await page.click("#bAddGroup"); await key(page, "4"); await clickAt(page, { x: 600, y: 400 });
+  assert.match(await page.textContent("#results .res:nth-of-type(2)"), /GQINon disponibile: un solo colpo valido/);
+  await clickAt(page, { x: 630, y: 410 }); await clickAt(page, { x: 615, y: 380 });
+  assert.match(await page.textContent("#results .res:nth-of-type(2)"), /TQINon disponibile: manca il punto di mira\. Il GQI resta valido/);
+  ok2(await cardNum(page, "gqi", 1), "GQI del gruppo senza mira");
+  // le statistiche esistenti non cambiano
+  const mr = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[0]; return Calc.analyze(g.shots.filter(s => !s.excluded), g.poa, calcContext(g)).mm.mr; });
+  assert.match(await page.textContent('#results .rcard[data-key="mr"]'), new RegExp(mr.toFixed(1).replace(".", ",") + " mm"), "raggio medio esistente invariato");
+});
+
+test("1.16.0: GQI e TQI della sessione, ripetibilità, confronto, esportazioni, sessione salvata", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.click("#bAddGroup"); await setField(page, "#shotDist", 200);
+  await key(page, "3"); await clickAt(page, { x: 600, y: 400 });
+  for (const p of [{ x: 640, y: 420 }, { x: 650, y: 380 }, { x: 630, y: 400 }, { x: 610, y: 430 }]) await clickAt(page, p);
+  await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
+  const A = await qiIndep(page, 0), B = await qiIndep(page, 1);
+  const mrS = (A.n * A.mr + B.n * B.mr) / (A.n + B.n), ref = 0.5 / 3437.746770784939, gS = 100 * Math.exp(-Math.log(1.25) * (mrS / ref) ** 2);
+  assert.strictEqual(await cardNum(page, "sgqi"), String(Math.round(gS)), "GQI di sessione dal MR aggregato ponderato (distanze diverse in angolo)");
+  ok2(Math.abs(gS - (A.gqi + B.gqi) / 2) > 0.01, "diverso dalla media dei GQI");
+  const sess = await page.textContent("#results .res.sess");
+  assert.match(sess, /Gruppi validi2 \/ 2/); assert.match(sess, new RegExp(`Colpi validi${A.n + B.n}`));
+  ok2(await page.$('#results .rcard[data-key="stqi"] .qi-num'), "TQI di sessione");
+  ok2(/Ripetibilità tra gruppi/.test(sess) && /Attesa per caso/.test(sess), "ripetibilità separata");
+  // confronto: colonne GQI e TQI
+  await key(page, "a");
+  const head = await page.textContent("#cmpBody thead"); ok2(/GQI/.test(head) && /TQI/.test(head), "colonne nel confronto");
+  await page.waitForTimeout(300);
+  const qcells = await page.$$eval("#cmpBody tbody tr", trs => trs.map(tr => { const td = [...tr.children]; return td[td.length - 5].textContent + "|" + td[td.length - 4].textContent; }));
+  ok2(qcells.some(c => c.startsWith(String(Math.round(A.gqi)) + "|")), "GQI del gruppo nel confronto: " + qcells);
+  await key(page, "Escape");
+  // testo, CSV, PDF
+  const T = await page.evaluate(() => window.__SA.resultText());
+  ok2(/GQI:\s+\d+\/100 — /.test(T) && /GQI della sessione:\s+\d+\/100/.test(T) && /GQI-TQI\/1/.test(T), "testo esportato");
+  const csv = await page.evaluate(() => window.__SA.csvGroups());
+  const lines = csv.replace(/^﻿/, "").split("\r\n"), H = lines[0].split(";"), V = lines[1].split(";");
+  for (const c of ["GQI", "GQI_Class", "MR_Reference", "AQI", "TQI", "TQI_Class", "Quality_Index_Version"]) ok2(H.includes(c), "colonna CSV " + c);
+  assert.strictEqual(V[H.indexOf("GQI")], A.gqi.toFixed(2).replace(".", ","), "GQI nel CSV");
+  assert.strictEqual(V[H.indexOf("Quality_Index_Version")], "GQI-TQI/1");
+  assert.strictEqual(V[H.indexOf("MR_Reference")], "0,500");
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.selectOption("#cardScope", "all").then(() => page.click("#bPdf"))]);
+  const P = pdfText(require("fs").readFileSync(await d.path()));
+  for (const w of ["Indice di qualità", "Indice di qualità della sessione", "GQI-TQI/1", "Intervallo del GQI", "Raggio medio aggregato", "Ripetibilità tra gruppi"]) ok2(P.includes(w), "nel report: " + w);
+  // sessione: impostazioni e istantanea salvate, ripristinate alla riapertura
+  await setField(page, "#qiMrRef", 0.8); await setField(page, "#qiWP", 60);
+  const ses = await page.evaluate(() => window.__SA.buildSession(true));
+  ok2(ses.params.qiMrRef === "0.8" && ses.params.qiTqiOn === true, "parametri nella sessione");
+  ok2(ses.quality && ses.quality.version === "GQI-TQI/1" && ses.quality.mrRef === 0.8 && ses.quality.wPrecision === 60 && ses.quality.classes.length === 5 && ses.quality.groups.length === 2, "istantanea della valutazione");
+  ok2(Math.abs(ses.quality.groups[0].gqi - 100 * Math.exp(-Math.log(1.25) * (A.mr / (0.8 / 3437.746770784939)) ** 2)) < 1e-9, "valore usato nell'istantanea");
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state); await expandAll(page);
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(ses));
+  assert.strictEqual(await page.inputValue("#qiMrRef"), "0.8"); assert.strictEqual(await page.inputValue("#qiWP"), "60"); ok2(await page.isChecked("#qiTqiOn"), "TQI ripristinato");
+});
+
+test("1.16.0: storico con valutazione originale, sessioni vecchie compatibili, inglese", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const ses = await page.evaluate(() => window.__SA.buildSession(false));
+  // sessione «vecchia» (1.14: senza parametri né istantanea dell'indice): si apre e viene valutata
+  const old = JSON.parse(JSON.stringify(ses)); delete old.quality; for (const k of Object.keys(old.params)) if (k.startsWith("qi")) delete old.params[k]; old.appVersion = "1.14.0";
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state); await expandAll(page);
+  await loadTarget(page);
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(old));
+  ok2(await cardNum(page, "gqi"), "sessione 1.14 valutata con le impostazioni correnti");
+  // storico: la sessione salvata con 0,5 MOA entra con la sua valutazione; cambiando il riferimento compare «orig.»
+  await page.evaluate(async t => { await window.__SA.importHistory([new File([t], "s.json", { type: "application/json" })]); }, JSON.stringify(ses));
+  const h = await page.evaluate(() => window.__SA.cmpState.history.map(x => ({ orig: x.qiOrig, qi: x.qi })));
+  ok2(h.length === 1 && h[0].orig && h[0].orig.from === "snapshot" && h[0].qi && h[0].qi.mr > 0, "valutazione originale dall'istantanea");
+  await setField(page, "#qiMrRef", 1.0);
+  await key(page, "a");
+  assert.match(await page.textContent("#cmpBody tbody"), /orig\. \d+/, "storico: originale accanto al ricalcolo");
+  ok2(Math.abs(await page.evaluate(() => window.__SA.cmpState.history[0].qiOrig.gqi) - h[0].orig.gqi) < 1e-12, "l'originale non viene riscritto");
+  await key(page, "Escape");
+  // inglese
+  await page.evaluate(() => window.__SA.setLang("en"));
+  await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
+  const txt = (await page.textContent("#results")) + (await page.textContent("#sec-quality"));
+  ok2(!ITALIAN.test(txt), "risultati e impostazioni in inglese: " + (txt.match(ITALIAN) || [""])[0]);
+  assert.match(txt, /— (Excellent|Good|Fair|Poor|Insufficient)/);
+  await page.evaluate(() => window.__SA.resultText());
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
 

@@ -622,4 +622,90 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.differingKeys([{ a: "1,5" }, { a: "1.5" }], ["a"]).diff, [], "virgola decimale = punto");
 }
 
+// --- 1.16.0: indici di qualità GQI / AQI / TQI e ripetibilità tra gruppi (test 1–16 della specifica)
+{
+  const MOA = v => v / Calc.fromRad(1, "MOA"), MILr = v => v / Calc.fromRad(1, "MIL");
+  const ref = MOA(0.5), set = { mrRef: ref, dRef: MOA(0.5), wP: 0.7 };
+  // 1. MR = 0 con 2 colpi → 100; 2. MR = ref → 80; 3/4. sotto/sopra; 5. monotona; 7. in [0, 100]
+  const same = Calc.groupQuality([{ x: 10, y: 10 }, { x: 10, y: 10 }], null, { pxPerMm: 4, distMm: 100000 }, set);
+  near(same.gqi, 100, 1e-12, "GQI 1: MR = 0 con due colpi = 100"); eq(same.ok, true, "GQI 1: calcolato");
+  near(Calc.qiScore(ref, ref), 80, 1e-9, "GQI 2: MR = MR_ref → 80");
+  ok(Calc.qiScore(ref * 0.7, ref) > 80, "GQI 3: MR < ref → > 80"); ok(Calc.qiScore(ref * 1.3, ref) < 80, "GQI 4: MR > ref → < 80");
+  let prev = 101, mono = true, inside = true;
+  for (let x = 0; x <= 20 * ref; x += ref / 50) { const g = Calc.qiScore(x, ref); if (!(g < prev) && x > 0) mono = false; if (!(g >= 0 && g <= 100)) inside = false; prev = g; }
+  ok(mono, "GQI 5: decrescente al crescere di MR"); ok(inside, "GQI 7: sempre in [0, 100]");
+  ok(Calc.qiScore(1e6 * ref, ref) === 0 || Calc.qiScore(1e6 * ref, ref) >= 0, "GQI 7: valori enormi ≥ 0");
+  near(Calc.qiScore(2 * ref, ref), 100 * Math.pow(0.8, 4), 1e-9, "GQI: 2×ref = 100·0,8⁴ = 40,96");
+  // 6. stesso valore fisico in MOA o MRAD → stesso GQI
+  const mr = MOA(0.37), refMil = MILr(Calc.fromRad(ref, "MIL"));
+  near(Calc.qiScore(mr, refMil), Calc.qiScore(mr, ref), 1e-9, "GQI 6: riferimento in MIL = in MOA");
+  near(Calc.qiScore(MILr(Calc.fromRad(mr, "MIL")), ref), Calc.qiScore(mr, ref), 1e-9, "GQI 6: misura in MIL = in MOA");
+  // riferimenti non validi, casi particolari
+  for (const bad of [0, -1, NaN, Infinity, "0.5", null]) eq(Calc.qiScore(mr, bad), null, "riferimento non valido: " + bad);
+  eq(Calc.groupQuality([{ x: 1, y: 1 }, { x: 2, y: 2 }], null, { pxPerMm: 4, distMm: 1e5 }, { mrRef: 0 }).reason, "ref", "MR_ref nullo: bloccato");
+  eq(Calc.groupQuality([], null, { pxPerMm: 4, distMm: 1e5 }, set).reason, "none", "nessun colpo");
+  const one = Calc.groupQuality([{ x: 1, y: 1 }], { x: 0, y: 0 }, { pxPerMm: 4, distMm: 1e5 }, set);
+  eq([one.reason, one.gqi], ["one", undefined], "un colpo: nessun GQI (non 100)");
+  eq(Calc.groupQuality([{ x: 1, y: 1 }, { x: 5, y: 5 }], null, { pxPerMm: 4, distMm: 0 }, set).reason, "dist", "distanza mancante");
+  eq(Calc.groupQuality([{ x: 1, y: 1 }, { x: 5, y: 5 }], null, { distMm: 1e5 }, set).reason, "scale", "scala mancante");
+  eq(Calc.qiClass(null), null, "classe di un punteggio mancante");
+  // MR usato = σ̂·√(π/2) (corretto per n); misurato = media delle distanze dal centroide; atan esatto
+  const P5 = [{ x: 0, y: 0 }, { x: 40, y: 8 }, { x: 12, y: 36 }, { x: -20, y: 16 }, { x: 8, y: -24 }], ctx = { pxPerMm: 4, distMm: 100000, ciLevel: 0.95 };
+  const Q = Calc.groupQuality(P5, { x: 30, y: -30 }, ctx, set), d5 = Calc.dispersion(P5), c5 = Calc.centroid(P5);
+  near(Q.mr, Math.atan(d5.sigma / 4 * Math.sqrt(Math.PI / 2) / 100000), 1e-15, "MR del GQI = σ̂·√(π/2) angolare");
+  near(Q.mrMeas, Math.atan(Calc.meanRadius(P5, c5) / 4 / 100000), 1e-15, "MR misurato");
+  near(Q.gqi, Calc.qiScore(Q.mr, ref), 1e-12, "GQI dal MR corretto");
+  // IC: [f(MR_hi), f(MR_lo)] e contiene il punteggio
+  near(Q.gqiCi.lo, Calc.qiScore(Q.mrCi.hi, ref), 1e-12, "IC: GQI_low = f(MR_high)"); near(Q.gqiCi.hi, Calc.qiScore(Q.mrCi.lo, ref), 1e-12, "IC: GQI_high = f(MR_low)");
+  ok(Q.gqiCi.lo <= Q.gqi && Q.gqi <= Q.gqiCi.hi, "IC del GQI contiene il punteggio");
+  near(Q.mrCi.lo, Math.atan(Calc.confidence(P5, 0.95).mrExp.lo / 4 / 1e5), 1e-15, "IC del MR riusa confidence()");
+  // il MR corretto non è distorto: simulazione con n = 3 (il misurato è basso di √(2/3))
+  { const rnd = Calc.prng(77), gs = () => Math.sqrt(-2 * Math.log(rnd() || 1e-12)) * Math.cos(2 * Math.PI * rnd()); let sc = 0, sm = 0; const N = 6000;
+    for (let i = 0; i < N; i++) { const pts = [0, 1, 2].map(() => ({ x: 40 * gs(), y: 40 * gs() })), q = Calc.groupQuality(pts, null, { pxPerMm: 1, distMm: 1e5 }, set); sc += q.mr; sm += q.mrMeas; }
+    const vero = Math.atan(40 * Math.sqrt(Math.PI / 2) / 1e5);
+    near(sc / N / vero, 1, 0.03, "MR corretto non distorto con 3 colpi"); near(sm / N / vero, Math.sqrt(2 / 3), 0.03, "MR misurato basso di √(2/3) con 3 colpi"); }
+  // classi sul valore non arrotondato
+  const cls = s => Calc.qiClass(s).label;
+  eq([cls(100), cls(90), cls(89.999), cls(75), cls(74.6), cls(60), cls(59.9), cls(40), cls(39.99), cls(0)],
+    ["Ottimo", "Ottimo", "Buono", "Buono", "Discreto", "Discreto", "Scarso", "Scarso", "Insufficiente", "Insufficiente"], "classi con soglie non arrotondate");
+  // 8–11. TQI
+  near(Calc.qiTqi(100, 100, 0.7), 100, 1e-12, "TQI 8: 100 e 100 → 100"); near(Calc.qiTqi(80, 100, 0.7), 86, 1e-12, "TQI 9: 80/100 con 70/30 → 86");
+  near(Calc.qiTqi(80, 100, 0.5), 90, 1e-12, "TQI 10: pesi 50/50 → 90"); near(Calc.qiTqi(80, 100, 1), 80, 1e-12, "TQI 10: solo precisione");
+  eq(Calc.qiTqi(80, 100, 1.2), null, "pesi fuori da 0–100%");
+  const noPoa = Calc.groupQuality(P5, null, ctx, set); eq([noPoa.ok, noPoa.tqi, noPoa.aqi, noPoa.tqiReason], [true, null, null, "poa"], "TQI 11: senza mira niente TQI (il GQI sì)");
+  near(Q.d, Math.atan(Math.hypot(c5.x - 30, c5.y + 30) / 4 / 1e5), 1e-15, "AQI: distanza angolare centro-mira");
+  near(Q.tqi, 0.7 * Q.gqi + 0.3 * Calc.qiScore(Q.d, set.dRef), 1e-12, "TQI del gruppo");
+  near(Calc.groupQuality(P5, c5, ctx, set).aqi, 100, 1e-9, "centro sulla mira → AQI = 100");
+  // 12–16. sessione
+  const mk = (n, mr, d = null, s2 = mr * mr * 0.6, ok = true) => ({ ok, n, mr, d, s2, nu: 2 * (n - 1), reason: ok ? undefined : "one" });
+  const L = [mk(5, MOA(0.4), MOA(0.3)), mk(10, MOA(0.6), MOA(0.2)), mk(3, MOA(1.0)), { ok: false, n: 1, reason: "one" }];
+  const S = Calc.sessionQuality(L, set);
+  near(S.gqi.mr, (5 * MOA(0.4) + 10 * MOA(0.6) + 3 * MOA(1.0)) / 18, 1e-15, "sessione 12: MR ponderato per i colpi");
+  near(S.gqi.gqi, Calc.qiScore(S.gqi.mr, ref), 1e-12, "sessione 13: GQI dal MR aggregato");
+  ok(Math.abs(S.gqi.gqi - [0.4, 0.6, 1.0].map(m => Calc.qiScore(MOA(m), ref)).reduce((a, b) => a + b) / 3) > 1, "sessione 13: diverso dalla media dei punteggi");
+  eq([S.gqi.k, S.gqi.n, S.excluded], [3, 18, { one: 1 }], "gruppi validi, colpi e esclusi");
+  eq([S.tqi.k, S.tqi.n, S.tqi.noPoa], [2, 15, 1], "sessione 16: TQI sui soli gruppi con mira");
+  near(S.tqi.mr, (5 * MOA(0.4) + 10 * MOA(0.6)) / 15, 1e-15, "sessione 16: GQI del TQI sullo stesso insieme");
+  near(S.tqi.d, (5 * MOA(0.3) + 10 * MOA(0.2)) / 15, 1e-15, "sessione: D ponderato");
+  near(S.tqi.tqi, 0.7 * Calc.qiScore(S.tqi.mr, ref) + 0.3 * Calc.qiScore(S.tqi.d, set.dRef), 1e-12, "TQI della sessione");
+  ok(S.gqi.gqiCi.lo <= S.gqi.gqiCi.hi, "IC del GQI di sessione");
+  eq(Calc.sessionQuality([{ ok: false, n: 0, reason: "none" }], set).gqi, null, "sessione senza gruppi validi");
+  // 14. distanze diverse: stesso gruppo angolare a 100 e 200 m → stesso MR e GQI; i mm non si mescolano
+  const at = (Dm, sc) => Calc.groupQuality(P5.map(p => ({ x: p.x * sc, y: p.y * sc })), null, { pxPerMm: 4, distMm: Dm }, set);
+  const g100 = at(100000, 1), g200 = at(200000, 2);
+  near(g200.mr / g100.mr, 1, 1e-6, "sessione 14: stesso angolo a 100 e 200 m"); near(g200.gqi, g100.gqi, 1e-4, "stesso GQI a distanze diverse");
+  near(Calc.sessionQuality([g100, g200], set).gqi.mr, g100.mr, 1e-9, "aggregazione angolare tra distanze");
+  // ripetibilità: centri entro il rumore → p alta; centri spostati → p piccola
+  { const rnd = Calc.prng(5), gs = () => Math.sqrt(-2 * Math.log(rnd() || 1e-12)) * Math.cos(2 * Math.PI * rnd());
+    const sig = MOA(0.5), grp = (shift) => { const n = 10, c = { x: shift.x + sig * gs() / Math.sqrt(n), y: shift.y + sig * gs() / Math.sqrt(n) }; return { cx: c.x, cy: c.y, n, s2: sig * sig, nu: 18 }; };
+    let fa = 0; for (let i = 0; i < 400; i++) { const r = Calc.centerRepeatability([0, 1, 2, 3].map(() => grp({ x: 0, y: 0 }))); if (r.p < 0.05) fa++; }
+    near(fa / 400, 0.05, 0.03, "ripetibilità: falsi allarmi ≈ 5% senza spostamenti");
+    const R = Calc.centerRepeatability([{ x: 0, y: 0 }, { x: MOA(1.5), y: 0 }, { x: 0, y: MOA(1.5) }, { x: MOA(-1.5), y: 0 }].map(grp));
+    ok(R.p < 0.01 && R.sigmaB > R.sigmaE, "ripetibilità: spostamenti di 1,5 MOA rilevati");
+    ok(R.sigmaCci.lo < R.sigmaC && R.sigmaC < R.sigmaCci.hi * 1.2, "IC di σ dei centri"); }
+  eq(Calc.centerRepeatability([{ cx: 0, cy: 0, n: 5, s2: 1, nu: 8 }]), null, "ripetibilità con un solo gruppo");
+  near(Calc.fcdf(1, 4, 1e6), Calc.chi2cdfEven ? 1 - Math.exp(-2) * (1 + 2) : 0.594, 1e-3, "F(4, ∞) = χ²₄/4");
+  eq(Calc.QI_VERSION, "GQI-TQI/1", "versione dell'algoritmo");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

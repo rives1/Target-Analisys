@@ -147,6 +147,14 @@ const GROUPS = [
   await openOnly("sec-load"); await page.fill("#ldProfName", ""); await page.click("#bProfSave"); await page.waitForTimeout(200); await shotEl("#sec-load", "13_ricarica");
   await openOnly("sec-results"); await shotEl("#results .res", "14_risultati");
   await ev(() => document.querySelectorAll('#results .rc-more').forEach((d, i) => { if (i < 3) d.open = true; })); await shotEl('#results .res', "15_risultati_dettagli");
+  // 1.16: indice di qualità
+  await ev(() => document.querySelectorAll('#results .rc-more').forEach(d => { d.open = false; }));
+  await shotEl('#results .rcard[data-key="gqi"]', "56_gqi");
+  await ev(() => { const t = document.getElementById("qiTqiOn"); t.checked = true; t.dispatchEvent(new Event("change")); });
+  await shotEl("#results .res.sess", "57_gqi_sessione", { wait: 300 });
+  await openOnly("sec-quality"); await shotEl("#sec-quality", "58_impostazioni_qualita");
+  await ev(() => { const t = document.getElementById("qiTqiOn"); t.checked = false; t.dispatchEvent(new Event("change")); });
+  await openOnly("sec-results");
   await openOnly("sec-points"); await ev(() => document.documentElement.style.setProperty("--side-w", "760px")); await page.waitForTimeout(200);
   await shotEl("#sec-points", "16_tabella_punti"); await ev(() => document.documentElement.style.removeProperty("--side-w"));
   await openOnly("sec-orient"); await shotEl("#sec-orient", "17_orientamento");

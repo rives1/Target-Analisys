@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.15</div>
+    <div class="sub">Manuale d'uso · versione 1.16</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -413,6 +413,23 @@
 <h2>Le schede Punteggio e Vento</h2>
 <p>Se hai scelto un bersaglio nelle zone di punteggio, la scheda «Punteggio» mostra il totale del gruppo. Se hai indicato il vento, la scheda «Vento» riporta velocità, direzione, componenti e scostamento orizzontale misurato.</p>
 
+<h2>L'indice di qualità: GQI e TQI</h2>
+<p>In cima ai risultati di ogni gruppo c'è il <b>GQI</b> (Group Quality Index): un numero da 0 a 100 con un giudizio — Ottimo (≥ 90), Buono (≥ 75), Discreto (≥ 60), Scarso (≥ 40), Insufficiente — che dice <b>quanto la rosata è compatta rispetto a un riferimento che scegli tu</b>. Non è uno standard e non confronta il tuo gruppo con quello di altri tiratori: risponde alla domanda «rispetto a quello che per me è un buon gruppo, questo com'è?».</p>
+<figure class="w55"><img src="imgj/56_gqi.jpg"><figcaption>La scheda GQI: il punteggio, la barra con le soglie delle classi e l'intervallo in azzurro, i raggi medi e l'attendibilità.</figcaption></figure>
+<ul>
+  <li><b>Il riferimento</b> si imposta nella sezione «Indice di qualità»: è il raggio medio, in MOA o MRAD, a cui corrisponde GQI = 80 (0,50 MOA di partenza). Con il doppio del riferimento il punteggio scende a 41; con zero dispersione sale a 100.</li>
+  <li><b>In angolo</b>: gruppi a 100 e a 300 m si confrontano direttamente.</li>
+  <li><b>Il raggio medio usato</b> è una stima che non dipende dal numero di colpi. Quello misurato sul bersaglio, che vedi accanto, con 3 colpi è più piccolo del vero di circa un quinto: usarlo premierebbe i gruppi corti.</li>
+  <li><b>L'attendibilità</b> è separata dal punteggio: l'intervallo (in azzurro sulla barra) dice quanto i colpi disponibili determinano il punteggio. Con 3 colpi è molto largo, con 20 stretto; il punteggio non viene penalizzato per i pochi colpi.</li>
+  <li>Un solo colpo non ha GQI; servono scala e distanza.</li>
+</ul>
+<div class="box ex"><p>Riferimento 0,50 MOA. Un gruppo da 5 colpi ha raggio medio stimato 0,40 MOA: GQI = 100·exp[−0,223·(0,40/0,50)²] = 87, «Buono». L'intervallo 61–94 (IC 95%) dice che con 5 colpi il gruppo potrebbe essere da «Discreto» a «Ottimo»: per una decisione (cambiare carica) servono più colpi.</p></div>
+<p>Il <b>TQI</b> (Target Quality Index), da attivare nelle impostazioni, aggiunge la <b>centratura</b>: TQI = 70% · GQI + 30% · AQI, dove l'AQI fa lo stesso calcolo con la distanza angolare del centro del gruppo dalla mira (pesi modificabili). Serve il punto di mira. Un GQI alto con un TQI basso vuol dire «rosata buona, da centrare con i click».</p>
+<h3>La sessione e la ripetibilità</h3>
+<figure class="w55"><img src="imgj/57_gqi_sessione.jpg"><figcaption>In fondo ai risultati: GQI e TQI della sessione e la ripetibilità dei centri tra i gruppi.</figcaption></figure>
+<p>In fondo ai risultati la scheda <b>Sessione</b> dà il GQI di tutti i gruppi della foto, calcolato dal raggio medio di tutti i gruppi pesato per i colpi (non come media dei punteggi). Indica quanti gruppi e colpi sono stati usati e quali gruppi sono stati esclusi e perché. La <b>ripetibilità tra gruppi</b> è un indicatore a parte: guarda quanto si spostano i centri dei gruppi rispetto alla loro mira (tolti i click impostati) e lo confronta con quello che ci si aspetta per caso; se i centri si spostano di più, il test lo segnala. Non entra nel GQI.</p>
+<figure class="w55"><img src="imgj/58_impostazioni_qualita.jpg"><figcaption>La sezione «Indice di qualità»: riferimenti, pesi, decimali, intervalli e classi.</figcaption></figure>
+<div class="box warn"><p>Se cambi il riferimento, cambiano tutti i punteggi mostrati. Le sessioni salvate conservano la loro valutazione originale: nello storico del confronto la vedi sotto il valore ricalcolato come «orig.».</p></div>
 <h2>Qualità della misura e diagnostica</h2>
 <p>Sotto le schede trovi due righe in più.</p>
 <p><b>Incertezza di misura.</b> Quanto potrebbero cambiare i numeri <i>di questo gruppo</i> per gli errori di clic e di scala (non per la statistica). L'applicazione «rimisura» migliaia di volte il gruppo spostando un po' ogni punto e guarda di quanto variano i risultati. Se l'intervallo è stretto (per esempio ES 16,9–18,5 mm) la misura è buona; se è largo, migliora la foto o la scala. I fori difficili (strappati, sovrapposti) si segnano con il pulsante ◐ nella tabella dei punti: per loro l'incertezza è tripla.</p>

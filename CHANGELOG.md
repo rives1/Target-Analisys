@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.16.0] - 2026-11-19
+### Aggiunto
+- **Indice di qualità** (specifica «Sistema di valutazione qualitativa delle rosate»), criterio dell'app relativo a
+  riferimenti scelti dall'utente, non uno standard statistico:
+  - **GQI** = 100·exp[−ln(1,25)·(MR/MR_rif)²] (80 con MR = MR_rif), MR angolare = raggio medio atteso σ̂·√(π/2) del
+    modello circolare normale con σ̂ corretto per pochi colpi (scelta concordata: il raggio medio misurato dal
+    centroide è basso di √((n−1)/n), −18% con 3 colpi); il misurato resta mostrato. Classi Ottimo/Buono/Discreto/
+    Scarso/Insufficiente sul valore non arrotondato (`Calc.QI_CLASSES`). Attendibilità separata: intervallo dal χ² del
+    raggio medio, GQI_low = f(MR_high).
+  - **AQI** (centratura angolare sulla mira) e **TQI** = p·GQI + (1−p)·AQI, facoltativo, pesi 70/30 modificabili.
+  - **Sessione**: MR aggregato Σnᵢ·MRᵢ/Σnᵢ (in angolo, anche a distanze diverse), GQI di sessione dal MR aggregato,
+    TQI di sessione sui soli gruppi con mira, gruppi esclusi con il motivo; intervallo dal σ combinato.
+  - **Ripetibilità tra gruppi** (indicatore separato): dispersione dei centri rispetto alla mira, click tolti, contro
+    quella attesa per caso, test F.
+  - Sezione «Indice di qualità (GQI / TQI)» con riferimenti in MOA o MRAD, pesi, decimali, intervalli, classi;
+    validazione dei riferimenti.
+  - Card GQI/TQI nei risultati, card della sessione in fondo, colonne GQI/TQI nel confronto (storico ricalcolato
+    con le impostazioni attuali, valutazione originale «orig.» conservata), report PDF, testo, CSV dei gruppi
+    (GQI, GQI_Class, MR_Reference, MR_Reference_Unit, MR_GQI, AQI, D_Reference, TQI, TQI_Class,
+    TQI_Weight_Precision, Quality_Index_Version), sessione JSON (parametri + istantanea `quality` con versione
+    GQI-TQI/1, riferimenti, pesi, soglie e valori usati). Help tecnico e glossario.
+### Cambiato
+- Manuale d'uso 1.16 (68 pagine): sezione «L'indice di qualità» nel capitolo 8.
+- Test: 768 verifiche del motore (i 16 test della specifica più simulazioni), 66 scenari UI.
+
 ## [1.15.0] - 2026-11-19
 ### Aggiunto
 - **Blocco selettivo**: mira, scala (A e B insieme), riferimento di controllo e singoli fori si bloccano (🔒 nella
