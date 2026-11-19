@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.17.0] - 2026-11-19
+### Aggiunto
+- **Baseline persistente**: rosata di riferimento scelta con ☆ dal confronto (sessione o storico) o dai risultati del
+  gruppo; conservata nel browser (`localStorage` `shootAnalyzer.baseline`, metriche in `shootAnalyzer.baselineMetrics`)
+  e copiata nella sessione (`baseline`). All'apertura di una sessione: adottata se il browser non ne ha una,
+  altrimenti proposta («Usa questa»), mai sostituita in silenzio. Card «Rispetto alla baseline» per ogni gruppo:
+  metriche scelte (group size, raggio medio, CEP, FOM, σ per asse, GQI) in angolo con Δ e Δ%, distanza e colpi dei
+  due gruppi in evidenza, avvisi per distanza diversa, numero di colpi diverso (il group size cresce con n),
+  condizioni diverse e registrate da una sola parte; test F bilaterale delle σ (s² angolari, ν = 2(n−1)).
+  Riquadro della baseline e stella sulla riga nel confronto; linea tratteggiata ★ nell'andamento.
+- **Coda di revisione** (sezione «Colpi da rivedere», ⚑ nella barra con il numero da rivedere, tasto `V`, `,`/`.`):
+  fori difficili ◐, quasi sovrapposti (centri a meno di ½ calibro, servono scala e calibro) e possibili flyer
+  (Mahalanobis, con p). Etichette distinte «marcatura» / «statistico». Selezionando un colpo: gruppo attivo,
+  gruppo reso visibile, foro selezionato e centrato con ingrandimento (foro ≈ 90 px). Azioni: conferma, rimanda,
+  correggi (snap, ◐), escludi/rimetti, elimina. Stato per foro `shot.review = {st, sig}` nella storia e nella
+  sessione; se le ragioni cambiano il colpo torna da rivedere. Confermare un flyer non lo esclude.
+- **Collegamento parametri ↔ immagine**: hover o fuoco su distanza della scala, riferimento, calibro, distanza di
+  tiro, valore del click, marcatura e prospettiva evidenziano sulla foto punti A/B, foro reale del calibro su ogni
+  foro, cerchio di 1 MIL/MOA, segmenti di un click, cerchi di incertezza al 95%, rettangolo; riga di spiegazione.
+- **Selezione di un periodo** nell'andamento (trascinamento, menu «Periodo da… a…», doppio clic per annullare):
+  selezione contro tutto ciò che la precede, con gruppi, colpi, date, media della metrica, σ combinato in angolo
+  (ν-pesato, IC χ²) e test F; righe evidenziate nella tabella; nessun dato modificato.
+- **Origine del dato** (⌖ sulle card ES, raggio medio, correzione, GQI e sulle righe bordo-bordo, H/V-spread, FOM,
+  CEP, R95, R99, SD, SD radiale, convex hull): coppia dell'ES, estremi, centro con raggi, cerchi del modello e di
+  riferimento, freccia di correzione, fori esclusi barrati; barra di spiegazione, `Esc` per chiudere.
+### Cambiato
+- **Barra principale solo a icone**, raggruppate, con tooltip «Nome: funzione (tasto)» e `aria-label`; i pulsanti del
+  pannello mantengono il testo.
+- Manuale d'uso 1.17 (76 pagine): barra a icone, campi collegati alla foto, ⌖, coda di revisione, baseline, periodo.
+- Test: 768 verifiche del motore, 73 scenari UI (7 nuovi, con verifiche indipendenti di sovrapposizioni, coppia
+  dell'ES, Δ in MIL, σ combinato e test F).
+
 ## [1.16.0] - 2026-11-19
 ### Aggiunto
 - **Indice di qualità** (specifica «Sistema di valutazione qualitativa delle rosate»), criterio dell'app relativo a

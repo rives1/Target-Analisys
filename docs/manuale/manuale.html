@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.16</div>
+    <div class="sub">Manuale d'uso · versione 1.17</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -147,6 +147,8 @@
 <p>Lo schermo è diviso in due parti. A sinistra c'è la <b>foto</b>, con sopra la barra degli strumenti; a destra il <b>pannello</b> con tutte le sezioni (si allarga o si stringe trascinando la linea verticale che lo separa dalla foto).</p>
 <figure><img src="imgj/04_panoramica.jpg"><figcaption>La schermata principale con tre gruppi già misurati. In alto a sinistra la barra degli strumenti, in alto a destra della foto il pannello dei valori in tempo reale, a destra il pannello con le sezioni.</figcaption></figure>
 <h2>La barra degli strumenti</h2>
+<figure><img src="imgj/59_barra_icone.jpg"><figcaption>La barra degli strumenti: solo icone, raggruppate per funzione (foto, modalità, modifica, vista, strumenti). Il numero rosso sulla bandierina conta i colpi ancora da rivedere.</figcaption></figure>
+<p>Dalla versione 1.17 la barra mostra <b>solo le icone</b>, per lasciare più spazio alla foto. Fermando il mouse su un pulsante compare il suo nome, che cosa fa e il tasto rapido tra parentesi; i lettori di schermo leggono il nome del pulsante. I pulsanti del pannello a destra hanno invece ancora il testo.</p>
 <table>
 <tr><th style="width:28%">Pulsante</th><th>A che cosa serve</th></tr>
 <tr><td>Carica foto</td><td>Apre la foto del bersaglio (JPG, PNG, WEBP, BMP). Puoi anche trascinare il file sulla finestra.</td></tr>
@@ -163,6 +165,7 @@
 <tr><td>Snap <kbd>M</kbd></td><td>Quando clicchi vicino a un foro, il punto si aggancia da solo al centro della macchia scura del foro. Tieni premuto <kbd>Alt</kbd> per cliccare senza aggancio.</td></tr>
 <tr><td>Righello <kbd>R</kbd> · Nota <kbd>N</kbd></td><td>Misura libera tra due punti e annotazioni sulla foto (capitolo 14).</td></tr>
 <tr><td>Dettaglio <kbd>D</kbd> · Blocca <kbd>K</kbd></td><td>Finestra con un ingrandimento fisso; blocco dell'elemento selezionato (capitolo 14).</td></tr>
+<tr><td>⚑ Colpi da rivedere <kbd>V</kbd></td><td>Apre la coda dei fori da controllare e centra il primo sulla foto (capitolo 9). Il numero rosso è quanti ne restano.</td></tr>
 </table>
 <h2>Il pannello a destra</h2>
 <p>Le sezioni del pannello si aprono e si chiudono con un clic sul titolo. All'avvio è aperta solo «Calibrazione scala»: le altre si aprono quando servono. In ordine:</p>
@@ -273,6 +276,9 @@
 <h3>Intervalli di confidenza</h3>
 <p>Scegli 90, 95 o 99%. Più alto è il livello, più larghi sono gli intervalli: «sono più sicuro, ma dico una cosa meno precisa». Il 95% è lo standard.</p>
 
+<h3>Il campo e il suo disegno</h3>
+<figure><img src="imgj/62_param_calibro.jpg"><figcaption>Con il cursore nel campo «Calibro», ogni foro del gruppo attivo mostra in arancio un cerchio grande quanto il foro reale: se il cerchio è molto più grande o più piccolo dei fori, calibro o scala sono sbagliati.</figcaption></figure>
+<p>Quando passi con il mouse su un campo del pannello, o ci entri per scrivere, la foto mostra in <b>arancio</b> l'elemento a cui il campo si riferisce, con una riga di spiegazione: la <b>distanza della scala</b> illumina i punti A e B e il segmento misurato; il <b>calibro</b> disegna il foro reale su ogni foro; la <b>distanza di tiro</b> un cerchio di 1 MIL (o 1 MOA) attorno al centro del gruppo; il <b>valore del click</b> due segmenti lunghi un click; la <b>marcatura</b> i cerchi di incertezza al 95%; la <b>prospettiva</b> il rettangolo usato. È solo un disegno: non cambia nulla.</p>
 <div class="box tip"><p>Distanza, calibro e valore click si dimenticano facilmente quando si cambia arma o poligono. Se un risultato sembra strano (correzioni enormi, cerchio del foro grande come mezzo visuel), controlla per prima cosa questi tre campi.</p></div>
 
 <!-- =============================== 7 =============================== -->
@@ -430,6 +436,19 @@
 <p>In fondo ai risultati la scheda <b>Sessione</b> dà il GQI di tutti i gruppi della foto, calcolato dal raggio medio di tutti i gruppi pesato per i colpi (non come media dei punteggi). Indica quanti gruppi e colpi sono stati usati e quali gruppi sono stati esclusi e perché. La <b>ripetibilità tra gruppi</b> è un indicatore a parte: guarda quanto si spostano i centri dei gruppi rispetto alla loro mira (tolti i click impostati) e lo confronta con quello che ci si aspetta per caso; se i centri si spostano di più, il test lo segnala. Non entra nel GQI.</p>
 <figure class="w55"><img src="imgj/58_impostazioni_qualita.jpg"><figcaption>La sezione «Indice di qualità»: riferimenti, pesi, decimali, intervalli e classi.</figcaption></figure>
 <div class="box warn"><p>Se cambi il riferimento, cambiano tutti i punteggi mostrati. Le sessioni salvate conservano la loro valutazione originale: nello storico del confronto la vedi sotto il valore ricalcolato come «orig.».</p></div>
+<h2>Da dove nasce un numero: il pulsante ⌖</h2>
+<figure><img src="imgj/61_origine_es.jpg"><figcaption>⌖ accanto al group size: la coppia di fori più lontana è collegata in arancio, e la barra in basso spiega il calcolo.</figcaption></figure>
+<p>Accanto alle schede e alle righe principali (group size, bordo-bordo, H-spread e V-spread, FOM, raggio medio, CEP, R95, R99, deviazioni standard, convex hull, correzione, GQI) c'è un piccolo <b>⌖</b>. Cliccandolo la foto mostra <b>da quali fori nasce quel valore</b>:</p>
+<ul>
+  <li><b>group size</b>: i due fori più lontani e il segmento tra loro (bordo-bordo: anche il cerchio del calibro);</li>
+  <li><b>H-spread e V-spread</b>: i fori estremi, con le linee che li delimitano (FOM: tutti e quattro);</li>
+  <li><b>raggio medio</b>: il centro del gruppo, i raggi verso ogni foro e il cerchio medio;</li>
+  <li><b>CEP, R95, R99, GQI</b>: non dipendono da un foro in particolare ma da <b>tutti</b> i fori e dal modello (la «nuvola rotonda»): si illuminano tutti i fori, il centro e il cerchio previsto; per il GQI anche il cerchio di riferimento tratteggiato;</li>
+  <li><b>correzione</b>: la freccia dal centro del gruppo alla mira, con le due componenti.</li>
+</ul>
+<figure><img src="imgj/64_origine_gqi.jpg"><figcaption>⌖ sul GQI: tutti i fori, il cerchio stimato (pieno) e quello di riferimento (tratteggiato), alla distanza del gruppo.</figcaption></figure>
+<p>I fori esclusi sono segnati con una croce grigia e la barra dice che non sono stati usati. <kbd>Esc</kbd> o ✕ chiudono l'evidenziazione.</p>
+<div class="box help"><p>Serve soprattutto quando un numero sorprende: se il group size è grande, ⌖ ti mostra subito qual è il foro che lo allarga, senza cercarlo nella tabella.</p></div>
 <h2>Qualità della misura e diagnostica</h2>
 <p>Sotto le schede trovi due righe in più.</p>
 <p><b>Incertezza di misura.</b> Quanto potrebbero cambiare i numeri <i>di questo gruppo</i> per gli errori di clic e di scala (non per la statistica). L'applicazione «rimisura» migliaia di volte il gruppo spostando un po' ogni punto e guarda di quanto variano i risultati. Se l'intervallo è stretto (per esempio ES 16,9–18,5 mm) la misura è buona; se è largo, migliora la foto o la scala. I fori difficili (strappati, sovrapposti) si segnano con il pulsante ◐ nella tabella dei punti: per loro l'incertezza è tripla.</p>
@@ -463,6 +482,25 @@
 <p>Un <b>flyer</b> è un colpo che sembra non appartenere al gruppo. Da 5 colpi in su l'applicazione confronta ogni foro con gli altri e lo segnala con ⚠ e un cerchio arancione se è troppo lontano per essere un normale colpo di quel gruppo. Il controllo tiene conto della forma: in un gruppo allungato i colpi alle estremità dell'asse lungo non vengono segnalati, quelli «di lato» sì.</p>
 <div class="box warn"><p>Escludere un colpo è una scelta tua, non dell'applicazione. Fallo solo se conosci il motivo: colpo «tirato», cartuccia difettosa, primo colpo a canna fredda e pulita. Escludere i colpi solo perché allargano il gruppo (i «rossi» della colonna Effetto) rende tutte le statistiche ottimiste e ti fa prendere decisioni sbagliate, per esempio scegliere una carica che non è davvero migliore.</p></div>
 <div class="box ex"><p>Nella colonna «Effetto ES / RM» il foro 5 del gruppo 3 mostra «+3,1 / +0,9» in rosso: togliendolo il group size scenderebbe di 3,1 mm. Ma ricordi di aver tirato quel colpo mentre arrivava una raffica? Allora puoi escluderlo e annotarlo. Non ricordi nulla di strano? Lascialo: fa parte della tua rosata.</p></div>
+
+<h2>La coda dei colpi da rivedere</h2>
+<figure><img src="imgj/60_revisione_foto.jpg"><figcaption>Premendo <kbd>V</kbd> la foto si centra sul primo colpo della coda e lo ingrandisce fino a vederlo grande circa 90 pixel.</figcaption></figure>
+<p>La sezione «Colpi da rivedere» (pulsante ⚑ della barra, tasto <kbd>V</kbd>) raccoglie i fori che meritano un'occhiata prima di fidarsi dei numeri. Ci finiscono:</p>
+<ul>
+  <li>i fori che hai segnato <b>difficili</b> ◐;</li>
+  <li>i fori <b>quasi sovrapposti</b>: centri a meno di mezzo calibro. Due fori così sembrano un unico foro un po' ovale: è facile contarne uno solo, o metterne due nello stesso punto. Fori che si toccano soltanto (il classico «8») non vengono segnalati: si vedono bene, e nei gruppi stretti sarebbero quasi tutti;</li>
+  <li>i <b>possibili flyer</b> del test statistico (da 5 colpi in su), con la probabilità p.</li>
+</ul>
+<figure class="w55"><img src="imgj/66_revisione_coda.jpg"><figcaption>La coda: per ogni colpo il motivo, l'etichetta «marcatura» o «statistico» e le azioni.</figcaption></figure>
+<p>L'etichetta distingue i due tipi di problema, che non vanno confusi. <b>Marcatura</b>: forse il punto non è sul centro di un foro vero. <b>Statistico</b>: il foro è marcato bene, ma è lontano dagli altri. Per ogni colpo puoi:</p>
+<table>
+<tr><th style="width:28%">Azione</th><th>Effetto</th></tr>
+<tr><td>✓ Conferma</td><td>Il punto è giusto: il colpo esce dalla coda. Confermare un flyer <b>non</b> lo esclude dalle statistiche.</td></tr>
+<tr><td>⏭ Rimanda</td><td>Va in fondo alla coda, da rivedere dopo.</td></tr>
+<tr><td>🧲 · ◐</td><td>Correggi: riaggancia il punto al centro della macchia del foro, oppure segna/togli «difficile».</td></tr>
+<tr><td>⊘ · ✕</td><td>Escludi il colpo dalle statistiche (resta sulla foto) oppure elimina il punto, per esempio un foro contato due volte.</td></tr>
+</table>
+<p>Con ◀ ▶ (o <kbd>,</kbd> e <kbd>.</kbd>) passi al colpo precedente o successivo; ogni volta la foto si centra su di lui. Le conferme sono salvate nella sessione e si annullano con <kbd>Ctrl</kbd>+<kbd>Z</kbd>. Se i motivi di un colpo cambiano (per esempio lo sposti vicino a un altro), torna da rivedere.</p>
 
 <!-- =============================== 10 =============================== -->
 <h1 class="chap" id="c10"><span class="n">10</span>Che cosa vedi sulla foto</h1>
@@ -561,6 +599,15 @@
 <figure><img src="imgj/37_confronto.jpg"><figcaption>La tabella di confronto con i gruppi della sessione e dello storico, e sotto l'andamento nel tempo.</figcaption></figure>
 <p><b>Che cosa mostra.</b> Una tabella con tutti i gruppi della sessione e quelli importati da sessioni precedenti (lo «storico»), ordinati per data: numero di colpi, group size, raggio medio, FOM, CEP, differenza rispetto al gruppo precedente. Il menu «Metrica» sceglie il valore da confrontare, in mm o in angolo. Sotto, il grafico dell'andamento nel tempo con una media mobile (la linea tratteggiata, media degli ultimi gruppi).</p>
 <p><b>Come leggerlo.</b> Il miglior gruppo è sottolineato. La media mobile è più importante dei singoli punti: un singolo gruppo bello o brutto può essere fortuna; una media che scende per settimane è un miglioramento vero.</p>
+<h3>La baseline: il gruppo di riferimento</h3>
+<p>Con la stella ☆ (sulla riga del confronto o accanto al nome del gruppo nei risultati) scegli una <b>baseline</b>: il gruppo con cui confrontare tutti gli altri, per esempio il miglior gruppo della carica che usi oggi. La baseline resta nel browser da una sessione all'altra e viene salvata anche nel file di sessione. Se apri una sessione con una baseline diversa dalla tua, l'applicazione non la sostituisce: te la propone con «Usa questa». Nel riquadro sopra la tabella scegli quali metriche confrontare.</p>
+<figure class="w55"><img src="imgj/63_baseline_card.jpg"><figcaption>La scheda «Rispetto alla baseline» di un gruppo: distanza e colpi dei due gruppi in evidenza, le differenze per metrica e il test sulla dispersione.</figcaption></figure>
+<p>Ogni gruppo mostra la scheda <b>Rispetto alla baseline</b>. Le differenze sono <b>in angolo</b> (MIL o MOA), quindi gruppi a distanze diverse si confrontano; ▼ verde = più stretto, ▲ rosso = più largo (per il GQI il contrario: più alto è meglio). La riga del test F dice se la differenza di dispersione è dimostrata con quei colpi o può essere caso. Sopra, sempre visibili, distanza e colpi dei due gruppi; sotto, gli avvisi sulle condizioni diverse.</p>
+<div class="box warn"><p>Il group size cresce con il numero di colpi: un gruppo da 3 colpi sembra migliore di uno da 5 anche se l'arma è la stessa. Se i due gruppi hanno un numero di colpi diverso, l'applicazione lo segnala: in quel caso confronta il raggio medio, σ o il GQI, che non dipendono dal numero di colpi.</p></div>
+<h3>Selezionare un periodo</h3>
+<figure><img src="imgj/65_periodo.jpg"><figcaption>Gli ultimi gruppi selezionati trascinando sull'andamento (banda arancio) e, sotto, il confronto con tutti i gruppi precedenti.</figcaption></figure>
+<p><b>Trascina sul grafico dell'andamento</b> (o usa i menu «Periodo da… a…») per selezionare una serie di gruppi consecutivi: l'applicazione la confronta con <b>tutto ciò che viene prima</b>. Per ognuno dei due periodi mostra gruppi, colpi, date, la media della metrica scelta e il <b>σ combinato</b>: la dispersione di tutti i gruppi del periodo messi insieme, ognuno pesato per i suoi colpi, con il suo intervallo. Sotto, il verdetto del test F: «più stretta di prima» solo se la differenza è dimostrata. Doppio clic sul grafico o «Annulla selezione» per tornare a tutto. La selezione non cambia nessun dato salvato.</p>
+<div class="box ex"><p>Hai cambiato appoggio a metà ottobre. Seleziona i gruppi da allora: se il σ combinato è sceso del 25% con p = 0,01, il miglioramento è reale; con p = 0,4 potrebbe essere caso, e servono altri gruppi prima di concludere.</p></div>
 <h3>Differenze tra le configurazioni</h3>
 <figure><img src="imgj/55_differenze.jpg"><figcaption>Le differenze tra i tre gruppi della sessione: cambiano solo carica e temperatura; tutto il resto è uguale e non compare.</figcaption></figure>
 <p><b>Che cosa mostra.</b> Sotto il confronto, per le righe con la casella «Δ» spuntata, una tabella con <b>solo i parametri che cambiano</b>: componenti (calibro, bossolo, palla, polvere, carica, innesco, salto), distanza, condizioni (meteo, temperatura, umidità, pressione, vento, scaldacanna) e impostazioni di analisi (valore del click, metodo della scala, prospettiva, distorsione, colpi esclusi, marcatura, livello degli intervalli). Le righe in grigio sono parametri uguali dove sono stati scritti, ma mancanti in qualche gruppo: non sono differenze dimostrate.</p>
@@ -764,6 +811,8 @@
 <tr><td>Group size (ES)</td><td>Distanza tra i centri dei due fori più lontani.</td></tr>
 <tr><td>Bordo-bordo</td><td>Group size + calibro: quello che misuri con il calibro dall'esterno dei fori.</td></tr>
 <tr><td>Raggio medio</td><td>Distanza media dei fori dal centro gruppo. Più stabile del group size.</td></tr>
+<tr><td>Baseline</td><td>Il gruppo di riferimento scelto con ☆, con cui l'applicazione confronta gli altri gruppi, anche nelle sessioni successive.</td></tr>
+<tr><td>σ combinato</td><td>La dispersione di più gruppi messi insieme, ognuno pesato per i suoi colpi: serve a confrontare due periodi.</td></tr>
 <tr><td>H-spread, V-spread</td><td>Larghezza e altezza del gruppo.</td></tr>
 <tr><td>FOM</td><td>Media di larghezza e altezza.</td></tr>
 <tr><td>CEP</td><td>Raggio del cerchio che conterrà metà dei prossimi colpi.</td></tr>

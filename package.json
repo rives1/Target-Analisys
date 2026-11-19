@@ -1,6 +1,6 @@
 {
   "name": "shoot-analyzer",
-  "version": "1.16.0",
+  "version": "1.17.0",
   "private": true,
   "description": "Analisi della dispersione dei colpi da foto di bersagli: un unico file HTML offline (src/index.html).",
   "license": "MIT",

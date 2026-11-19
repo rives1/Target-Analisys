@@ -7,11 +7,11 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.16.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.17.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
-Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.16.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.16.pdf).
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.17.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.17.pdf).
 
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
@@ -79,6 +79,12 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Sessione ZIP**: foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio.
 - **Stabilità colpo dopo colpo**: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto; ordine di sparo modificabile.
 - **Report PDF con testo vero** (selezionabile), con calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici.
+- **Baseline persistente** (1.17): una rosata di riferimento (☆) ricordata dal browser e salvata nella sessione; per ogni gruppo le differenze in angolo delle metriche scelte, con distanza, numero di colpi e condizioni sempre in evidenza e il test F sulla dispersione.
+- **Coda dei colpi da rivedere** (⚑, tasto `V`): fori difficili, quasi sovrapposti (centri a meno di mezzo calibro) e possibili flyer, centrati e ingranditi sulla foto, con conferma, rimando o correzione; «marcatura» e «statistico» distinti.
+- **Origine del dato** (⌖ accanto ai risultati): fori, estremi, centro e cerchi del modello usati per ES, H/V-spread, raggio medio, CEP/R95/R99, GQI e correzione, evidenziati sulla foto.
+- **Parametri collegati alla foto**: passando su scala, calibro, distanza, click, marcatura e prospettiva l'elemento corrispondente si illumina sull'immagine (es. il foro reale del calibro su ogni foro).
+- **Periodo nell'andamento**: trascinando sul grafico si confronta una serie di gruppi consecutivi con tutti i precedenti (σ combinato in angolo con IC e test F), senza modificare i dati.
+- **Barra principale a icone** con tooltip (nome, funzione, tasto) e nome accessibile.
 - **Indice di qualità** (1.16): GQI 0–100 con classe (compattezza rispetto a un raggio medio di riferimento scelto dall'utente, in angolo, con l'intervallo come attendibilità), TQI facoltativo con la centratura, GQI/TQI della sessione e ripetibilità dei centri tra i gruppi; anche in confronto, report, CSV e sessione. È un criterio dell'app, non uno standard.
 - **Blocco degli elementi** (1.15): mira, scala, riferimento di controllo e singoli fori bloccabili (🔒, tasto `K`): non si trascinano e non si eliminano per errore; selezionati mostrano un lucchetto.
 - **Gruppi nascosti** (👁 nell'elenco Gruppi): fori, mira e disegni del gruppo tolti dalla vista principale, calcoli ed export invariati.

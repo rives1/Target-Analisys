@@ -203,6 +203,25 @@ const GROUPS = [
   await ev(() => window.__SA.fitView()); await page.waitForTimeout(300);
   await shotPage("51_scala_foto", { x: 0, y: 0, width: 905, height: 900 });
   await ev(() => { const e = document.getElementById("smOn"); e.checked = false; e.dispatchEvent(new Event("change")); window.__SA.state.notes = []; window.__SA.setLock({ kind: "shot", gid: 10, id: window.__SA.state.groups[0].shots[0].id }, false); });
+  // 1.17: barra a icone, collegamento parametri, origine del dato, coda di revisione, baseline
+  await shotEl("#toolbar", "59_barra_icone");
+  await ev(() => { window.__SA.state.activeGroupId = 11; window.__SA.commit(); });
+  { const c = await ev(() => window.__SA.Calc.centroid(window.__SA.state.groups[1].shots)); await zoomTo(c.x, c.y, 2.2); }
+  await openOnly("sec-params"); await page.focus("#caliber"); await page.mouse.move(5, 890); await page.waitForTimeout(300);
+  await shotPage("62_param_calibro", { x: 0, y: 100, width: 905, height: 700 });
+  await ev(() => document.activeElement.blur()); await page.mouse.move(5, 890);
+  await ev(() => window.__SA.toggleOrigin(11, "es")); await page.waitForTimeout(300);
+  await shotPage("61_origine_es", { x: 0, y: 100, width: 905, height: 760 });
+  await ev(() => { window.__SA.state.origin = null; window.__SA.toggleOrigin(11, "gqi"); }); await page.waitForTimeout(300);
+  await shotPage("64_origine_gqi", { x: 0, y: 100, width: 905, height: 760 });
+  await key("Escape");
+  await ev(() => { const S = window.__SA, g = S.state.groups[0]; g.shots[1].hard = 1; S.commit(); });
+  await openOnly("sec-review"); await key("v"); await page.waitForTimeout(400);
+  await shotPage("60_revisione_foto", { x: 0, y: 0, width: 905, height: 900 });
+  await shotEl("#sec-review", "66_revisione_coda");
+  await ev(() => { const S = window.__SA, g = S.state.groups[0]; g.shots[1].hard = 0; S.state.selected = null; S.commit(); S.fitView(); });
+  await ev(() => { const S = window.__SA, r = S.compareRows().find(x => x.gid === 10); S.setBaseline(S.makeBaseline(r), true); });
+  await openOnly("sec-results"); await shotEl('#results .res[data-gid="11"] .rcard[data-key="base"]', "63_baseline_card", { wait: 300 });
   // densità compatta e layout
   await openOnly("sec-results"); await page.selectOption("#densSel", "compact"); await shotEl("#results .res", "24_compatta"); await page.selectOption("#densSel", "standard");
   await page.click("#bLayout"); await shotEl("#layoutPop", "25_layout"); await page.click("#bLayClose");
@@ -227,6 +246,9 @@ const GROUPS = [
     await shotEl(`#charts > div:has(${sel})`, n).catch(async () => shotEl(sel, n));
   await ev(() => { document.querySelector(".ana-head").style.position = "static"; });
   await shotEl("#cmpBox", "37_confronto", { wait: 400 });
+  await ev(() => { const S = window.__SA, n = S.compareRows().length; S.setRange(n - 2, n - 1); });   // 1.17: periodo selezionato
+  await shotEl("#cmpChartWrap", "65_periodo", { wait: 400 });
+  await ev(() => window.__SA.setRange(null));
   await ev(() => { const S = window.__SA; S.compareRows().forEach(r => { if (r.hist) S.cmpState.diffOff.add(r.hist ? `h${r.key || r.idx}` : `g${r.gid}`); }); S.drawCompare(); });
   await shotEl("#cmpDiffWrap", "55_differenze", { wait: 400 });
   await shotEl("#dopeBox", "38_dope", { wait: 400 });

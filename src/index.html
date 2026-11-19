@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.16.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.17.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -199,7 +199,12 @@
   #toolbar button:hover:not(:disabled) { background: var(--tb-hover); }
   #toolbar button:disabled { opacity: .35; cursor: default; }
   #toolbar button.on { background: var(--accent); color: var(--accent-ink); }
-  #toolbar .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  #toolbar .sw { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 3px; vertical-align: 1px; }
+  /* 1.17.0: solo icone (la funzione è nel tooltip e in aria-label) */
+  #toolbar button { font-size: 16px; line-height: 1.15; min-width: 34px; padding: 5px 7px; text-align: center; position: relative; }
+  #toolbar .zoomctl button { min-width: 26px; font-size: 15px; }
+  #toolbar .tbadge { position: absolute; top: 0; right: 0; min-width: 14px; height: 14px; padding: 0 3px; box-sizing: border-box; border-radius: 7px;
+    background: #b91c1c; color: #fff; font-size: 9.5px; line-height: 14px; font-weight: 700; }
   #hint { position: absolute; left: 10px; bottom: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 6px 10px;
     border-radius: 6px; font-size: 12.5px; pointer-events: none; max-width: calc(100% - 20px); z-index: 2; }
   #zoomlbl { position: absolute; right: 10px; bottom: 10px; background: rgba(0,0,0,.65); color: #fff; padding: 4px 8px;
@@ -402,6 +407,27 @@
   details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
   .help { font-size: 12.5px; color: var(--help-ink); line-height: 1.45; }
   .help kbd { background: var(--kbd-bg); border: 1px solid var(--kbd-border); border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  /* 1.17.0 */
+  #originBar { position: absolute; left: 50%; bottom: 52px; transform: translateX(-50%); max-width: min(760px, 92%); z-index: 6; display: flex; gap: 8px; align-items: flex-start;
+    background: var(--panel); color: var(--ink); border: 2px solid #ea580c; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+  #originBar[hidden] { display: none; }
+  #originBar .obi { color: #ea580c; font-weight: 700; } #originBar button { margin-left: auto; border: 0; background: none; cursor: pointer; color: var(--ink); font-size: 14px; }
+  .orgbtn { border: 1px solid var(--line); background: var(--panel); color: #c2410c; border-radius: 5px; cursor: pointer; font-size: 12px; line-height: 1; padding: 1px 4px; margin-left: 6px; vertical-align: middle; }
+  .orgbtn::after { content: "⌖"; } .bstar::after { content: "☆"; } .bstar.on::after { content: "★"; }
+  .orgbtn.sm { font-size: 11px; padding: 0 3px; margin-left: 4px; } .orgbtn.on, .orgbtn:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
+  .bstar { border: 0; background: none; cursor: pointer; color: #b45309; font-size: 15px; padding: 0 4px 0 0; line-height: 1; } .bstar.on { color: #ea580c; }
+  .bstarg { margin-left: 6px; }
+  table.cmp tr.isbase td { background: rgba(234,88,12,.08); } table.cmp tr.inrange td { box-shadow: inset 0 0 0 999px rgba(234,88,12,.06); }
+  .basebox { border: 1px dashed var(--line); border-radius: 8px; padding: 6px 9px; margin: 6px 0; font-size: 12.5px; } .basebox .bmet { margin-top: 4px; } .basebox .bmet label { margin-right: 8px; white-space: nowrap; }
+  .basebox .bfile { margin-top: 4px; color: #92400e; }
+  .bname { font-weight: 600; font-size: 13.5px; } .bcond { font-size: 12px; margin: 2px 0; } .bdg-b { color: #15803d; font-weight: 600; } .bdg-w { color: #b91c1c; font-weight: 600; }
+  ul.bwarn { list-style: none; margin: 4px 0; padding: 0; color: #92400e; font-size: 12px; }
+  .cmprange { margin-top: 6px; font-size: 12.5px; } .cmprange .rsel { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .rvnav { gap: 6px; align-items: center; } .rvleg { font-size: 11.5px; color: var(--muted); margin: 4px 0 6px; }
+  .rvtag { display: inline-block; font-size: 10.5px; border-radius: 4px; padding: 0 5px; font-weight: 600; } .rvtag.mark { background: #fde68a; color: #78350f; } .rvtag.stat { background: #ddd6fe; color: #4c1d95; }
+  .rv-row { border: 1px solid var(--line); border-radius: 7px; padding: 5px 7px; margin: 4px 0; cursor: pointer; } .rv-row.cur { border-color: #ea580c; box-shadow: 0 0 0 1px #ea580c; }
+  .rv-row .rvwhy { font-size: 12px; color: var(--muted); margin: 2px 0 4px; } .rv-row .rvbtns { display: flex; flex-wrap: wrap; gap: 4px; } .rv-row .rvbtns .btn { padding: 2px 7px; font-size: 12px; }
+  #side [data-hi]:hover > label, #side .row[data-hi]:focus-within > label { color: #c2410c; }
   #toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); background: #111827; color: #fff;
     padding: 8px 14px; border-radius: 8px; font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 10; }
   #toast.show { opacity: .95; }
@@ -422,6 +448,7 @@
   <!-- ======================= AREA DI LAVORO ======================= -->
   <div id="work">
     <canvas id="canvas"></canvas>
+    <div id="originBar" role="status" hidden><span class="obi">⌖</span><span id="originText"></span><button id="bOriginClose" title="Chiudi l'evidenziazione (Esc)" aria-label="Chiudi l'evidenziazione">✕</button></div>
     <div id="restoreBar" role="alert" hidden>
       <div id="restoreText"></div>
       <div class="btns">
@@ -433,41 +460,42 @@
       <div class="big">Carica la foto di un bersaglio</div>
       <div>Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .zip o .json).</div>
     </div>
-    <div id="toolbar">
+    <div id="toolbar" role="toolbar" aria-label="Strumenti">
       <div class="grp">
-        <button id="bLoad" title="Carica foto (Ctrl+O)">📂 Carica foto</button>
+        <button id="bLoad" title="Carica foto (Ctrl+O)" aria-label="Carica foto">📂</button>
       </div>
       <div class="grp" id="modes">
-        <button data-mode="pan"   title="Sposta/zoom (1)">✋ Mano</button>
-        <button data-mode="calib" title="Calibrazione scala: 2 punti (2)"><span class="sw" style="background:var(--calib)"></span>Scala</button>
-        <button data-mode="poa"   title="Punto di mira del gruppo attivo (3)"><span class="sw" style="background:var(--poa)"></span>Mira</button>
-        <button data-mode="shot"  title="Aggiungi foro al gruppo attivo (4)"><span class="sw" id="shotSw"></span>Foro</button>
-        <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)">📐 Raddrizza</button>
-        <button data-mode="persp" title="Correzione prospettica: clicca i 4 angoli di un rettangolo di dimensioni note (6)">⬚ Prospettiva</button>
+        <button data-mode="pan"   title="Mano: sposta e ingrandisci la vista (1)" aria-label="Mano">✋</button>
+        <button data-mode="calib" title="Scala: calibrazione con 2 punti a distanza nota (2)" aria-label="Scala"><span class="sw" style="background:var(--calib)"></span>↔</button>
+        <button data-mode="poa"   title="Mira: punto di mira del gruppo attivo (3)" aria-label="Mira"><span class="sw" style="background:var(--poa)"></span>⊕</button>
+        <button data-mode="shot"  title="Foro: aggiungi un foro al gruppo attivo (4)" aria-label="Foro"><span class="sw" id="shotSw"></span>◉</button>
+        <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)" aria-label="Raddrizza">📐</button>
+        <button data-mode="persp" title="Prospettiva: correzione con i 4 angoli di un rettangolo di dimensioni note (6)" aria-label="Prospettiva">⬚</button>
       </div>
       <div class="grp">
-        <button id="bUndo" title="Annulla (Ctrl+Z)">↶ Undo</button>
-        <button id="bRedo" title="Ripristina (Ctrl+Y)">↷ Redo</button>
-        <button id="bDelLast" title="Elimina l'ultimo punto del gruppo attivo (Backspace)">⌫ Elimina ultimo</button>
-        <button id="bClear" title="Elimina tutti i punti">🗑 Tutto</button>
+        <button id="bUndo" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
+        <button id="bRedo" title="Ripristina (Ctrl+Y)" aria-label="Ripristina">↷</button>
+        <button id="bDelLast" title="Elimina l'ultimo punto del gruppo attivo (Backspace)" aria-label="Elimina ultimo">⌫</button>
+        <button id="bClear" title="Elimina tutti i punti (gli elementi bloccati restano)" aria-label="Elimina tutto">🗑</button>
       </div>
       <div class="grp">
-        <button id="bFit" title="Adatta allo schermo (F)">⤢ Adatta</button>
+        <button id="bFit" title="Adatta la foto allo schermo (F)" aria-label="Adatta">⤢</button>
         <span class="zoomctl" title="Zoom della vista (senza rotella): − / + o scrivi la percentuale e premi Invio. Tasti − e +.">
-          <button id="bZoomOut" aria-label="Riduci lo zoom">−</button><input id="zoomPct" type="number" min="1" max="6000" step="any" aria-label="Zoom in percentuale"><span class="pct">%</span><button id="bZoomIn" aria-label="Aumenta lo zoom">+</button>
+          <button id="bZoomOut" title="Riduci lo zoom (−)" aria-label="Riduci lo zoom">−</button><input id="zoomPct" type="number" min="1" max="6000" step="any" aria-label="Zoom in percentuale"><span class="pct">%</span><button id="bZoomIn" title="Aumenta lo zoom (+)" aria-label="Aumenta lo zoom">+</button>
         </span>
-        <button id="bLoupe" title="Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.">🔍 Lente</button>
+        <button id="bLoupe" title="Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva." aria-label="Lente">🔍</button>
         <select id="loupeZoom" title="Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)">
           <option value="2">×2</option><option value="3">×3</option><option value="4" selected>×4</option><option value="6">×6</option><option value="8">×8</option><option value="12">×12</option>
         </select>
-        <button id="bGrid" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)">▦ Griglia</button>
-        <button id="bSnap" title="Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap.">🧲 Snap</button>
+        <button id="bGrid" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)" aria-label="Griglia">▦</button>
+        <button id="bSnap" title="Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap." aria-label="Snap">🧲</button>
       </div>
       <div class="grp">
-        <button id="bRuler" title="Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)">📏 Righello</button>
-        <button id="bNote" title="Nota: clicca un foro o una zona del bersaglio per aggiungere un'annotazione numerata (N)">✎ Nota</button>
-        <button id="bDetail" title="Finestra di dettaglio: ingrandimento fisso di una zona, spostabile e ridimensionabile, indipendente dalla vista (D)">🔎 Dettaglio</button>
-        <button id="bLock" title="Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)">🔒 Blocca</button>
+        <button id="bRuler" title="Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)" aria-label="Righello">📏</button>
+        <button id="bNote" title="Nota: clicca un foro o una zona del bersaglio per aggiungere un'annotazione numerata (N)" aria-label="Nota">✎</button>
+        <button id="bDetail" title="Finestra di dettaglio: ingrandimento fisso di una zona, spostabile e ridimensionabile, indipendente dalla vista (D)" aria-label="Dettaglio">🔎</button>
+        <button id="bLock" title="Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)" aria-label="Blocca">🔓</button>
+        <button id="bReview" title="Colpi da rivedere: elenco dei fori difficili, sovrapposti o anomali, con centratura automatica (V)" aria-label="Colpi da rivedere">⚑<span class="tbadge" id="rvBadge" hidden></span></button>
       </div>
     </div>
     <div id="hint"></div>
@@ -854,6 +882,20 @@
     </section>
 
     <section>
+      <details class="box" id="sec-review">
+        <summary>Colpi da rivedere <span class="muted" id="rvCount"></span></summary>
+        <div class="row rvnav">
+          <button class="btn" id="bRvPrev" title="Colpo precedente nella coda (,)">◀</button>
+          <span id="rvPos" class="muted"></span>
+          <button class="btn" id="bRvNext" title="Colpo successivo nella coda (.)">▶</button>
+          <label title="Mostra anche i colpi già confermati"><input type="checkbox" id="rvShowOk"> Mostra confermati</label>
+        </div>
+        <div class="rvleg"><span class="rvtag mark">marcatura</span> il punto potrebbe non segnare bene un foro (difficile, oppure due fori quasi sovrapposti: centri a meno di mezzo calibro) · <span class="rvtag stat">statistico</span> il foro è anomalo rispetto al gruppo (possibile flyer), ma può essere marcato correttamente: confermarlo non lo esclude</div>
+        <div id="rvList"></div>
+      </details>
+    </section>
+
+    <section>
       <details class="box" id="sec-notes">
         <summary>Note sull'immagine</summary>
         <div class="row">
@@ -914,6 +956,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.</p>
           <p data-i18n><b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.</p>
           <p data-i18n><b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.</p>
           <p data-i18n><b>Novità 1.14</b>: <b>stabilità colpo dopo colpo</b> (vista grafici e scheda dei risultati: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto e traiettoria del centro); <b>ordine di sparo</b> modificabile con ↑/↓ nella tabella dei punti; <b>report PDF con testo vero</b> (selezionabile e cercabile) con metadati della calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici; preset del rettangolo di riferimento <b>100 × 100 mm</b>.</p>
@@ -930,7 +973,7 @@
           <p data-i18n><b>📄 CSV fori / CSV gruppi</b> (sezione Dati): tabelle per Excel o LibreOffice, separatore «;» e virgola decimale; una riga per foro (tutti i gruppi) o una per gruppo (misure, statistiche, correzione, ricarica).</p>
           <p data-i18n><b>Flyer</b> (⚠): segnalati da 5 fori in su; spunta «Escl.» (o <kbd>X</kbd>) per toglierli dalle statistiche. <b>Confronto</b>: con più gruppi, o importando altre sessioni nello <b>storico</b>.</p>
           <p data-i18n>Trascina un punto per spostarlo · tasto destro su un punto per eliminarlo · <kbd>Alt</kbd>+clic per aggiungere un foro sopra un punto esistente (colpi sovrapposti) · rotella = zoom · <kbd>Shift</kbd>+rotella = ingrandimento della lente (×2–×12, anche dal menu accanto a «Lente») · trascina lo sfondo o tasto centrale = pan.</p>
-          <p data-i18n><kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>M</kbd> snap · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>D</kbd> finestra di dettaglio · <kbd>K</kbd> blocca/sblocca l'elemento selezionato · <kbd>+</kbd>/<kbd>−</kbd> zoom.</p>
+          <p data-i18n><kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>M</kbd> snap · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>D</kbd> finestra di dettaglio · <kbd>K</kbd> blocca/sblocca l'elemento selezionato · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd>/<kbd>.</kbd> precedente/successivo) · <kbd>Esc</kbd> chiude l'origine del dato · <kbd>+</kbd>/<kbd>−</kbd> zoom.</p>
           <p class="muted" data-i18n>Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
           <p class="muted" data-i18n>I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
@@ -982,9 +1025,11 @@
           <label for="cmpN" style="flex:0 0 auto" title="Numero di gruppi per la media mobile">Media su</label>
           <input id="cmpN" type="number" min="2" max="50" step="1" value="3" style="width:60px">
         </div>
+        <div id="baseBox" class="basebox"></div>
         <div id="cmpBody"></div>
         <div class="chart" id="cmpChartWrap"><div class="ctitle">Andamento nel tempo</div>
-          <canvas id="chTrend" aria-label="Andamento della metrica scelta nel tempo"></canvas><div class="cnote" id="cmpLegend"></div></div>
+          <canvas id="chTrend" aria-label="Andamento della metrica scelta nel tempo"></canvas><div class="cnote" id="cmpLegend"></div>
+          <div id="cmpRange" class="cmprange"></div></div>
         <div id="cmpDiffWrap" hidden><h4 class="subh">Differenze tra le configurazioni</h4><div id="cmpDiff"></div></div>
         <div class="btns">
           <button class="btn" id="bHistAdd" title="Aggiunge i gruppi di altre sessioni salvate (.zip o .json) per confrontarli con quelli attuali">＋ Importa sessioni nello storico</button>
@@ -1216,6 +1261,10 @@
 <tr id="gl-gqi"><td>GQI (Group Quality Index)</td><td>Punteggio 0–100 della compattezza: 100·exp[−ln(1,25)·(MR/MR<sub>rif</sub>)²], 80 quando il raggio medio angolare atteso è uguale al riferimento scelto. Criterio dell'app, relativo al riferimento; l'attendibilità è il suo intervallo, separato.</td><td>Risultati (card GQI, sessione)</td></tr>
 <tr id="gl-tqi"><td>TQI (Target Quality Index)</td><td>p·GQI + (1 − p)·AQI: compattezza e centratura sulla mira insieme; AQI = 100·exp[−ln(1,25)·(D/D<sub>rif</sub>)²] con D distanza angolare centro gruppo–mira. Facoltativo; richiede il punto di mira.</td><td>Risultati (se attivo)</td></tr>
 <tr id="gl-ripet"><td>Ripetibilità tra gruppi</td><td>Dispersione dei centri dei gruppi rispetto alla loro mira (click tolti), con quella attesa per caso e un test F. Indicatore separato dal GQI.</td><td>Risultati (sessione)</td></tr>
+<tr id="gl-baseline"><td>Baseline</td><td>Rosata di riferimento scelta con ☆ (da un gruppo o dallo storico): resta nel browser e nel file di sessione. Il confronto è in angolo, quindi indipendente dalla distanza; il group size cresce con il numero di colpi, per cui con n diversi vanno guardati raggio medio, σ o GQI. Il test F bilaterale confronta le varianze dei due gruppi (modello circolare normale, ν = 2(n−1) per gruppo).</td><td>Risultati (card ★), confronto</td></tr>
+<tr id="gl-pooled"><td>σ combinato (periodo)</td><td>Varianza di più gruppi riunita pesando ogni s² per i suoi gradi di libertà: σ² = Σνᵢsᵢ² / Σνᵢ, in angolo. Confronta il periodo selezionato nell'andamento con tutti i gruppi precedenti (IC χ², test F). Presuppone che dentro ogni periodo la dispersione non cambi.</td><td>Vista grafici, andamento</td></tr>
+<tr id="gl-revisione"><td>Coda di revisione</td><td>Colpi da controllare: <b>marcatura</b> (segnati difficili ◐, oppure centri a meno di mezzo calibro: due fori così sovrapposti sembrano un foro solo, ovale, e possono nascondere un colpo o essere contati due volte) e <b>statistica</b> (possibile flyer al test di Mahalanobis: il foro può essere marcato benissimo; escluderlo è una decisione separata). Confermare non esclude il colpo.</td><td>Sezione «Colpi da rivedere», ⚑</td></tr>
+<tr id="gl-origine"><td>Origine del dato (⌖)</td><td>Evidenzia sulla foto i fori e gli elementi da cui nasce un risultato: la coppia più lontana per l'ES, gli estremi per H/V-spread, tutti i fori con il centro e il cerchio del modello per raggio medio, CEP, R95 e GQI, la freccia per la correzione. I fori esclusi sono segnati con una croce grigia.</td><td>Risultati</td></tr>
 </tbody></table>
 </section>
 
@@ -3207,6 +3256,7 @@ const I18N = (() => {
    " (escl.)": " (excl.)",
    " (escluso)": " (excluded)",
    " (foto intera {0} × {1})": " (whole photo {0} × {1})",
+   " (fuori vista: F per vedere tutta la foto)": " (out of view: F to see the whole photo)",
    " (mostrate ogni {0})": " (shown every {0})",
    " (ogni gruppo alla sua distanza)": " (each group at its own distance)",
    " (poco affidabili con meno di 5 colpi)": " (unreliable with fewer than 5 shots)",
@@ -3229,6 +3279,7 @@ const I18N = (() => {
    " Con meno di 5 colpi queste statistiche sono poco affidabili.": " With fewer than 5 shots these statistics are not very reliable.",
    " Contorno disegnato sull'ingombro ufficiale: approssimato.": " Outline drawn on the official overall size: approximate.",
    " Decimale: ogni anello è diviso in 10 fasce uguali (10,0–10,9).": " Decimal: each ring is split into 10 equal bands (10.0–10.9).",
+   " Esclusi e non usati: {0}.": " Excluded and not used: {0}.",
    " FFP: le tacche valgono il nominale a ogni ingrandimento.": " FFP: the marks have their nominal value at every magnification.",
    " La foto è già quasi priva di distorsione: la correzione cambia poco.": " The photo is already almost free of distortion: the correction changes little.",
    " Mini ricavato in scala 2/3 dal bersaglio grande: contorno e zone approssimati.": " Mini derived at 2/3 scale from the full target: outline and zones approximate.",
@@ -3263,10 +3314,12 @@ const I18N = (() => {
    " · scala: dal rettangolo": " · scale: from the rectangle",
    " · scala: manuale (2 punti)": " · scale: manual (2 points)",
    " · sessione salvata su file": " · session saved to file",
+   " · stesse condizioni registrate": " · same recorded conditions",
    " · su un asse l'intervallo comprende lo zero: la correzione su quell'asse non è certa": " · on one axis the interval includes zero: the correction on that axis is not certain",
    " · un foro misura {0} px": " · a hole measures {0} px",
    " · {0} ({1}) con la taratura attuale": " · {0} ({1}) with the current zero",
    " · {0} MOA · {1} MIL": " · {0} MOA · {1} MIL",
+   " · {0} condizioni diverse": " · {0} different conditions",
    " · {0} dal calcolo": " · {0} by calculation",
    " · {0} punti di scala/controllo restano fuori dalla foto (la scala non cambia)": " · {0} scale/check points stay outside the photo (the scale does not change)",
    " · {0} sulla linea (≈)": " · {0} on the line (≈)",
@@ -3289,6 +3342,7 @@ const I18N = (() => {
    ", {0} senza mira esclusi": ", {0} without point of aim excluded",
    ". Equivalente medio a 5 colpi {0} mm, a 10 colpi {1} mm": ". Average equivalent for 5 shots {0} mm, for 10 shots {1} mm",
    "0–100% (indeterminato)": "0–100% (undetermined)",
+   "1 click = {0} {1} = {2} mm a {3} m (segmenti dal centro del gruppo)": "1 click = {0} {1} = {2} mm at {3} m (segments from the group centre)",
    "1 click {0}": "1 click {0}",
    "1 colpo": "1 shot",
    "1 colpo ciascuno": "1 shot each",
@@ -3331,6 +3385,7 @@ const I18N = (() => {
    "<b>Novità 1.14</b>: <b>stabilità colpo dopo colpo</b> (vista grafici e scheda dei risultati: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto e traiettoria del centro); <b>ordine di sparo</b> modificabile con ↑/↓ nella tabella dei punti; <b>report PDF con testo vero</b> (selezionabile e cercabile) con metadati della calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici; preset del rettangolo di riferimento <b>100 × 100 mm</b>.": "<b>New in 1.14</b>: <b>shot-to-shot stability</b> (charts view and results card: progressive group size with the band expected by chance, shot from which the group opens, shift of the point of impact and path of the centre); <b>firing order</b> editable with ↑/↓ in the points table; <b>PDF report with real text</b> (selectable and searchable) with calibration metadata, analysed and excluded shots, statistical model and uncertainties, and all the charts; <b>100 × 100 mm</b> preset for the reference rectangle.",
    "<b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.": "<b>New in 1.15</b>: darker group colours (no yellow, readable on white and beige paper); <b>dashed line</b> with angle and deviation from the axis after the first point of the scale and of the reference; <b>zoom field</b> with −/+ (without a mouse wheel); <b>🔒 lock</b> of point of aim, scale, reference and single holes (<kbd>K</kbd> or padlock in the table: they cannot be moved or deleted by mistake); <b>👁 hidden groups</b> on the image (Groups list); <b>scale on the photo</b> (ruler and frame with the real size, also in Result Card and report); <b>uncertainty halo</b> of the holes (Shooting parameters); <b>✕ delete the check reference</b>; numbered <b>✎ notes</b> on a hole or an area, also in the report; <b>differences between configurations</b> in the comparison (charts view, Δ column); free <b>📏 ruler</b> in mm, inches, MOA and MRAD; movable and resizable <b>🔎 detail window</b>.",
    "<b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.": "<b>New in 1.16</b>: group <b>quality index</b>. The <b>GQI</b> (0–100, with a class Excellent…Insufficient) tells how compact the group is relative to the reference mean radius you choose in the «Quality index» section; the optional <b>TQI</b> adds centring on the point of aim. Next to the score is its reliability (interval); at the bottom of the Results the GQI and TQI of the whole session and the <b>repeatability</b> of the centres between groups. Also in the comparison, the report, the CSV and the text.",
+   "<b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.": "<b>New in 1.17</b>: the <b>main toolbar</b> shows icons only (hover for the name, function and key). <b>⚑ Shots to review</b> (<kbd>V</kbd>, then <kbd>,</kbd> and <kbd>.</kbd>): difficult, overlapping or possible flyer holes, each centred and zoomed on the photo, to confirm, postpone or correct; the tag separates <b>marking</b> problems from <b>statistical</b> ones. <b>☆ Baseline</b>: a reference group remembered by the browser and saved in the session; each group shows the angular differences with distance, shots and conditions in plain view. In the charts view, <b>drag on the trend</b> to compare a period with everything before it (pooled σ, F test). The <b>⌖</b> button next to the results shows on the photo which holes the value comes from; hovering the panel fields (scale, caliber, distance, marking, click, perspective) lights up the matching element on the photo.",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
@@ -3343,6 +3398,10 @@ const I18N = (() => {
    "<br><span class=\"civ\" title=\"Intervallo di confidenza del raggio medio atteso dal modello circolare normale (σ·√(π/2))\">IC {0}% atteso: {1}</span>": "<br><span class=\"civ\" title=\"Confidence interval of the expected mean radius from the circular normal model (σ·√(π/2))\">CI {0}% expected: {1}</span>",
    "<br><span class=\"civ\">IC {0}%: ±{1} mm vert. · ±{2} mm orizz.</span>": "<br><span class=\"civ\">CI {0}%: ±{1} mm vert. · ±{2} mm horiz.</span>",
    "<details class=\"meas\"><summary>Incertezza di misura ({0}%): ES {1}</summary>\n    <table>\n      <tr><td>Group size (c-c)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Raggio medio</td><td class=\"v\">{3}</td></tr>\n      {4}\n      <tr><td>σ (misura)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Intervallo che comprende sia l'incertezza statistica (pochi colpi, χ²) sia quella di misura\">σ (statistica + misura)</td><td class=\"v\">{6}</td></tr>\n      <tr><td>CEP (statistica + misura)</td><td class=\"v\">{7}–{8} mm</td></tr>\n    </table>\n    <div class=\"muted\" style=\"font-size:11px\">Simulazione con marcatura ±{9} px a mano, ±{10} px con snap ({11} fori), ×3 sui fori difficili ({12}), e scala ±{13}%. È l'effetto degli errori di misura sui numeri di QUESTO gruppo; l'IC statistico riguarda invece quanto il gruppo rappresenta l'arma.</div>\n  </details>": "<details class=\"meas\"><summary>Measurement uncertainty ({0}%): ES {1}</summary>\n    <table>\n      <tr><td>Group size (c-c)</td><td class=\"v\">{2}</td></tr>\n      <tr><td>Mean radius</td><td class=\"v\">{3}</td></tr>\n      {4}\n      <tr><td>σ (measurement)</td><td class=\"v\">{5}</td></tr>\n      <tr><td title=\"Interval including both the statistical uncertainty (few shots, χ²) and the measurement one\">σ (statistical + measurement)</td><td class=\"v\">{6}</td></tr>\n      <tr><td>CEP (statistical + measurement)</td><td class=\"v\">{7}–{8} mm</td></tr>\n    </table>\n    <div class=\"muted\" style=\"font-size:11px\">Simulation with marking ±{9} px by hand, ±{10} px with snap ({11} holes), ×3 on difficult holes ({12}), and scale ±{13}%. It is the effect of measurement errors on the numbers of THIS group; the statistical CI is instead about how well the group represents the rifle.</div>\n  </details>",
+   "<div class=\"bcond\"><b>{0} m · {1} colpi</b> contro <b>{2} m · {3} colpi</b>{4}</div>": "<div class=\"bcond\"><b>{0} m · {1} shots</b> vs <b>{2} m · {3} shots</b>{4}</div>",
+   "<div class=\"bfile\">La sessione aperta contiene la baseline «{0}». <button class=\"btn\" id=\"bBaseFile\">Usa questa</button></div>": "<div class=\"bfile\">The open session contains the baseline “{0}”. <button class=\"btn\" id=\"bBaseFile\">Use this one</button></div>",
+   "<div class=\"bhead\">★ <b>Baseline</b>: {0}{1} · {2} m · {3} colpi <span class=\"muted\">· {4}</span> <button class=\"btn\" id=\"bBaseOff\" title=\"Togli la baseline (resta nella sessione solo se la risalvi con una baseline)\">Togli</button></div>": "<div class=\"bhead\">★ <b>Baseline</b>: {0}{1} · {2} m · {3} shots <span class=\"muted\">· {4}</span> <button class=\"btn\" id=\"bBaseOff\" title=\"Remove the baseline (it stays in a session only if you save it again with a baseline)\">Remove</button></div>",
+   "<div class=\"bmet\">Metriche confrontate: {0}</div>": "<div class=\"bmet\">Compared metrics: {0}</div>",
    "<div class=\"cmpsum muted\">Il gruppo attivo è il primo in ordine di data: nessun precedente.</div>": "<div class=\"cmpsum muted\">The active group is the first in date order: no previous group.</div>",
    "<div class=\"cmpsum\">Gruppo attivo «{0}» rispetto al precedente «{1}»: <b>{2}{3} {4}</b> di {5} ({6}).</div>": "<div class=\"cmpsum\">Active group «{0}» compared with the previous «{1}»: <b>{2}{3} {4}</b> of {5} ({6}).</div>",
    "<div class=\"cmpsum\">Le {0} righe selezionate hanno gli stessi componenti, distanza, condizioni e impostazioni registrati.</div>": "<div class=\"cmpsum\">The {0} selected rows have the same recorded components, distance, conditions and settings.</div>",
@@ -3356,6 +3415,7 @@ const I18N = (() => {
    "<div class=\"hitnote\">σ angolare {0} MIL (IC {1}% {2}–{3}) da {4}, {5} gradi di libertà. Modello a <b>angolo costante</b>: diametri proporzionali alla distanza. Vale vicino alle distanze tirate (la più lunga: {6}); oltre (⚠) vento, differenze di velocità e caduta fanno crescere la dispersione più in fretta: i valori sono un limite inferiore. Distanze massime: 2 × {7} = {8}.</div>": "<div class=\"hitnote\">Angular σ {0} MIL ({1}% CI {2}–{3}) from {4}, {5} degrees of freedom. <b>Constant-angle</b> model: diameters proportional to distance. It holds near the distances shot (the longest: {6}); beyond (⚠) wind, velocity differences and drop make dispersion grow faster: the values are a lower bound. Maximum distances: 2 × {7} = {8}.</div>",
    "<div class=\"hitnote\">⚠ Con meno di 5 punti la pendenza è molto incerta.</div>": "<div class=\"hitnote\">⚠ With fewer than 5 points the slope is very uncertain.</div>",
    "<div class=\"hitnote\">⚠ Distanze escluse perché oltre {0}: {1}.</div>": "<div class=\"hitnote\">⚠ Distances excluded because beyond {0}: {1}.</div>",
+   "<div class=\"muted\" style=\"font-size:11.5px\">Baseline da {0}, impostata il {1}. Valori in angolo ({2}) alla distanza di ogni gruppo; ▼ = più stretto (GQI: ▲ = migliore). Il test F confronta le σ dei due gruppi con il modello circolare normale.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Baseline from {0}, set on {1}. Angular values ({2}) at each group's distance; ▼ = tighter (GQI: ▲ = better). The F test compares the σ of the two groups with the circular normal model.</div>",
    "<div class=\"muted\" style=\"font-size:11.5px\">Calcolato dal raggio medio aggregato, non come media dei GQI dei gruppi; gruppi a distanze diverse sono confrontati in angolo. Misura la compattezza interna delle rosate, non quanto i loro centri restano fermi: per quello c'è la ripetibilità qui sotto, che non entra nel punteggio.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Computed from the aggregate mean radius, not as the average of the groups' GQIs; groups at different distances are compared in angle. It measures the internal compactness of the groups, not how still their centres stay: for that there is the repeatability below, which is not part of the score.</div>",
    "<div class=\"muted\" style=\"font-size:11.5px\">Esatto: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Exact: {0} {1} {2} / {3} {4} {5} · {6} {7}/click</div>",
    "<div class=\"muted\" style=\"font-size:11.5px\">GQI = 100 · exp[−ln(1,25) · (MR / MR<sub>rif</sub>)²]: vale 80 quando il raggio medio è uguale al riferimento, 100 con MR = 0, 41 con MR = 2 × riferimento. MR è il raggio medio <b>atteso</b> σ̂·√(π/2) del modello circolare normale (lo stesso di CEP e R95), che non dipende dal numero di colpi: il raggio medio misurato dal centro del gruppo è più piccolo del vero di circa il 18% con 3 colpi e l'11% con 5, e darebbe punteggi gonfiati ai gruppi corti. Il punteggio dice quanto la rosata è compatta <b>rispetto al riferimento scelto</b>; l'intervallo dice quanto il punteggio è determinato dai colpi disponibili. Criterio dell'applicazione ({0}), non uno standard statistico.</div>": "<div class=\"muted\" style=\"font-size:11.5px\">GQI = 100 · exp[−ln(1.25) · (MR / MR<sub>ref</sub>)²]: it is 80 when the mean radius equals the reference, 100 with MR = 0, 41 with MR = 2 × reference. MR is the <b>expected</b> mean radius σ̂·√(π/2) of the circular normal model (the same as CEP and R95), which does not depend on the number of shots: the mean radius measured from the group centre is smaller than the true one by about 18% with 3 shots and 11% with 5, and would give inflated scores to short groups. The score tells how compact the group is <b>relative to the chosen reference</b>; the interval tells how well the available shots determine the score. The application's own criterion ({0}), not a statistical standard.</div>",
@@ -3372,6 +3432,7 @@ const I18N = (() => {
    "<div class=\"muted\">Nessun gruppo con fori e scala calibrata. I gruppi dello storico portano le coordinate dei fori solo se importati con la 1.9.0 o successive.</div>": "<div class=\"muted\">No group with holes and calibrated scale. History groups carry hole coordinates only if imported with 1.9.0 or later.</div>",
    "<div class=\"muted\">Nessun gruppo con i dati richiesti a questa distanza: servono {0} e, nei dati di ricarica, {1}.</div>": "<div class=\"muted\">No group with the required data at this distance: {0} and, in the load data, {1} are needed.</div>",
    "<div class=\"muted\">Nessun punto.</div>": "<div class=\"muted\">No points.</div>",
+   "<div class=\"muted\">Nessuna baseline: clicca ☆ su una riga del confronto (o nella scheda di un gruppo) per usarla come riferimento anche nelle sessioni successive.</div>": "<div class=\"muted\">No baseline: click ☆ on a comparison row (or on a group's results) to use it as a reference in later sessions too.</div>",
    "<div class=\"muted\">Nessuna correzione: servono punto di mira, scala, distanza e valore click (come per la dope card). Il reticolo è comunque disegnato.</div>": "<div class=\"muted\">No corrections: aiming point, scale, distance and click value are needed (as for the dope card). The reticle is drawn anyway.</div>",
    "<div class=\"muted\">Nessuna nota. «✎ Aggiungi nota», poi clicca un foro (la nota lo segue) o una zona del bersaglio.</div>": "<div class=\"muted\">No notes. «✎ Add note», then click a hole (the note follows it) or an area of the target.</div>",
    "<div class=\"muted\">Scegli una sagoma (IPSC, IDPA, silhouette o zona vitale) in «Zone di punteggio».</div>": "<div class=\"muted\">Choose a target (IPSC, IDPA, silhouette or vital zone) in «Scoring zones».</div>",
@@ -3383,6 +3444,7 @@ const I18N = (() => {
    "<div class=\"muted\">Servono gruppi con almeno 2 fori, scala e distanza (il gruppo attivo o quelli della munizione scelta).</div>": "<div class=\"muted\">Groups with at least 2 shots, scale and distance are needed (the active group or those of the chosen ammunition).</div>",
    "<div class=\"muted\">Servono gruppi da almeno 3 colpi con scala, distanza e carica (gr) indicata nei dati di ricarica, in questa sessione o nello storico.</div>": "<div class=\"muted\">Groups of at least 3 shots are needed, with scale, distance and charge (gr) entered in the load data, in this session or in the history.</div>",
    "<div class=\"muted\">Servono gruppi da almeno 3 colpi con scala, distanza e salto dalle righe indicato nei dati di ricarica, in questa sessione o nello storico.</div>": "<div class=\"muted\">Groups of at least 3 shots are needed, with scale, distance and jump to the lands entered in the load data, in this session or in the history.</div>",
+   "<div class=\"muted\">Tutti i {0} colpi segnalati sono stati confermati.</div>": "<div class=\"muted\">All {0} flagged shots have been confirmed.</div>",
    "<div class=\"nwarn\" style=\"margin-top:6px\" title=\"Test per simulazione dal modello normale circolare (vedi help tecnico)\">⚠ Modello circolare normale poco adatto: {0}. CEP, R95 e probabilità di colpire vanno presi con cautela.{1}</div>": "<div class=\"nwarn\" style=\"margin-top:6px\" title=\"Simulation tests from the circular normal model (see the technical help)\">⚠ Circular normal model not well suited: {0}. CEP, R95 and hit probability should be taken with caution.{1}</div>",
    "<div class=\"nwarn\">⚠ Click diversi tra i fori: la dope compensa i click di ogni foro, ma dispersione e correzione sono calcolate sui fori come sono sul bersaglio.</div>": "<div class=\"nwarn\">⚠ Different clicks between shots: the dope compensates the clicks of each shot, but dispersion and correction are computed on the shots as they are on the target.</div>",
    "<div class=\"qinfo\">Fori misurati: ⌀ mediano {0} mm = {1}% del calibro ({2} fori): coerente (nella carta i fori sono spesso un po' più piccoli del calibro).</div>": "<div class=\"qinfo\">Measured holes: median ⌀ {0} mm = {1}% of the caliber ({2} holes): consistent (in paper holes are often a little smaller than the caliber).</div>",
@@ -3392,6 +3454,7 @@ const I18N = (() => {
    "<div class=\"qwarn\">⚠ I fori misurano in mediana ⌀ {0} mm, il {1}% del calibro ({2} mm, {3} fori): scala o calibro probabilmente sbagliati. Controlla la distanza nota della scala, la sua unità (mm / cm / in) e il calibro.</div>": "<div class=\"qwarn\">⚠ The holes measure a median ⌀ {0} mm, {1}% of the caliber ({2} mm, {3} holes): scale or caliber probably wrong. Check the known distance of the scale, its unit (mm / cm / in) and the caliber.</div>",
    "<div class=\"qwarn\">⚠ Riferimento di controllo: misurato {0} mm invece di {1} mm ({2}%, oltre l'incertezza ±{3}%): ricontrolla la scala.</div>": "<div class=\"qwarn\">⚠ Check reference: measured {0} mm instead of {1} mm ({2}%, beyond the ±{3}% uncertainty): check the scale again.</div>",
    "<div class=\"res sess\"><h3>Sessione · tutti i gruppi di questa foto</h3><div class=\"rcards\">{0}</div></div>": "<div class=\"res sess\"><h3>Session · all groups on this photo</h3><div class=\"rcards\">{0}</div></div>",
+   "<div class=\"rsel\"><label>Periodo da <select id=\"rgA\">{0}</select></label> <label>a <select id=\"rgB\">{1}</select></label> <button class=\"btn\" id=\"bRgSet\">Seleziona</button> <button class=\"btn\" id=\"bRgClr\" {2}>Annulla selezione</button> <span class=\"muted\">(o trascina sul grafico)</span></div>": "<div class=\"rsel\"><label>Period from <select id=\"rgA\">{0}</select></label> <label>to <select id=\"rgB\">{1}</select></label> <button class=\"btn\" id=\"bRgSet\">Select</button> <button class=\"btn\" id=\"bRgClr\" {2}>Clear selection</button> <span class=\"muted\">(or drag on the chart)</span></div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Carica (gr)</th><th class=\"x\">Fori</th><th class=\"x\">Alzo medio (MIL)</th><th class=\"x\">IC {0}%</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Charge (gr)</th><th class=\"x\">Shots</th><th class=\"x\">Mean elevation (MIL)</th><th class=\"x\">{0}% CI</th></tr></thead><tbody>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th>\n      <th class=\"x\" title=\"Click di alzo da impostare (+ = in alto) e intervallo di confidenza della media\">Alzo (click)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Click di brandeggio da impostare (+ = a destra): vale per il vento di quel giorno\">Brand. (click)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Gruppo</th><th>Data</th><th>Condizioni</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Click da impostare sulla torretta per colpire il punto di mira ({1} {2}/click, + = in alto / a destra), dalla media dei fori: click impostati + correzione di ogni foro; ± = intervallo di confidenza {3}%. Solo le distanze tirate: per quelle intermedie serve un calcolatore balistico. Il brandeggio vale per il vento di quel giorno; alzo e brandeggio dipendono da munizione, temperatura e pressione.</div>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th>\n      <th class=\"x\" title=\"Elevation clicks to set (+ = up) and confidence interval of the mean\">Elev. (clicks)</th><th class=\"x\">MIL</th><th class=\"x\">MOA</th>\n      <th class=\"x\" title=\"Windage clicks to set (+ = right): valid for the wind of that day\">Wind. (clicks)</th><th class=\"x\">MIL</th>\n      <th class=\"x\">n</th><th>Group</th><th>Date</th><th>Conditions</th></tr></thead><tbody>{0}</tbody></table></div>\n    <div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Clicks to set on the turret to hit the point of aim ({1} {2}/click, + = up / right), from the average of the shots: clicks set + correction of each shot; ± = {3}% confidence interval. Only the distances actually shot: for intermediate ones you need a ballistic calculator. Windage is valid for the wind of that day; elevation and windage depend on ammunition, temperature and pressure.</div>",
    "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distanza</th><th class=\"x\">σ per asse (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ IC {0}% (mm)</th></tr></thead><tbody>": "<div class=\"tscroll\"><table class=\"cmp\"><thead><tr><th class=\"x\">Distance</th><th class=\"x\">σ per axis (mm)</th><th class=\"x\">CEP ⌀ (mm)</th><th class=\"x\">R95 ⌀ (mm)</th><th class=\"x\">R95 ⌀ {0}% CI (mm)</th></tr></thead><tbody>",
@@ -3401,7 +3464,7 @@ const I18N = (() => {
    "<div class=\"tt-msg {0}\">{1}</div>\n    <table class=\"pts tt\"><tbody>\n      <tr><td>Rapporto di scala (misurato / vero)</td><td class=\"x\"><b>{2}</b> ({3}%)</td></tr>\n      <tr><td>Errore per foro: RMS · massimo</td><td class=\"x\"><b>{4}</b> · {5} mm</td></tr>\n      <tr><td>Spostamento del centro gruppo (mira)</td><td class=\"x\">{6}; {7} mm</td></tr>\n      <tr><td>Rotazione residua</td><td class=\"x\">{8}°</td></tr>\n      <tr><td>Group size (ES) vero · misurato</td><td class=\"x\">{9} · {10} mm</td></tr>\n      <tr><td>Raggio medio vero · misurato</td><td class=\"x\">{11} · {12} mm</td></tr>\n    </tbody></table>\n    <details><summary>Fori (vero e misurato, mm rispetto alla mira, + = destra / alto)</summary>\n      <table class=\"pts tt\"><thead><tr><th>Foro</th><th class=\"x\">Vero</th><th class=\"x\">Misurato</th><th class=\"x\">Errore</th></tr></thead><tbody>{13}</tbody></table></details>\n    <div class=\"muted\" style=\"font-size:11.5px\">Spostamento e rotazione dicono dove hai messo la mira e quanto è ruotata la foto: non cambiano le misure di dispersione. Il rapporto di scala include la stampa: se il righello stampato non misura 100 mm, la differenza è della stampante.</div>": "<div class=\"tt-msg {0}\">{1}</div>\n    <table class=\"pts tt\"><tbody>\n      <tr><td>Scale ratio (measured / true)</td><td class=\"x\"><b>{2}</b> ({3}%)</td></tr>\n      <tr><td>Error per hole: RMS · maximum</td><td class=\"x\"><b>{4}</b> · {5} mm</td></tr>\n      <tr><td>Shift of the group centre (aim)</td><td class=\"x\">{6}; {7} mm</td></tr>\n      <tr><td>Residual rotation</td><td class=\"x\">{8}°</td></tr>\n      <tr><td>Group size (ES) true · measured</td><td class=\"x\">{9} · {10} mm</td></tr>\n      <tr><td>Mean radius true · measured</td><td class=\"x\">{11} · {12} mm</td></tr>\n    </tbody></table>\n    <details><summary>Holes (true and measured, mm from the aim, + = right / up)</summary>\n      <table class=\"pts tt\"><thead><tr><th>Hole</th><th class=\"x\">True</th><th class=\"x\">Measured</th><th class=\"x\">Error</th></tr></thead><tbody>{13}</tbody></table></details>\n    <div class=\"muted\" style=\"font-size:11.5px\">Shift and rotation tell where you placed the aim and how much the photo is rotated: they do not change the dispersion measurements. The scale ratio includes the print: if the printed ruler does not measure 100 mm, the difference is the printer's.</div>",
    "<div class=\"tt-msg\">L'intervallo della pendenza comprende lo zero: con questi dati non si può dire che y cambi con x.</div>": "<div class=\"tt-msg\">The slope interval includes zero: with these data you cannot say that y changes with x.</div>",
    "<h3><span class=\"dot\" style=\"display:inline-block;width:10px;height:10px;border-radius:50%;background:{0}\"></span>{1} <span class=\"muted\" style=\"font-weight:400\">· {2} colpi{3}</span></h3>": "<h3><span class=\"dot\" style=\"display:inline-block;width:10px;height:10px;border-radius:50%;background:{0}\"></span>{1} <span class=\"muted\" style=\"font-weight:400\">· {2} shots{3}</span></h3>",
-   "<kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>M</kbd> snap · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>D</kbd> finestra di dettaglio · <kbd>K</kbd> blocca/sblocca l'elemento selezionato · <kbd>+</kbd>/<kbd>−</kbd> zoom.": "<kbd>1</kbd>–<kbd>6</kbd> tools (5 = level, 6 = perspective; <kbd>Esc</kbd> cancels) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Del</kbd> deletes the selected point · <kbd>Backspace</kbd> deletes the last one · <kbd>F</kbd> fit · <kbd>L</kbd> loupe · <kbd>M</kbd> snap · <kbd>G</kbd> grid · <kbd>X</kbd> exclude/include the selected shot · <kbd>T</kbd> theme · <kbd>A</kbd> charts and comparison · <kbd>H</kbd> technical help (terms, formulas, examples; in Italian) · <kbd>Ctrl+S</kbd> save · <kbd>R</kbd> ruler · <kbd>N</kbd> note · <kbd>D</kbd> detail window · <kbd>K</kbd> lock/unlock the selected item · <kbd>+</kbd>/<kbd>−</kbd> zoom.",
+   "<kbd>1</kbd>–<kbd>6</kbd> strumenti (5 = raddrizza, 6 = prospettiva; <kbd>Esc</kbd> annulla) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Canc</kbd> elimina punto selezionato · <kbd>Backspace</kbd> elimina ultimo · <kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>M</kbd> snap · <kbd>G</kbd> griglia · <kbd>X</kbd> escludi/includi il foro selezionato · <kbd>T</kbd> tema · <kbd>A</kbd> grafici e confronto · <kbd>H</kbd> help tecnico (termini, formule, esempi) · <kbd>Ctrl+S</kbd> salva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>D</kbd> finestra di dettaglio · <kbd>K</kbd> blocca/sblocca l'elemento selezionato · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd>/<kbd>.</kbd> precedente/successivo) · <kbd>Esc</kbd> chiude l'origine del dato · <kbd>+</kbd>/<kbd>−</kbd> zoom.": "<kbd>1</kbd>–<kbd>6</kbd> tools (5 = level, 6 = perspective; <kbd>Esc</kbd> cancels) · <kbd>Ctrl+Z</kbd>/<kbd>Ctrl+Y</kbd> undo/redo · <kbd>Del</kbd> deletes the selected point · <kbd>Backspace</kbd> deletes the last one · <kbd>F</kbd> fit · <kbd>L</kbd> loupe · <kbd>M</kbd> snap · <kbd>G</kbd> grid · <kbd>X</kbd> exclude/include the selected shot · <kbd>T</kbd> theme · <kbd>A</kbd> charts and comparison · <kbd>H</kbd> technical help (terms, formulas, examples; in Italian) · <kbd>Ctrl+S</kbd> save · <kbd>R</kbd> ruler · <kbd>N</kbd> note · <kbd>D</kbd> detail window · <kbd>K</kbd> lock/unlock the selected item · <kbd>V</kbd> shots to review (<kbd>,</kbd>/<kbd>.</kbd> previous/next) · <kbd>Esc</kbd> closes the data origin · <kbd>+</kbd>/<kbd>−</kbd> zoom.",
    "<option value=\"custom\">✎ Personalizzato (valore inserito sopra)</option>": "<option value=\"custom\">✎ Custom (value entered above)</option>",
    "<option value=\"{0}\">{1} · {2} colpi</option>": "<option value=\"{0}\">{1} · {2} shots</option>",
    "<span class=\"dot\" style=\"background:{0}\"></span><input value=\"{1}\" aria-label=\"Nome gruppo\">\n      <span class=\"n\">{2}{3} colpi{4}</span><button class=\"eye{5}\" data-eye=\"{6}\" aria-pressed=\"{7}\" title=\"{8}\">{9}</button><button class=\"gdel\" title=\"Elimina gruppo\">✕</button>": "<span class=\"dot\" style=\"background:{0}\"></span><input value=\"{1}\" aria-label=\"Group name\">\n      <span class=\"n\">{2}{3} shots{4}</span><button class=\"eye{5}\" data-eye=\"{6}\" aria-pressed=\"{7}\" title=\"{8}\">{9}</button><button class=\"gdel\" title=\"Delete group\">✕</button>",
@@ -3410,6 +3473,7 @@ const I18N = (() => {
    "<span class=\"key\" style=\"border-color:{0}\"></span>raggio medio {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6}{7} · ✕ centro gruppo{8}": "<span class=\"key\" style=\"border-color:{0}\"></span>mean radius {1} {2} · <span class=\"key dash\" style=\"border-color:{3}\"></span>CEP {4} {5}{6}{7} · ✕ group centre{8}",
    "<span class=\"key\" style=\"border-color:{0}\"></span>{1} per gruppo · <span class=\"key dash\" style=\"border-color:{2}\"></span>media mobile su {3} gruppi · ○ = gruppo dallo storico · asse orizzontale: gruppi in ordine di data, a distanza uniforme": "<span class=\"key\" style=\"border-color:{0}\"></span>{1} per group · <span class=\"key dash\" style=\"border-color:{2}\"></span>moving average over {3} groups · ○ = group from the history · horizontal axis: groups in date order, evenly spaced",
    "<span class=\"muted\">Se lo ignori resta disponibile finché non inizi un nuovo lavoro.</span>": "<span class=\"muted\">If you ignore it, it stays available until you start a new job.</span>",
+   "<table class=\"cmp rng\"><thead><tr><th>Periodo</th><th class=\"x\">Gruppi</th><th class=\"x\">Colpi</th><th>Date</th><th class=\"x\">Media {0} ({1})</th><th>σ combinato</th></tr></thead><tbody>{2}{3}</tbody></table><div class=\"cmpsum\">{4}</div><div class=\"muted\" style=\"font-size:11.5px\">σ combinato: varianze dei gruppi pesate per i gradi di libertà (in angolo, distanze diverse confrontabili); presuppone una dispersione costante dentro ogni periodo. I dati archiviati non cambiano.</div>": "<table class=\"cmp rng\"><thead><tr><th>Period</th><th class=\"x\">Groups</th><th class=\"x\">Shots</th><th>Dates</th><th class=\"x\">Mean {0} ({1})</th><th>Pooled σ</th></tr></thead><tbody>{2}{3}</tbody></table><div class=\"cmpsum\">{4}</div><div class=\"muted\" style=\"font-size:11.5px\">Pooled σ: group variances weighted by degrees of freedom (angular, so different distances are comparable); assumes a constant dispersion within each period. Stored data do not change.</div>",
    "<table class=\"hit\"><thead><tr><th>{0} a {1}</th><th>Con correzione applicata</th><th>Con la taratura attuale</th></tr></thead><tbody>": "<table class=\"hit\"><thead><tr><th>{0} at {1}</th><th>With correction applied</th><th>With current zero</th></tr></thead><tbody>",
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo</td></tr><tr><td colspan=\"2\" class=\"muted\">Servono almeno 3 fori.</td></tr></table>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape</td></tr><tr><td colspan=\"2\" class=\"muted\">At least 3 shots needed.</td></tr></table>",
    "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Forma del gruppo{0}</td></tr>\n    <tr><td title=\"Orientamento dell'asse maggiore dell'ellisse di dispersione: gradi dalla verticale in senso orario (0° = verticale, 90° = orizzontale)\">Asse maggiore</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Rapporto tra asse maggiore e asse minore dell'ellisse (√ del rapporto tra le varianze principali): 1 = gruppo circolare\">Rapporto d'aspetto</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Ellisse di concentrazione: contiene la percentuale indicata dei colpi se la dispersione è normale\">Ellisse {4}% (semiassi)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">Con pochi colpi il rapporto d'aspetto tende a risultare più alto del reale; con un gruppo quasi circolare l'angolo non è significativo.</div>": "<table style=\"margin-top:4px\"><tr><td colspan=\"2\" class=\"sub2\">Group shape{0}</td></tr>\n    <tr><td title=\"Orientation of the major axis of the dispersion ellipse: degrees from vertical, clockwise (0° = vertical, 90° = horizontal)\">Major axis</td><td class=\"v\">{1}</td></tr>\n    <tr><td title=\"Ratio between major and minor axis of the ellipse (√ of the ratio of the principal variances): 1 = circular group\">Aspect ratio</td><td class=\"v\">{2} : 1{3}</td></tr>\n    <tr><td title=\"Concentration ellipse: contains the stated percentage of shots if the dispersion is normal\">Ellipse {4}% (semi-axes)</td><td class=\"v\">{5} × {6} mm</td></tr>\n  </table>\n  <div class=\"muted\" style=\"font-size:11px;margin-top:2px\">With few shots the aspect ratio tends to come out higher than the true one; with an almost circular group the angle is not significant.</div>",
@@ -3444,7 +3508,9 @@ const I18N = (() => {
    "A4 verticale · 210 × 297 mm": "A4 portrait · 210 × 297 mm",
    "ATTENZIONE: ": "WARNING: ",
    "ATTENZIONE: scala non calibrata": "WARNING: scale not calibrated",
+   "Adatta": "Fit",
    "Adatta allo schermo (F)": "Fit to screen (F)",
+   "Adatta la foto allo schermo (F)": "Fit the photo to the screen (F)",
    "Affiancate": "Side by side",
    "Aggiunge all'archivio sessioni salvate in precedenza (.zip, oppure .json meglio con l'immagine incorporata)": "Adds previously saved sessions to the archive (.zip, or .json preferably with the embedded image)",
    "Aggiunge alla tabella la colonna «Carica» per indicare la carica di ogni foro (ladder test); vuoto = carica del gruppo": "Adds the «Charge» column to the table to record the charge of each shot (ladder test); empty = group charge",
@@ -3480,7 +3546,9 @@ const I18N = (() => {
    "Angolo costante (σ {0} MIL): diametri proporzionali alla distanza, limite inferiore oltre la distanza più lunga tirata ({1}).": "Constant angle (σ {0} MIL): diameters proportional to distance, a lower bound beyond the longest distance shot ({1}).",
    "Angolo della foto in cui mettere il righello": "Corner of the photo where the ruler goes",
    "Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.": "Rotation angle of the photo; positive = clockwise. All points already placed rotate too.",
+   "Annulla": "Undo",
    "Annulla (Ctrl+Z)": "Undo (Ctrl+Z)",
+   "Anomalia statistica: il foro può essere marcato bene; escluderlo dalle statistiche è una decisione separata": "Statistical anomaly: the hole may be marked correctly; excluding it from the statistics is a separate decision",
    "Applica": "Apply",
    "Apre a schermo intero i grafici del gruppo attivo e il confronto tra gruppi (tasto A)": "Opens the charts of the active group and the group comparison full screen (key A)",
    "Apre una sessione salvata (.zip o .json)": "Opens a saved session (.zip or .json)",
@@ -3499,19 +3567,24 @@ const I18N = (() => {
    "Asse {0}° · rapporto {1}:1": "Axis {0}° · ratio {1}:1",
    "Aumenta l'ingrandimento del dettaglio": "Increase the detail magnification",
    "Aumenta lo zoom": "Zoom in",
+   "Aumenta lo zoom (+)": "Zoom in (+)",
    "Azzera": "Reset",
    "Azzera posizione": "Reset position",
+   "Baseline tolta.": "Baseline removed.",
    "Bersaglio": "Target",
    "Bersaglio SA-{0} salvato: stampalo al 100%": "Target SA-{0} saved: print it at 100%",
    "Bersaglio da gara": "Competition target",
    "Bersaglio di autoverifica": "Self-check target",
+   "Blocca": "Lock",
    "Blocca i due estremi del riferimento di controllo": "Lock the two ends of the check reference",
    "Blocca i due punti della scala: non si possono spostare, rifare né eliminare finché non li sblocchi": "Lock the two scale points: they cannot be moved, redone or deleted until you unlock them",
    "Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)": "Lock/unlock the selected item: point of aim, scale or reference point, hole (K)",
    "Blocca: non si potrà spostare né eliminare per errore (K)": "Lock: it can no longer be moved or deleted by mistake (K)",
    "Bloccato: clic per sbloccare (K)": "Locked: click to unlock (K)",
+   "Bloccato: clic per sbloccare l'elemento selezionato (K)": "Locked: click to unlock the selected item (K)",
    "Bloccato: sbloccalo per eliminarlo": "Locked: unlock it to delete it",
    "Bordo-bordo esterno": "Outside edge-to-edge",
+   "Bordo-bordo esterno = c-c tra i fori {0} e {1} + un calibro ({2} mm): {3}.": "Outside edge-to-edge = c-c between holes {0} and {1} + one caliber ({2} mm): {3}.",
    "Bordo-bordo: {0}": "Edge-to-edge: {0}",
    "Bossolo": "Case",
    "Brand.": "Wind.",
@@ -3553,6 +3626,7 @@ const I18N = (() => {
    "Carica": "Charge",
    "Carica (gr)": "Charge (gr)",
    "Carica del foro (gr)": "Shot charge (gr)",
+   "Carica foto": "Load photo",
    "Carica foto (Ctrl+O)": "Load photo (Ctrl+O)",
    "Carica in grani (gr)": "Charge in grains (gr)",
    "Carica la foto di un bersaglio": "Load a photo of a target",
@@ -3571,6 +3645,8 @@ const I18N = (() => {
    "Cerchio (diametro)": "Circle (diameter)",
    "Chiudi": "Close",
    "Chiudi (si riattiva in Visualizzazione)": "Close (turn it back on in Display)",
+   "Chiudi l'evidenziazione": "Close the highlight",
+   "Chiudi l'evidenziazione (Esc)": "Close the highlight (Esc)",
    "Chiudi la finestra di dettaglio": "Close the detail window",
    "Cinque classi": "Five classes",
    "Classificazione": "Classification",
@@ -3592,7 +3668,12 @@ const I18N = (() => {
    "Coefficienti salvati in questo browser: valgono per la stessa fotocamera, lo stesso obiettivo/zoom e lo stesso formato della foto": "Coefficients saved in this browser: they apply to the same camera, the same lens/zoom and the same photo format",
    "Colpi": "Shots",
    "Colpi analizzati": "Shots analysed",
+   "Colpi da rivedere": "Shots to review",
+   "Colpi da rivedere: elenco dei fori difficili, sovrapposti o anomali, con centratura automatica (V)": "Shots to review: list of difficult, overlapping or anomalous holes, with automatic centring (V)",
+   "Colpi esclusi": "Excluded shots",
    "Colpi sparati": "Shots fired",
+   "Colpo precedente nella coda (,)": "Previous shot in the queue (,)",
+   "Colpo successivo nella coda (.)": "Next shot in the queue (.)",
    "Compatta": "Compact",
    "Compila almeno un dato di ricarica prima di salvare il profilo.": "Fill in at least one reloading field before saving the profile.",
    "Componenti": "Components",
@@ -3606,7 +3687,9 @@ const I18N = (() => {
    "Con meno di 5 colpi si mostra solo l'andamento: nessun controllo statistico.": "With fewer than 5 shots only the trend is shown: no statistical check.",
    "Condizioni": "Conditions",
    "Condizioni ambientali": "Ambient conditions",
+   "Conferma": "Confirm",
    "Confronta i fori del gruppo attivo con quelli veri del codice indicato: servono scala, punto di mira e lo stesso numero di fori": "Compares the holes of the active group with the true ones of the given code: needs scale, aiming point and the same number of holes",
+   "Confronto non possibile: servono gruppi con fori in entrambi i periodi (lo storico importato prima della 1.16 non ha i dati: reimportalo).": "Comparison not possible: both periods need groups with holes (history imported before 1.16 lacks the data: import it again).",
    "Confronto tra gruppi": "Group comparison",
    "Confronto visivo tra rosate": "Visual comparison of groups",
    "Cono 3D · trascina per ruotare, doppio clic per la vista iniziale": "3D cone · drag to rotate, double-click for the initial view",
@@ -3614,13 +3697,17 @@ const I18N = (() => {
    "Cono di dispersione 3D con piani di sezione": "3D dispersion cone with section planes",
    "Cono di dispersione · lo stesso gruppo ad altre distanze": "Dispersion cone · the same group at other distances",
    "Contenuto della Result Card": "Result Card content",
+   "Controlla che il punto segni davvero il centro di un foro": "Check that the point really marks the centre of a hole",
    "Convex hull": "Convex hull",
    "Convex hull (poligono attorno ai fori)": "Convex hull (polygon around the shots)",
    "Convex hull area (mm²)": "Convex hull area (mm²)",
    "Convex hull perimetro (mm)": "Convex hull perimeter (mm)",
    "Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)": "Convex hull: the smallest convex polygon enclosing all included shots (area and perimeter in the results; at least 3 shots needed)",
+   "Convex hull: poligono convesso sui {0} fori più esterni dei {1} inclusi.": "Convex hull: convex polygon on the {0} outermost of the {1} included holes.",
    "Coordinate polari (angolo e distanza dal centro gruppo)": "Polar coordinates (angle and distance from the group centre)",
    "Cornice con le dimensioni": "Frame with dimensions",
+   "Correggi: riaggancia il punto al centro della macchia del foro (snap)": "Correct: snap the point back to the centre of the hole blob",
+   "Correggi: segna/togli «difficile» (incertezza di marcatura ×3)": "Correct: mark/unmark as “difficult” (marking uncertainty ×3)",
    "Correlazioni ricarica e condizioni": "Reloading and conditions correlations",
    "Correlazioni ricarica e condizioni · ladder": "Load and conditions correlations · ladder",
    "Correzione": "Correction",
@@ -3638,6 +3725,7 @@ const I18N = (() => {
    "Correzione prospettica… {0}%": "Perspective correction… {0}%",
    "Correzione virtuale attiva": "Virtual correction on",
    "Correzione virtuale: i fori tratteggiati in verde acqua mostrano dove sarebbero andati con i click indicati. I dati non cambiano.": "Virtual correction: the dashed teal shots show where they would have gone with the indicated clicks. The data do not change.",
+   "Correzione: dal centro dei {0} fori inclusi (croce) al punto di mira: {1}; i click convertono questi scostamenti in angolo alla distanza del gruppo.": "Correction: from the centre of the {0} included holes (cross) to the point of aim: {1}; the clicks convert these offsets into angles at the group's distance.",
    "Correzioni": "Corrections",
    "Cosa disegnare": "What to draw",
    "DESTRA": "RIGHT",
@@ -3652,6 +3740,7 @@ const I18N = (() => {
    "Densità delle informazioni: Compatta (meno spazi, solo i valori principali) · Standard · Dettagliata (riquadri secondari aperti)": "Information density: Compact (less spacing, only the main values) · Standard · Detailed (secondary boxes open)",
    "Dettagli": "Details",
    "Dettagliata": "Detailed",
+   "Dettaglio": "Detail",
    "Dettaglio: clicca il punto della foto da osservare nella finestra di dettaglio. Esc = annulla.": "Detail: click the point of the photo to watch in the detail window. Esc = cancel.",
    "Di quanto cresce il DIAMETRO da un anello al successivo": "How much the DIAMETER grows from one ring to the next",
    "Diagnostica del modello": "Model diagnostics",
@@ -3661,6 +3750,8 @@ const I18N = (() => {
    "Diametri indicativi della zona cuore-polmoni per classi di taglia (Chuck Hawks): non misure della specie": "Indicative diameters of the heart-lung zone by size class (Chuck Hawks): not species measurements",
    "Diametro": "Diameter",
    "Diametro del 10 (mm)": "Diameter of the 10 (mm)",
+   "Differenza di dispersione (σ) non dimostrata con questi colpi (test F, p = {0}).": "Difference in dispersion (σ) not demonstrated with these shots (F test, p = {0}).",
+   "Differenza di dispersione tra i due periodi non dimostrata (σ {0}{1}%, test F, p = {2}).": "Difference in dispersion between the two periods not demonstrated (σ {0}{1}%, F test, p = {2}).",
    "Differenze tra le configurazioni": "Differences between configurations",
    "Dimensioni reali del rettangolo di cui clicchi i 4 angoli (es. il foglio del bersaglio)": "Real size of the rectangle whose 4 corners you click (e.g. the target sheet)",
    "Direz.": "Dir.",
@@ -3683,11 +3774,13 @@ const I18N = (() => {
    "Distanza dal centro gruppo (mm)": "Distance from the group centre (mm)",
    "Distanza dal punto di mira (mm)": "Distance from the point of aim (mm)",
    "Distanza del bersaglio": "Target distance",
+   "Distanza del gruppo: {0} m → il cerchio è 1 {1} = {2} mm di diametro": "Group distance: {0} m → the circle is 1 {1} = {2} mm in diameter",
    "Distanza dell'ogiva della palla dall'inizio delle righe (jump), con la cartuccia camerata: profondità di seduta": "Distance of the bullet ogive from the start of the rifling (jump), with the cartridge chambered: seating depth",
    "Distanza di tiro (m)": "Shooting distance (m)",
    "Distanza di tiro · gruppo attivo": "Shooting distance · active group",
    "Distanza nota": "Known distance",
    "Distanza nota tra i 2 punti": "Known distance between the 2 points",
+   "Distanza nota tra i punti A e B: {0} {1} = {2} px della foto": "Known distance between points A and B: {0} {1} = {2} photo px",
    "Distanza tra due linee della griglia": "Distance between two grid lines",
    "Distanza {0} · calibro {1}": "Distance {0} · caliber {1}",
    "Distanza: {0} · Calibro: {1} · Click: {2} {3}": "Distance: {0} · Caliber: {1} · Click: {2} {3}",
@@ -3716,15 +3809,20 @@ const I18N = (() => {
    "Elimina": "Delete",
    "Elimina i coefficienti scelti": "Delete the chosen coefficients",
    "Elimina il profilo scelto": "Delete the chosen profile",
+   "Elimina il punto (per esempio un foro contato due volte)": "Delete the point (for example a hole counted twice)",
    "Elimina il riferimento di controllo dall'immagine (anche: selezionalo e premi Canc, o tasto destro su un estremo)": "Delete the check reference from the image (also: select it and press Delete, or right-click an end)",
    "Elimina l'ultimo punto del gruppo attivo (Backspace)": "Delete the last point of the active group (Backspace)",
    "Elimina la nota": "Delete the note",
    "Elimina tutti i punti": "Delete all points",
+   "Elimina tutti i punti (gli elementi bloccati restano)": "Delete all points (locked items stay)",
+   "Elimina tutto": "Delete all",
+   "Elimina ultimo": "Delete last",
    "Eliminare tutti i punti (calibrazione, mire e fori di tutti i gruppi)?": "Delete all points (calibration, aims and shots of all groups)?",
    "Eliminare tutti i punti (calibrazione, mire e fori di tutti i gruppi)? Gli elementi bloccati restano.": "Delete all points (calibration, points of aim and holes of all groups)? Locked items are kept.",
    "Eliminare «{0}» e i suoi punti?": "Delete «{0}» and its points?",
    "Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)": "Concentration ellipse: covariance of the shots scaled with χ² with 2 degrees of freedom; it contains the chosen percentage of shots if the dispersion is normal (at least 3 shots needed)",
    "Ellisse di dispersione al": "Dispersion ellipse at",
+   "Escludi il colpo dalle statistiche (resta sul bersaglio)": "Exclude the shot from the statistics (it stays on the target)",
    "Esclusi": "Excluded",
    "Esclusi dall'analisi": "Excluded from the analysis",
    "Escluso": "Excluded",
@@ -3732,6 +3830,7 @@ const I18N = (() => {
    "Etichetta del group size": "Group size label",
    "FOM": "FOM",
    "FOM (mm)": "FOM (mm)",
+   "FOM = media di H-spread ({0}) e V-spread ({1}): {2}; estremi orizzontali e verticali evidenziati.": "FOM = mean of H-spread ({0}) and V-spread ({1}): {2}; horizontal and vertical extremes highlighted.",
    "FORMA DEL GRUPPO": "GROUP SHAPE",
    "Fascia: dove starebbe il group size dopo ogni colpo se tutti i colpi venissero dalla stessa rosata (σ = {0} {1} stimato da tutta la serie, {2}%, {3} simulazioni). L'ordine di sparo è l'ordine dei fori nella tabella punti.": "Band: where the group size would be after each shot if all the shots came from the same group (σ = {0} {1} estimated from the whole string, {2}%, {3} simulations). The firing order is the order of the shots in the points table.",
    "Fattore di potenza": "Power factor",
@@ -3746,12 +3845,14 @@ const I18N = (() => {
    "Forma del gruppo": "Group shape",
    "Formato non supportato": "Unsupported format",
    "Foro": "Shot",
+   "Foro del calibro: Ø {0} mm = {1} px della foto": "Caliber hole: Ø {0} mm = {1} photo px",
    "Foro difficile (strappato, sovrapposto, bordo incerto): incertezza di marcatura ×3": "Difficult hole (torn, overlapping, uncertain edge): marking uncertainty ×3",
    "Foro {0}": "Shot {0}",
    "Foro {0} · {1}": "Hole {0} · {1}",
    "Foro {0} · {1}° · {2} {3}": "Hole {0} · {1}° · {2} {3}",
    "Foro {0} · {1}° · {2} {3}{4}": "Hole {0} · {1}° · {2} {3}{4}",
    "Foro {0}{1}{2} · {3} {4} dal centro{5}": "Shot {0}{1}{2} · {3} {4} from the centre{5}",
+   "Foro: aggiungi un foro al gruppo attivo (4)": "Hole: add a hole to the active group (4)",
    "Foro: clicca il centro di ogni foro di «{0}». Tasto destro su un punto = elimina.": "Shot: click the centre of each hole of «{0}». Right-click a point = delete.",
    "Foto": "Photo",
    "Foto intera.": "Whole photo.",
@@ -3765,7 +3866,9 @@ const I18N = (() => {
    "GIÙ": "DOWN",
    "GQI": "GQI",
    "GQI della sessione": "Session GQI",
+   "GQI non disponibile: {0}.": "GQI not available: {0}.",
    "GQI · compattezza": "GQI · compactness",
+   "GQI: raggio medio stimato da tutti i {0} fori inclusi con il modello circolare normale (cerchio pieno, {1}) confrontato con il riferimento (cerchio tratteggiato, {2} alla distanza del gruppo).": "GQI: mean radius estimated from all {0} included holes with the circular normal model (solid circle, {1}) compared with the reference (dashed circle, {2} at the group's distance).",
    "GROUP SIZE (centro-centro)": "GROUP SIZE (centre-to-centre)",
    "Giù": "Down",
    "Gli esempi numerici sono calcolati dal motore dell'app": "The numerical examples are computed by the app's engine",
@@ -3778,6 +3881,7 @@ const I18N = (() => {
    "Grafico della relazione scelta con la retta di regressione": "Chart of the chosen relation with the regression line",
    "Grafico polare dei fori": "Polar plot of the holes",
    "Grande (es. cervo) · ⌀ 29 cm": "Large (e.g. red deer) · ⌀ 29 cm",
+   "Griglia": "Grid",
    "Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)": "MOA/MIL angular grid centred on the point of aim of the active group (G)",
    "Griglia angolare, passo": "Angular grid, step",
    "Griglia {0} {1}/linea{2} · centro: {3}": "Grid {0} {1}/line{2} · centre: {3}",
@@ -3787,6 +3891,7 @@ const I18N = (() => {
    "Group size": "Group size",
    "Group size (ES)": "Group size (ES)",
    "Group size (c-c)": "Group size (c-c)",
+   "Group size (c-c) = distanza tra i centri dei fori {0} e {1}, la coppia più lontana tra i {2} fori inclusi: {3}.": "Group size (c-c) = distance between the centres of holes {0} and {1}, the farthest pair among the {2} included holes: {3}.",
    "Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047\" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.": "Group size = centre-to-centre distance between the two farthest shots; the outside edge-to-edge is c-c + caliber. Angles are computed exactly (arctangent). 1 MOA = 1.047\" at 100 yd; 1 MIL = 10 cm at 100 m. CEP, R95, R99, ellipse and confidence intervals assume a circular normal dispersion; with fewer than 5 shots they are only indicative.",
    "Group size bordo-bordo (mm)": "Group size edge-to-edge (mm)",
    "Group size c-c (mm)": "Group size c-c (mm)",
@@ -3803,6 +3908,7 @@ const I18N = (() => {
    "Guida rapida e scorciatoie": "Quick guide and shortcuts",
    "H-spread (mm)": "H-spread (mm)",
    "H-spread (orizz.)": "H-spread (horiz.)",
+   "H-spread = distanza orizzontale tra il foro più a sinistra ({0}) e il più a destra ({1}): {2}.": "H-spread = horizontal distance between the leftmost hole ({0}) and the rightmost ({1}): {2}.",
    "Heatmap della densità": "Density heatmap",
    "Help tecnico · termini, misure e grafici": "Technical help · terms, measurements and charts",
    "I centri si spostano più di quanto spiega la dispersione dentro i gruppi (p = {0}).": "The centres move more than the dispersion within the groups explains (p = {0}).",
@@ -3839,6 +3945,7 @@ const I18N = (() => {
    "Il gruppo è allungato lungo l'asse <b>ore {0}–{1}</b> ({2}° dalla verticale, {3}; rapporto tra gli assi {4}:1). Spicchi = direzione di ogni colpo dal centro gruppo.": "The group is elongated along the <b>{0}–{1} o'clock</b> axis ({2}° from vertical, {3}; axis ratio {4}:1). Wedges = direction of each shot from the group centre.",
    "Il lavoro salvato non è più disponibile.": "The saved work is no longer available.",
    "Il lavoro salvato resta disponibile finché non ne inizi uno nuovo": "The saved work stays available until you start a new one",
+   "Il punto è giusto: togli il colpo dalla coda": "The point is right: remove the shot from the queue",
    "Il reticolo con le tacche e la tabella, da stampare o tenere sul telefono": "The reticle with the marks and the table, to print or keep on your phone",
    "Il reticolo con le tacche e la tabella, da stampare o tenere sul telefono (sempre la vista intera)": "The reticle with the marks and the table, to print or keep on your phone (always the full view)",
    "Immagine": "Image",
@@ -3850,7 +3957,9 @@ const I18N = (() => {
    "Importa profili da un file JSON esportato (stesso nome = sostituito)": "Import profiles from an exported JSON file (same name = replaced)",
    "Impossibile aprire l'immagine: ": "Cannot open the image: ",
    "Impossibile salvare i profili nel browser.": "Unable to save the profiles in the browser.",
+   "Impostazioni di analisi": "Analysis settings",
    "Incertezza della scala": "Scale uncertainty",
+   "Incertezza di marcatura: cerchi al 95% (a mano ±{0} px, snap ±{1} px, ×3 se difficile)": "Marking uncertainty: 95% circles (by hand ±{0} px, snap ±{1} px, ×3 if difficult)",
    "Incertezza di misura": "Measurement uncertainty",
    "Incertezza tipo (1σ per asse, in pixel della foto) del centro di un foro cliccato a mano e con lo snap; ×3 sui fori segnati come difficili (◐ nella tabella dei punti). Usata per l'incertezza di misura nei risultati.": "Standard uncertainty (1σ per axis, in photo pixels) of the centre of a hole clicked by hand and with snap; ×3 on holes marked as difficult (◐ in the points table). Used for the measurement uncertainty in the results.",
    "Includi l'immagine nella sessione": "Include the image in the session",
@@ -3868,6 +3977,7 @@ const I18N = (() => {
    "Inserisci distanza di tiro e valore click.": "Enter shooting distance and click value.",
    "Inserisci il calibro: il punteggio dipende dal bordo del foro.": "Enter the caliber: the score depends on the edge of the hole.",
    "Inserisci il codice stampato sul bersaglio (SA-1000…9999).": "Enter the code printed on the target (SA-1000…9999).",
+   "Inserisci il valore del click.": "Enter the click value.",
    "Insufficiente": "Insufficient",
    "Integrazione numerica sulla sagoma; l'incertezza della scala non è inclusa.": "Numerical integration over the target; the scale uncertainty is not included.",
    "Intervalli di confidenza": "Confidence intervals",
@@ -3882,6 +3992,7 @@ const I18N = (() => {
    "L'intervallo non comprende lo zero: relazione statisticamente rilevabile.": "The interval does not include zero: statistically detectable relationship.",
    "LEGGIMI.txt": "README.txt",
    "La deriva dovuta al vento non è calcolata: servirebbero coefficiente balistico, velocità e atmosfera. Lo scostamento del centro gruppo è quello misurato.": "Wind drift is not calculated: it would need ballistic coefficient, velocity and atmosphere. The group centre offset is the measured one.",
+   "La dispersione (σ) è {0} della baseline (test F, p = {1}).": "The dispersion (σ) is {0} than the baseline (F test, p = {1}).",
    "La foto risulterebbe larga {0}: valore insolito per un bersaglio, controlla la distanza nota e la sua unità (mm / cm / in).": "The photo would be {0} wide: unusual for a target, check the known distance and its unit (mm / cm / in).",
    "La linea è già {0}.": "The line is already {0}.",
    "La sessione non contiene l'immagine: carica prima la stessa foto (": "The session does not contain the image: first load the same photo (",
@@ -3896,6 +4007,7 @@ const I18N = (() => {
    "Layout del pannello": "Panel layout",
    "Layout del pannello: ordine e visibilità delle sezioni (salvati nel browser)": "Panel layout: order and visibility of the sections (saved in the browser)",
    "Le dope di munizioni diverse non vanno mescolate": "Dope of different ammunition must not be mixed",
+   "Lente": "Magnifier",
    "Lente di ingrandimento durante l'inserimento dei punti (L). Durante il trascinamento di un punto è sempre attiva.": "Magnifier while placing points (L). While dragging a point it is always on.",
    "Linee: {0} · punti: {1}": "Lines: {0} · points: {1}",
    "Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)": "Level of the confidence intervals (σ, CEP, R95, R99, expected mean radius, group centre and correction)",
@@ -3919,6 +4031,8 @@ const I18N = (() => {
    "Maiale": "Pig",
    "Major (A 5 · C 4 · D 2)": "Major (A 5 · C 4 · D 2)",
    "Manca il punto di mira: direzioni dal centro gruppo. ": "No point of aim: directions from the group centre. ",
+   "Mano": "Hand",
+   "Mano: sposta e ingrandisci la vista (1)": "Hand: pan and zoom the view (1)",
    "Mano: trascina per spostare, rotella per zoom. Puoi comunque trascinare i punti.": "Pan: drag to move, wheel to zoom. You can still drag the points.",
    "Mappa d'impatto alle distanze scelte (fori del gruppo attivo, dal centro gruppo)": "Impact map at the chosen distances (shots of the active group, from the group centre)",
    "Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati": "Heatmap of the probability density of impacts according to the normal model (the same as ellipse, CEP and hit probability); needs at least 3 non-collinear holes",
@@ -3939,6 +4053,7 @@ const I18N = (() => {
    "Minor (A 5 · C 3 · D 1)": "Minor (A 5 · C 3 · D 1)",
    "Mira": "Aim",
    "Mira: clicca il punto mirato per «{0}».": "Aim: click the point you aimed at for «{0}».",
+   "Mira: punto di mira del gruppo attivo (3)": "Aim: point of aim of the active group (3)",
    "Mira: si vede anche dove cade ogni gruppo. Centro gruppo: si confronta solo la forma della rosata": "Aim: you also see where each group lands. Group centre: only the shape of the groups is compared",
    "Misura accettabile ma migliorabile (scala entro ±2%, RMS < 1 mm): rifai la calibrazione o la foto più perpendicolare.": "Acceptable but improvable measurement (scale within ±2%, RMS < 1 mm): redo the calibration or take the photo more perpendicular.",
    "Misura coerente: scala e fori entro le tolleranze indicative (scala ±1%, RMS < 0,5 mm).": "Consistent measurement: scale and holes within the indicative tolerances (scale ±1%, RMS < 0.5 mm).",
@@ -3951,12 +4066,18 @@ const I18N = (() => {
    "Modello statistico e incertezza": "Statistical model and uncertainty",
    "Montone": "Ram",
    "Mostra / nascondi": "Show / hide",
+   "Mostra anche i colpi già confermati": "Also show shots already confirmed",
+   "Mostra confermati": "Show confirmed",
+   "Mostra origine del dato: evidenzia sulla foto i fori e gli elementi usati per questo valore": "Show data origin: highlights on the photo the holes and elements used for this value",
    "Mostra sulla foto, in trasparenza, dove sarebbero andati i fori con i click indicati (arrotondati). Solo visualizzazione: dati e risultati non cambiano; esatto alla distanza del gruppo.": "Shows on the photo, semi-transparent, where the shots would have gone with the indicated clicks (rounded). Display only: data and results do not change; exact at the group distance.",
    "Mostra/nascondi sull'immagine i fori, la mira e i disegni di questo gruppo (i calcoli, la Result Card e il report non cambiano)": "Show/hide this group's holes, point of aim and drawings on the image (calculations, Result Card and report do not change)",
    "Munizione": "Ammunition",
    "Munizione dei gruppi da combinare": "Ammunition of the groups to pool",
    "Munizione: {0} · click {1} {2} · + = in alto / a destra · solo distanze tirate": "Ammunition: {0} · click {1} {2} · + = up / right · only distances actually shot",
+   "Nel periodo selezionato la dispersione è {0} di prima: σ {1}{2}% (test F, p = {3}).": "In the selected period the dispersion is {0} than before: σ {1}{2}% (F test, p = {3}).",
+   "Nessun colpo da rivedere: nessun foro difficile, sovrapposto o anomalo.": "No shots to review: no difficult, overlapping or anomalous holes.",
    "Nessun gruppo ha fori.": "No group has shots.",
+   "Nessun gruppo prima del periodo selezionato: sposta l'inizio della selezione più avanti.": "No groups before the selected period: move the start of the selection later.",
    "Nessun gruppo valido{0}.": "No valid group{0}.",
    "Nessun gruppo.": "No group.",
    "Nessun parametro registrato diverso": "No recorded parameter differs",
@@ -3980,6 +4101,7 @@ const I18N = (() => {
    "Non disponibile: nessun gruppo valido con il punto di mira{0}.": "Not available: no valid group with a point of aim{0}.",
    "Non disponibile: {0}.": "Not available: {0}.",
    "Non disponibile: {0}. Il GQI resta valido.": "Not available: {0}. The GQI remains valid.",
+   "Nota": "Note",
    "Nota: clicca un foro (la nota lo segue) o una zona del bersaglio, poi scrivi il testo nella sezione «Note sull'immagine». Esc = fine.": "Note: click a hole (the note follows it) or an area of the target, then type the text in the «Notes on the image» section. Esc = done.",
    "Nota: clicca un foro o una zona del bersaglio per aggiungere un'annotazione numerata (N)": "Note: click a hole or an area of the target to add a numbered annotation (N)",
    "Note": "Notes",
@@ -4011,6 +4133,7 @@ const I18N = (() => {
    "Per confrontarla: «＋ Importa sessioni nello storico» nella vista grafici, o «＋ Aggiungi sessioni» all'archivio.": "To compare it: «＋ Import sessions into history» in the charts view, or «＋ Add sessions» to the archive.",
    "Per foro: {0}  {1}": "Per shot: {0}  {1}",
    "Per riaprirla: «Carica sessione» e scegli questo file .zip (foto e misure insieme).": "To reopen it: «Open session» and choose this .zip file (photo and measurements together).",
+   "Per vedere la dimensione reale del foro serve la scala calibrata.": "A calibrated scale is needed to show the real hole size.",
    "Personalizzata": "Custom",
    "Personalizzato": "Custom",
    "Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%": "Weight of precision in the TQI; accuracy gets the rest, so the sum is always 100%",
@@ -4047,7 +4170,9 @@ const I18N = (() => {
    "Profilo «{0}» eliminato.": "Profile «{0}» deleted.",
    "Profilo «{0}» salvato.": "Profile «{0}» saved.",
    "Prospettiva": "Perspective",
+   "Prospettiva non applicata: modalità Prospettiva (6), poi i 4 angoli.": "Perspective not applied: Perspective mode (6), then the 4 corners.",
    "Prospettiva: clicca i 4 angoli del rettangolo di {0} × {1} mm, in qualsiasi ordine ({2}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.": "Perspective: click the 4 corners of the {0} × {1} mm rectangle, in any order ({2}/4). The width is the top side. Backspace = remove the last one · Esc = cancel.",
+   "Prospettiva: correzione con i 4 angoli di un rettangolo di dimensioni note (6)": "Perspective: correction with the 4 corners of a rectangle of known size (6)",
    "Prospettiva: i 4 punti non formano un quadrilatero convesso. Clicca i 4 angoli del rettangolo.": "Perspective: the 4 points do not form a convex quadrilateral. Click the 4 corners of the rectangle.",
    "Prospettiva: impossibile calcolare la correzione con questi punti.": "Perspective: the correction cannot be computed with these points.",
    "Prospettiva: inserisci larghezza e altezza del rettangolo in mm.": "Perspective: enter the width and height of the rectangle in mm.",
@@ -4064,10 +4189,14 @@ const I18N = (() => {
    "Punto di mira del gruppo attivo (3)": "Point of aim of the active group (3)",
    "Punto di mira fuori scala · {0} {1} a {2}° {3}": "Point of aim off scale · {0} {1} at {2}° {3}",
    "Punto di mira · {0} {1} dal centro": "Point of aim · {0} {1} from the centre",
+   "Punto riagganciato al centro del foro.": "Point snapped to the centre of the hole.",
    "QQ-plot delle distanze dal centro contro la distribuzione di Rayleigh": "QQ-plot of the distances from the centre against the Rayleigh distribution",
    "Quadrato · 100 × 100 mm": "Square · 100 × 100 mm",
    "Quadrato · 30 × 30 mm": "Square · 30 × 30 mm",
    "Qualità della calibrazione: <b>{0}</b>": "Calibration quality: <b>{0}</b>",
+   "Questa riga è la baseline (clic per toglierla)": "This row is the baseline (click to remove it)",
+   "Questo gruppo è la baseline (clic per toglierla)": "This group is the baseline (click to remove it)",
+   "Questo gruppo è la baseline.": "This group is the baseline.",
    "R. medio": "Mean r.",
    "R. medio {0} mm · {1}": "Mean r. {0} mm · {1}",
    "R95": "R95",
@@ -4076,6 +4205,7 @@ const I18N = (() => {
    "R99": "R99",
    "RAGGIO MEDIO": "MEAN RADIUS",
    "RICARICA E CONDIZIONI": "LOAD AND CONDITIONS",
+   "Raddrizza": "Straighten",
    "Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)": "Level the photo: click 2 points on a target line that should be horizontal or vertical (5)",
    "Raddrizza: clicca il PRIMO punto di una linea del bersaglio che deve risultare orizzontale o verticale (bordo, riga della griglia). Esc = annulla.": "Level: click the FIRST point of a target line that should be horizontal or vertical (edge, grid line). Esc = cancel.",
    "Raddrizza: clicca il SECONDO punto sulla stessa linea, il più lontano possibile dal primo. Esc = annulla.": "Level: click the SECOND point on the same line, as far as possible from the first. Esc = cancel.",
@@ -4084,6 +4214,7 @@ const I18N = (() => {
    "Raggio medio": "Mean radius",
    "Raggio medio (mm)": "Mean radius (mm)",
    "Raggio medio ({0})": "Mean radius ({0})",
+   "Raggio medio = media delle distanze dei {0} fori inclusi dal centro del gruppo (croce): {1} (cerchio).": "Mean radius = mean distance of the {0} included holes from the group centre (cross): {1} (circle).",
    "Raggio medio aggregato": "Aggregate mean radius",
    "Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.": "Angular mean radius that gives GQI = 80. Choose the value that is «a good group» for you with this rifle and ammunition.",
    "Raggio medio atteso": "Expected mean radius",
@@ -4104,6 +4235,7 @@ const I18N = (() => {
    "Reticolo {0}, visto dal tiratore. Ogni punto è la tacca da sovrapporre al bersaglio: serve più alzo → tacca sotto il centro; serve correggere a destra → tacca a sinistra.": "Reticle {0}, as seen by the shooter. Each dot is the mark to place on the target: more elevation needed → mark below the centre; correction to the right needed → mark to the left.",
    "Reticolo {0}: solo distanze tirate, nessuna estrapolazione balistica; verifica le spaziature sul manuale del cannocchiale.": "Reticle {0}: only distances shot, no ballistic extrapolation; check the spacings in your scope's manual.",
    "Rettangolo (largh. × alt.)": "Rectangle (width × height)",
+   "Rettangolo della prospettiva: {0} × {1} mm": "Perspective rectangle: {0} × {1} mm",
    "Rettangolo di riferimento": "Reference rectangle",
    "Rettangolo di riferimento piccolo nella foto (lato più corto {0} px): errore di scala fino a ±{1}%. Usa un rettangolo più grande.": "Small reference rectangle in the photo (shortest side {0} px): scale error up to ±{1}%. Use a larger rectangle.",
    "Rettangolo {0} × {1} px": "Rectangle {0} × {1} px",
@@ -4114,19 +4246,25 @@ const I18N = (() => {
    "Riduci": "Zoom out",
    "Riduci l'ingrandimento del dettaglio": "Reduce the detail magnification",
    "Riduci lo zoom": "Zoom out",
+   "Riduci lo zoom (−)": "Zoom out (−)",
    "Riferimento": "Reference",
    "Riferimento delle direzioni": "Reference for the directions",
    "Riferimento di controllo eliminato.": "Check reference deleted.",
+   "Riferimento di controllo non inserito: pulsante «Riferimento», poi due punti.": "No check reference: “Reference” button, then two points.",
    "Riferimento di controllo: clicca i due estremi di una lunghezza nota diversa da quella della scala (es. il diametro di un anello). Esc = annulla.": "Check reference: click the two ends of a known length other than the scale one (e.g. the diameter of a ring). Esc = cancel.",
    "Riferimento di controllo: clicca il secondo estremo.": "Check reference: click the second end.",
+   "Riferimento di controllo: {0} {1}": "Check reference: {0} {1}",
    "Righello": "Ruler",
    "Righello e cornice": "Ruler and frame",
    "Righello: clicca due punti per misurare (la misura non cambia fori né scala; clicca ancora per una nuova misura). Esc = fine.": "Ruler: click two points to measure (the measurement changes neither holes nor scale; click again for a new measurement). Esc = done.",
    "Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)": "Ruler: measures any distance on the photo in mm, inches, MOA and MRAD with its orientation, without creating holes or changing the scale (R)",
+   "Rimanda": "Postpone",
+   "Rimetti il colpo nelle statistiche": "Put the shot back into the statistics",
    "Rimuovi correzione": "Remove correction",
    "Ripetibilità tra gruppi": "Repeatability between groups",
    "Ripetibilità tra gruppi (separata)": "Repeatability between groups (separate)",
    "Riporta la foto all'orientamento originale": "Bring the photo back to its original orientation",
+   "Ripristina": "Redo",
    "Ripristina (Ctrl+Y)": "Redo (Ctrl+Y)",
    "Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)": "Restores the photo and the points as they were before the crop (until you load another photo)",
    "Ripristina layout": "Reset layout",
@@ -4138,6 +4276,7 @@ const I18N = (() => {
    "Ritaglio annullato: foto e punti come prima.": "Crop undone: photo and points as before.",
    "Ritaglio della foto": "Photo crop",
    "Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.": "Crop: drag a rectangle around the part to keep (aims and shots must stay inside); Enter or «✓ Apply crop» = cut, Esc = cancel.",
+   "Rivedi dopo: va in fondo alla coda": "Review later: moves to the end of the queue",
    "Rosate dei gruppi scelti, sovrapposte o affiancate": "Selected groups, overlaid or side by side",
    "Rotazione (° , + = orario)": "Rotation (° , + = clockwise)",
    "Rotazione (°, + = oraria)": "Rotation (°, + = clockwise)",
@@ -4146,6 +4285,7 @@ const I18N = (() => {
    "SD distanze dal centro": "SD of distances from centre",
    "SD distanze dal centro (mm)": "SD of distances from centre (mm)",
    "SD distanze dal centro: {0}": "SD of distances from centre: {0}",
+   "SD radiale": "Radial SD",
    "SD radiale (mm)": "Radial SD (mm)",
    "SD radiale √(σx²+σy²)": "Radial SD √(σx²+σy²)",
    "SD radiale √(σx²+σy²): {0}": "Radial SD √(σx²+σy²): {0}",
@@ -4169,12 +4309,15 @@ const I18N = (() => {
    "Salvataggio automatico non disponibile": "Autosave not available",
    "Salvataggio automatico non disponibile in questo browser: ricordati di salvare la sessione. (": "Autosave not available in this browser: remember to save the session. (",
    "Salvato automaticamente alle {0}{1}": "Autosaved at {0}{1}",
+   "Sblocca": "Unlock",
    "Scala": "Scale",
    "Scala A": "Scale A",
    "Scala B": "Scale B",
    "Scala dal rettangolo della correzione prospettica (lato più corto {0} px nella foto)": "Scale from the perspective-correction rectangle (shortest side {0} px in the photo)",
    "Scala non calibrata": "Scale not calibrated",
+   "Scala non impostata: modalità Scala (2), poi due punti a distanza nota.": "Scale not set: Scale mode (2), then two points at a known distance.",
    "Scala sulla foto": "Scale on the photo",
+   "Scala: calibrazione con 2 punti a distanza nota (2)": "Scale: calibration with 2 points at a known distance (2)",
    "Scala: clicca il PRIMO punto a distanza nota.": "Scale: click the FIRST point at a known distance.",
    "Scala: clicca il SECONDO punto.": "Scale: click the SECOND point.",
    "Scaldacanna": "Foulers",
@@ -4186,6 +4329,7 @@ const I18N = (() => {
    "Secondo (SFP)": "Second (SFP)",
    "Segmento di scala corto ({0} px): errore di scala fino a ±{1}%. Usa due punti più lontani (almeno 150 px).": "Short scale segment ({0} px): scale error up to ±{1}%. Use two points farther apart (at least 150 px).",
    "Segmento di scala {0} px": "Scale segment {0} px",
+   "Selezione": "Selection",
    "Serve almeno un secondo salto dalle righe per un confronto.": "At least a second jump value is needed for a comparison.",
    "Serve almeno una seconda carica per un confronto.": "At least a second charge is needed for a comparison.",
    "Serve il punto di mira al centro della croce.": "The aiming point at the centre of the cross is needed.",
@@ -4194,12 +4338,15 @@ const I18N = (() => {
    "Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».": "You need a REAL rectangle of known size (sheet edge, printed frame). After the correction the scale is already set from the rectangle; you can redo it by hand with «Scale».",
    "Servono almeno 2 fori": "At least 2 shots needed",
    "Servono almeno 2 fori inclusi nel gruppo attivo.": "At least 2 included shots are needed in the active group.",
+   "Servono almeno 2 fori inclusi.": "At least 2 included holes are needed.",
    "Servono almeno 3 colpi inclusi.": "At least 3 included shots are needed.",
    "Servono almeno 3 colpi per l'asse di dispersione.": "At least 3 shots are needed for the dispersion axis.",
    "Servono almeno 3 fori non allineati.": "At least 3 non-collinear holes are needed.",
    "Servono almeno 3 fori.": "At least 3 shots are needed.",
    "Servono almeno 3 punti con valori diversi per la retta (ora {0}).": "At least 3 points with different values are needed for the line (now {0}).",
    "Servono almeno 5 colpi inclusi.": "At least 5 included shots are needed.",
+   "Servono il punto di mira e almeno un foro.": "The point of aim and at least one hole are needed.",
+   "Servono scala, distanza e almeno un foro del gruppo attivo.": "Scale, distance and at least one hole of the active group are needed.",
    "Sessione": "Session",
    "Sessione Shoot Analyzer": "Shoot Analyzer session",
    "Sessione caricata": "Session loaded",
@@ -4214,6 +4361,8 @@ const I18N = (() => {
    "Significato di termini, misure e grafici, con formule ed esempi (tasto H)": "Meaning of terms, measurements and charts, with formulas and examples (key H; in Italian)",
    "Silhouette metalliche": "Metallic silhouettes",
    "Silhouette {0} {1}": "Silhouette {0} {1}",
+   "Snap": "Snap",
+   "Snap non riuscito: correggi trascinando il punto (Alt+clic per non agganciare).": "Snap failed: correct it by dragging the point (Alt+click to place without snapping).",
    "Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap.": "Snap: the clicked shot locks onto the centre of the hole (M). Needs a calibrated scale and the caliber. Alt+click = no snap.",
    "Solo distanze tirate. Il brandeggio vale per il vento di quel giorno.": "Only distances actually shot. Windage is valid for the wind of that day.",
    "Solo i parametri che cambiano tra le {0} righe selezionate{1}; in grigio quelli non registrati in qualche riga.": "Only the parameters that change between the {0} selected rows{1}; in grey those not recorded in some rows.",
@@ -4236,6 +4385,7 @@ const I18N = (() => {
    "Storico vuoto.": "History empty.",
    "Storico: {0} gruppi aggiunti{1}.": "History: {0} groups added{1}.",
    "Storico: {0} gruppi da altre sessioni.": "History: {0} groups from other sessions.",
+   "Strumenti": "Tools",
    "Su": "Up",
    "Sulla linea": "On the line",
    "Sulla sagoma": "On the target",
@@ -4277,6 +4427,7 @@ const I18N = (() => {
    "Trascina un rettangolo sulla foto per tenere solo quella parte (Invio = applica, Esc = annulla)": "Drag a rectangle on the photo to keep only that part (Enter = apply, Esc = cancel)",
    "Trascina un rettangolo sulla foto.": "Drag a rectangle on the photo.",
    "Tutti i gruppi": "All groups",
+   "Tutto prima": "Everything before",
    "UR {0}%": "RH {0}%",
    "Uguale": "Same",
    "Uguale dove registrato, ma non registrato in qualche riga": "Equal where recorded, but not recorded in some rows",
@@ -4295,9 +4446,12 @@ const I18N = (() => {
    "Unità vento": "Wind unit",
    "Unità: {0}{1} · origine: {2} · cerchio = raggio medio attorno al centro gruppo (✕), stessa scala per tutti.": "Unit: {0}{1} · origin: {2} · circle = mean radius around the group centre (✕), same scale for all.",
    "Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .zip o .json).": "Use the «Load photo» button or drop a JPG/PNG file here (or a .zip or .json session).",
+   "Usa questa rosata come baseline: resta disponibile anche nelle sessioni successive": "Use this group as the baseline: it stays available in later sessions too",
+   "Usa questo gruppo come baseline: resta disponibile anche nelle sessioni successive": "Use this group as the baseline: it stays available in later sessions too",
    "V-spread (MIL)": "V-spread (MIL)",
    "V-spread (mm)": "V-spread (mm)",
    "V-spread (vert.)": "V-spread (vert.)",
+   "V-spread = distanza verticale tra il foro più alto ({0}) e il più basso ({1}): {2}.": "V-spread = vertical distance between the highest hole ({0}) and the lowest ({1}): {2}.",
    "V-spread ↔ carica": "V-spread ↔ charge",
    "V-spread ↔ temperatura": "V-spread ↔ temperature",
    "Valore click": "Click value",
@@ -4353,6 +4507,7 @@ const I18N = (() => {
    "automatiche": "automatic",
    "az {0}° · elev {1}° · griglia {2} {3}": "az {0}° · elev {1}° · grid {2} {3}",
    "barilotto": "barrel",
+   "baseline {0}": "baseline {0}",
    "basso": "low",
    "bersaglio": "target",
    "bersaglio_prova_SA-{0}.pdf": "test_target_SA-{0}.pdf",
@@ -4378,6 +4533,8 @@ const I18N = (() => {
    "come indicata dallo strumento": "as shown by the instrument",
    "con un decimale": "with one decimal",
    "condizioni atmosferiche": "weather conditions",
+   "condizioni diverse: {0}": "different conditions: {0}",
+   "confermato": "confirmed",
    "considera il valore un limite superiore": "treat the value as an upper bound",
    "contro": "headwind",
    "controllo": "check",
@@ -4397,13 +4554,16 @@ const I18N = (() => {
    "dei fori": "Shots",
    "dei gruppi": "Groups",
    "destra": "right",
+   "deviazione standard calcolata dalle distanze/coordinate.": "standard deviation computed from the distances/coordinates.",
    "diagonale ↖ (alto-sinistra / basso-destra)": "diagonal ↖ (upper left / lower right)",
    "diagonale ↗ (alto-destra / basso-sinistra)": "diagonal ↗ (upper right / lower left)",
+   "difficile ◐": "difficult ◐",
    "direzione": "direction",
    "direzione non indicata": "direction not given",
    "discreta": "fair",
    "dispersione": "dispersion",
    "dispersione dei centri {0} (attesa per caso {1}), p = {2} · {3} gruppi": "centre dispersion {0} (expected by chance {1}), p = {2} · {3} groups",
+   "distanza {0} m contro {1} m (confronto in angolo)": "distance {0} m vs {1} m (angular comparison)",
    "diversa per gruppo": "different for each group",
    "dope_card_{0}.csv": "dope_card_{0}.csv",
    "dope_card_{0}.png": "dope_card_{0}.png",
@@ -4431,7 +4591,9 @@ const I18N = (() => {
    "gruppo attivo": "active group",
    "hPa": "hPa",
    "il basso": "the bottom",
+   "il foro è anomalo rispetto al gruppo (possibile flyer), ma può essere marcato correttamente: confermarlo non lo esclude": "the hole is anomalous for the group (possible flyer) but may be marked correctly: confirming it does not exclude it",
    "il punto d'impatto si sposta": "the point of impact shifts",
+   "il punto potrebbe non segnare bene un foro (difficile, oppure due fori quasi sovrapposti: centri a meno di mezzo calibro) ·": "the point may not mark a hole correctly (difficult, or two almost coincident holes: centres less than half a caliber apart) ·",
    "in": "in",
    "in @100 yd (SMOA)": "in @100 yd (SMOA)",
    "in alto": "up",
@@ -4454,8 +4616,10 @@ const I18N = (() => {
    "manca il punto di mira": "the point of aim is missing",
    "marca, n° ricariche…": "brand, number of reloads…",
    "marca, peso gr, tipo (il calibro è nei parametri)": "brand, weight gr, type (the caliber is in the parameters)",
+   "marcatura": "marking",
    "media dei fori; IC {0}% per asse con la t di Student ({1} gradi di libertà){2}": "mean of the shots; {0}% CI per axis with Student's t ({1} degrees of freedom){2}",
    "mediana attesa": "expected median",
+   "meglio": "better",
    "meno di 5 colpi – statistiche indicative": "fewer than 5 shots – indicative statistics",
    "meno di 5 colpi: statistiche indicative": "fewer than 5 shots: indicative statistics",
    "metodo di compressione {0} non supportato": "compression method {0} not supported",
@@ -4464,8 +4628,10 @@ const I18N = (() => {
    "misura diretta senza intervallo esatto; cresce con il numero di colpi": "direct measurement without an exact interval; it grows with the number of shots",
    "mm": "mm",
    "mm dal punto di mira (Y↑)": "mm from the point of aim (Y↑)",
+   "mm misurati": "mm measured",
    "montone": "ram",
    "mph": "mph",
+   "n.d.": "n/a",
    "nessun colpo valido": "no valid shot",
    "nessun gruppo": "no group",
    "nessuna apertura né spostamento oltre il caso": "no opening or shift beyond chance",
@@ -4494,6 +4660,7 @@ const I18N = (() => {
    "pagina {0} di {1}": "page {0} of {1}",
    "passi": "steps",
    "passo": "step",
+   "peggio": "worse",
    "perimetro": "perimeter",
    "personalizzato (10 ⌀ {0} mm, passo {1} mm)": "custom (10 ⌀ {0} mm, step {1} mm)",
    "personalizzato {0} {1}": "custom {0} {1}",
@@ -4502,10 +4669,14 @@ const I18N = (() => {
    "pixel": "pixels",
    "pixel immagine": "image pixels",
    "più alto che largo": "taller than it is wide",
+   "più larga": "wider",
    "più largo": "wider",
    "più largo che alto": "wider than it is tall",
+   "più stretta": "tighter",
    "più stretto": "tighter",
    "pollo": "chicken",
+   "possibile flyer": "possible flyer",
+   "possibile flyer (p = {0})": "possible flyer (p = {0})",
    "possibili due centri distinti (p {0})": "possibly two distinct centres (p {0})",
    "punto di mira": "point of aim",
    "punto di mira ⊕": "aiming point ⊕",
@@ -4514,6 +4685,8 @@ const I18N = (() => {
    "raggio medio": "mean radius",
    "raggio medio atteso": "expected mean radius",
    "raggio medio {0} – {1}": "mean radius {0} – {1}",
+   "raggio previsto dal modello circolare normale con σ̂ = {0} (corretto per pochi colpi).": "radius predicted by the circular normal model with σ̂ = {0} (corrected for few shots).",
+   "registrate solo in uno dei due: {0}": "recorded for only one of the two: {0}",
    "regolare": "regular",
    "reticolo_{0}.png": "reticle_{0}.png",
    "rettangolo della correzione prospettica {0} × {1} mm": "rectangle of the perspective correction {0} × {1} mm",
@@ -4522,6 +4695,7 @@ const I18N = (() => {
    "riepilogo_gruppi.csv": "groups_summary.csv",
    "riepilogo_gruppi.csv: tutti i gruppi di tutte le sessioni in un'unica tabella.": "groups_summary.csv: all groups of all sessions in a single table.",
    "riferimento non valido nelle impostazioni dell'indice": "invalid reference in the index settings",
+   "rimandato": "postponed",
    "risultati_{0}.txt": "results_{0}.txt",
    "rosata": "shot group",
    "scala non calibrata": "scale not calibrated",
@@ -4535,6 +4709,9 @@ const I18N = (() => {
    "si apre dal colpo {0}": "opens from shot {0}",
    "sinistra": "left",
    "solo k1: per k2 servono 3 linee e 12 punti": "k1 only: k2 needs 3 lines and 12 points",
+   "sovrapposto": "overlapping",
+   "sovrapposto al foro {0}": "overlaps hole {0}",
+   "statistico": "statistical",
    "sì": "yes",
    "tacchino": "turkey",
    "tarato a": "calibrated at",
@@ -4569,6 +4746,7 @@ const I18N = (() => {
    "{0} a colpo verso {1} (p = {2})": "{0} per shot towards {1} (p = {2})",
    "{0} a {1}: {2} ({3}) con correzione applicata": "{0} at {1}: {2} ({3}) with the correction applied",
    "{0} click {1}": "{0} clicks {1}",
+   "{0} colpi contro {1}: il group size cresce con i colpi, confronta raggio medio, σ o GQI": "{0} shots vs {1}: group size grows with the number of shots, compare mean radius, σ or GQI",
    "{0} colpi inclusi, fasce di {1} {2}. Linea continua: raggio medio; tratteggiata: CEP.": "{0} shots included, bins of {1} {2}. Solid line: mean radius; dashed: CEP.",
    "{0} colpiti su {1} ({2}%)": "{0} hits out of {1} ({2}%)",
    "{0} dal centro gruppo": "{0} from the group centre",
@@ -4630,6 +4808,7 @@ const I18N = (() => {
    "{0}/100 — {1} · GQI × {2}% + AQI {3} × {4}% · centro-mira {5} (rif. {6})": "{0}/100 — {1} · GQI × {2}% + AQI {3} × {4}% · centre to aim {5} (ref. {6})",
    "{0}/100 — {1} · {2} gruppi con mira{3}": "{0}/100 — {1} · {2} groups with point of aim{3}",
    "{0}: anelli 10 → 1 da ⌀ {1} a ⌀ {2} mm attorno al punto di mira. Punteggio: vale l'anello toccato dal bordo del foro (calibro {3} mm); * = 10 interno, ≈ = sulla linea entro l'incertezza di posizione. Contano tutti i fori, anche quelli esclusi dalle statistiche.": "{0}: rings 10 → 1 from ⌀ {1} to ⌀ {2} mm around the point of aim. Scoring: a shot scores the ring touched by the edge of the hole (caliber {3} mm); * = inner 10, ≈ = on the line within the position uncertainty. All shots count, including those excluded from the statistics.",
+   "{0}: non dipende da un foro particolare ma da tutti i {1} fori inclusi, attorno al centro del gruppo; {2}": "{0}: it depends not on one particular hole but on all {1} included holes, around the group centre; {2}",
    "{0}: sagoma a grandezza reale centrata sul punto di mira ({1}); spostala o ruotala per allinearla alla sagoma della foto. Un foro che tocca la linea vale la zona migliore (calibro {2} mm).": "{0}: full-size target centred on the point of aim ({1}); move or rotate it to align it with the target in the photo. A hole touching the line scores the better zone (caliber {2} mm).",
    "{0}: senza distanza": "{0}: no distance",
    "{0}: senza punto di mira": "{0}: no aiming point",
@@ -4668,6 +4847,9 @@ const I18N = (() => {
    "▦ Griglia": "▦ Grid",
    "● = livelli (gruppi combinati) con intervallo di confidenza; ○ = singoli gruppi.": "● = levels (pooled groups) with confidence interval; ○ = single groups.",
    "● {0} · {1} colpi{2}{3}": "● {0} · {1} shots{2}{3}",
+   "★ Baseline": "★ Baseline",
+   "★ Baseline: «{0}».": "★ Baseline: “{0}”.",
+   "★ Rispetto alla baseline": "★ Compared with the baseline",
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante. In realtà vento e differenze di velocità la fanno crescere con la distanza: {0}. «Taratura attuale» non calcolabile: lo scostamento a un'altra distanza dipende dalla balistica.": "⚠ Distance different from that of the group: angular dispersion assumed constant. In reality wind and velocity spread make it grow with distance: {0}. «Current zero» cannot be computed: the offset at another distance depends on ballistics.",
    "⚠ Distanza diversa da quella del gruppo: dispersione angolare supposta costante; «taratura attuale» non calcolabile.": "⚠ Distance different from the group's: angular dispersion assumed constant; «current zero» cannot be computed.",
    "⚠ Nella foto il rettangolo è {0}: controlla di non aver invertito larghezza e altezza ({1} × {2} mm).": "⚠ In the photo the rectangle is {0}: check that you have not swapped width and height ({1} × {2} mm).",
@@ -4770,7 +4952,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.16.0";
+const APP_VERSION = "1.17.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -4822,6 +5004,8 @@ const state = {
   // dalla 1.15.0
   notes: [],            // annotazioni: {id, text, sid?, gid?} legate a un foro, oppure {id, text, x, y} su una zona (mondo)
   hiddenGroups: new Set(),   // gruppi nascosti nella vista principale (non nella storia; salvati nella sessione)
+  paramHi: null,        // dalla 1.17.0: elemento della foto collegato al campo del pannello sotto il mouse o con il fuoco
+  origin: null,         // dalla 1.17.0: «Mostra origine del dato» {gid, key}
   ruler: null,          // righello libero {a, b?} in coordinate mondo (temporaneo: non nella storia né nella sessione)
 };
 /** Finestra di dettaglio (dalla 1.15.0): punto osservato (mondo), ingrandimento in px schermo per px foto, aperta. */
@@ -5458,6 +5642,7 @@ function draw() {
   drawPerspRect(ctx2d, toScreen);
   drawScaleMark(ctx2d, toScreen, v.scale, cc, imageCorners());   // scala sulla foto (dalla 1.15.0)
   drawOverlay(ctx2d, toScreen, v.scale, cc, { screen: true });
+  drawOrigin(); drawParamHi(cc);   // origine del dato e collegamento ai parametri (dalla 1.17.0)
   if (state.mode === "calib" && state.calib.p1 && !state.calib.p2) drawRubber(state.calib.p1, COL_CAL);   // linea elastica della scala
   drawRuler();
   drawAlignGuide();
@@ -6315,7 +6500,7 @@ document.addEventListener("keydown", e => {
   }
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
   if (typing) return;
-  if (k === "escape") { if (TOOL_MODES.includes(state.mode)) setMode(state.prevMode); return; }
+  if (k === "escape") { if (state.origin) { state.origin = null; refreshOriginUI(); refreshResults(); requestDraw(); return; } if (TOOL_MODES.includes(state.mode)) setMode(state.prevMode); return; }
   if (k === "enter" && state.mode === "crop") { e.preventDefault(); applyCrop(); return; }
   if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); updateHint(); requestDraw(); return; }
   if (state.mode === "lens" && (k === "enter" || k === "backspace")) {
@@ -6345,6 +6530,8 @@ document.addEventListener("keydown", e => {
   else if (k === "r" && !e.ctrlKey && !e.metaKey) setMode(state.mode === "ruler" ? state.prevMode : "ruler");
   else if (k === "n" && !e.ctrlKey && !e.metaKey) setMode(state.mode === "note" ? state.prevMode : "note");
   else if (k === "d" && !e.ctrlKey && !e.metaKey) openDetail();
+  else if (k === "v" && !e.ctrlKey && !e.metaKey) openReview();
+  else if ((k === "." || k === ",") && !e.ctrlKey && !e.metaKey && reviewItems().length) reviewStep(k === "." ? 1 : -1);
   else if ((k === "+" || k === "=") && !e.ctrlKey && !e.metaKey) zoomStep(1);
   else if ((k === "-" || k === "_") && !e.ctrlKey && !e.metaKey) zoomStep(-1);
   else if (k === "a" && !e.ctrlKey && !e.metaKey) openAnalysis();
@@ -6381,7 +6568,7 @@ async function loadImageFile(file) {
   await setImage(file.name, dataUrl);
   state.calib = { p1: null, p2: null };
   state.groups = []; const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id;
-  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null;
+  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null; state.origin = null; baseFile.b = null;
   state.sessionId = newSessionId();
   resetHistory();
   state.savedSig = workSignature();
@@ -6467,6 +6654,7 @@ function buildSession(embed = $("embedImg").checked) {
     activeGroupId: state.activeGroupId,
     notes: state.notes,                       // dalla 1.15.0: annotazioni sull'immagine
     hiddenGroups: [...state.hiddenGroups],    // dalla 1.15.0: gruppi nascosti nella vista
+    baseline: baseline || undefined,   // dalla 1.17.0: rosata di riferimento (copia di quella del browser)
     history: cmpState.history,   // storico per il confronto: solo riepiloghi di gruppi di altre sessioni
     results: state.groups.map(g => ({ group: g.name, ...summarize(g) })),   // informativo, ricalcolato al caricamento
     quality: qiSnapshot(),   // dalla 1.16.0: GQI/TQI con versione, parametri, soglie e valori usati (informativo; lo storico lo usa come valutazione originale)
@@ -6497,7 +6685,10 @@ async function loadSessionText(text, opts = {}) {
   state.lens = s.lens && isFinite(+s.lens.k1) ? { k1: +s.lens.k1, k2: +s.lens.k2 || 0 } : null; state.lensLines = [];
   await ensureBase();
   fitView();
-  cmpState.history = Array.isArray(s.history) ? s.history : [];
+  cmpState.history = Array.isArray(s.history) ? s.history : []; cmpState.range = null;
+  // baseline del file (dalla 1.17.0): adottata se il browser non ne ha una, altrimenti proposta («Usa questa»)
+  baseFile.b = null;
+  if (s.baseline && s.baseline.bid) { if (!baseline) { baseline = s.baseline; lsSet(BASE_KEY, baseline); } else if (s.baseline.bid !== baseline.bid) baseFile.b = s.baseline; }
   state.calib = s.calib || { p1: null, p2: null };
   // sessioni < 1.7.0: distanza unica della sessione → la stessa per ogni gruppo
   const sDist = +((s.params || {}).shotDist) || 0;
@@ -6507,7 +6698,7 @@ async function loadSessionText(text, opts = {}) {
   state.activeGroupId = state.groups.some(g => g.id === s.activeGroupId) ? s.activeGroupId : state.groups[0].id;
   state.notes = Array.isArray(s.notes) ? s.notes.filter(n => n && n.id != null) : [];
   state.hiddenGroups = new Set(Array.isArray(s.hiddenGroups) ? s.hiddenGroups : []);
-  state.ruler = null;
+  state.ruler = null; state.origin = null;
   uid = Math.max(...allIds()) + 1;
   state.selected = null;
   state.sessionId = s.sessionId || `${s.savedAt}|${s.image && s.image.name}`;   // sessioni < 1.5.0: stesso id dell'archivio
@@ -6684,7 +6875,8 @@ function refreshLockUI() {
   const set = (id, on, has, lbl) => { const b = $(id); if (!b) return; b.disabled = !has; b.classList.toggle("on", !!on); b.textContent = (on ? "🔒 " : "🔓 ") + lbl; b.setAttribute("aria-pressed", String(!!on)); };
   set("bCalLock", c.lock, !!c.p1, _t("Scala")); set("bRefLock", c.refLock, !!c.r1, _t("Riferimento"));
   if ($("bRefDel")) $("bRefDel").disabled = !c.r1 || !!c.refLock;
-  const b = $("bLock"); if (b) { const can = lockable(sel), on = can && isLocked(sel); b.disabled = !can; b.classList.toggle("on", on); b.textContent = on ? _t("🔒 Bloccato") : _t("🔓 Blocca"); }
+  const b = $("bLock"); if (b) { const can = lockable(sel), on = can && isLocked(sel); b.disabled = !can; b.classList.toggle("on", on); b.textContent = on ? "🔒" : "🔓";
+    b.title = (on ? _t("Bloccato: clic per sbloccare l'elemento selezionato (K)") : _t("Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)")); b.setAttribute("aria-label", on ? _t("Sblocca") : _t("Blocca")); }
 }
 function refreshLists() {
   refreshLoadForm(); refreshNotes(); refreshLockUI(); refreshScaleMarkUI();
@@ -6822,14 +7014,14 @@ function refreshResults() {
   for (const g of state.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
     const r = Calc.analyze(inc(g), g.poa, gcc);
-    const box = document.createElement("div"); box.className = "res";
+    const box = document.createElement("div"); box.className = "res"; box.dataset.gid = g.id;
     const nEx = g.shots.length - r.n;
     let html = _T`<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi${nEx ? ` (${esclusi(nEx)})` : ""}</span></h3>`;
     const nw = shotsWarning(r.n);
     if (nw && r.n > 0) html += `<div class="nwarn">⚠ ${nw}</div>`;
     if (r.n < 2) html += _T`<div class="muted">Servono almeno 2 fori.</div>`;
     else if (!r.mm) html += _T`<div class="muted">Calibra la scala per ottenere le misure. (ES = ${fmt(r.px.es, 0)} px)</div>`;
-    else html += resultCards(g, gcc, r);
+    else html += resultCards(g, gcc, r) + baselineCard(g, gcc);
     if (r.mm && r.n >= 2) html += measHTML(g, gcc, r) + diagHTML(g);
     else if (r.n < 2 || !r.mm) html += resultCards(g, gcc, r, true);
     box.innerHTML = html; out.appendChild(box);
@@ -6844,6 +7036,8 @@ function refreshResults() {
   });
   refreshLive();
   linkTerms(out);
+  decorateOrigins(out);   // ⌖ e ☆ (dalla 1.17.0)
+  refreshReview(); refreshOriginUI();
   updateButtons();
   drawCharts();
   drawCompare();
@@ -8789,7 +8983,7 @@ function drawCompareTable() {
   $("cmpHistInfo").textContent = cmpState.history.length ? _T`Storico: ${cmpState.history.length} gruppi da altre sessioni.` : _t("Storico vuoto.");
   if (rows.length < 2) {
     box.innerHTML = _T`<div class="muted">Servono almeno 2 gruppi con fori (in questa sessione o importati nello storico).</div>`;
-    $("cmpChartWrap").style.display = "none"; drawConfigDiff(rows); return;
+    $("cmpChartWrap").style.display = "none"; drawConfigDiff(rows); cmpState.range = null; $("cmpRange").innerHTML = ""; refreshBaselineUI(); return;
   }
   const val = r => r[unit] && r[unit][metric] != null ? r[unit][metric] : null;
   const vals = rows.map(val), ma = movingAverage(vals, N);
@@ -8826,7 +9020,9 @@ function drawCompareTable() {
   box.querySelectorAll("button[data-hdel]").forEach(b => b.addEventListener("click", () => { cmpState.history.splice(+b.dataset.hdel, 1); drawCompare(); }));
   $("cmpChartWrap").style.display = "";
   drawConfigDiff(rows);
+  if (cmpState.range && cmpState.range.b >= rows.length) cmpState.range = null;
   drawTrend($("chTrend"), Math.max(220, Math.floor($("cmpChartWrap").clientWidth)), 240, rows, vals, ma, N, unit, metric);
+  decorateCompareTable(rows); drawRangeStats(rows, metric, unit); refreshBaselineUI();   // dalla 1.17.0
 }
 /* ------------------------------ DOPE CARD (dalla 1.7.0) ------------------------------
    Una riga per gruppo con dope (punto di mira, scala, distanza, valore click), della sessione e dello storico, filtrate per
@@ -9060,6 +9256,10 @@ function drawTrend(cv, W, H, rows, vals, ma, N, unit, metric) {
   const step = niceStep(Math.max(...vv) / 4), yMax = Math.ceil(Math.max(...vv) * 1.1 / step) * step;
   const padL = 40, padR = 12, padT = 12, padB = 34, pw = W - padL - padR, ph = H - padT - padB, n = rows.length;
   const X = i => padL + (n === 1 ? pw / 2 : i * pw / (n - 1)), Y = v => padT + ph - v / yMax * ph;
+  CH.trendGeom = { padL, pw, n };
+  const RG = cmpState.range;   // periodo selezionato (dalla 1.17.0): banda dietro ai valori
+  if (RG && RG.b < n) { const half = n > 1 ? pw / (n - 1) / 2 : pw / 2, x0 = Math.max(padL, X(RG.a) - half), x1 = Math.min(W - padR, X(RG.b) + half);
+    g.fillStyle = "rgba(234,88,12,.13)"; g.fillRect(x0, padT, x1 - x0, ph); g.strokeStyle = COL_HI; g.lineWidth = 1; g.strokeRect(x0 + .5, padT + .5, x1 - x0 - 1, ph - 1); }
   g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
   for (let v = 0; v <= yMax + 1e-9; v += step) {
     g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(v)); g.lineTo(W - padR, Y(v)); g.stroke();
@@ -9077,6 +9277,9 @@ function drawTrend(cv, W, H, rows, vals, ma, N, unit, metric) {
     g.stroke(); g.setLineDash([]);
   };
   line(vals, acc, []); line(ma, ink, [6, 4]);
+  const bv = baseline && baseline[unit] && baseline[unit][metric] != null ? baseline[unit][metric] : null;   // baseline (dalla 1.17.0)
+  if (bv != null && bv <= yMax) { g.strokeStyle = COL_HI; g.lineWidth = 1.5; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(padL, Y(bv)); g.lineTo(W - padR, Y(bv)); g.stroke(); g.setLineDash([]);
+    g.fillStyle = COL_HI; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillText(`★ ${fmtA(bv)}`, padL + 3, Y(bv) - 2); }
   vals.forEach((v, i) => {
     if (v == null) return;
     const r = rows[i];
@@ -10869,6 +11072,442 @@ function qiReportSession() {
   rows.push([_t("Versione della formula"), _T`${Calc.QI_VERSION} · criterio dell'applicazione, non uno standard`]);
   return rows;
 }
+/* ============================== 1.17.0 ==============================
+   Baseline persistente, coda di revisione dei colpi, collegamento parametri ↔ immagine, selezione di un periodo
+   nell'andamento, origine dei risultati sull'immagine. */
+const COL_HI = "#ea580c";   // evidenziazioni temporanee (arancio scuro, leggibile su bianco e beige; non è un colore dei gruppi)
+const SQRT_PI_2_APP = Math.sqrt(Math.PI / 2);
+/** Traccia con alone bianco: leggibile su qualsiasi fondo. */
+function hiStroke(g, path, col = COL_HI, w = 2.2, dash = []) {
+  g.save(); g.setLineDash(dash);
+  for (const [c, lw] of [["rgba(255,255,255,.92)", w + 3], [col, w]]) { g.strokeStyle = c; g.lineWidth = lw; path(); g.stroke(); }
+  g.restore();
+}
+const hiRing = (g, p, r, col = COL_HI, w = 2.2) => hiStroke(g, () => { g.beginPath(); g.arc(p.x, p.y, r, 0, Math.PI * 2); }, col, w);
+const hiLine = (g, a, b, col = COL_HI, w = 2.2, dash = []) => hiStroke(g, () => { g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); }, col, w, dash);
+/** Centra la vista su un punto mondo con l'ingrandimento indicato. */
+function centerView(pt, scale = state.view.scale) {
+  const v = state.view, cw = canvas.width / dpr, ch = canvas.height / dpr;
+  v.scale = Math.min(60, Math.max(0.01, scale)); v.ox = cw / 2 - pt.x * v.scale; v.oy = ch / 2 - pt.y * v.scale;
+  requestDraw();
+}
+
+/* ---------------------------- BASELINE ----------------------------
+   Una rosata di riferimento (riepilogo come quelli dello storico: metriche in mm e in angolo, n, distanza, ricarica,
+   condizioni, impostazioni di analisi, dati del GQI) scelta da un gruppo della sessione o dallo storico. Resta nel
+   browser (localStorage) tra una sessione e l'altra e viene copiata nel file di sessione. Il confronto è in angolo
+   (indipendente dalla distanza) con le condizioni di confronto sempre visibili. */
+const BASE_KEY = "shootAnalyzer.baseline", BASE_MET_KEY = "shootAnalyzer.baselineMetrics";
+const BASE_METRICS = { es: "Group size (c-c)", mr: "Raggio medio", cep: "CEP", fom: "FOM", sigma: "σ per asse", gqi: "GQI" };
+const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch { return d; } };
+const lsSet = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignora */ } };
+let baseline = lsGet(BASE_KEY, null);
+const baseFile = { b: null };   // baseline trovata nel file di sessione aperto (se diversa da quella del browser)
+const baseMetrics = () => { const m = lsGet(BASE_MET_KEY, null); return Array.isArray(m) ? m.filter(k => BASE_METRICS[k]) : ["es", "mr", "sigma", "gqi"]; };
+/** Chiave di una riga del confronto (stessa riga = stessa baseline). */
+const rowSrcKey = r => r.hist ? `h|${r.key || r.idx}` : `g|${state.sessionId}|${r.gid}`;
+function makeBaseline(r) {
+  const { hist, idx, sortDate, color, ...rest } = r; void hist; void idx; void sortDate; void color;
+  return { ...JSON.parse(JSON.stringify(rest)), bid: "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), srcKey: rowSrcKey(r),
+    setAt: new Date().toISOString(), origin: r.hist ? r.source : (state.image ? state.image.name : "") };
+}
+function setBaseline(b, quiet = false) {
+  baseline = b ? JSON.parse(JSON.stringify(b)) : null; lsSet(BASE_KEY, baseline);
+  if (baseline && baseFile.b && baseFile.b.bid === baseline.bid) baseFile.b = null;
+  scheduleAutosave(); refreshResults(); refreshBaselineUI();
+  if (!quiet) toast(baseline ? _T`★ Baseline: «${baseline.name}».` : _t("Baseline tolta."));
+}
+const isBaselineRow = r => !!baseline && baseline.srcKey === rowSrcKey(r);
+/** Valore di una metrica in angolo (unità MOA o MIL) di un riepilogo; null se non disponibile. */
+function baseVal(row, k, unit) {
+  if (k === "sigma") return row.qi && row.qi.mr > 0 ? Calc.fromRad(row.qi.mr / SQRT_PI_2_APP, unit) : null;
+  if (k === "gqi") return row.qi && row.qi.mr != null ? Calc.qiScore(row.qi.mr, qiSet().mrRef) : null;
+  return row[unit] && row[unit][k] != null ? row[unit][k] : null;
+}
+/** Unità angolare del confronto con la baseline: quella dei click se è MOA o MIL, altrimenti MOA. */
+const baseUnit = () => { const u = params().clickUnit; return u === "MIL" ? "MIL" : "MOA"; };
+/** Differenza della dispersione (σ) tra due riepiloghi: test F bilaterale su s² angolari. */
+function sigmaFTest(a, b) {
+  if (!a.qi || !b.qi || !(a.qi.s2 > 0) || !(b.qi.s2 > 0)) return null;
+  const F = a.qi.s2 / b.qi.s2, c = Calc.fcdf(F, a.qi.nu, b.qi.nu);
+  return { F, p: Math.min(1, 2 * Math.min(c, 1 - c)), nuA: a.qi.nu, nuB: b.qi.nu };
+}
+/** Confronto di un riepilogo con la baseline: righe delle metriche e condizioni di confronto. */
+function baselineCompare(row) {
+  const b = baseline; if (!b) return null;
+  const unit = baseUnit(), U = unit === "MIL" ? "MIL" : "MOA";
+  const mets = baseMetrics().map(k => {
+    const v = baseVal(row, k, unit), w = baseVal(b, k, unit);
+    const d = v != null && w != null ? v - w : null, higherBetter = k === "gqi";
+    const better = d == null || Math.abs(d) < 1e-12 ? 0 : (d < 0) !== higherBetter ? 1 : -1;
+    return { k, v, w, d, pct: d != null && w ? d / w * 100 : null, better, unit: k === "gqi" ? "" : U };
+  });
+  const objs = [row, b].map(o => Object.fromEntries(DIFF_FIELDS.map(([, key, , get]) => [key, get(o) ?? ""])));
+  const D = Calc.differingKeys(objs, DIFF_FIELDS.map(f => f[1]));
+  const F = k => DIFF_FIELDS.find(f => f[1] === k);   // la distanza ha il suo avviso
+  return { mets, sameDist: Math.abs((row.distM || 0) - (b.distM || 0)) < 0.05, diff: D.diff.filter(k => k !== "dist").map(F), partial: D.partial.filter(k => k !== "dist").map(F),
+    F: sigmaFTest(row, b), nDiff: row.n !== b.n };
+}
+const baseNum = (m) => m.v == null ? "–" : m.k === "gqi" ? fmt(m.v, 0) : fmtA(m.v);
+function baseDeltaHTML(m) {
+  if (m.d == null) return `<span class="muted">${_t("n.d.")}</span>`;
+  const arrow = m.better > 0 ? "▼" : m.better < 0 ? "▲" : "=", cls = m.better > 0 ? "bdg-b" : m.better < 0 ? "bdg-w" : "";
+  const word = m.better > 0 ? _t("meglio") : m.better < 0 ? _t("peggio") : _t("uguale");
+  return `<span class="${cls}" title="${esc(word)}">${m.k === "gqi" && m.d > 0 ? "▲" : m.k === "gqi" && m.d < 0 ? "▼" : arrow} ${m.d > 0 ? "+" : ""}${m.k === "gqi" ? fmt(m.d, 0) : fmtA(m.d)}${m.pct != null && m.k !== "gqi" ? ` <span class="muted">(${m.pct > 0 ? "+" : ""}${fmt(m.pct, 0)}%)</span>` : ""}</span>`;
+}
+/** Card «Rispetto alla baseline» del gruppo. */
+function baselineCard(g, gcc) {
+  if (!baseline) return "";
+  const row = groupSummary(inc(g), g.poa, gcc, { name: g.name, load: { ...g.load }, cfg: analysisCfg(params(), { calib: state.calib, persp: state.persp, lens: state.lens }, g), gid: g.id });
+  if (rowSrcKey({ gid: g.id }) === baseline.srcKey) return rcard("base", _t("★ Baseline"), "", _t("Questo gruppo è la baseline."), "", "", "wide");
+  const C = baselineCompare(row), b = baseline;
+  const rows = C.mets.map(m => `<tr><td>${_t(BASE_METRICS[m.k])}</td><td class="v">${baseNum(m)} ${m.unit}<br><span class="civ">${_T`baseline ${m.w == null ? "–" : m.k === "gqi" ? fmt(m.w, 0) : fmtA(m.w)}`}</span> · ${baseDeltaHTML(m)}</td></tr>`).join("");
+  const warn = [];
+  if (!C.sameDist) warn.push(_T`distanza ${fmt(row.distM, 0)} m contro ${fmt(b.distM, 0)} m (confronto in angolo)`);
+  if (C.nDiff) warn.push(_T`${row.n} colpi contro ${b.n}: il group size cresce con i colpi, confronta raggio medio, σ o GQI`);
+  if (C.diff.length) warn.push(_T`condizioni diverse: ${C.diff.map(f => _t(f[2])).join(", ")}`);
+  if (C.partial.length) warn.push(_T`registrate solo in uno dei due: ${C.partial.map(f => _t(f[2])).join(", ")}`);
+  const cond = _T`<div class="bcond"><b>${fmt(row.distM, 0)} m · ${row.n} colpi</b> contro <b>${fmt(b.distM, 0)} m · ${b.n} colpi</b>${C.diff.length ? _T` · ${C.diff.length} condizioni diverse` : _t(" · stesse condizioni registrate")}</div>`;
+  const ft = C.F ? (C.F.p < 0.05 ? _T`La dispersione (σ) è ${C.F.F < 1 ? _t("più stretta") : _t("più larga")} della baseline (test F, p = ${pTxt(C.F.p)}).` : _T`Differenza di dispersione (σ) non dimostrata con questi colpi (test F, p = ${pTxt(C.F.p)}).`) : "";
+  return rcard("base", _t("★ Rispetto alla baseline"), `<div class="bname">${esc(b.name)}${b.date ? ` <span class="muted">· ${dIT(b.date)}</span>` : ""}</div>`, cond + (warn.length ? `<ul class="bwarn">${warn.map(w => `<li>⚠ ${esc(w)}</li>`).join("")}</ul>` : "") + (ft ? `<div class="civ">${ft}</div>` : ""), rows,
+    _T`<div class="muted" style="font-size:11.5px">Baseline da ${esc(b.origin || b.source || "")}, impostata il ${dIT((b.setAt || "").slice(0, 10))}. Valori in angolo (${baseUnit() === "MIL" ? "MIL" : "MOA"}) alla distanza di ogni gruppo; ▼ = più stretto (GQI: ▲ = migliore). Il test F confronta le σ dei due gruppi con il modello circolare normale.</div>`, "wide");
+}
+/** Riquadro della baseline nella vista grafici. */
+function refreshBaselineUI() {
+  const box = $("baseBox"); if (!box) return;
+  const mets = baseMetrics();
+  const chk = Object.keys(BASE_METRICS).map(k => `<label><input type="checkbox" data-bm="${k}" ${mets.includes(k) ? "checked" : ""}> ${_t(BASE_METRICS[k])}</label>`).join(" ");
+  let html = baseline
+    ? _T`<div class="bhead">★ <b>Baseline</b>: ${esc(baseline.name)}${baseline.date ? ` · ${dIT(baseline.date)}` : ""} · ${fmt(baseline.distM, 0)} m · ${baseline.n} colpi <span class="muted">· ${esc(baseline.origin || baseline.source || "")}</span> <button class="btn" id="bBaseOff" title="Togli la baseline (resta nella sessione solo se la risalvi con una baseline)">Togli</button></div>`
+    : _T`<div class="muted">Nessuna baseline: clicca ☆ su una riga del confronto (o nella scheda di un gruppo) per usarla come riferimento anche nelle sessioni successive.</div>`;
+  if (baseFile.b && (!baseline || baseFile.b.bid !== baseline.bid)) html += _T`<div class="bfile">La sessione aperta contiene la baseline «${esc(baseFile.b.name)}». <button class="btn" id="bBaseFile">Usa questa</button></div>`;
+  html += _T`<div class="bmet">Metriche confrontate: ${chk}</div>`;
+  box.innerHTML = html;
+  box.querySelectorAll("input[data-bm]").forEach(i => i.addEventListener("change", () => {
+    const m = [...box.querySelectorAll("input[data-bm]:checked")].map(x => x.dataset.bm); lsSet(BASE_MET_KEY, m); refreshResults();
+  }));
+  if ($("bBaseOff")) $("bBaseOff").onclick = () => setBaseline(null);
+  if ($("bBaseFile")) $("bBaseFile").onclick = () => setBaseline(baseFile.b);
+}
+/** Stelle ☆/★ e righe della baseline e del periodo nella tabella del confronto (dopo il disegno). */
+function decorateCompareTable(rows) {
+  const trs = $("cmpBody").querySelectorAll("tbody tr");
+  trs.forEach((tr, i) => {
+    const r = rows[i]; if (!r) return;
+    const on = isBaselineRow(r), td = tr.children[2]; if (!td) return;
+    const b = document.createElement("button"); b.className = "bstar" + (on ? " on" : "");
+    b.title = on ? _t("Questa riga è la baseline (clic per toglierla)") : _t("Usa questa rosata come baseline: resta disponibile anche nelle sessioni successive");
+    b.setAttribute("aria-pressed", String(on)); b.addEventListener("click", e => { e.stopPropagation(); setBaseline(on ? null : makeBaseline(r)); });
+    td.prepend(b); tr.classList.toggle("isbase", on);
+    const R = cmpState.range; tr.classList.toggle("inrange", !!R && i >= R.a && i <= R.b);
+  });
+}
+
+/* ------------------- SELEZIONE DI UN PERIODO NELL'ANDAMENTO -------------------
+   Trascinando sul grafico dell'andamento si seleziona un intervallo di righe (in ordine di data); la selezione viene
+   confrontata con TUTTE le righe precedenti: σ combinato (ν-pesato, angolare, dal GQI raw) con IC χ² e test F.
+   Nessun dato archiviato cambia; la selezione non è salvata. Doppio clic o «Annulla selezione» = tutto. */
+function periodStats(rows, level) {
+  const q = rows.filter(r => r.qi && r.qi.s2 > 0 && r.qi.nu > 0);
+  const P = q.length ? Calc.pooledSigma(q.map(r => ({ s2: r.qi.s2, nu: r.qi.nu })), level) : null;
+  return { k: rows.length, kq: q.length, n: rows.reduce((a, r) => a + (r.n || 0), 0), P, d0: rows[0] && rows[0].date, d1: rows.length && rows[rows.length - 1].date };
+}
+function rangeCompare(rows) {
+  const R = cmpState.range; if (!R || R.b >= rows.length) return null;
+  const level = (+params().ciLevel || 95) / 100, sel = rows.slice(R.a, R.b + 1), prev = rows.slice(0, R.a);
+  const S = periodStats(sel, level), Pv = periodStats(prev, level);
+  let F = null;
+  if (S.P && Pv.P) { const f = S.P.s2 / Pv.P.s2, c = Calc.fcdf(f, S.P.nu, Pv.P.nu); F = { f, p: Math.min(1, 2 * Math.min(c, 1 - c)) }; }
+  return { R, S, Pv, F, level };
+}
+function drawRangeStats(rows, metric, unit) {
+  const box = $("cmpRange"); if (!box) return;
+  const C = rangeCompare(rows);
+  const opts = rows.map((r, i) => `<option value="${i}">${i + 1}. ${esc(dIT(r.date) || "")} ${esc(r.name)}</option>`).join("");
+  const ctl = _T`<div class="rsel"><label>Periodo da <select id="rgA">${opts}</select></label> <label>a <select id="rgB">${opts}</select></label> <button class="btn" id="bRgSet">Seleziona</button> <button class="btn" id="bRgClr" ${C ? "" : "disabled"}>Annulla selezione</button> <span class="muted">(o trascina sul grafico)</span></div>`;
+  let body = "";
+  if (C) {
+    const U = unit === "mm" ? "MOA" : unit, A = x => fmtA(Calc.fromRad(x, U)), sig = P => P ? `${A(P.sigma)} ${U} <span class="civ">IC ${fmt(P.level * 100, 0)}% ${A(P.lo)}–${A(P.hi)}</span>` : "–";
+    const val = rs => { const v = rs.map(r => r[unit] && r[unit][metric] != null ? r[unit][metric] : null).filter(v => v != null); return v.length ? fmtA(v.reduce((a, b) => a + b, 0) / v.length) : "–"; };
+    const sel = rows.slice(C.R.a, C.R.b + 1), prev = rows.slice(0, C.R.a);
+    const per = (lab, S, rs) => `<tr><td>${lab}</td><td class="x">${S.k}</td><td class="x">${S.n}</td><td>${rs.length ? `${esc(dIT(S.d0) || "–")} – ${esc(dIT(S.d1) || "–")}` : "–"}</td><td class="x">${val(rs)}</td><td>${sig(S.P)}</td></tr>`;
+    const verdict = !C.Pv.k ? _t("Nessun gruppo prima del periodo selezionato: sposta l'inizio della selezione più avanti.") : !C.F ? _t("Confronto non possibile: servono gruppi con fori in entrambi i periodi (lo storico importato prima della 1.16 non ha i dati: reimportalo).")
+      : C.F.p < 0.05 ? _T`Nel periodo selezionato la dispersione è ${C.F.f < 1 ? _t("più stretta") : _t("più larga")} di prima: σ ${Math.sqrt(C.F.f) >= 1 ? "+" : ""}${fmt(Math.sqrt(C.F.f) * 100 - 100, 0)}% (test F, p = ${pTxt(C.F.p)}).`
+      : _T`Differenza di dispersione tra i due periodi non dimostrata (σ ${Math.sqrt(C.F.f) >= 1 ? "+" : ""}${fmt(Math.sqrt(C.F.f) * 100 - 100, 0)}%, test F, p = ${pTxt(C.F.p)}).`;
+    body = _T`<table class="cmp rng"><thead><tr><th>Periodo</th><th class="x">Gruppi</th><th class="x">Colpi</th><th>Date</th><th class="x">Media ${esc(_t(CMP_METRICS[metric]))} (${esc(unit)})</th><th>σ combinato</th></tr></thead><tbody>${per(_t("Selezione"), C.S, sel)}${per(_t("Tutto prima"), C.Pv, prev)}</tbody></table><div class="cmpsum">${verdict}</div><div class="muted" style="font-size:11.5px">σ combinato: varianze dei gruppi pesate per i gradi di libertà (in angolo, distanze diverse confrontabili); presuppone una dispersione costante dentro ogni periodo. I dati archiviati non cambiano.</div>`;
+  }
+  box.innerHTML = ctl + body;
+  if (C) { $("rgA").value = String(C.R.a); $("rgB").value = String(C.R.b); } else { $("rgA").value = String(Math.max(0, rows.length - 3)); $("rgB").value = String(rows.length - 1); }
+  $("bRgSet").onclick = () => setRange(+$("rgA").value, +$("rgB").value);
+  $("bRgClr").onclick = () => setRange(null);
+}
+function setRange(a, b) {
+  if (a == null) cmpState.range = null;
+  else { const lo = Math.min(a, b), hi = Math.max(a, b); cmpState.range = { a: lo, b: hi }; }
+  drawCompare();
+}
+function initTrendSelect() {
+  const cv = $("chTrend"); let drag = null;
+  const idxAt = e => { const G = CH.trendGeom; if (!G || !G.n) return null; const x = e.clientX - cv.getBoundingClientRect().left; return G.n === 1 ? 0 : Math.max(0, Math.min(G.n - 1, Math.round((x - G.padL) / G.pw * (G.n - 1)))); };
+  cv.addEventListener("pointerdown", e => { const i = idxAt(e); if (i == null) return; drag = { a: i, x: e.clientX, moved: false }; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener("pointermove", e => { if (!drag) return; if (Math.abs(e.clientX - drag.x) > 4) drag.moved = true; if (drag.moved) { const i = idxAt(e); cmpState.range = { a: Math.min(drag.a, i), b: Math.max(drag.a, i) }; drawCompare(); } });
+  cv.addEventListener("pointerup", () => { drag = null; });
+  cv.addEventListener("dblclick", () => setRange(null));
+  cv.style.touchAction = "none";
+}
+
+/* ---------------------------- CODA DI REVISIONE ----------------------------
+   Colpi che meritano un controllo: «marcatura» (segnati difficili ◐, oppure sovrapposti: centri più vicini di un calibro,
+   possibili due fori in uno o un foro contato due volte) e «statistico» (possibile flyer di Mahalanobis: il foro può
+   essere marcato benissimo; escluderlo è un'altra decisione). Stato per foro in shot.review = {st: "ok"|"later", sig}
+   (nella storia e nella sessione); se le ragioni cambiano (sig diversa) il foro torna da rivedere. */
+/** Sovrapposizione «a rischio»: centri più vicini di mezzo calibro. Il secondo foro allarga il primo di meno di mezzo
+    diametro e i due possono sembrare un foro solo (ovale). Tra ½ e 1 calibro il «8» si vede bene; segnalarli
+    renderebbe la coda inutile nei gruppi stretti, dove quasi tutti i fori si toccano. */
+const RV_OVERLAP = 0.5;
+const RV_KIND = { hard: "difficile ◐", overlap: "sovrapposto", flyer: "possibile flyer" };
+function reviewItems() {
+  const cc = calcContext(), out = [];
+  for (const g of state.groups) {
+    const gcc = ccG(cc, g), cal = gcc.pxPerMm && gcc.caliberMm > 0 ? gcc.caliberMm * gcc.pxPerMm : 0, fl = flyerMap(g);
+    g.shots.forEach((s, i) => {
+      const kinds = [], info = {};
+      if (s.hard) kinds.push("hard");
+      if (cal) { const o = g.shots.map((t, j) => j !== i && Calc.dist(s, t) < cal * RV_OVERLAP ? j + 1 : null).filter(Boolean); if (o.length) { kinds.push("overlap"); info.with = o; } }
+      const f = fl.get(s.id); if (f && f.flagged) { kinds.push("flyer"); info.p = f.p; }
+      if (!kinds.length) return;
+      const sig = kinds.join(","), st = s.review && s.review.sig === sig ? s.review.st : "pending";
+      out.push({ g, s, i, kinds, info, sig, st, mark: kinds.some(k => k !== "flyer"), stat: kinds.includes("flyer") });
+    });
+  }
+  const ord = { pending: 0, later: 1, ok: 2 };
+  return out.sort((a, b) => ord[a.st] - ord[b.st]);
+}
+let rvCur = 0;
+const rvVisible = () => reviewItems().filter(x => x.st !== "ok" || $("rvShowOk").checked);
+function refreshReview() {
+  const all = reviewItems(), pend = all.filter(x => x.st === "pending").length, list = all.filter(x => x.st !== "ok" || $("rvShowOk").checked);
+  $("rvCount").textContent = all.length ? `${pend}/${all.length}` : "";
+  const bd = $("rvBadge"); bd.hidden = !pend; bd.textContent = String(pend);
+  rvCur = Math.min(rvCur, Math.max(0, list.length - 1));
+  $("rvPos").textContent = list.length ? `${rvCur + 1} / ${list.length}` : "";
+  $("bRvPrev").disabled = $("bRvNext").disabled = list.length < 2;
+  const box = $("rvList");
+  if (!list.length) { box.innerHTML = all.length ? _T`<div class="muted">Tutti i ${all.length} colpi segnalati sono stati confermati.</div>` : _t("Nessun colpo da rivedere: nessun foro difficile, sovrapposto o anomalo."); return; }
+  box.innerHTML = list.map((x, k) => {
+    const why = x.kinds.map(kd => kd === "overlap" ? _T`sovrapposto al foro ${x.info.with.join(", ")}` : kd === "flyer" ? _T`possibile flyer (p = ${pTxt(x.info.p)})` : _t(RV_KIND[kd])).join(" · ");
+    const tag = [x.mark ? `<span class="rvtag mark" title="${_t("Controlla che il punto segni davvero il centro di un foro")}">${_t("marcatura")}</span>` : "", x.stat ? `<span class="rvtag stat" title="${_t("Anomalia statistica: il foro può essere marcato bene; escluderlo dalle statistiche è una decisione separata")}">${_t("statistico")}</span>` : ""].join("");
+    const st = x.st === "later" ? `<span class="muted">${_t("rimandato")}</span>` : x.st === "ok" ? `<span class="muted">✓ ${_t("confermato")}</span>` : "";
+    return `<div class="rv-row${k === rvCur ? " cur" : ""}" data-rk="${k}">
+      <div class="rvh"><span class="dot" style="background:${x.g.color}"></span><b>${_T`Foro ${x.i + 1}`}</b> · ${esc(x.g.name)} ${tag} ${st}${x.s.excluded ? ` <span class="muted">(${_t("escluso")})</span>` : ""}</div>
+      <div class="rvwhy">${esc(why)}</div>
+      <div class="rvbtns">
+        <button class="btn" data-rv="ok" title="${_t("Il punto è giusto: togli il colpo dalla coda")}">✓ ${_t("Conferma")}</button>
+        <button class="btn" data-rv="later" title="${_t("Rivedi dopo: va in fondo alla coda")}">⏭ ${_t("Rimanda")}</button>
+        <button class="btn" data-rv="snap" title="${_t("Correggi: riaggancia il punto al centro della macchia del foro (snap)")}">🧲</button>
+        <button class="btn" data-rv="hard" title="${_t("Correggi: segna/togli «difficile» (incertezza di marcatura ×3)")}">◐</button>
+        <button class="btn" data-rv="excl" title="${x.s.excluded ? _t("Rimetti il colpo nelle statistiche") : _t("Escludi il colpo dalle statistiche (resta sul bersaglio)")}">${x.s.excluded ? "↺" : "⊘"}</button>
+        <button class="btn" data-rv="del" title="${_t("Elimina il punto (per esempio un foro contato due volte)")}">✕</button>
+      </div></div>`;
+  }).join("");
+  box.querySelectorAll(".rv-row").forEach(row => {
+    const k = +row.dataset.rk, x = list[k];
+    row.addEventListener("click", e => { if (e.target.closest("button")) return; rvCur = k; focusReview(x); refreshReview(); });
+    row.querySelectorAll("button[data-rv]").forEach(b => b.addEventListener("click", () => reviewAction(x, b.dataset.rv, k)));
+  });
+}
+function focusReview(x) {
+  if (!x) return;
+  const cc = calcContext(), gcc = ccG(cc, x.g), cal = gcc.pxPerMm && gcc.caliberMm > 0 ? gcc.caliberMm * gcc.pxPerMm : 0;
+  if (state.activeGroupId !== x.g.id) { state.activeGroupId = x.g.id; commit(); }
+  showGroup(x.g.id);
+  state.selected = { kind: "shot", gid: x.g.id, id: x.s.id };
+  centerView(x.s, cal ? Math.min(16, Math.max(1, 90 / cal)) : Math.max(state.view.scale, 3));   // foro di circa 90 px sullo schermo
+  refreshLists();
+}
+function reviewAction(x, a, k) {
+  const s = x.s;
+  if (a === "ok" || a === "later") {   // l'elemento successivo prende il suo posto nella lista: resta sulla stessa posizione
+    s.review = { st: a, sig: x.sig }; rvCur = k; commit();
+    const L = rvVisible(); if (L.length) { rvCur = Math.min(rvCur, L.length - 1); focusReview(L[rvCur]); refreshReview(); } return; }
+  if (a === "snap") { if (isLocked({ kind: "shot", gid: x.g.id, id: s.id })) { lockedToast(); return; }
+    const r = snapShot(s); if (r && r.p) { s.x = r.p.x; s.y = r.p.y; s.snap = 1; requestDraw(); commit(); toast(_t("Punto riagganciato al centro del foro.")); } else toast(_t("Snap non riuscito: correggi trascinando il punto (Alt+clic per non agganciare).")); return; }
+  if (a === "hard") { toggleHard(x.g.id, s.id); return; }
+  if (a === "excl") { toggleExclude(x.g.id, s.id); return; }
+  if (a === "del") deleteRef({ kind: "shot", gid: x.g.id, id: s.id });
+}
+function reviewStep(d) {
+  const L = rvVisible(); if (!L.length) return;
+  rvCur = (rvCur + d + L.length) % L.length; focusReview(L[rvCur]); refreshReview();
+}
+function openReview() {
+  const d = $("sec-review"); d.open = true; secShow("sec-review");
+  d.closest("section").scrollIntoView({ block: "nearest" });
+  const L = rvVisible(); if (L.length) focusReview(L[Math.min(rvCur, L.length - 1)]);
+}
+
+/* ------------------- COLLEGAMENTO PARAMETRI ↔ IMMAGINE -------------------
+   Passando con il mouse o entrando in un campo del pannello, l'elemento geometrico a cui si riferisce viene evidenziato
+   sulla foto (solo disegno). */
+const PARAM_HI = { calDist: "calib", calUnit: "calib", refLen: "ref", refUnit: "ref", bRefDel: "ref", caliber: "caliber", caliberUnit: "caliber", caliberPreset: "caliber",
+  shotDist: "dist", shotDistUnit: "dist", perspW: "persp", perspH: "persp", perspPreset: "persp", markHand: "mark", markSnap: "mark", clickVal: "click", clickUnit: "click" };
+function initParamHi() {
+  for (const [id, k] of Object.entries(PARAM_HI)) { const el = $(id); if (!el) continue; el.dataset.hi = k; const row = el.closest(".row"); if (row) row.dataset.hi = k; }
+  const side = $("side"), set = k => { if (state.paramHi !== k) { state.paramHi = k; requestDraw(); } };
+  side.addEventListener("mouseover", e => { const t = e.target.closest("[data-hi]"); set(t ? t.dataset.hi : (document.activeElement && document.activeElement.dataset && document.activeElement.dataset.hi) || null); });
+  side.addEventListener("mouseleave", () => set(document.activeElement && document.activeElement.dataset && document.activeElement.dataset.hi || null));
+  side.addEventListener("focusin", e => { const t = e.target.closest("[data-hi]"); set(t ? t.dataset.hi : null); });
+  side.addEventListener("focusout", () => setTimeout(() => { const a = document.activeElement; set(a && a.dataset && a.dataset.hi || null); }, 0));
+}
+function drawParamHi(cc) {
+  const k = state.paramHi; if (!k || !state.image) return;
+  const g = ctx2d, T = toScreen, sc = state.view.scale, gr = activeGroup(), gcc = gr ? ccG(cc, gr) : cc;
+  const note = txt => { const cw = canvas.width / dpr; g.save(); g.font = "600 13px 'Segoe UI', system-ui, sans-serif"; const w = g.measureText(txt).width; g.restore(); label(g, Math.max(8, cw / 2 - w / 2), 58, txt, COL_HI, 13); };
+  const c = state.calib, cw0 = canvas.width / dpr, ch0 = canvas.height / dpr;
+  const off = (...P) => P.every(q => { const t = T(q); return t.x < 0 || t.y < 0 || t.x > cw0 || t.y > ch0; }) ? _t(" (fuori vista: F per vedere tutta la foto)") : "";
+  if (k === "calib") {
+    if (!c.p1 || !c.p2) { note(_t("Scala non impostata: modalità Scala (2), poi due punti a distanza nota.")); return; }
+    const a = T(c.p1), b = T(c.p2); hiLine(g, a, b, COL_HI, 3); hiRing(g, a, 11); hiRing(g, b, 11);
+    note(_T`Distanza nota tra i punti A e B: ${fmt(+params().calDist, 2)} ${params().calUnit} = ${fmt(Calc.dist(c.p1, c.p2), 1)} px della foto` + off(c.p1, c.p2));
+  } else if (k === "ref") {
+    if (!c.r1 || !c.r2) { note(_t("Riferimento di controllo non inserito: pulsante «Riferimento», poi due punti.")); return; }
+    const a = T(c.r1), b = T(c.r2); hiLine(g, a, b, COL_HI, 3); hiRing(g, a, 10); hiRing(g, b, 10);
+    note(_T`Riferimento di controllo: ${fmt(Calc.dist(c.r1, c.r2) / (cc.pxPerMm || 1), 2)} ${cc.pxPerMm ? _t("mm misurati") : "px"}` + off(c.r1, c.r2));
+  } else if (k === "caliber") {
+    if (!cc.pxPerMm || !(cc.caliberMm > 0)) { note(_t("Per vedere la dimensione reale del foro serve la scala calibrata.")); return; }
+    const R = cc.caliberMm / 2 * cc.pxPerMm * sc, pts = gr ? gr.shots : [];
+    if (pts.length) pts.forEach(s => hiRing(g, T(s), R, COL_HI, 1.8));
+    else { const cw = canvas.width / dpr, ch = canvas.height / dpr; hiRing(g, { x: cw / 2, y: ch / 2 }, R, COL_HI, 2); }
+    note(_T`Foro del calibro: Ø ${fmt(cc.caliberMm, 2)} mm = ${fmt(cc.caliberMm * cc.pxPerMm, 1)} px della foto`);
+  } else if (k === "dist" || k === "click") {
+    if (!gr || !inc(gr).length || !gcc.pxPerMm || !(gcc.distMm > 0)) { note(_t("Servono scala, distanza e almeno un foro del gruppo attivo.")); return; }
+    const C = Calc.centroid(inc(gr)), P = T(C), unit = gcc.clickUnit === "MIL" ? "MIL" : "MOA";
+    if (k === "dist") {
+      const mm = Math.tan(toRad(1, unit) / 2) * 2 * gcc.distMm, R = mm / 2 * gcc.pxPerMm * sc;
+      inc(gr).forEach(s => hiRing(g, T(s), 6, COL_HI, 1.5)); hiRing(g, P, R, COL_HI, 2.4);
+      note(_T`Distanza del gruppo: ${fmt(gcc.distMm / 1000, 0)} m → il cerchio è 1 ${unit} = ${fmt(mm, 1)} mm di diametro`);
+    } else {
+      if (!(gcc.clickValue > 0)) { note(_t("Inserisci il valore del click.")); return; }
+      const mm = Math.tan(toRad(gcc.clickValue, gcc.clickUnit)) * gcc.distMm, L = mm * gcc.pxPerMm * sc;
+      hiLine(g, { x: P.x, y: P.y }, { x: P.x + L, y: P.y }, COL_HI, 3); hiLine(g, { x: P.x, y: P.y }, { x: P.x, y: P.y - L }, COL_HI, 3);
+      note(_T`1 click = ${fmt(gcc.clickValue, 3)} ${gcc.clickUnit} = ${fmt(mm, 1)} mm a ${fmt(gcc.distMm / 1000, 0)} m (segmenti dal centro del gruppo)`);
+    }
+  } else if (k === "persp") {
+    const pts = state.perspPts && state.perspPts.length ? state.perspPts : null;
+    if (pts) { pts.forEach(p => hiRing(g, T(p), 10)); }
+    else if (state.persp && state.baseKey === baseKeyOf()) { const R = perspR(); if (R) { const q = [{ x: R.ox, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy + R.hMm * R.k }, { x: R.ox, y: R.oy + R.hMm * R.k }].map(imgToWorld).map(T);
+      hiStroke(g, () => { g.beginPath(); q.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); }, COL_HI, 3); } }
+    note(state.persp || pts ? _T`Rettangolo della prospettiva: ${fmt(+params().perspW, 0)} × ${fmt(+params().perspH, 0)} mm` : _t("Prospettiva non applicata: modalità Prospettiva (6), poi i 4 angoli."));
+  } else if (k === "mark") {
+    if (!gr) return;
+    const P = params();
+    gr.shots.forEach(s => { const u = (s.snap ? +P.markSnap : +P.markHand) * (s.hard ? 3 : 1), r = Calc.haloRadius(u) * sc; hiRing(g, T(s), Math.max(2.5, r), COL_HI, 1.6); });
+    note(_T`Incertezza di marcatura: cerchi al 95% (a mano ±${fmt(+P.markHand, 1)} px, snap ±${fmt(+P.markSnap, 1)} px, ×3 se difficile)`);
+  }
+}
+
+/* ------------------- ORIGINE DEI RISULTATI SULL'IMMAGINE -------------------
+   Pulsante ⌖ sulle schede e sulle righe principali: evidenzia sulla foto i fori e gli elementi usati da quel valore
+   (fori estremi, centro, cerchi del modello, mira), segna i fori esclusi e spiega il calcolo in una barra. */
+const ORIGIN_ROWS = () => [["Bordo-bordo esterno", "esEdge"], ["H-spread (orizz.)", "w"], ["V-spread (vert.)", "h"], ["FOM", "fom"], ["Convex hull", "hull"],
+  ["CEP (50%)", "cep"], ["R95", "r95"], ["R99", "r99"], ["SD distanze dal centro", "sdRadii"], ["SD radiale √(σx²+σy²)", "rsd"]].map(([l, k]) => [_t(l), k]);
+const ORIGIN_CARDS = ["es", "mr", "corr", "gqi"];
+function decorateOrigins(out) {
+  out.querySelectorAll(".res[data-gid]").forEach(box => {
+    const gid = +box.dataset.gid;
+    const btn = (k, small) => { const b = document.createElement("button"); b.className = "orgbtn" + (small ? " sm" : "") + (state.origin && state.origin.gid === gid && state.origin.key === k ? " on" : "");
+      b.title = _t("Mostra origine del dato: evidenzia sulla foto i fori e gli elementi usati per questo valore"); b.setAttribute("aria-label", b.title);
+      b.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); toggleOrigin(gid, k); }); return b; };
+    for (const k of ORIGIN_CARDS) { const t = box.querySelector(`.rcard[data-key="${k}"] .rc-t`); if (t) t.appendChild(btn(k)); }
+    const map = new Map(ORIGIN_ROWS());
+    box.querySelectorAll(".rcard td:first-child").forEach(td => { const k = map.get(td.textContent.trim()); if (k) td.appendChild(btn(k, true)); });
+    const h = box.querySelector("h3"); if (h && !box.querySelector(".bstarg")) {
+      const g = state.groups.find(x => x.id === gid);
+      if (g && inc(g).length >= 2) { const on = baseline && baseline.srcKey === rowSrcKey({ gid }); const b = document.createElement("button"); b.className = "bstar bstarg" + (on ? " on" : "");
+        b.title = on ? _t("Questo gruppo è la baseline (clic per toglierla)") : _t("Usa questo gruppo come baseline: resta disponibile anche nelle sessioni successive");
+        b.addEventListener("click", () => { if (on) { setBaseline(null); return; } const cc = calcContext(), gcc = ccG(cc, g);
+          const sm = groupSummary(inc(g), g.poa, gcc, { name: g.name, date: (g.load && g.load.date) || "", source: _t("sessione corrente"), gid: g.id, load: { ...g.load }, cfg: analysisCfg(params(), { calib: state.calib, persp: state.persp, lens: state.lens }, g) });
+          setBaseline(makeBaseline(sm)); });
+        h.appendChild(b); }
+    }
+  });
+}
+function toggleOrigin(gid, key) {
+  state.origin = state.origin && state.origin.gid === gid && state.origin.key === key ? null : { gid, key };
+  if (state.origin) { const g = state.groups.find(x => x.id === gid); if (g) showGroup(gid); }
+  refreshOriginUI(); requestDraw();
+}
+/** Elementi e spiegazione dell'origine di un valore. */
+function originInfo() {
+  const o = state.origin; if (!o) return null;
+  const g = state.groups.find(x => x.id === o.gid); if (!g) return null;
+  const cc = calcContext(), gcc = ccG(cc, g), pts = inc(g), ex = g.shots.filter(s => s.excluded), r = Calc.analyze(pts, g.poa, gcc);
+  if (r.n < 2 && o.key !== "corr") return { g, pts, ex, text: _t("Servono almeno 2 fori inclusi.") };
+  const k = gcc.pxPerMm || 0, L = v => k ? fmtLen(v) : `${fmt(v, 1)} px`, mmOrPx = key => k ? r.mm[key] : r.px[key];
+  const num = s => g.shots.indexOf(s) + 1, exT = ex.length ? _T` Esclusi e non usati: ${ex.map(s => _T`foro ${num(s)}`).join(", ")}.` : "";
+  const I = { g, pts, ex, r, gcc, key: o.key };
+  const xs = pts.map(s => s.x), ys = pts.map(s => s.y);
+  switch (o.key) {
+    case "es": case "esEdge": {
+      const [i, j] = r.esIdx || [0, 1]; I.pair = [pts[i], pts[j]];
+      I.text = (o.key === "es" ? _T`Group size (c-c) = distanza tra i centri dei fori ${num(pts[i])} e ${num(pts[j])}, la coppia più lontana tra i ${pts.length} fori inclusi: ${L(mmOrPx("es"))}.`
+        : _T`Bordo-bordo esterno = c-c tra i fori ${num(pts[i])} e ${num(pts[j])} + un calibro (${fmt(gcc.caliberMm || 0, 2)} mm): ${k ? fmtLen(r.mm.esEdge) : "–"}.`) + exT; break; }
+    case "w": case "h": case "fom": {
+      const lo = (o.key === "h" ? ys : xs).indexOf(Math.min(...(o.key === "h" ? ys : xs))), hi = (o.key === "h" ? ys : xs).indexOf(Math.max(...(o.key === "h" ? ys : xs)));
+      I.ext = o.key === "fom" ? ["w", "h"] : [o.key];
+      I.text = (o.key === "fom" ? _T`FOM = media di H-spread (${L(mmOrPx("w"))}) e V-spread (${L(mmOrPx("h"))}): ${L(mmOrPx("fom"))}; estremi orizzontali e verticali evidenziati.`
+        : o.key === "w" ? _T`H-spread = distanza orizzontale tra il foro più a sinistra (${num(pts[lo])}) e il più a destra (${num(pts[hi])}): ${L(mmOrPx("w"))}.`
+        : _T`V-spread = distanza verticale tra il foro più alto (${num(pts[lo])}) e il più basso (${num(pts[hi])}): ${L(mmOrPx("h"))}.`) + exT; break; }
+    case "hull": I.hull = Calc.convexHull(pts); I.text = _T`Convex hull: poligono convesso sui ${I.hull.length} fori più esterni dei ${pts.length} inclusi.` + exT; break;
+    case "mr": I.circle = r.px.mr; I.spokes = true; I.text = _T`Raggio medio = media delle distanze dei ${pts.length} fori inclusi dal centro del gruppo (croce): ${L(mmOrPx("mr"))} (cerchio).` + exT; break;
+    case "cep": case "r95": case "r99": case "sdRadii": case "rsd": {
+      const nm = { cep: "CEP (50%)", r95: "R95", r99: "R99", sdRadii: "SD distanze dal centro", rsd: "SD radiale" }[o.key];
+      if (["cep", "r95", "r99"].includes(o.key) && k) I.circle = r.mm[o.key] * k;
+      I.all = true;
+      I.text = _T`${_t(nm)}: non dipende da un foro particolare ma da tutti i ${pts.length} fori inclusi, attorno al centro del gruppo; ${["cep", "r95", "r99"].includes(o.key) ? _T`raggio previsto dal modello circolare normale con σ̂ = ${k ? fmt(r.mm.sigma, 2) + " mm" : "–"} (corretto per pochi colpi).` : _t("deviazione standard calcolata dalle distanze/coordinate.")}` + exT; break; }
+    case "gqi": {
+      const S = qiSet(), q = qiOf(g, gcc, S); I.all = true;
+      if (q.ok && k) { I.circle = Math.tan(q.mr) * gcc.distMm * k; I.ref = Math.tan(S.mrRef) * gcc.distMm * k; }
+      I.text = q.ok ? _T`GQI: raggio medio stimato da tutti i ${q.n} fori inclusi con il modello circolare normale (cerchio pieno, ${qiAng(q.mr, S.mrUnit)}) confrontato con il riferimento (cerchio tratteggiato, ${qiAng(S.mrRef, S.mrUnit)} alla distanza del gruppo).` + exT : _T`GQI non disponibile: ${qiReason(q.reason)}.`; break; }
+    case "corr": {
+      if (!g.poa || !pts.length) { I.text = _t("Servono il punto di mira e almeno un foro."); break; }
+      I.corr = true;
+      I.text = _T`Correzione: dal centro dei ${pts.length} fori inclusi (croce) al punto di mira: ${k ? `${fmt(Math.abs(r.offset.dx), 1)} mm ${r.offset.dx > 0 ? _t("a destra") : _t("a sinistra")}, ${fmt(Math.abs(r.offset.dy), 1)} mm ${r.offset.dy > 0 ? _t("in alto") : _t("in basso")}` : "–"}; i click convertono questi scostamenti in angolo alla distanza del gruppo.` + exT; break; }
+    default: return null;
+  }
+  return I;
+}
+function drawOrigin() {
+  const I = originInfo(); if (!I || !I.pts) return;
+  const g = ctx2d, T = toScreen, sc = state.view.scale;
+  const C = I.pts.length ? T(Calc.centroid(I.pts)) : null;
+  for (const s of I.ex) { const p = T(s); hiStroke(g, () => { g.beginPath(); g.moveTo(p.x - 7, p.y - 7); g.lineTo(p.x + 7, p.y + 7); g.moveTo(p.x + 7, p.y - 7); g.lineTo(p.x - 7, p.y + 7); }, "#6b7280", 2); }
+  if (I.pair) {
+    const [a, b] = I.pair.map(T); hiLine(g, a, b, COL_HI, 3); hiRing(g, a, 10); hiRing(g, b, 10);
+    if (I.key === "esEdge" && I.gcc.pxPerMm) { const R = I.gcc.caliberMm / 2 * I.gcc.pxPerMm * sc; hiRing(g, a, R, COL_HI, 1.4); hiRing(g, b, R, COL_HI, 1.4); }
+  }
+  if (I.ext) {
+    const cw = canvas.width / dpr, ch = canvas.height / dpr;
+    for (const e of I.ext) {
+      const vals = I.pts.map(s => e === "w" ? s.x : s.y), lo = I.pts[vals.indexOf(Math.min(...vals))], hi = I.pts[vals.indexOf(Math.max(...vals))];
+      for (const s of [lo, hi]) { const p = T(s); hiRing(g, p, 10); if (e === "w") hiLine(g, { x: p.x, y: 0 }, { x: p.x, y: ch }, COL_HI, 1.4, [6, 4]); else hiLine(g, { x: 0, y: p.y }, { x: cw, y: p.y }, COL_HI, 1.4, [6, 4]); }
+    }
+  }
+  if (I.hull && I.hull.length >= 3) { const q = I.hull.map(T); hiStroke(g, () => { g.beginPath(); q.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); }, COL_HI, 2.4); q.forEach(p => hiRing(g, p, 9)); }
+  if (I.all || I.spokes) I.pts.forEach(s => hiRing(g, T(s), 8, COL_HI, 1.6));
+  if (I.spokes && C) I.pts.forEach(s => hiLine(g, C, T(s), COL_HI, 1.2, [4, 3]));
+  if (I.circle && C) hiRing(g, C, I.circle * sc, COL_HI, 2.4);
+  if (I.ref && C) hiStroke(g, () => { g.beginPath(); g.arc(C.x, C.y, I.ref * sc, 0, Math.PI * 2); }, "#0f172a", 1.6, [7, 5]);
+  if (I.corr && C && I.g.poa) { const P = T(I.g.poa); hiLine(g, C, { x: P.x, y: C.y }, COL_HI, 2, [6, 4]); hiLine(g, { x: P.x, y: C.y }, P, COL_HI, 2, [6, 4]); hiLine(g, C, P, COL_HI, 3); hiRing(g, P, 12); }
+  if (C && (I.all || I.spokes || I.circle || I.corr)) hiStroke(g, () => { g.beginPath(); g.moveTo(C.x - 8, C.y); g.lineTo(C.x + 8, C.y); g.moveTo(C.x, C.y - 8); g.lineTo(C.x, C.y + 8); }, COL_HI, 2.4);
+}
+function refreshOriginUI() {
+  const bar = $("originBar"), I = originInfo();
+  if (!I) { bar.hidden = true; if (state.origin && !I) state.origin = null; return; }
+  bar.hidden = false; $("originText").textContent = I.text || "";
+  document.querySelectorAll("#results .orgbtn").forEach(b => b.classList.remove("on"));
+}
+
 function toggleHard(gid, id) {
   const g = state.groups.find(x => x.id === gid), s = g && g.shots.find(x => x.id === id); if (!s) return;
   s.hard = !s.hard; if (!s.hard) delete s.hard; commit();
@@ -11474,6 +12113,13 @@ $("notesReport").addEventListener("change", () => scheduleAutosave());
 $("cmpBody").addEventListener("change", e => { const k = e.target.dataset.dk; if (!k) return; if (e.target.checked) cmpState.diffOff.delete(k); else cmpState.diffOff.add(k); drawConfigDiff(compareRows()); });
 initDetailWin();
 initSplitter();
+// 1.17.0: coda di revisione, origine del dato, collegamento parametri, selezione del periodo
+$("bReview").addEventListener("click", openReview);
+$("bRvPrev").addEventListener("click", () => reviewStep(-1));
+$("bRvNext").addEventListener("click", () => reviewStep(1));
+$("rvShowOk").addEventListener("change", refreshReview);
+$("bOriginClose").addEventListener("click", () => { state.origin = null; refreshOriginUI(); refreshResults(); requestDraw(); });
+initParamHi(); initTrendSelect();
 window.addEventListener("resize", () => { const w = $("side").getBoundingClientRect().width; if (w > window.innerWidth - 320) setSideWidth(w, false); });
 window.addEventListener("resize", resizeCanvas);
 
@@ -11487,10 +12133,10 @@ setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); else { checkAutosave(); refreshArchiveInfo(); }
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
-  VIEWCONE, coneData, corData, corLevels, targetSpec, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
+  VIEWCONE, coneData, corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
   applyLens, worldToRaw, rawToWorld, fitLensFromLines, lensParams, setMode,
   flyerTest, holeScaleCheck, refScaleCheck, measInfo, diagInfo, diagMemo, RT_VIEW, calibQuality,
   correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getProfiles, saveProfile, applyProfile, stabInfo, moveShot, setParams, deleteProfile, importProfilesText, profileAutoName, setWindDir, refreshWindDial, exportReportPdf, applyCrop, undoCrop, cropRectNorm, cropOutside, readZip, sessionsFromZip, buildSessionZip, saveSessionZip, openSessionFile, CARD_OPEN, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap ,

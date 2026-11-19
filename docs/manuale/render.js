@@ -21,6 +21,6 @@ const D = __dirname, pages = process.argv[2] ? JSON.parse(fs.readFileSync(proces
   fs.writeFileSync(path.join(D, "heads.json"), JSON.stringify(heads));
   await p.pdf({ path: path.join(D, "manuale.pdf"), format: "A4", printBackground: true, displayHeaderFooter: true, preferCSSPageSize: true,
     headerTemplate: "<span></span>",
-    footerTemplate: '<div style="width:100%;font-size:8px;color:#7b8794;font-family:Arial;padding:0 17mm;display:flex;justify-content:space-between"><span>Shoot Analyzer · Manuale d\'uso v1.16</span><span class="pageNumber"></span></div>' });
+    footerTemplate: '<div style="width:100%;font-size:8px;color:#7b8794;font-family:Arial;padding:0 17mm;display:flex;justify-content:space-between"><span>Shoot Analyzer · Manuale d\'uso v1.17</span><span class="pageNumber"></span></div>' });
   await b.close();
 })();

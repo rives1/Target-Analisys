@@ -704,7 +704,8 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await page.selectOption("#langSel", "en");
   assert.strictEqual(await page.evaluate(() => document.documentElement.lang), "en");
   assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Results");
-  assert.strictEqual((await page.textContent("#bLoad")).trim(), "📂 Load photo");
+  assert.strictEqual(await page.getAttribute("#bLoad", "aria-label"), "Load photo");   // dalla 1.17.0 la barra principale ha solo icone
+  assert.strictEqual(await page.getAttribute("#bLoad", "title"), "Load photo (Ctrl+O)");
   assert.strictEqual(await page.getAttribute("#bUndo", "title"), "Undo (Ctrl+Z)");
   // lavoro completo in inglese
   await loadTarget(page);
@@ -2327,6 +2328,249 @@ test("1.16.0: storico con valutazione originale, sessioni vecchie compatibili, i
   ok2(!ITALIAN.test(txt), "risultati e impostazioni in inglese: " + (txt.match(ITALIAN) || [""])[0]);
   assert.match(txt, /— (Excellent|Good|Fair|Poor|Insufficient)/);
   await page.evaluate(() => window.__SA.resultText());
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+});
+
+/* ------------------------------ 1.17.0 ------------------------------ */
+// fori del test: 1–2 sovrapposti (centri a 12 px < mezzo calibro 15,6 px), 3 segnato difficile, 6 lontano (possibile flyer)
+const RV_SHOTS = [{ x: 420, y: 240 }, { x: 432, y: 240 }, { x: 380, y: 200 }, { x: 460, y: 280 }, { x: 380, y: 290 }, { x: 590, y: 110 }, { x: 440, y: 300 }, { x: 395, y: 250 }];
+test("1.17.0: barra principale solo icone con tooltip e nome accessibile", async page => {
+  const B = await page.$$eval("#toolbar button", bs => bs.map(b => ({ id: b.id, t: (b.childNodes[b.childNodes.length - 1] && b.firstChild.nodeType === 3 ? b.firstChild.textContent : [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("")).trim(), title: b.title, aria: b.getAttribute("aria-label") })));
+  ok2(B.length >= 20, "pulsanti " + B.length);
+  for (const b of B) {
+    ok2(b.title && b.title.length > 3, "tooltip di " + b.id);
+    ok2(b.aria || /zoom/i.test(b.title), "nome accessibile di " + b.id);
+    ok2([...b.t].length <= 3, `solo icona in ${b.id}: «${b.t}»`);
+  }
+  // le scorciatoie sono nel tooltip
+  assert.match(await page.getAttribute("#bReview", "title"), /\(V\)$/);
+  assert.match(await page.getAttribute('#toolbar [data-mode="shot"]', "title"), /\(4\)$/);
+  // i pulsanti del pannello mantengono il testo
+  ok2((await page.textContent("#bAddGroup")).trim().length > 4, "pulsanti del pannello con testo");
+});
+test("1.17.0: coda di revisione — difficili, sovrapposti, flyer; centratura, conferma, rimando, correzione", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, RV_SHOTS);
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].shots[2].hard = 1; commit(); });
+  // verifica indipendente: sovrapposizioni a rischio = centri a meno di mezzo calibro (7,82 mm × 4 px/mm / 2)
+  const exp = await page.evaluate(() => { const { state, flyerMap } = window.__SA, g = state.groups[0], cal = 7.82 * 4 / 2, fl = flyerMap(g);
+    return g.shots.map((s, i) => [g.shots.some((t, j) => j !== i && Math.hypot(s.x - t.x, s.y - t.y) < cal) ? "o" : "", s.hard ? "h" : "", fl.get(s.id) && fl.get(s.id).flagged ? "f" : ""].join("")); });
+  const items = await page.evaluate(() => window.__SA.reviewItems().map(x => ({ i: x.i, k: x.kinds.join(","), mark: x.mark, stat: x.stat, st: x.st })));
+  for (const it of items) { const e = exp[it.i]; ok2(e, "foro " + (it.i + 1) + " non atteso"); assert.strictEqual(it.k.includes("overlap"), e.includes("o")); assert.strictEqual(it.k.includes("hard"), e.includes("h")); assert.strictEqual(it.k.includes("flyer"), e.includes("f")); }
+  assert.strictEqual(items.length, exp.filter(Boolean).length, "elementi della coda");
+  ok2(items.some(x => x.i === 0 && x.mark && !x.stat) && items.some(x => x.i === 2 && x.k === "hard"), "sovrapposti e difficile = marcatura");
+  const fly = items.find(x => x.stat); ok2(fly && fly.i === 5, "flyer statistico sul foro 6");
+  assert.strictEqual((await page.textContent("#rvBadge")).trim(), String(items.length), "badge della barra");
+  // le etichette distinguono marcatura e statistica
+  await page.evaluate(() => { const d = document.getElementById("sec-review"); d.open = true; });
+  assert.strictEqual(await page.$$eval("#rvList .rvtag.stat", e => e.length), 1);
+  // V apre la coda e centra il primo foro con un ingrandimento che mostra il foro a ~90 px
+  await key(page, "v");
+  const f = await page.evaluate(() => { const { state, toScreen } = window.__SA, c = document.getElementById("canvas").getBoundingClientRect(), sel = state.selected, g = state.groups[0], s = g.shots.find(x => x.id === sel.id), p = toScreen(s);
+    return { sel, dx: p.x - c.width / 2, dy: p.y - c.height / 2, holePx: 7.82 * 4 * state.view.scale, idx: g.shots.indexOf(s) }; });
+  assert.strictEqual(f.sel.kind, "shot"); near(f.dx, 0, 1.5, "centratura x"); near(f.dy, 0, 1.5, "centratura y"); near(f.holePx, 90, 1, "foro sullo schermo (px)");
+  assert.strictEqual(f.idx, items[0].i);
+  // conferma: il colpo esce dalla coda e il successivo viene centrato
+  await page.click('#rvList .rv-row.cur button[data-rv="ok"]');
+  const a1 = await page.evaluate(() => ({ pend: window.__SA.reviewItems().filter(x => x.st === "pending").length, sel: window.__SA.state.selected.id, rv: window.__SA.state.groups[0].shots.map(s => s.review ? s.review.st : "") }));
+  assert.strictEqual(a1.pend, items.length - 1); assert.strictEqual(a1.rv[items[0].i], "ok"); ok2(a1.sel !== undefined, "selezione");
+  assert.strictEqual((await page.textContent("#rvBadge")).trim(), String(items.length - 1));
+  // la conferma del flyer non lo esclude (statistica ≠ identificazione)
+  await page.evaluate(() => { const SA = window.__SA, x = SA.reviewItems().find(y => y.stat); SA.reviewAction(x, "ok", 0); });
+  assert.strictEqual(await page.evaluate(() => !!window.__SA.state.groups[0].shots[5].excluded), false, "flyer confermato ma non escluso");
+  // rimando: va in fondo alla coda
+  await page.evaluate(() => { const SA = window.__SA, L = SA.rvVisible(); SA.reviewAction(L[0], "later", 0); });
+  const L2 = await page.evaluate(() => window.__SA.rvVisible().map(x => x.st));
+  assert.strictEqual(L2[L2.length - 1], "later");
+  // conferma nella storia (annulla) e nella sessione
+  await page.evaluate(() => { const SA = window.__SA, x = SA.reviewItems().find(y => y.i === 2); SA.reviewAction(x, "ok", 0); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.reviewItems().find(y => y.i === 2).st), "ok");
+  const ses = JSON.parse(await page.evaluate(() => JSON.stringify(window.__SA.buildSession(false))));
+  ok2(ses.groups[0].shots[2].review && ses.groups[0].shots[2].review.st === "ok", "stato di revisione nella sessione");
+  await page.evaluate(() => window.__SA.undo());
+  assert.strictEqual(await page.evaluate(() => window.__SA.reviewItems().find(y => y.i === 2).st), "pending", "annulla ripristina lo stato");
+  await page.evaluate(() => window.__SA.redo());
+  // stesse ragioni → stato mantenuto; ragioni diverse (foro 3 anche sovrapposto) → di nuovo da rivedere
+  await page.evaluate(() => { const SA = window.__SA, g = SA.state.groups[0]; SA.toggleHard(g.id, g.shots[2].id); SA.toggleHard(g.id, g.shots[2].id); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.reviewItems().find(y => y.i === 2).st), "ok", "stesse ragioni: stato mantenuto");
+  await page.evaluate(() => { const { state, commit } = window.__SA, g = state.groups[0]; g.shots[2].x = g.shots[4].x; g.shots[2].y = g.shots[4].y - 10; commit(); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.reviewItems().find(y => y.i === 2).st), "pending", "ragioni cambiate: da rivedere");
+  // esclusione e cancellazione dalla coda
+  await page.evaluate(() => { const SA = window.__SA, x = SA.reviewItems().find(y => y.i === 1); SA.reviewAction(x, "excl", 0); });
+  assert.strictEqual(await page.evaluate(() => !!window.__SA.state.groups[0].shots[1].excluded), true);
+  const n0 = await page.evaluate(() => window.__SA.state.groups[0].shots.length);
+  await page.evaluate(() => { const SA = window.__SA, x = SA.reviewItems().find(y => y.i === 1); SA.reviewAction(x, "del", 0); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].shots.length), n0 - 1);
+  // senza scala: niente sovrapposizioni (servono scala e calibro), restano difficili e flyer
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.calib = { p1: null, p2: null }; commit(); });
+  ok2(await page.evaluate(() => window.__SA.reviewItems().every(x => !x.kinds.includes("overlap"))), "nessuna sovrapposizione senza scala");
+});
+test("1.17.0: collegamento parametri ↔ immagine (calibro, scala, distanza)", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await key(page, "f"); await redraw(page);
+  const before = await page.evaluate(() => window.__SA.state.paramHi);
+  assert.strictEqual(before, null);
+  // calibro: cerchio della dimensione reale del foro su ogni foro del gruppo attivo
+  await page.focus("#caliber"); await redraw(page);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.paramHi), "caliber");
+  const sc = await page.evaluate(() => window.__SA.state.view.scale), R = 7.82 / 2 * 4;   // raggio in px della foto, indipendente
+  const s0 = SHOTS[3];
+  const orange = c => c[0] > 200 && c[1] > 60 && c[1] < 140 && c[2] < 60;
+  // cerca il cerchio arancio a distanza R dal centro del foro, a destra del foro (nessun altro foro lì)
+  let hit = false;
+  for (let d = -1.2; d <= 1.2 && !hit; d += 0.3 / sc) if (orange(await pixelAt(page, { x: s0.x, y: s0.y - R + d }))) hit = true;
+  ok2(hit, "cerchio del calibro a r = " + R + " px");
+  ok2(!orange(await pixelAt(page, { x: s0.x, y: s0.y - R - 4 })), "niente fuori dal cerchio");
+  // scala: i due punti A e B e la distanza nota
+  await page.focus("#calDist"); await redraw(page);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.paramHi), "calib");
+  ok2(orange(await pixelAt(page, { x: 200, y: 500 })), "segmento A–B evidenziato");
+  // distanza: cerchio di 1 MIL al centro del gruppo (diametro 100 mm a 100 m = 400 px)
+  await page.focus("#shotDist"); await redraw(page);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.paramHi), "dist");
+  const c = await page.evaluate(() => window.__SA.Calc.centroid(window.__SA.state.groups[0].shots));
+  const rr = Math.tan(0.001 / 2) * 2 * 100000 / 2 * 4;
+  let h2 = false; for (let d = -1.5; d <= 1.5 && !h2; d += 0.5) if (orange(await pixelAt(page, { x: c.x + rr + d, y: c.y }))) h2 = true;
+  ok2(h2, "cerchio di 1 MIL r = " + rr);
+  await page.evaluate(() => document.activeElement.blur()); await page.mouse.move(5, 5); await redraw(page);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.paramHi), null, "evidenziazione tolta");
+});
+test("1.17.0: mostra origine del dato — ES, H-spread, raggio medio, esclusi", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].shots[1].excluded = true; commit(); });
+  // ES: coppia più lontana tra i fori inclusi (verifica a forza bruta)
+  const inc = SHOTS.map((s, i) => ({ ...s, n: i + 1 })).filter(s => s.n !== 2);
+  let best = [0, 0, 0]; for (const a of inc) for (const b of inc) { const d = Math.hypot(a.x - b.x, a.y - b.y); if (d > best[0]) best = [d, Math.min(a.n, b.n), Math.max(a.n, b.n)]; }
+  await page.click('#results .rcard[data-key="es"] .orgbtn');
+  ok2(await page.isVisible("#originBar"), "barra dell'origine");
+  const t = await page.textContent("#originText");
+  ok2(t.includes(`fori ${best[1]} e ${best[2]}`), "coppia dell'ES: " + t);
+  ok2(t.includes(fmtIt(best[0] / 4, 1) + " mm"), "valore dell'ES: " + t);
+  ok2(/Esclusi e non usati: foro 2/.test(t), "foro escluso dichiarato");
+  // l'evidenziazione è sul segmento tra i due fori
+  await redraw(page);
+  const A = SHOTS[best[1] - 1], Bp = SHOTS[best[2] - 1], mid = { x: (A.x + Bp.x) / 2, y: (A.y + Bp.y) / 2 };
+  const px = await pixelAt(page, mid); ok2(px[0] > 200 && px[2] < 80, "linea della coppia: " + px);
+  // H-spread: estremi orizzontali
+  const xs = inc.map(s => s.x), lo = inc[xs.indexOf(Math.min(...xs))].n, hi = inc[xs.indexOf(Math.max(...xs))].n;
+  await page.evaluate(() => { const b = [...document.querySelectorAll("#results .rcard td")].find(td => /^H-spread/.test(td.textContent)); b.querySelector(".orgbtn").click(); });
+  const t2 = await page.textContent("#originText"); ok2(t2.includes(`(${lo})`) && t2.includes(`(${hi})`), "estremi orizzontali: " + t2);
+  // raggio medio: tutti i fori inclusi
+  await page.click('#results .rcard[data-key="mr"] .orgbtn');
+  assert.match(await page.textContent("#originText"), new RegExp(`dei ${inc.length} fori inclusi`));
+  // il testo dei risultati non contiene i simboli dei pulsanti
+  ok2(!(await page.textContent("#results")).includes("⌖"), "simboli solo dal CSS");
+  // Esc toglie l'evidenziazione
+  await key(page, "Escape");
+  assert.strictEqual(await page.isVisible("#originBar"), false);
+});
+const fmtIt = (v, d) => v.toFixed(d).replace(".", ",");
+test("1.17.0: baseline persistente — card, condizioni, sessione, browser", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await setField(page, "#ld-weather", "sole");
+  // il gruppo 1 diventa la baseline
+  await page.click("#results .bstarg");
+  const B = await page.evaluate(() => window.__SA.baselineState().baseline);
+  ok2(B && B.bid && B.n === 5, "baseline creata");
+  ok2(await page.evaluate(() => !!JSON.parse(localStorage.getItem("shootAnalyzer.baseline")).bid), "salvata nel browser");
+  // secondo gruppo, più stretto e a 50 m, con meteo diverso
+  await page.click("#bAddGroup");
+  await clickAt(page, { x: 190, y: 400 });
+  for (const s of [{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]) await clickAt(page, s);
+  await setField(page, "#shotDist", 50); await setField(page, "#ld-weather", "pioggia");
+  const card = await page.evaluate(() => { const g = window.__SA.state.groups[1]; const c = document.querySelector(`.res[data-gid="${g.id}"] .rcard[data-key="base"]`); return c ? c.textContent : null; });
+  ok2(card, "card della baseline nel secondo gruppo");
+  ok2(/50 m · 3 colpi/.test(card) && /100 m · 5 colpi/.test(card), "distanza e colpi evidenti: " + card.slice(0, 200));
+  ok2(/distanza 50 m contro 100 m/.test(card), "avviso di distanza diversa");
+  ok2(/3 colpi contro 5/.test(card), "avviso: il group size dipende dal numero di colpi");
+  ok2(/condizioni diverse: Meteo/.test(card), "condizioni diverse (la distanza ha il suo avviso): " + card);
+  // differenza ES in MIL calcolata in modo indipendente dalle coordinate
+  const es = pts => { let m = 0; for (const a of pts) for (const b of pts) m = Math.max(m, Math.hypot(a.x - b.x, a.y - b.y)); return m; };
+  const mil = (px, D) => 2 * Math.atan(px / 4 / 2 / D) * 1000;
+  const dEs = mil(es([{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]), 50000) - mil(es(SHOTS), 100000);
+  const shown = await page.evaluate(() => { const g = window.__SA.state.groups[1], row = window.__SA.compareRows().find(r => r.gid === g.id); return window.__SA.baselineCompare(row).mets.find(m => m.k === "es").d; });
+  near(shown, dEs, 1e-6, "Δ ES (MIL)");
+  // test F di σ: s² angolari dei due gruppi
+  const F = await page.evaluate(() => { const SA = window.__SA, g = SA.state.groups[1], row = SA.compareRows().find(r => r.gid === g.id), b = SA.baselineState().baseline, t = SA.sigmaFTest(row, b);
+    const c = SA.Calc.fcdf(row.qi.s2 / b.qi.s2, row.qi.nu, b.qi.nu); return { t, p: Math.min(1, 2 * Math.min(c, 1 - c)), nu: [row.qi.nu, b.qi.nu] }; });
+  near(F.t.p, F.p, 1e-12, "p del test F"); assert.deepStrictEqual(F.nu, [4, 8], "gradi di libertà 2(n−1)");
+  // nella sessione; nuova pagina dello stesso browser: la baseline c'è ancora
+  const ses = await page.evaluate(() => JSON.stringify(window.__SA.buildSession(true)));
+  assert.strictEqual(JSON.parse(ses).baseline.bid, B.bid);
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), B.bid, "baseline ricordata dal browser");
+  // browser senza baseline: quella del file viene adottata
+  await page.evaluate(() => window.__SA.setBaseline(null, true));
+  await page.evaluate(t => window.__SA.loadSessionText(t), ses);
+  assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), B.bid, "adottata dal file");
+  // browser con un'altra baseline: quella del file è proposta, non imposta
+  await page.evaluate(() => { const SA = window.__SA, r = SA.compareRows().find(x => x.gid === SA.state.groups[1].id); SA.setBaseline(SA.makeBaseline(r), true); });
+  const other = await page.evaluate(() => window.__SA.baselineState().baseline.bid);
+  await page.evaluate(t => window.__SA.loadSessionText(t), ses);
+  assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), other, "non sostituita");
+  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  ok2(await page.isVisible("#bBaseFile"), "«Usa questa» proposto");
+  await page.click("#bBaseFile");
+  assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), B.bid);
+  // stella sulla riga della baseline nel confronto; metriche scelte ricordate
+  assert.strictEqual(await page.$$eval("#cmpBody .bstar.on", e => e.length), 1);
+  await page.uncheck('#baseBox input[data-bm="gqi"]'); await page.dispatchEvent('#baseBox input[data-bm="gqi"]', "change");
+  assert.deepStrictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("shootAnalyzer.baselineMetrics"))), ["es", "mr", "sigma"]);
+});
+test("1.17.0: selezione di un periodo nell'andamento — σ combinato contro tutto prima", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const G = [[{ x: 560, y: 400 }, { x: 600, y: 420 }, { x: 540, y: 370 }, { x: 590, y: 360 }], [{ x: 250, y: 400 }, { x: 266, y: 408 }, { x: 240, y: 388 }], [{ x: 650, y: 520 }, { x: 668, y: 532 }, { x: 636, y: 512 }, { x: 660, y: 500 }]];
+  for (const pts of G) { await page.click("#bAddGroup"); await clickAt(page, { x: pts[0].x - 60, y: pts[0].y }); for (const s of pts) await clickAt(page, s); }
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.groups.forEach((g, i) => { g.load.date = `2026-0${i + 1}-10`; }); commit(); });
+  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  // trascinamento sul grafico: dagli ultimi due punti
+  await page.evaluate(() => document.getElementById("chTrend").scrollIntoView({ block: "center" }));
+  const geo = await page.evaluate(() => { const r = document.getElementById("chTrend").getBoundingClientRect(), G = window.__SA.CH.trendGeom; return { x: r.left, y: r.top + r.height / 2, G }; });
+  const X = i => geo.x + geo.G.padL + i * geo.G.pw / (geo.G.n - 1);
+  await page.mouse.move(X(2) - 3, geo.y); await page.mouse.down(); await page.mouse.move(X(3) - 10, geo.y, { steps: 5 }); await page.mouse.move(X(3), geo.y, { steps: 3 }); await page.mouse.up();
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.cmpState.range), { a: 2, b: 3 });
+  // verifica indipendente: σ² combinato = Σ ν s² / Σ ν sulle s² angolari
+  const chk = await page.evaluate(() => { const SA = window.__SA, rows = SA.compareRows(), C = SA.rangeCompare(rows);
+    const pool = rs => { const nu = rs.reduce((a, r) => a + r.qi.nu, 0); return { nu, s2: rs.reduce((a, r) => a + r.qi.nu * r.qi.s2, 0) / nu }; };
+    const A = pool(rows.slice(2, 4)), B = pool(rows.slice(0, 2)), f = A.s2 / B.s2, c = SA.Calc.fcdf(f, A.nu, B.nu);
+    return { A, B, s: C.S.P, v: C.Pv.P, F: C.F, p: Math.min(1, 2 * Math.min(c, 1 - c)), n: [C.S.n, C.Pv.n], k: [C.S.k, C.Pv.k] }; });
+  near(chk.s.s2, chk.A.s2, chk.A.s2 * 1e-9, "σ² della selezione"); near(chk.v.s2, chk.B.s2, chk.B.s2 * 1e-9, "σ² di prima");
+  assert.strictEqual(chk.s.nu, chk.A.nu); near(chk.F.p, chk.p, 1e-12, "p del test F");
+  assert.deepStrictEqual(chk.n, [7, 9]); assert.deepStrictEqual(chk.k, [2, 2]);
+  const txt = await page.textContent("#cmpRange");
+  ok2(/Selezione\s*2\s*7/.test(txt) && /Tutto prima\s*2\s*9/.test(txt), "tabella del periodo: " + txt.slice(0, 300));
+  assert.strictEqual(await page.$$eval("#cmpBody tr.inrange", e => e.length), 2);
+  // i dati non cambiano; doppio clic = nessuna selezione
+  const before = await page.evaluate(() => JSON.stringify(window.__SA.state.groups));
+  await page.dblclick("#chTrend");
+  assert.strictEqual(await page.evaluate(() => window.__SA.cmpState.range), null);
+  assert.strictEqual(await page.evaluate(() => JSON.stringify(window.__SA.state.groups)), before);
+  // selezione dai menu, a partire dal primo gruppo: niente «prima»
+  await page.selectOption("#rgA", "0"); await page.selectOption("#rgB", "1"); await page.click("#bRgSet");
+  assert.match(await page.textContent("#cmpRange"), /Nessun gruppo prima/);
+});
+test("1.17.0: inglese — coda di revisione, origine, baseline e periodo tradotti", async page => {
+  await page.evaluate(() => window.__SA.setLang("en"));
+  await loadTarget(page);
+  await setupGroup(page, POA, RV_SHOTS);
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].shots[2].hard = 1; commit(); });
+  await page.click("#results .bstarg");
+  await page.click("#bAddGroup"); await clickAt(page, { x: 190, y: 400 });
+  for (const s of [{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]) await clickAt(page, s);
+  await key(page, "v");
+  for (const k of ["es", "mr", "gqi", "corr"]) { await page.evaluate(k => { const SA = window.__SA; SA.state.origin = null; SA.toggleOrigin(SA.state.groups[0].id, k); }, k); ok2(!ITALIAN.test(await page.textContent("#originText")), "origine " + k + ": " + await page.textContent("#originText")); }
+  for (const id of ["caliber", "calDist", "shotDist", "markHand", "clickVal"]) { await page.focus("#" + id); await redraw(page); }
+  await page.evaluate(() => document.activeElement.blur());
+  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__SA.setRange(1, 1));
+  const txt = (await page.textContent("#sec-review")) + (await page.textContent("#results")) + (await page.textContent("#baseBox")) + (await page.textContent("#cmpRange"));
+  ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
 
