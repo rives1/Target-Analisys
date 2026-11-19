@@ -589,4 +589,37 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   ok(SD.drift.x.p < 0.01 && Math.abs(SD.drift.x.slope - 1) < 0.35, "deriva orizzontale rilevata: " + JSON.stringify(SD.drift.x));
 }
 
+// --- 1.15.0: righello libero, alone di incertezza, passo del righello, differenze tra configurazioni
+{
+  // 3-4-5: 500 px a 10 px/mm = 50 mm; orientamento atan(400/300) = 53,13° (y della foto verso il basso)
+  const M = Calc.measureLine({ x: 100, y: 500 }, { x: 400, y: 100 }, { pxPerMm: 10, distMm: 100000 });
+  near(M.px, 500, 1e-12, "righello: px"); near(M.mm, 50, 1e-12, "righello: mm"); near(M.inch, 50 / 25.4, 1e-12, "righello: pollici");
+  near(M.deg, Math.atan2(4, 3) * 180 / Math.PI, 1e-9, "righello: orientamento"); near(M.axisDev, 90 - 53.130102354, 1e-6, "righello: scarto dall'asse");
+  near(M.MIL, 2 * Math.atan(50 / 200000) * 1000, 1e-9, "righello: MRAD esatti"); near(M.MOA, M.MIL / 1000 * 180 / Math.PI * 60, 1e-9, "righello: MOA");
+  near(Calc.measureLine({ x: 0, y: 0 }, { x: 1000, y: 0 }, { pxPerMm: 10, distMm: 100000 }).MIL, 1, 1e-6, "righello: 100 mm a 100 m ≈ 1 MIL");
+  near(Calc.measureLine({ x: 0, y: 0 }, { x: 1000, y: 0 }, { pxPerMm: 10, distMm: 91440 }).MOA, 3.759, 0.001, "righello: 100 mm a 100 yd in MOA");
+  near(Calc.measureLine({ x: 50, y: 0 }, { x: 0, y: 0 }).deg, 0, 1e-12, "verso opposto: 0° (non 180°)");
+  near(Calc.measureLine({ x: 0, y: 0 }, { x: 0, y: 80 }).deg, 90, 1e-12, "verticale: 90°");
+  near(Calc.measureLine({ x: 0, y: 0 }, { x: 100, y: 1 }).deg, -Math.atan(0.01) * 180 / Math.PI, 1e-9, "scende verso destra: angolo negativo");
+  near(Calc.measureLine({ x: 100, y: 1 }, { x: 0, y: 0 }).deg, -Math.atan(0.01) * 180 / Math.PI, 1e-9, "stesso valore nel verso opposto");
+  near(Calc.measureLine({ x: 0, y: 100 }, { x: 1, y: 0 }).axisDev, Math.atan(0.01) * 180 / Math.PI, 1e-9, "quasi verticale: scarto da 90°");
+  near(Calc.measureLine({ x: 0, y: 0 }, { x: 100, y: 1 }).axisDev, Math.atan(0.01) * 180 / Math.PI, 1e-9, "scarto piccolo anche scendendo");
+  const U = Calc.measureLine({ x: 0, y: 0 }, { x: 30, y: 40 }); eq([U.mm, U.MOA], [null, null], "senza scala solo pixel");
+  eq(Calc.measureLine({ x: 0, y: 0 }, { x: 30, y: 40 }, { pxPerMm: 2 }).MOA, null, "senza distanza niente angoli");
+  // alone: R = u·√(−2 ln(1−p)); 95% → 2,4477·u; copertura simulata
+  near(Calc.haloRadius(1, 0.95), 2.447747, 1e-6, "alone 95%"); near(Calc.haloRadius(2, 1 - Math.exp(-2)), 4, 1e-12, "alone 86,5% = 2·u (u = 2)");
+  eq(Calc.haloRadius(0), 0, "alone nullo senza incertezza");
+  { const rnd = Calc.prng(15), gs = () => Math.sqrt(-2 * Math.log(rnd() || 1e-12)) * Math.cos(2 * Math.PI * rnd()); let inside = 0; const N = 20000, R = Calc.haloRadius(1.5);
+    for (let i = 0; i < N; i++) if (Math.hypot(1.5 * gs(), 1.5 * gs()) <= R) inside++;
+    near(inside / N, 0.95, 0.008, "copertura simulata dell'alone al 95%"); }
+  // passo «tondo» del righello
+  eq(Calc.niceLength(37), { len: 20, div: 4 }, "passo 37 → 20"); eq(Calc.niceLength(100), { len: 100, div: 10 }, "passo 100");
+  eq(Calc.niceLength(7.9), { len: 5, div: 5 }, "passo 7,9 → 5"); eq(Calc.niceLength(0.3).len, 0.2, "passo 0,3 → 0,2"); eq(Calc.niceLength(0), null, "passo nullo");
+  // differenze: valori registrati diversi = diff; uguali ma mancanti altrove = partial; normalizzazione
+  const D = Calc.differingKeys([{ a: "42,0", b: "Lapua", c: "", d: 100, e: " RS62 " }, { a: "42.0", b: "lapua", c: "CCI", d: 200, e: "rs62" }, { a: "42.5", b: "Lapua", c: "CCI", d: 100 }], ["a", "b", "c", "d", "e"]);
+  eq(D, { diff: ["a", "d"], partial: ["c", "e"] }, "differenze tra configurazioni: " + JSON.stringify(D));
+  eq(Calc.differingKeys([{ a: 1 }, { a: 1 }], ["a"]), { diff: [], partial: [] }, "configurazioni uguali: niente righe");
+  eq(Calc.differingKeys([{ a: "1,5" }, { a: "1.5" }], ["a"]).diff, [], "virgola decimale = punto");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

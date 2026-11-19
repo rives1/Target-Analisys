@@ -84,7 +84,7 @@ const GROUPS = [
   await ev(({ GROUPS }) => {
     const S = window.__SA, st = S.state; let seed = 11; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const gauss = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
-    const V = [[400, 450], [800, 450], [1200, 450]], K = 5, cols = ["#2563eb", "#db2777", "#16a34a"];
+    const V = [[400, 450], [800, 450], [1200, 450]], K = 5, cols = ["#2563eb", "#c2410c", "#7c3aed"];   // palette 1.15 (niente giallo né colori chiari)
     st.groups = GROUPS.map((G, i) => { const [cx, cy] = V[G.v];
       const shots = Array.from({ length: G.n }, (_, k) => ({ id: 1000 + i * 100 + k, x: cx + (G.off[0] + G.sd * gauss()) * K, y: cy - (G.off[1] + G.sd * gauss()) * K, dv: 0, dh: 0 }));
       return { id: 10 + i, name: G.name, color: cols[i], dist: 100, poa: { x: cx, y: cy }, shots,
@@ -167,6 +167,34 @@ const GROUPS = [
   const c1 = await scr({ x: 150, y: 150 }), c2 = await scr({ x: 1450, y: 1150 });
   await page.mouse.move(c1.x, c1.y); await page.mouse.down(); await page.mouse.move(c2.x, c2.y, { steps: 5 }); await page.mouse.up();
   await shotPage("23_ritaglio", { x: 0, y: 0, width: 905, height: 900 }); await key("Escape");
+  // 1.15: blocco, note, alone, righello, dettaglio, scala sulla foto
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await ev(() => { const S = window.__SA, st = S.state, g = st.groups[0];
+    S.setLock({ kind: "shot", gid: g.id, id: g.shots[0].id }, true); st.selected = { kind: "shot", gid: g.id, id: g.shots[0].id };
+    st.notes = [{ id: 5001, text: "colpo partito con lo scatto strappato", sid: g.shots[2].id, gid: g.id }, { id: 5002, text: "carta increspata sul bordo del visuel", x: 430, y: 520 }];
+    st.activeGroupId = g.id; S.commit();
+    const h = document.getElementById("haloOn"); h.checked = true; h.dispatchEvent(new Event("change")); });
+  await zoomTo(495, 405, 3); await page.mouse.move(5, 890); await page.waitForTimeout(300);
+  await shotPage("50_blocco_note", { x: 0, y: 120, width: 905, height: 640 });
+  await ev(() => { const h = document.getElementById("haloOn"); h.checked = false; h.dispatchEvent(new Event("change")); window.__SA.state.selected = null; window.__SA.refreshLists(); window.__SA.commit(); });
+  await ev(() => { document.querySelectorAll("#side details").forEach(d => { d.open = d.id === "sec-notes"; }); }); await page.waitForTimeout(200);
+  await shotEl("#sec-notes", "54_note_sezione");
+  // righello sul diametro dell'anello da 60 mm del visuel centrale
+  await zoomTo(800, 450, 1.6); await key("r");
+  { const p1 = await scr({ x: 650, y: 450 }), p2 = await scr({ x: 950, y: 450 }); await page.mouse.click(p1.x, p1.y); await page.mouse.click(p2.x, p2.y); }
+  await page.mouse.move(5, 890); await page.waitForTimeout(250);
+  await shotPage("52_righello", { x: 0, y: 0, width: 905, height: 900 }); await key("Escape");
+  // finestra di dettaglio sul gruppo 2
+  await ev(() => window.__SA.fitView()); await key("d");
+  await ev(() => { const S = window.__SA, g = S.state.groups[1], c = S.Calc.centroid(g.shots); S.detail.pt = { x: c.x, y: c.y }; S.setDetailZoom(4);
+    const w = document.getElementById("detailWin"); w.style.left = "470px"; w.style.top = "430px"; w.style.width = "420px"; w.style.height = "330px"; });
+  await page.waitForTimeout(400); await shotPage("53_dettaglio", { x: 0, y: 0, width: 905, height: 900 }); await ev(() => window.__SA.openDetail(false));
+  // scala sulla foto: righello 100 mm e cornice
+  await ev(() => { const set = (id, v) => { const e = document.getElementById(id); if (e.type === "checkbox") e.checked = v; else e.value = v; e.dispatchEvent(new Event("change")); };
+    set("smOn", true); set("smKind", "both"); set("smLen", "100"); set("smPos", "bl"); });
+  await ev(() => window.__SA.fitView()); await page.waitForTimeout(300);
+  await shotPage("51_scala_foto", { x: 0, y: 0, width: 905, height: 900 });
+  await ev(() => { const e = document.getElementById("smOn"); e.checked = false; e.dispatchEvent(new Event("change")); window.__SA.state.notes = []; window.__SA.setLock({ kind: "shot", gid: 10, id: window.__SA.state.groups[0].shots[0].id }, false); });
   // densità compatta e layout
   await openOnly("sec-results"); await page.selectOption("#densSel", "compact"); await shotEl("#results .res", "24_compatta"); await page.selectOption("#densSel", "standard");
   await page.click("#bLayout"); await shotEl("#layoutPop", "25_layout"); await page.click("#bLayClose");
@@ -191,6 +219,8 @@ const GROUPS = [
     await shotEl(`#charts > div:has(${sel})`, n).catch(async () => shotEl(sel, n));
   await ev(() => { document.querySelector(".ana-head").style.position = "static"; });
   await shotEl("#cmpBox", "37_confronto", { wait: 400 });
+  await ev(() => { const S = window.__SA; S.compareRows().forEach(r => { if (r.hist) S.cmpState.diffOff.add(r.hist ? `h${r.key || r.idx}` : `g${r.gid}`); }); S.drawCompare(); });
+  await shotEl("#cmpDiffWrap", "55_differenze", { wait: 400 });
   await shotEl("#dopeBox", "38_dope", { wait: 400 });
   await shotEl("#chgBox", "39_carica", { wait: 400 });
   await shotEl("#corBox", "40_correlazioni", { wait: 400 });

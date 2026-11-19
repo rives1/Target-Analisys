@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.14</div>
+    <div class="sub">Manuale d'uso · versione 1.15</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -157,10 +157,12 @@
 <tr><td>Raddrizza <kbd>5</kbd> · Prospettiva <kbd>6</kbd></td><td>Raddrizzano una foto storta o di sbieco (capitolo 13).</td></tr>
 <tr><td>Undo / Redo</td><td>Annulla e ripristina (<kbd>Ctrl</kbd>+<kbd>Z</kbd>, <kbd>Ctrl</kbd>+<kbd>Y</kbd>). Si torna indietro di molti passi.</td></tr>
 <tr><td>Elimina ultimo · Tutto</td><td>Toglie l'ultimo foro (o la mira) del gruppo attivo; «Tutto» cancella tutti i punti, dopo una conferma.</td></tr>
-<tr><td>Adatta <kbd>F</kbd></td><td>Rimette la foto intera nella finestra.</td></tr>
+<tr><td>Adatta <kbd>F</kbd> · zoom %</td><td>«Adatta» rimette la foto intera nella finestra. Accanto, il campo dello zoom: scrivi una percentuale e premi Invio, o usa − e + (anche i tasti <kbd>−</kbd> e <kbd>+</kbd>). Comodo con un touchpad o senza rotella.</td></tr>
 <tr><td>Lente <kbd>L</kbd> · ×4</td><td>Una lente di ingrandimento segue il cursore mentre clicchi i punti: indispensabile per centrare bene i fori. Il menu sceglie l'ingrandimento (da ×2 a ×12).</td></tr>
 <tr><td>Griglia <kbd>G</kbd></td><td>Disegna una griglia in MIL o MOA centrata sulla mira (capitolo 10).</td></tr>
 <tr><td>Snap <kbd>M</kbd></td><td>Quando clicchi vicino a un foro, il punto si aggancia da solo al centro della macchia scura del foro. Tieni premuto <kbd>Alt</kbd> per cliccare senza aggancio.</td></tr>
+<tr><td>Righello <kbd>R</kbd> · Nota <kbd>N</kbd></td><td>Misura libera tra due punti e annotazioni sulla foto (capitolo 14).</td></tr>
+<tr><td>Dettaglio <kbd>D</kbd> · Blocca <kbd>K</kbd></td><td>Finestra con un ingrandimento fisso; blocco dell'elemento selezionato (capitolo 14).</td></tr>
 </table>
 <h2>Il pannello a destra</h2>
 <p>Le sezioni del pannello si aprono e si chiudono con un clic sul titolo. All'avvio è aperta solo «Calibrazione scala»: le altre si aprono quando servono. In ordine:</p>
@@ -174,11 +176,12 @@
 <tr><td>Risultati</td><td>Le misure di ogni gruppo, in forma di schede («card»).</td></tr>
 <tr><td>Zone di punteggio</td><td>Anelli di bersagli ISSF, sagome IPSC/IDPA/silhouette, punteggio di ogni foro.</td></tr>
 <tr><td>Probabilità di colpire</td><td>Quanti colpi su 100 entrerebbero in un bersaglio di una certa misura.</td></tr>
-<tr><td>Punti del gruppo attivo</td><td>La tabella di tutti i punti: coordinate, distanze, click, esclusione dei colpi.</td></tr>
+<tr><td>Punti del gruppo attivo</td><td>La tabella di tutti i punti: coordinate, distanze, click, esclusione e blocco dei colpi.</td></tr>
+<tr><td>Note sull'immagine</td><td>Le annotazioni numerate N1, N2… legate a un foro o a una zona del bersaglio.</td></tr>
 <tr><td>Dati</td><td>Salvare, aprire, esportare, archivio delle sessioni, bersaglio di autoverifica.</td></tr>
 <tr><td>Guida rapida e scorciatoie</td><td>Un promemoria sempre a portata di mano.</td></tr>
 </table>
-<p>In fondo al pannello il pulsante <span class="btn">📊 Grafici e confronto tra gruppi</span> (tasto <kbd>A</kbd>) apre la vista dei grafici a schermo intero (capitolo 12). In alto ci sono la lingua (italiano o inglese), il tema chiaro o scuro, la densità delle informazioni e il pulsante ⚙ per riordinare le sezioni (capitolo 15).</p>
+<p>In fondo al pannello il pulsante <span class="btn">📊 Grafici e confronto tra gruppi</span> (tasto <kbd>A</kbd>) apre la vista dei grafici a schermo intero (capitolo 12). In alto ci sono la lingua (italiano o inglese), il tema chiaro o scuro, la densità delle informazioni e il pulsante ⚙ per riordinare le sezioni (capitolo 16).</p>
 
 <!-- =============================== 4 =============================== -->
 <h1 class="chap" id="c4"><span class="n">4</span>La prima analisi in sei passi</h1>
@@ -220,6 +223,8 @@
   <li><b>Sullo stesso piano del bersaglio.</b> Un righello appoggiato su uno spessore o un riferimento lontano dal foglio darebbe una scala diversa.</li>
   <li><b>Su tacche nette</b>: lo zero e una tacca grande del righello, gli angoli di un quadrato della griglia, i bordi di un foglio.</li>
 </ul>
+<p>Dopo il primo clic, una <b>linea tratteggiata</b> va dal punto al cursore con l'angolo rispetto all'orizzontale e lo scarto dall'asse più vicino (verde entro 0,5°, poi giallo e rosso). Serve a controllare che la misura segua davvero la riga del righello o della griglia: se la tacca è orizzontale e la linea è «2,3° fuori asse», stai cliccando la tacca sbagliata o la foto è storta.</p>
+<figure class="w70"><img src="imgj/02_scala_primo_punto.jpg"><figcaption>Il primo punto della scala sullo zero del righello e la linea tratteggiata verso il secondo, con il suo angolo.</figcaption></figure>
 <div class="box ex"><p>Calibri su un segmento di 150 pixel: l'incertezza è circa ±0,9%. Un gruppo da 20 mm sarà misurato tra 19,8 e 20,2 mm solo per colpa della scala. Se usi un segmento di 900 pixel l'incertezza scende a ±0,16% e lo stesso gruppo è misurato al centesimo di millimetro.</p></div>
 
 <h2>Il semaforo della qualità</h2>
@@ -235,7 +240,8 @@
 <h2>Due controlli automatici</h2>
 <p><b>Diametro dei fori.</b> Se hai inserito il calibro, l'applicazione misura nella foto il diametro dei fori e lo confronta con il calibro. Nella carta i fori sono di solito un po' più piccoli della palla, quindi un rapporto tra il 70% e il 130% è normale; fuori da questo intervallo è probabile che la scala, la sua unità o il calibro siano sbagliati.</p>
 <p>Questo controllo ha un limite: due o più fori che si toccano diventano nella foto un'unica macchia, più grande di un foro. Con gruppi molto stretti (proprio i più belli!) l'avviso può quindi scattare anche se la scala è giusta. In quel caso verifica la scala con il riferimento di controllo: se torna, puoi ignorare l'avviso sul diametro.</p>
-<p><b>Riferimento di controllo.</b> Il pulsante <span class="btn">📏 Riferimento di controllo</span> ti fa cliccare un'altra lunghezza nota (per esempio il diametro di un anello). L'applicazione la misura con la scala attuale e ti dice se torna. È un ottimo modo per verificare una calibrazione importante, per esempio prima di una gara.</p>
+<p><b>Riferimento di controllo.</b> Il pulsante <span class="btn">📏 Riferimento di controllo</span> ti fa cliccare un'altra lunghezza nota (per esempio il diametro di un anello). L'applicazione la misura con la scala attuale e ti dice se torna. È un ottimo modo per verificare una calibrazione importante, per esempio prima di una gara. I suoi estremi si possono trascinare; la <span class="btn">✕</span> accanto alla lunghezza (o <kbd>Canc</kbd> sull'estremo selezionato) lo elimina senza toccare la scala.</p>
+<p>Una volta controllata, puoi <b>bloccare</b> la scala con <span class="btn">🔓 Scala</span> (e il riferimento con <span class="btn">🔓 Riferimento</span>): i due punti non si spostano più per un trascinamento accidentale e un clic in modalità Scala non la rifà, finché non la sblocchi (capitolo 14).</p>
 <div class="box warn"><p>Senza calibrazione l'applicazione lavora in pixel: vedi la forma del gruppo e i grafici, ma nessuna misura in millimetri, MOA o MIL e nessuna correzione in click.</p></div>
 
 <!-- =============================== 6 =============================== -->
@@ -272,7 +278,7 @@
 <!-- =============================== 7 =============================== -->
 <h1 class="chap" id="c7"><span class="n">7</span>Gruppi, ricarica e condizioni</h1>
 <h2>Più gruppi sulla stessa foto</h2>
-<p>Un gruppo è una rosata: il suo punto di mira e i suoi fori. Sulla stessa foto puoi averne quanti vuoi (tre cariche diverse, tre distanze, prima e dopo una correzione). Il <b>gruppo attivo</b> è quello evidenziato nella sezione «Gruppi»: i nuovi punti vanno a lui. Cliccando un gruppo nell'elenco diventa attivo; la ✕ lo elimina; il nome si modifica direttamente.</p>
+<p>Un gruppo è una rosata: il suo punto di mira e i suoi fori. Sulla stessa foto puoi averne quanti vuoi (tre cariche diverse, tre distanze, prima e dopo una correzione). Il <b>gruppo attivo</b> è quello evidenziato nella sezione «Gruppi»: i nuovi punti vanno a lui. Cliccando un gruppo nell'elenco diventa attivo; la ✕ lo elimina; il nome si modifica direttamente. L'occhio 👁 nasconde il gruppo sulla foto (fori, mira e disegni): utile quando le rosate sono vicine o sovrapposte. I calcoli, il confronto, la Result Card e il report non cambiano; un nuovo punto aggiunto al gruppo lo rende di nuovo visibile.</p>
 <figure class="w55"><img src="imgj/12_gruppi.jpg"><figcaption>Tre gruppi con i loro colori. Quello con il bordo è il gruppo attivo.</figcaption></figure>
 
 <h2>Ricarica e condizioni</h2>
@@ -455,6 +461,9 @@
 <tr><td>Poligono (convex hull)</td><td>Il poligono più piccolo che racchiude tutti i fori. La sua area è nei risultati.</td></tr>
 <tr><td>Heatmap</td><td>Una «nuvola» colorata: più è intensa, più è probabile che lì arrivi il prossimo colpo.</td></tr>
 <tr><td>Griglia angolare</td><td>Linee ogni 0,1 MIL (o il passo che scegli) centrate sulla mira, per leggere a occhio scostamenti in angolo.</td></tr>
+<tr><td>Alone di incertezza</td><td>Una macchia semitrasparente attorno al centro di ogni foro: lì dentro, al 95%, c'è il centro vero. Più grande per i fori cliccati a mano e ancora di più (×3) per quelli segnati difficili ◐; più piccola con lo snap.</td></tr>
+<tr><td>Righello e cornice</td><td>La «scala sulla foto»: un righello graduato in un angolo e le dimensioni reali dei lati della foto (Calibrazione scala).</td></tr>
+<tr><td>Pillole N1, N2…</td><td>Le note sull'immagine, accanto al foro o al punto a cui si riferiscono.</td></tr>
 </table>
 <div class="two">
 <figure><img src="imgj/08_ellisse_hull.jpg"><figcaption>Ellisse di dispersione e convex hull del gruppo 1, chiaramente allungato in diagonale.</figcaption></figure>
@@ -535,6 +544,11 @@
 <figure><img src="imgj/37_confronto.jpg"><figcaption>La tabella di confronto con i gruppi della sessione e dello storico, e sotto l'andamento nel tempo.</figcaption></figure>
 <p><b>Che cosa mostra.</b> Una tabella con tutti i gruppi della sessione e quelli importati da sessioni precedenti (lo «storico»), ordinati per data: numero di colpi, group size, raggio medio, FOM, CEP, differenza rispetto al gruppo precedente. Il menu «Metrica» sceglie il valore da confrontare, in mm o in angolo. Sotto, il grafico dell'andamento nel tempo con una media mobile (la linea tratteggiata, media degli ultimi gruppi).</p>
 <p><b>Come leggerlo.</b> Il miglior gruppo è sottolineato. La media mobile è più importante dei singoli punti: un singolo gruppo bello o brutto può essere fortuna; una media che scende per settimane è un miglioramento vero.</p>
+<h3>Differenze tra le configurazioni</h3>
+<figure><img src="imgj/55_differenze.jpg"><figcaption>Le differenze tra i tre gruppi della sessione: cambiano solo carica e temperatura; tutto il resto è uguale e non compare.</figcaption></figure>
+<p><b>Che cosa mostra.</b> Sotto il confronto, per le righe con la casella «Δ» spuntata, una tabella con <b>solo i parametri che cambiano</b>: componenti (calibro, bossolo, palla, polvere, carica, innesco, salto), distanza, condizioni (meteo, temperatura, umidità, pressione, vento, scaldacanna) e impostazioni di analisi (valore del click, metodo della scala, prospettiva, distorsione, colpi esclusi, marcatura, livello degli intervalli). Le righe in grigio sono parametri uguali dove sono stati scritti, ma mancanti in qualche gruppo: non sono differenze dimostrate.</p>
+<p><b>Come leggerlo.</b> Ogni riga è una variabile in più che può spiegare perché due rosate sono diverse. Se cambiano solo la carica e nient'altro, il confronto parla della carica; se cambiano carica, temperatura e distanza insieme, non puoi sapere quale delle tre abbia contato.</p>
+<div class="box ex"><p>Due gruppi da 44,5 e 45,0 gr, ma il secondo tirato a 200 m e con 6 °C in più: la tabella mostra tre differenze. Il secondo gruppo è più largo in mm, ma in MIL è quasi uguale: la carica non è dimostrata migliore né peggiore. Per un test della carica ripeti le due cariche alla stessa distanza, nella stessa uscita.</p></div>
 <div class="box help"><p>È lo strumento per tenere un «diario» del tuo tiro: importa ogni sessione salvata (con <span class="btn">＋ Importa sessioni nello storico</span>, file .zip o .json) e guarda se i cambiamenti (nuova ottica, nuovo appoggio, allenamento a secco) producono un effetto reale. Confronta in angolo (MOA o MIL) quando i gruppi sono a distanze diverse.</p></div>
 
 <h2>Dope card</h2>
@@ -587,7 +601,43 @@
 <div class="box warn"><p>Queste correzioni non fanno miracoli: un foglio piegato o ondulato non si raddrizza. La foto fatta bene, dritta e con il foglio piano, resta la soluzione migliore.</p></div>
 
 <!-- =============================== 14 =============================== -->
-<h1 class="chap" id="c14"><span class="n">14</span>Salvare, esportare e archiviare</h1>
+<h1 class="chap" id="c14"><span class="n">14</span>Misurare, annotare e proteggere il lavoro</h1>
+<p class="lead">Quattro strumenti aiutano a lavorare con calma su una foto già misurata: il blocco degli elementi, le note, il righello libero e la finestra di dettaglio. Nessuno di essi cambia le misure.</p>
+<h2>Bloccare mira, scala e fori</h2>
+<p>Dopo aver sistemato con cura un punto è facile spostarlo per sbaglio con un trascinamento, o cancellarlo con un tasto destro di troppo. Seleziona il punto (un clic) e premi <kbd>K</kbd>, oppure usa il lucchetto 🔓 nella colonna «Tipo» della tabella dei punti; per la scala e il riferimento di controllo ci sono i pulsanti nella sezione «Calibrazione scala».</p>
+<ul>
+  <li>Un elemento bloccato <b>non si trascina</b> (trascinandolo si sposta la foto) e <b>non si elimina</b>: Canc, tasto destro, ✕, «Elimina ultimo» e «Tutto» lo lasciano dov'è.</li>
+  <li>Una mira bloccata non viene sostituita da un nuovo clic in modalità Mira; una scala bloccata non viene rifatta in modalità Scala.</li>
+  <li>Resta disegnato come prima; quando è selezionato compare un piccolo lucchetto.</li>
+  <li>Rotazione, prospettiva, distorsione e ritaglio lo trasformano comunque, perché seguono la foto.</li>
+  <li>Il blocco si salva nella sessione e si annulla con Undo come ogni altra modifica.</li>
+</ul>
+<figure class="w70"><img src="imgj/50_blocco_note.jpg"><figcaption>Il foro 1 bloccato (lucchetto), due note (N1 sul foro 3, N2 su una zona del visuel) e l'alone di incertezza attorno ai fori.</figcaption></figure>
+<h2>Note sull'immagine</h2>
+<p>Premi <span class="btn">✎ Nota</span> (tasto <kbd>N</kbd>) e clicca un foro o un punto qualsiasi del bersaglio: compare una pillola numerata N1, N2… e nella sezione «Note sull'immagine» scrivi il testo (un colpo partito male, un foro strappato, la luce, una raffica di vento).</p>
+<ul>
+  <li>Una nota cliccata su un foro <b>segue il foro</b>: se lo sposti o ruoti la foto, la pillola resta accanto. Se elimini il foro, la nota resta nel punto in cui era.</li>
+  <li>Una nota su una zona segue la foto in tutte le trasformazioni; trascinando la pillola la sposti.</li>
+  <li>Le pillole stanno accanto al punto, collegate da una linea sottile: non coprono il foro.</li>
+  <li>Con «Includi nel report PDF» le pillole compaiono sulla foto del report e i testi in una sezione dedicata.</li>
+</ul>
+<figure class="w55"><img src="imgj/54_note_sezione.jpg"><figcaption>La sezione «Note sull'immagine»: dove si trova ogni nota e il suo testo.</figcaption></figure>
+<h2>Il righello libero</h2>
+<p><span class="btn">📏 Righello</span> (tasto <kbd>R</kbd>) misura la distanza tra due punti qualsiasi, senza creare fori e senza toccare la scala. La misura compare sulla foto e nella barra in basso in millimetri, pollici, MOA e MRAD (alla distanza del gruppo attivo), con l'angolo della linea rispetto all'orizzontale. Un nuovo clic inizia una nuova misura; <kbd>Esc</kbd> chiude lo strumento e la misura sparisce.</p>
+<figure class="w70"><img src="imgj/52_righello.jpg"><figcaption>Il righello sul diametro dell'anello da 60 mm: 60 mm, 0,60 MRAD a 100 m, perfettamente orizzontale.</figcaption></figure>
+<div class="box ex"><p>Vuoi sapere quanto è grande il visuel nero o se due fori stanno entro 1 MOA? Misurali con il righello: a 100 m 1 MOA è 29,1 mm. È anche il modo più rapido per controllare la scala su un riferimento della foto senza creare il riferimento di controllo.</p></div>
+<h2>La finestra di dettaglio</h2>
+<p><span class="btn">🔎 Dettaglio</span> (tasto <kbd>D</kbd>) apre una finestra che mostra sempre ingrandita la stessa zona, mentre la vista principale resta libera: puoi guardare l'intero bersaglio e il bordo di un foro nello stesso momento. Con 🎯 scegli il punto da osservare cliccando sulla foto; dentro la finestra trascini per spostarlo e la rotella (o − e +) cambia l'ingrandimento. La finestra si sposta trascinando la barra del titolo e si ridimensiona dall'angolo in basso a destra; la sua posizione viene ricordata. Sulla foto un rettangolo azzurro tratteggiato mostra la zona osservata.</p>
+<figure><img src="imgj/53_dettaglio.jpg"><figcaption>La finestra di dettaglio sul gruppo 2, con la vista principale che mostra tutti e tre i gruppi.</figcaption></figure>
+<h2>La scala sulla foto</h2>
+<p>In «Calibrazione scala», con la scala impostata, la casella «Scala sulla foto» disegna un <b>righello graduato</b> in un angolo e/o una <b>cornice</b> con le tacche e le dimensioni reali dei lati della foto. Righello e cornice sono in scala con il bersaglio anche quando ingrandisci, e con «Anche in Result Card e report» compaiono anche nelle immagini esportate, riferiti all'area ritagliata, con le dimensioni della foto intera. Chi guarda la Result Card tra un anno capisce subito quanto era grande il bersaglio.</p>
+<figure><img src="imgj/51_scala_foto.jpg"><figcaption>Righello da 100 mm in basso a sinistra e cornice con le dimensioni reali: la foto copre 320 × 240 mm.</figcaption></figure>
+<h2>L'alone di incertezza dei fori</h2>
+<p>In «Parametri di tiro», «Alone di incertezza dei fori» disegna attorno al centro di ogni foro una macchia semitrasparente: è la zona in cui, al 95%, si trova il centro vero, calcolata dall'incertezza di marcatura (a mano o con lo snap, ×3 per i fori segnati difficili ◐). Così vedi a colpo d'occhio quali fori sono marcati con precisione e quali no. È solo un disegno: coordinate e calcoli non cambiano; l'effetto sui risultati è nella riga «Incertezza di misura».</p>
+<div class="box warn"><p>L'alone non «vede» un bordo strappato da solo: dipende da come hai marcato il foro. Se un foro è strappato o sovrapposto, segnalo come difficile con ◐ nella tabella dei punti.</p></div>
+
+<!-- =============================== 15 =============================== -->
+<h1 class="chap" id="c15"><span class="n">15</span>Salvare, esportare e archiviare</h1>
 <figure class="w55"><img src="imgj/18_dati.jpg"><figcaption>La sezione «Dati».</figcaption></figure>
 <h3>Sessione ZIP: il formato consigliato</h3>
 <p><span class="btn">🗜 Salva sessione ZIP</span> crea un unico file con dentro la foto originale, tutti i punti, i parametri, i dati di ricarica e due file per Excel (fori e gruppi). È il file da conservare: lo riapri con <span class="btn">📂 Carica sessione</span> (o trascinandolo sulla finestra) e lo puoi importare nello storico del confronto o nell'archivio. Puoi aprirlo anche con Esplora risorse, come qualsiasi ZIP, per guardare la foto o i CSV.</p>
@@ -612,8 +662,8 @@
 <h3>Bersaglio di autoverifica</h3>
 <p>Vuoi sapere quanto è precisa tutta la catena (stampa, foto, clic, calcoli)? <span class="btn">🎯 Bersaglio di prova (PDF)</span> crea un bersaglio da stampare con fori disegnati in posizioni note. Lo stampi al 100%, lo fotografi, lo misuri come un bersaglio vero e premi <span class="btn">✓ Verifica il gruppo attivo</span>: l'applicazione confronta le tue misure con i valori esatti e ti dice di quanto sbagli, foro per foro.</p>
 
-<!-- =============================== 15 =============================== -->
-<h1 class="chap" id="c15"><span class="n">15</span>Personalizzare l'applicazione</h1>
+<!-- =============================== 16 =============================== -->
+<h1 class="chap" id="c16"><span class="n">16</span>Personalizzare l'applicazione</h1>
 <ul>
   <li><b>Lingua</b>: italiano o inglese, dal menu in alto (l'help tecnico resta in italiano).</li>
   <li><b>Tema</b>: chiaro o scuro con 🌙/☀️ o il tasto <kbd>T</kbd>; lo scuro è comodo al poligono di sera.</li>
@@ -631,12 +681,14 @@
 <table>
 <tr><th style="width:36%">Azione</th><th>Come</th></tr>
 <tr><td>Spostare la foto</td><td>Trascina lo sfondo (strumento Mano) o tieni premuto il tasto centrale</td></tr>
-<tr><td>Ingrandire</td><td>Rotella del mouse; <kbd>Shift</kbd>+rotella cambia l'ingrandimento della lente</td></tr>
+<tr><td>Ingrandire</td><td>Rotella del mouse, campo dello zoom nella barra o tasti <kbd>+</kbd>/<kbd>−</kbd>; <kbd>Shift</kbd>+rotella cambia l'ingrandimento della lente</td></tr>
 <tr><td>Spostare un punto</td><td>Trascinalo</td></tr>
 <tr><td>Eliminare un punto</td><td>Tasto destro sul punto, oppure selezionalo e premi <kbd>Canc</kbd></td></tr>
 <tr><td>Eliminare l'ultimo foro</td><td><kbd>Backspace</kbd></td></tr>
 <tr><td>Foro sopra un punto esistente</td><td><kbd>Alt</kbd>+clic</td></tr>
 <tr><td>Escludere/includere il foro selezionato</td><td><kbd>X</kbd></td></tr>
+<tr><td>Bloccare/sbloccare l'elemento selezionato</td><td><kbd>K</kbd></td></tr>
+<tr><td>Righello · nota · finestra di dettaglio</td><td><kbd>R</kbd> · <kbd>N</kbd> · <kbd>D</kbd></td></tr>
 <tr><td>Strumenti</td><td><kbd>1</kbd> Mano · <kbd>2</kbd> Scala · <kbd>3</kbd> Mira · <kbd>4</kbd> Foro · <kbd>5</kbd> Raddrizza · <kbd>6</kbd> Prospettiva · <kbd>Esc</kbd> annulla lo strumento</td></tr>
 <tr><td>Annulla / ripristina</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td></tr>
 <tr><td>Vista e aiuti</td><td><kbd>F</kbd> adatta · <kbd>L</kbd> lente · <kbd>G</kbd> griglia · <kbd>M</kbd> snap · <kbd>T</kbd> tema</td></tr>
@@ -644,8 +696,8 @@
 <tr><td>File</td><td><kbd>Ctrl</kbd>+<kbd>O</kbd> apri foto · <kbd>Ctrl</kbd>+<kbd>S</kbd> salva sessione</td></tr>
 </table>
 
-<!-- =============================== 16 =============================== -->
-<h1 class="chap" id="c16"><span class="n">16</span>Mappa delle relazioni: che cosa cambia che cosa</h1>
+<!-- =============================== 17 =============================== -->
+<h1 class="chap" id="c17"><span class="n">17</span>Mappa delle relazioni: che cosa cambia che cosa</h1>
 <p class="lead">Una tabella da consultare quando ti chiedi «se cambio questo, che cosa si muove?».</p>
 <table>
 <tr><th style="width:21%">Dato inserito</th><th style="width:40%">Risultati che cambia</th><th>Grafici e altro</th></tr>
@@ -664,11 +716,12 @@
 <tr><td>Vento (velocità, ore)</td><td>Scheda Vento</td><td>Correlazione brandeggio ↔ vento trasversale</td></tr>
 <tr><td>Livello di confidenza</td><td>Larghezza di tutti gli intervalli</td><td>Barre dei grafici di ricarica e dope</td></tr>
 <tr><td>Ellisse, hull, heatmap, griglia, etichette, freccia</td><td>Nessuno (solo disegno; l'area dell'hull compare nei risultati)</td><td>Disegni sulla foto e nella Result Card</td></tr>
+<tr><td>Blocco, gruppi nascosti, note, righello, dettaglio, scala sulla foto, alone</td><td>Nessuno</td><td>Solo la foto (e, per note e scala sulla foto, Result Card e report)</td></tr>
 <tr><td>Rotazione, prospettiva, distorsione, ritaglio</td><td>Direzioni «alto/destra», quindi correzione e H/V-spread; la prospettiva anche le distanze</td><td>Tutti i grafici orientati</td></tr>
 </table>
 
-<!-- =============================== 17 =============================== -->
-<h1 class="chap" id="c17"><span class="n">17</span>Problemi frequenti</h1>
+<!-- =============================== 18 =============================== -->
+<h1 class="chap" id="c18"><span class="n">18</span>Problemi frequenti</h1>
 <table>
 <tr><th style="width:36%">Che cosa vedi</th><th>Causa probabile e rimedio</th></tr>
 <tr><td>Misure enormi o minuscole, cerchio del foro grande come il visuel</td><td>Distanza nota o unità della scala sbagliata (mm al posto di cm). Controlla «Calibrazione scala» e l'inquadratura indicata.</td></tr>
@@ -684,8 +737,8 @@
 <tr><td>Ho perso i profili o l'archivio</td><td>Sono nel browser: si perdono cancellando i dati di navigazione o cambiando browser. Esporta i profili e salva le sessioni su file.</td></tr>
 </table>
 
-<!-- =============================== 18 =============================== -->
-<h1 class="chap" id="c18"><span class="n">18</span>Glossario essenziale</h1>
+<!-- =============================== 19 =============================== -->
+<h1 class="chap" id="c19"><span class="n">19</span>Glossario essenziale</h1>
 <table>
 <tr><th style="width:26%">Termine</th><th>Significato, in parole semplici</th></tr>
 <tr><td>Rosata, gruppo</td><td>L'insieme dei fori sparati mirando allo stesso punto.</td></tr>

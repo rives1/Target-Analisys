@@ -7,11 +7,11 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.8.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.15.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
-Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.14.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.14.pdf).
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.15.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.15.pdf).
 
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
@@ -79,6 +79,14 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Sessione ZIP**: foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio.
 - **Stabilità colpo dopo colpo**: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto; ordine di sparo modificabile.
 - **Report PDF con testo vero** (selezionabile), con calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici.
+- **Blocco degli elementi** (1.15): mira, scala, riferimento di controllo e singoli fori bloccabili (🔒, tasto `K`): non si trascinano e non si eliminano per errore; selezionati mostrano un lucchetto.
+- **Gruppi nascosti** (👁 nell'elenco Gruppi): fori, mira e disegni del gruppo tolti dalla vista principale, calcoli ed export invariati.
+- **Scala sulla foto**: righello graduato e/o cornice con le dimensioni reali dei lati della foto, in scala con il bersaglio, anche in Result Card e report.
+- **Alone di incertezza** dei fori: cerchio al 95% per l'incertezza di marcatura di ogni foro (a mano, snap, difficile), solo grafico.
+- **Note sull'immagine** numerate (N1, N2…) legate a un foro o a una zona, facoltative nel report PDF.
+- **Differenze tra configurazioni** nel confronto: solo i parametri che cambiano (componenti, distanza, condizioni, impostazioni di analisi) tra le righe scelte.
+- **Righello libero** (📏, tasto `R`): distanza tra due punti in mm, pollici, MOA e MRAD con orientamento, senza toccare fori e scala; **linea tratteggiata** con angolo e scarto dall'asse mentre si fissano scala e riferimento.
+- **Finestra di dettaglio** (🔎, tasto `D`): ingrandimento fisso di una zona, spostabile e ridimensionabile; **campo dello zoom** con −/+ per chi non ha la rotella.
 - **Strumenti**: griglia angolare MIL/MOA, lente di ingrandimento (×2–×12), undo/redo, tema chiaro/scuro, pannello ridimensionabile.
 
 ### Mouse e tastiera
@@ -86,7 +94,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 Trascina un punto per spostarlo · tasto destro su un punto = elimina · `Alt`+clic = foro sopra un punto esistente ·
 rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfondo o tasto centrale = pan.
 `1`–`6` strumenti (`5` = raddrizza, `6` = prospettiva, `Esc` annulla) · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
-`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `H` help tecnico · `Ctrl+S` salva · `Ctrl+O` apri foto.
+`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `H` help tecnico · `Ctrl+S` salva · `Ctrl+O` apri foto ·
+`R` righello · `N` nota · `D` finestra di dettaglio · `K` blocca/sblocca l'elemento selezionato · `+` / `−` zoom.
 
 ### Limiti
 
@@ -103,6 +112,8 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - La card «Vento» non calcola la deriva (serve un calcolatore balistico): mostra vento inserito, componenti e scostamento misurato.
 - Il test dei flyer sbaglia in circa il 5% dei gruppi ma con pochi colpi ha poca potenza: segnala solo colpi molto lontani (a 8 σ: 22% con 5 colpi, 98% con 10). I test della diagnostica hanno poca potenza sotto 10 colpi.
 - Salvataggio automatico e archivio stanno nel browser (IndexedDB): si perdono cancellando i dati del sito e non passano da un browser o PC all'altro. «Salva sessione» resta il salvataggio vero. Da `file://` IndexedDB funziona in Chrome ed Edge; negli altri browser, se non è disponibile, l'app lo segnala.
+- L'alone di incertezza usa l'incertezza di marcatura impostata (non misura i bordi del foro): un foro strappato va segnato come «difficile» (◐) perché l'alone si allarghi.
+- Le differenze tra configurazioni confrontano i dati registrati: le voci di storico importate prima della 1.15 non hanno le impostazioni di analisi (risultano «non registrate»: reimportare le sessioni).
 - Il punteggio è stimato dalla foto: per i colpi «sulla linea» (≈) decide il calibro di controllo; il punteggio decimale dei bersagli elettronici non è calcolato.
 
 ## Calcoli

@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.15.0] - 2026-11-19
+### Aggiunto
+- **Blocco selettivo**: mira, scala (A e B insieme), riferimento di controllo e singoli fori si bloccano (🔒 nella
+  tabella dei punti, pulsanti nella Calibrazione, 🔒 nella barra, tasto `K`). Un elemento bloccato non si trascina
+  (si sposta la vista), non si elimina (Canc, tasto destro, ✕, «Elimina ultimo», «Tutto») e non si rifà con un nuovo
+  clic della stessa modalità; selezionato mostra un lucchetto. Rotazione, prospettiva, distorsione e ritaglio lo
+  trasformano comunque. Salvato nella sessione e nella storia (annullabile).
+- **Gruppi nascosti** (👁 nell'elenco Gruppi): solo vista principale, lente e dettaglio; calcoli, confronto, Result
+  Card e report invariati. Salvato nella sessione; un punto aggiunto al gruppo lo rende di nuovo visibile.
+- **Scala sulla foto** (Calibrazione): righello graduato (lunghezza automatica o scelta, mm o pollici, angolo a scelta)
+  e/o cornice con tacche e dimensioni reali dei lati; facoltativa in Result Card e report, riferita all'area ritagliata
+  con le dimensioni della foto intera.
+- **Alone di incertezza** dei fori (Parametri di tiro): cerchio al 95% R = u·√(−2·ln 0,05) ≈ 2,45·u con l'incertezza
+  di marcatura del foro (a mano, snap, ×3 se difficile); solo grafico (`Calc.haloRadius`).
+- **Note sull'immagine** (sezione nuova, strumento ✎ / tasto `N`): legate a un foro (seguono il foro; se il foro viene
+  eliminato restano sulla zona) o a una zona (seguono le trasformazioni della foto); marcatori «N1, N2…» spostati dal
+  punto; nel report PDF (marcatori sulla foto e sezione con i testi) se «Includi nel report PDF» è attivo.
+- **Differenze tra le configurazioni** nella vista grafici: per le righe del confronto selezionate (colonna Δ) solo i
+  parametri con valori diversi (componenti, distanza, condizioni, impostazioni di analisi), evidenziati allo stesso modo;
+  in grigio quelli non registrati in qualche riga (`Calc.differingKeys`). Anche nel report. Le impostazioni di analisi
+  sono salvate nei riepiloghi dello storico.
+- **Righello libero** (📏, tasto `R`): distanza tra due punti in mm, pollici, MOA e MRAD (2·atan(L/2D) alla distanza del
+  gruppo attivo) e orientamento, senza creare fori né cambiare la scala (`Calc.measureLine`).
+- **Linea tratteggiata** dal primo punto della scala (e del riferimento) al cursore, con angolo dall'orizzontale e
+  scarto dall'asse più vicino (verde sotto 0,5°).
+- **Campo dello zoom** nella barra (percentuale, −/+, tasti `−`/`+`).
+- **Finestra di dettaglio** (🔎, tasto `D`): ingrandimento fisso attorno a un punto (🎯 per sceglierlo), spostabile dalla
+  barra, ridimensionabile, trascinamento e rotella all'interno; posizione, dimensioni e ingrandimento ricordati nel
+  browser; l'area osservata è riquadrata sulla vista.
+- **Eliminazione del riferimento di controllo** (✕ nella Calibrazione, Canc o tasto destro su un estremo); gli estremi
+  ora si possono trascinare.
+### Cambiato
+- Colori dei gruppi senza giallo né toni chiari (contrasto ≥ 3,9:1 su bianco e beige); le sessioni salvate con i colori
+  precedenti vengono rimappate all'apertura.
+- Eliminare la scala non elimina più anche il riferimento di controllo.
+- Manuale d'uso aggiornato alla 1.15 (`docs/manuale/Manuale_Shoot_Analyzer_v1.15.pdf`, 66 pagine): nuovo capitolo 14
+  «Misurare, annotare e proteggere il lavoro», schermate rifatte con i nuovi colori.
+- Test: 707 verifiche del motore, 63 scenari UI (8 nuovi, anche in inglese).
+### Corretto
+- La rotazione della foto non ruotava il riferimento di controllo (restava nella posizione precedente).
+
 ## [1.14.0] - 2026-11-18
 ### Aggiunto
 - **Stabilità colpo dopo colpo** (`Calc.stability`): group size, raggio medio e centro dei primi k colpi nell'ordine di

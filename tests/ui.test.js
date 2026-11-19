@@ -1872,6 +1872,327 @@ test("stabilità colpo dopo colpo e ordine di sparo", async page => {
   ok2(Array.isArray(ses.groups[0].shots), "ordine salvato nella sessione (ordine dell'array)");
 });
 
+/* ------------------------------ 1.15.0 ------------------------------ */
+/** Pixel della vista principale (coordinate mondo) → [r, g, b]. */
+const pixelAt = (page, p) => page.evaluate(p => { const { toScreen } = window.__SA, s = toScreen(p), c = document.getElementById("canvas"), d = window.devicePixelRatio || 1;
+  return [...c.getContext("2d").getImageData(Math.round(s.x * d), Math.round(s.y * d), 1, 1).data].slice(0, 3); }, p);
+const redraw = page => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+test("1.15.0: colori dei gruppi senza giallo, linea elastica della scala, campo dello zoom", async page => {
+  // palette: nessun colore chiaro (contrasto ≥ 3,5:1 sul beige), i vecchi colori delle sessioni vengono rimappati
+  const pal = await page.evaluate(() => { const { GROUP_COLORS, fixColor } = window.__SA;
+    const L = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(x => x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+    const beige = L("#efe4c8"); return { min: Math.min(...GROUP_COLORS.map(c => (beige + 0.05) / (L(c) + 0.05))), amber: fixColor("#f59e0b"), keep: fixColor("#2563eb"), n: new Set(GROUP_COLORS).size }; });
+  ok2(pal.min >= 3.5, "contrasto minimo sul beige " + pal.min); assert.strictEqual(pal.amber, "#c2410c"); assert.strictEqual(pal.keep, "#2563eb"); assert.strictEqual(pal.n, 8);
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const ses = await page.evaluate(() => { const s = window.__SA.buildSession(true); s.groups[0].color = "#f59e0b"; return JSON.stringify(s); });
+  await page.evaluate(t => window.__SA.loadSessionText(t), ses);
+  assert.strictEqual((await S(page)).g.color, "#c2410c", "giallo di una sessione 1.14 rimappato");
+  // linea elastica: dopo il primo punto della scala, tratteggio verde fino al cursore
+  await page.click("#bClear").catch(() => {});
+  await page.evaluate(() => { window.__SA.state.calib = { p1: null, p2: null }; window.__SA.commit(); });
+  await key(page, "2"); await clickAt(page, { x: 100, y: 100 });
+  const far = await screenOf(page, { x: 400, y: 220 }); await page.mouse.move(far.x, far.y, { steps: 3 }); await redraw(page);
+  let green = 0;
+  for (let t = 0.1; t < 0.9; t += 0.02) { const [r, g, b] = await pixelAt(page, { x: 100 + 300 * t, y: 100 + 120 * t }); if (g > 120 && r < 90 && b < 110) green++; }
+  ok2(green >= 8, "linea tratteggiata verde tra il primo punto e il cursore: " + green);
+  await clickAt(page, { x: 300, y: 100 });
+  ok2((await S(page)).calib.p2, "secondo punto inserito");
+  // zoom senza rotella: campo, pulsanti, tasti
+  await page.fill("#zoomPct", "250"); await page.press("#zoomPct", "Enter");
+  near(await page.evaluate(() => window.__SA.state.view.scale), 2.5, 1e-9, "zoom dal campo");
+  assert.strictEqual(await page.inputValue("#zoomPct"), "250");
+  await page.click("#bZoomIn"); near(await page.evaluate(() => window.__SA.state.view.scale), 3, 1e-9, "zoom +");
+  await page.click("#bZoomOut"); await page.click("#bZoomOut"); near(await page.evaluate(() => window.__SA.state.view.scale), 1.5, 1e-9, "zoom − due volte (300 → 200 → 150%)");
+  await key(page, "-"); near(await page.evaluate(() => window.__SA.state.view.scale), 1, 1e-9, "tasto −");
+  await key(page, "+"); near(await page.evaluate(() => window.__SA.state.view.scale), 1.5, 1e-9, "tasto +");
+});
+
+test("1.15.0: blocco di fori, mira, scala e riferimento", async page => {
+  page.on("dialog", d => d.accept());
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await clickAt(page, SHOTS[0]);   // in modalità Foro il clic su un foro lo seleziona
+  await key(page, "k");
+  let s = await S(page);
+  ok2(s.g.shots[0].lock, "foro 1 bloccato con K");
+  // trascinamento: il foro resta dove era (si sposta la vista)
+  const a = await screenOf(page, SHOTS[0]);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x + 30, a.y + 20, { steps: 6 }); await page.mouse.up();
+  s = await S(page); near(s.g.shots[0].x, SHOTS[0].x, 1, "foro bloccato non trascinato");
+  // Canc, tasto destro, ✕ della tabella
+  await key(page, "Delete"); assert.strictEqual((await S(page)).g.shots.length, 5, "Canc ignorato");
+  const b = await screenOf(page, s.g.shots[0]); await page.mouse.click(b.x, b.y, { button: "right" });
+  assert.strictEqual((await S(page)).g.shots.length, 5, "tasto destro ignorato");
+  ok2(await page.isDisabled(`#points button[data-del*='"id":${s.g.shots[0].id}']`), "✕ della tabella disattivato");
+  ok2(await page.$(`#points button.lockbtn.on[data-lock*='"id":${s.g.shots[0].id}']`), "lucchetto chiuso nella tabella");
+  // «Elimina ultimo» con l'ultimo foro bloccato
+  await page.click(`#points button[data-lock*='"id":${s.g.shots[4].id}']`);
+  await page.click("#bDelLast"); assert.strictEqual((await S(page)).g.shots.length, 5, "ultimo bloccato: niente eliminazione");
+  // mira bloccata: un nuovo clic in modalità Mira non la sposta
+  await page.evaluate(() => { const { state, setLock } = window.__SA; setLock({ kind: "poa", gid: state.activeGroupId }, true); });
+  await key(page, "3"); await clickAt(page, { x: 250, y: 300 });
+  s = await S(page); near(s.g.poa.x, POA.x, 1e-3, "mira bloccata"); ok2(s.g.poa.lock, "lock della mira");
+  // scala bloccata: un nuovo clic in modalità Scala non la rifà; il pulsante mostra lo stato
+  await page.click("#bCalLock"); ok2((await S(page)).calib.lock, "scala bloccata");
+  assert.match(await page.textContent("#bCalLock"), /🔒/);
+  await key(page, "2"); await clickAt(page, { x: 600, y: 400 });
+  near((await S(page)).calib.p1.x, 100, 1e-3, "scala bloccata: il primo punto resta");
+  // riferimento di controllo: si trascina se libero, non se bloccato
+  await page.click("#bRef"); await clickAt(page, { x: 100, y: 400 }); await clickAt(page, { x: 300, y: 400 });
+  const r = await screenOf(page, { x: 300, y: 400 });
+  await page.mouse.move(r.x, r.y); await page.mouse.down(); await page.mouse.move(r.x + 20, r.y, { steps: 5 }); await page.mouse.up();
+  ok2((await S(page)).calib.r2.x > 303, "riferimento trascinato (dalla 1.15.0)");
+  await page.click("#bRefLock"); ok2((await S(page)).calib.refLock, "riferimento bloccato");
+  ok2(await page.isDisabled("#bRefDel"), "✕ del riferimento disattivato se bloccato");
+  // la rotazione trasforma anche gli elementi bloccati (seguono la foto) e il riferimento di controllo (correzione 1.15.0)
+  const before = await S(page);
+  await page.click("#bRotR");
+  const after = await S(page);
+  ok2(Math.abs(after.g.shots[0].x - before.g.shots[0].x) > 5, "foro bloccato ruotato con la foto");
+  near(Math.hypot(after.calib.r2.x - after.calib.r1.x, after.calib.r2.y - after.calib.r1.y), Math.hypot(before.calib.r2.x - before.calib.r1.x, before.calib.r2.y - before.calib.r1.y), 1e-6, "riferimento ruotato rigidamente");
+  ok2(Math.abs(after.calib.r1.y - before.calib.r1.y) > 5, "il riferimento ha seguito la rotazione");
+  await key(page, "Control+z");
+  // sessione: i blocchi restano
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(await page.evaluate(() => window.__SA.buildSession(true))));
+  s = await S(page); ok2(s.g.shots[0].lock && s.g.shots[4].lock && s.g.poa.lock && s.calib.lock && s.calib.refLock, "blocchi salvati nella sessione");
+  // «Tutto»: restano gli elementi bloccati
+  await page.click("#bClear");
+  s = await S(page);
+  assert.strictEqual(s.g.shots.length, 2, "restano i 2 fori bloccati"); ok2(s.g.poa && s.calib.p1 && s.calib.r1, "restano mira, scala e riferimento bloccati");
+  // sblocco: il foro torna eliminabile
+  await page.evaluate(() => { const { state, toggleLock } = window.__SA, g = state.groups[0]; toggleLock({ kind: "shot", gid: g.id, id: g.shots[0].id }); });
+  await page.evaluate(() => { const { state, deleteRef } = window.__SA, g = state.groups[0]; deleteRef({ kind: "shot", gid: g.id, id: g.shots[0].id }); });
+  assert.strictEqual((await S(page)).g.shots.length, 1, "sbloccato ed eliminato");
+});
+
+test("1.15.0: gruppi nascosti, eliminazione del riferimento di controllo", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 600, y: 400 }); await clickAt(page, { x: 640, y: 420 }); await clickAt(page, { x: 650, y: 380 });
+  const g1 = await page.evaluate(() => window.__SA.state.groups[0].id);
+  const px0 = await pixelAt(page, SHOTS[0]);
+  await page.click(`#groups button[data-eye="${g1}"]`);
+  ok2(await page.evaluate(id => window.__SA.state.hiddenGroups.has(id), g1), "gruppo 1 nascosto");
+  await redraw(page);
+  const px1 = await pixelAt(page, SHOTS[0]);
+  ok2(px1.join() !== px0.join(), "il foro del gruppo nascosto non è più disegnato");
+  const sp = await screenOf(page, SHOTS[0]);
+  assert.strictEqual(await page.evaluate(p => { const r = document.getElementById("canvas").getBoundingClientRect(); return window.__SA.hitTest(p.x - r.left, p.y - r.top); }, sp), null, "i suoi punti non si prendono");
+  ok2(await page.$(`#groups .g.hiddeng`), "riga del gruppo segnata come nascosta");
+  // calcoli, confronto e sessione: invariati / conservati
+  const rows = await page.evaluate(() => window.__SA.compareRows().length); assert.strictEqual(rows, 2, "il gruppo nascosto resta nel confronto");
+  const ses = await page.evaluate(() => window.__SA.buildSession(true)); assert.deepStrictEqual(ses.hiddenGroups, [g1]);
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(ses));
+  ok2(await page.evaluate(id => window.__SA.state.hiddenGroups.has(id), g1), "nascosto anche dopo la riapertura");
+  // un foro aggiunto al gruppo nascosto lo rende visibile
+  await page.evaluate(id => { window.__SA.state.activeGroupId = id; window.__SA.commit(); }, g1);
+  await key(page, "4"); await clickAt(page, { x: 430, y: 270 });
+  ok2(!(await page.evaluate(id => window.__SA.state.hiddenGroups.has(id), g1)), "di nuovo visibile dopo un nuovo foro");
+  // riferimento di controllo: ✕ lo elimina (anche Canc sul punto selezionato); la scala resta
+  await page.click("#bRef"); await clickAt(page, { x: 100, y: 300 }); await clickAt(page, { x: 300, y: 300 }); await setField(page, "#refLen", 50);
+  ok2((await S(page)).calib.r2, "riferimento inserito");
+  await page.click("#bRefDel");
+  let c = (await S(page)).calib; ok2(!c.r1 && !c.r2 && c.p1 && c.p2, "riferimento eliminato, scala intatta");
+  await page.click("#bRef"); await clickAt(page, { x: 100, y: 300 }); await clickAt(page, { x: 300, y: 300 });
+  await key(page, "1"); await clickAt(page, { x: 300, y: 300 }); await key(page, "Delete");
+  c = (await S(page)).calib; ok2(!c.r1 && c.p1, "riferimento eliminato con Canc");
+  await key(page, "Control+z"); ok2((await S(page)).calib.r1, "annulla lo ripristina");
+});
+
+test("1.15.0: scala sulla foto e alone di incertezza dei fori", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  const full = await page.evaluate(() => window.__SA.photoSizeMm());
+  near(full.w, 200, 0.5, "larghezza reale della foto (800 px a 4 px/mm)"); near(full.h, 150, 0.5, "altezza reale");
+  await page.check("#smOn"); await page.dispatchEvent("#smOn", "change");
+  assert.match(await page.textContent("#smInfo"), /200 mm × 150 mm/);
+  // righello in basso a sinistra: 50 mm (auto: ~1/3 di 150 mm → 50) = 200 px; barre nere e bianche alternate
+  await page.selectOption("#smKind", "ruler"); await redraw(page);
+  const sc = await page.evaluate(() => window.__SA.state.view.scale), m = 18 / sc, bh = 7 / sc;
+  const y = 600 - m - bh - 18 / sc + bh / 2, dark = (await pixelAt(page, { x: m + 10, y })).reduce((a, b) => a + b) < 150, light = (await pixelAt(page, { x: m + 30, y })).reduce((a, b) => a + b) > 600;
+  ok2(dark && light, "primo segmento nero, secondo bianco");
+  ok2((await pixelAt(page, { x: m + 200 + 6 / sc, y })).reduce((a, b) => a + b) > 600, "il righello finisce a 50 mm (200 px)");
+  // cornice: tacche lungo il lato alto
+  const tick = { x: 80, y: 10.5 / sc };   // tacca dei 20 mm: 12 px schermo verso l'interno dal lato alto
+  await page.uncheck("#smOn"); await page.dispatchEvent("#smOn", "change"); await redraw(page); const t0 = await pixelAt(page, tick);
+  await page.check("#smOn"); await page.dispatchEvent("#smOn", "change");
+  await page.selectOption("#smKind", "frame"); await redraw(page);
+  const t1 = await pixelAt(page, tick);
+  ok2(t0.reduce((a, b) => a + b) - t1.reduce((a, b) => a + b) > 150, "tacca dei 20 mm sul lato alto: " + t0 + " → " + t1);
+  // export: la Result Card e il report non danno errori con la scala attiva
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bCardPng")]);
+  ok2(require("fs").statSync(await d.path()).size > 10000, "Result Card salvata");
+  // alone: con 1,5 px a mano il raggio al 95% è 3,67 px della foto; con lo zoom 4× si vede attorno al centro
+  await setField(page, "#zoomPct", "400"); await page.press("#zoomPct", "Enter");
+  await page.evaluate(p => { const { state, toScreen } = window.__SA, s = toScreen(p), c = document.getElementById("canvas"); state.view.ox += c.clientWidth / 2 - s.x; state.view.oy += c.clientHeight / 2 - s.y; }, SHOTS[2]);
+  await page.selectOption("#smKind", "both"); await page.uncheck("#smOn"); await page.dispatchEvent("#smOn", "change");
+  await redraw(page);
+  const off = await pixelAt(page, { x: SHOTS[2].x + 3, y: SHOTS[2].y });
+  await page.check("#haloOn"); await page.dispatchEvent("#haloOn", "change"); await redraw(page);
+  const on = await pixelAt(page, { x: SHOTS[2].x + 3, y: SHOTS[2].y }), out = await pixelAt(page, { x: SHOTS[2].x + 5, y: SHOTS[2].y });
+  ok2(on.join() !== off.join(), "alone entro 3,67 px dal centro");
+  near(await page.evaluate(() => window.__SA.Calc.haloRadius(1.5)), 3.6716, 1e-3, "raggio a mano");
+  ok2(out.join() !== on.join(), "fuori dall'alone il colore cambia");
+  const shotsBefore = (await S(page)).g.shots; await page.uncheck("#haloOn"); await page.dispatchEvent("#haloOn", "change");
+  assert.deepStrictEqual((await S(page)).g.shots, shotsBefore, "l'alone non cambia le coordinate");
+});
+
+test("1.15.0: note sull'immagine legate a un foro o a una zona, nel report", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await key(page, "n"); await clickAt(page, SHOTS[1]);
+  let st = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.state.notes)));
+  assert.strictEqual(st.length, 1); ok2(st[0].sid != null && st[0].x == null, "nota legata al foro 2");
+  await page.fill("#notesList textarea", "foro strappato in basso"); await page.dispatchEvent("#notesList textarea", "change");
+  await clickAt(page, { x: 600, y: 120 });   // zona
+  st = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.state.notes)));
+  assert.strictEqual(st.length, 2); near(st[1].x, 600, 1e-3, "nota sulla zona"); assert.strictEqual(st[0].text, "foro strappato in basso");
+  await page.fill(`#notesList textarea[data-ntext="${st[1].id}"]`, "luce radente da sinistra"); await page.dispatchEvent(`#notesList textarea[data-ntext="${st[1].id}"]`, "change");
+  assert.match(await page.textContent("#notesList"), /Foro 2 · Gruppo 1/);
+  // il marcatore segue il foro: trascina il foro 2
+  await key(page, "Escape"); await key(page, "1");
+  const m0 = await page.evaluate(() => { const { noteMarkers, toScreen, state } = window.__SA; return noteMarkers(toScreen, state.view.scale, window.__SA.calcContext())[0]; });
+  const a = await screenOf(page, SHOTS[1]);
+  await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(a.x + 20, a.y + 10, { steps: 5 }); await page.mouse.up();
+  const m1 = await page.evaluate(() => { const { noteMarkers, toScreen, state } = window.__SA; return noteMarkers(toScreen, state.view.scale, window.__SA.calcContext())[0]; });
+  near(m1.x - m0.x, 20, 1.5, "il marcatore segue il foro (x)"); near(m1.y - m0.y, 10, 1.5, "(y)");
+  // clic sul marcatore = selezione della nota
+  const mk = await page.evaluate(m => { const r = document.getElementById("canvas").getBoundingClientRect(); return { x: r.left + m.x, y: r.top + m.y }; }, m1);
+  await page.mouse.click(mk.x, mk.y);
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.state.selected), { kind: "note", id: st[0].id }, "nota selezionata dal marcatore");
+  // rotazione: la nota sulla zona segue la foto
+  await page.click("#bRotR");
+  const z = await page.evaluate(() => window.__SA.state.notes[1]); ok2(Math.abs(z.x - 600) > 5, "nota sulla zona ruotata");
+  await key(page, "Control+z");
+  // report: sezione e testo; senza la casella niente note
+  let [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  let T = pdfText(require("fs").readFileSync(await d.path()));
+  for (const w of ["Note sull'immagine", "foro strappato in basso", "luce radente da sinistra", "N1 · Foro 2 · Gruppo 1"]) ok2(T.includes(w), "nel report: " + w);
+  await page.uncheck("#notesReport");
+  [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  T = pdfText(require("fs").readFileSync(await d.path())); ok2(!T.includes("foro strappato"), "note escluse dal report");
+  // sessione; eliminando il foro la nota diventa una nota sulla zona
+  const ses = await page.evaluate(() => window.__SA.buildSession(true)); assert.strictEqual(ses.notes.length, 2);
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(ses));
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.notes.length), 2, "note riaperte");
+  await page.evaluate(() => { const { state, deleteRef } = window.__SA, g = state.groups[0]; deleteRef({ kind: "shot", gid: g.id, id: state.notes[0].sid }); });
+  const n0 = await page.evaluate(() => window.__SA.state.notes[0]);
+  ok2(n0.sid == null && isFinite(n0.x), "nota staccata dal foro eliminato, al suo posto");
+  await page.click(`#notesList button[data-ndel="${n0.id}"]`);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.notes.length), 1, "nota eliminata");
+});
+
+test("1.15.0: righello libero tra due punti", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const before = await S(page);
+  await key(page, "r");
+  await clickAt(page, { x: 100, y: 200 }); await clickAt(page, { x: 300, y: 200 });
+  const I = await page.evaluate(() => { const i = window.__SA.rulerInfo(); return { mm: i.M.mm, inch: i.M.inch, MIL: i.M.MIL, MOA: i.M.MOA, deg: i.M.deg, text: i.text }; });
+  near(I.mm, 50, 1e-3, "50 mm"); near(I.inch, 50 / 25.4, 1e-4, "pollici"); near(I.MIL, 0.5, 1e-4, "0,5 MRAD a 100 m"); near(I.deg, 0, 1e-3, "orizzontale");
+  assert.match(await page.textContent("#hint"), /50,00 mm · 1,969 in · 1,72 MOA · 0,50 MRAD · 0,0° · in asse/);
+  // nuova misura in diagonale: 3-4-5
+  await clickAt(page, { x: 100, y: 400 }); await clickAt(page, { x: 400, y: 0 });
+  const J = await page.evaluate(() => window.__SA.rulerInfo().M);
+  near(J.mm, 125, 1e-3, "diagonale 125 mm"); near(J.deg, 53.13, 0.01, "53,13° dall'orizzontale");
+  const after = await S(page);
+  assert.deepStrictEqual(after.g.shots, before.g.shots, "nessun foro creato o spostato"); assert.deepStrictEqual(after.calib, before.calib, "scala invariata");
+  assert.strictEqual(await page.evaluate(() => window.__SA.undoStack.idx), await page.evaluate(() => window.__SA.undoStack.idx), "");
+  await key(page, "Escape");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.ruler), null, "Esc chiude il righello");
+  ok2(!JSON.stringify(await page.evaluate(() => window.__SA.buildSession(false))).includes("ruler"), "il righello non va nella sessione");
+});
+
+test("1.15.0: finestra di dettaglio ancorabile", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await key(page, "d");
+  ok2(await page.isVisible("#detailWin"), "finestra aperta");
+  await page.click("#bDwPick"); await clickAt(page, SHOTS[0]);
+  const pt = await page.evaluate(() => ({ ...window.__SA.detail.pt }));
+  near(pt.x, SHOTS[0].x, 1, "punto osservato x"); near(pt.y, SHOTS[0].y, 1, "y");
+  assert.strictEqual((await S(page)).g.shots.length, 5, "il clic di scelta non aggiunge fori");
+  // lo zoom della vista principale non cambia il dettaglio
+  await page.fill("#zoomPct", "300"); await page.press("#zoomPct", "Enter");
+  assert.deepStrictEqual(await page.evaluate(() => ({ ...window.__SA.detail.pt })), pt, "punto invariato con lo zoom della vista");
+  const z0 = await page.evaluate(() => window.__SA.detail.zoom); await page.click("#bDwIn");
+  ok2(await page.evaluate(() => window.__SA.detail.zoom) > z0, "ingrandimento del dettaglio");
+  // il canvas del dettaglio mostra la foto (bordo nero del foro sintetico? qui: griglia e marcatori) e non è vuoto
+  const filled = await page.evaluate(() => { const c = document.getElementById("dwCanvas"), d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let n = 0; for (let i = 0; i < d.length; i += 16) if (d[i] > 200) n++; return n; });
+  ok2(filled > 100, "dettaglio disegnato");
+  // spostamento della finestra dalla barra e posizione ricordata
+  const h = await page.$eval("#detailWin .dw-title", e => { const r = e.getBoundingClientRect(); return { x: r.left + 10, y: r.top + r.height / 2 }; });
+  const l0 = await page.$eval("#detailWin", e => e.offsetLeft);
+  await page.mouse.move(h.x, h.y); await page.mouse.down(); await page.mouse.move(h.x - 120, h.y - 40, { steps: 5 }); await page.mouse.up();
+  const l1 = await page.$eval("#detailWin", e => e.offsetLeft); near(l1, l0 - 120, 2, "finestra spostata");
+  // trascinare dentro sposta il punto osservato
+  const c = await page.$eval("#dwCanvas", e => { const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(c.x, c.y); await page.mouse.down(); await page.mouse.move(c.x - 40, c.y, { steps: 4 }); await page.mouse.up();
+  const zz = await page.evaluate(() => window.__SA.detail.zoom);
+  near(await page.evaluate(() => window.__SA.detail.pt.x), pt.x + 40 / zz, 0.5, "punto spostato trascinando nel dettaglio");
+  await page.click("#bDwClose"); ok2(!(await page.isVisible("#detailWin")), "chiusa");
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  await loadTarget(page); await key(page, "d");
+  near(await page.$eval("#detailWin", e => e.offsetLeft), l1, 2, "posizione ricordata");
+});
+
+test("1.15.0: differenze tra le configurazioni nel confronto", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#ld-bullet", "Lapua Scenar 155"); await setField(page, "#ld-charge", "44.5"); await setField(page, "#ld-temp", "18");
+  await page.click("#bAddGroup");   // copia i dati di ricarica
+  await setField(page, "#ld-charge", "45"); await setField(page, "#shotDist", 200);
+  await key(page, "3"); await clickAt(page, { x: 600, y: 400 }); for (const p of [{ x: 640, y: 420 }, { x: 650, y: 380 }, { x: 630, y: 400 }]) await clickAt(page, p);
+  await key(page, "a");
+  const box = await page.textContent("#cmpDiff");
+  ok2(/Carica/.test(box) && /Distanza/.test(box), "carica e distanza diverse: " + box.slice(0, 200));
+  ok2(!/Palla|Temperatura/.test(box), "palla e temperatura uguali: nascoste");
+  assert.match(box, /2 parametri diversi/);
+  ok2((await page.$$("#cmpDiff tr.ddif")).length === 2, "2 righe evidenziate");
+  const D = await page.evaluate(() => { const d = window.__SA.configDiff(); return { diff: d.diff, partial: d.partial }; });
+  assert.deepStrictEqual(D.diff, ["charge", "dist"]);
+  // togliendo una riga: servono almeno 2 righe
+  await page.uncheck("#cmpBody input[data-dk]:nth-of-type(1) >> nth=0");
+  assert.match(await page.textContent("#cmpDiff"), /Seleziona almeno 2 righe/);
+  await page.check("#cmpBody input[data-dk] >> nth=0");
+  // report: la tabella compare con le differenze
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; window.__SA.closeAnalysis(); });
+  await page.selectOption("#cardScope", "all");
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
+  const T = pdfText(require("fs").readFileSync(await d.path()));
+  ok2(T.includes("DIFFERENZE TRA LE CONFIGURAZIONI") && T.includes("Componenti · Carica") && T.includes("45 gr") && T.includes("44,5 gr"), "differenze nel report: " + T.slice(T.indexOf("Confronto tra")).replace(/\n/g, " ").slice(0, 1500));
+});
+
+test("1.15.0 in inglese: note, blocco, righello, scala sulla foto, differenze senza testi italiani", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => window.__SA.setLang("en"));
+  await expandAll(page);
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#ld-charge", "44.5");
+  await page.check("#smOn"); await page.dispatchEvent("#smOn", "change"); await page.check("#haloOn"); await page.dispatchEvent("#haloOn", "change");
+  await key(page, "n"); await clickAt(page, SHOTS[1]); await clickAt(page, { x: 600, y: 120 }); await key(page, "Escape");
+  await key(page, "1"); await clickAt(page, SHOTS[0]); await key(page, "k"); await page.click("#bCalLock");
+  await key(page, "r"); await clickAt(page, { x: 100, y: 200 }); await clickAt(page, { x: 300, y: 200 });
+  assert.match(await page.textContent("#hint"), /^Ruler: .*50\.00 mm · 1\.969 in · 1\.72 MOA · 0\.50 MRAD · 0\.0° · on axis/);
+  await key(page, "Escape"); await key(page, "d");
+  await page.click("#bAddGroup"); await setField(page, "#ld-charge", "45"); await key(page, "3"); await clickAt(page, { x: 600, y: 400 }); await clickAt(page, { x: 640, y: 420 }); await clickAt(page, { x: 650, y: 380 });
+  await page.click(`#groups button.eye >> nth=0`);
+  const side = await page.textContent("#side");
+  ok2(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
+  assert.match(await page.textContent("#notesList"), /Hole 2 · Group 1/);
+  await key(page, "a");
+  const diff = await page.textContent("#cmpDiff");
+  assert.match(diff, /Charge/); ok2(!ITALIAN.test(diff), "differenze in inglese: " + diff);
+  await key(page, "Escape");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
