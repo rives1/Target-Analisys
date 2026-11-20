@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.18.0] - 2026-11-20
+### Aggiunto
+- **Riepilogo della sessione in cima al pannello** (`#qiTop`, `refreshQiTop`): GQI della sessione e, se il TQI è
+  acceso e calcolabile, TQI affiancato; solo punteggio, giudizio e barra delle classi (con l'IC del GQI). Nascosto con
+  il GQI spento o senza gruppi validi. Un clic apre i Risultati sulla card completa. Scorre con il pannello.
+- **Gruppi richiudibili nei Risultati**: clic sul titolo o ▾/▸; da chiuso resta una riga con group size, raggio medio e
+  GQI. Stato per gruppo finché resta la stessa foto/sessione (`resCollapsed`, non nella storia né nel file); gruppi
+  nuovi aperti.
+### Cambiato
+- **Result Card PNG, report PDF** e il menu «Gruppo attivo / Tutti i gruppi» spostati dalla cima del pannello alla
+  sezione **Dati** (sottotitoli «Result Card e report», «Sessione ed esportazioni»).
+- «Orientamento e prospettiva» → **«Gestione immagine»**, con quattro riquadri titolati (rotazione, ritaglio,
+  distorsione dell'obiettivo, correzione prospettica).
+- **Scala sulla foto attiva per default**, con il solo righello (le sessioni salvate mantengono la loro scelta).
+- **Marcatori delle note più grandi**: pillola alta 24 px (prima 15), testo 13 px, ombra; presa su tutta la pillola
+  + 5 px (prima un cerchio di 11 px dal centro); trascinando una nota su una zona la presa mantiene lo scarto, la
+  nota non salta più sotto il cursore.
+- Manuale d'uso 1.18 (77 pagine). Test: 77 scenari UI (4 nuovi), 768 verifiche del motore.
+### Corretto
+- Traduzioni inglesi mancanti di tre motivi «GQI non disponibile» (scala, distanza, centratura/pesi non validi).
+
 ## [1.17.0] - 2026-11-19
 ### Aggiunto
 - **Baseline persistente**: rosata di riferimento scelta con ☆ dal confronto (sessione o storico) o dai risultati del

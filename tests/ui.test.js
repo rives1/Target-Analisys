@@ -2106,7 +2106,7 @@ test("1.15.0: righello libero tra due punti", async page => {
   assert.strictEqual(await page.evaluate(() => window.__SA.undoStack.idx), await page.evaluate(() => window.__SA.undoStack.idx), "");
   await key(page, "Escape");
   assert.strictEqual(await page.evaluate(() => window.__SA.state.ruler), null, "Esc chiude il righello");
-  ok2(!JSON.stringify(await page.evaluate(() => window.__SA.buildSession(false))).includes("ruler"), "il righello non va nella sessione");
+  ok2(!/"ruler"\s*:/.test(JSON.stringify(await page.evaluate(() => window.__SA.buildSession(false)))), "il righello non va nella sessione");   // (smKind: "ruler" è la scala sulla foto, dalla 1.18 predefinita)
 });
 
 test("1.15.0: finestra di dettaglio ancorabile", async page => {
@@ -2571,6 +2571,117 @@ test("1.17.0: inglese — coda di revisione, origine, baseline e periodo tradott
   await page.evaluate(() => window.__SA.setRange(1, 1));
   const txt = (await page.textContent("#sec-review")) + (await page.textContent("#results")) + (await page.textContent("#baseBox")) + (await page.textContent("#cmpRange"));
   ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+});
+
+/* ------------------------------ 1.18.0 ------------------------------ */
+test("1.18.0: pannello — riepilogo GQI/TQI in cima, esportazioni in Dati, Gestione immagine, scala sulla foto", async page => {
+  // esportazioni nella sezione Dati; in cima niente pulsanti di esportazione
+  for (const id of ["#bCardPng", "#bPdf", "#cardScope"]) ok2(await page.$eval(id, (e) => !!e.closest("#sec-data")), id + " in Dati");
+  assert.strictEqual(await page.$eval("#side", s => !!s.querySelector(":scope > #exportBar, :scope > .btns#exportBar")), false);
+  // sezione rinominata e divisa in riquadri con titolo
+  assert.strictEqual((await page.textContent("#sec-orient > summary")).trim(), "Gestione immagine");
+  assert.deepStrictEqual(await page.$$eval("#sec-orient .subsec .subsec-h", hs => hs.map(h => h.textContent.trim())),
+    ["⟳Rotazione", "✂Ritaglio della foto", "〰Distorsione dell'obiettivo", "⬚Correzione prospettica (foto di sbieco)"]);
+  ok2(await page.$eval("#bPersp", b => !!b.closest("#ss-persp")) && await page.$eval("#bCrop", b => !!b.closest("#ss-crop")), "comandi nel loro riquadro");
+  // scala sulla foto attiva per default, solo righello
+  assert.strictEqual(await page.isChecked("#smOn"), true); assert.strictEqual(await page.inputValue("#smKind"), "ruler");
+  // riepilogo: nascosto senza gruppi validi
+  assert.strictEqual(await page.isHidden("#qiTop"), true);
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  ok2(await page.isVisible("#qiTop"), "riepilogo visibile");
+  assert.strictEqual(await page.$eval("#qiTop", e => e.previousElementSibling && e.nextElementSibling.tagName), "SECTION", "prima delle sezioni");
+  // stesso punteggio della card della sessione, solo GQI con il TQI spento
+  const top = await page.$$eval("#qiTop .qtb", bs => bs.map(b => ({ k: b.dataset.qt, n: b.querySelector(".qi-num").textContent, bar: !!b.querySelector(".qi-bar"), rows: b.querySelectorAll("tr").length })));
+  const card = await page.$eval('#results .rcard[data-key="sgqi"] .qi-num', e => e.textContent);
+  assert.deepStrictEqual(top, [{ k: "sgqi", n: card, bar: true, rows: 0 }]);
+  // TQI acceso: due riquadri affiancati
+  await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
+  const top2 = await page.$$eval("#qiTop .qtb", bs => bs.map(b => b.dataset.qt));
+  assert.deepStrictEqual(top2, ["sgqi", "stqi"]);
+  const [r1, r2] = await page.$$eval("#qiTop .qtb", bs => bs.map(b => b.getBoundingClientRect()).map(r => ({ x: r.x, y: r.y, w: r.width })));
+  near(r1.y, r2.y, 0.5, "affiancati"); ok2(r2.x > r1.x + r1.w - 1, "uno accanto all'altro");
+  assert.strictEqual(await page.$eval("#qiTop .qtb[data-qt=stqi] .qi-num", e => e.textContent), await page.$eval('#results .rcard[data-key="stqi"] .qi-num', e => e.textContent));
+  // gruppo senza mira: TQI non calcolabile → solo GQI
+  await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].poa = null; commit(); });
+  assert.deepStrictEqual(await page.$$eval("#qiTop .qtb", bs => bs.map(b => b.dataset.qt)), ["sgqi"]);
+  // clic: sezione Risultati aperta sulla card della sessione
+  await page.evaluate(() => { document.getElementById("sec-results").open = false; });
+  await page.click("#qiTop .qtb");
+  assert.strictEqual(await page.$eval("#sec-results", d => d.open), true);
+  // GQI spento nelle impostazioni → niente riepilogo
+  await page.uncheck("#qiGqiOn"); await page.dispatchEvent("#qiGqiOn", "change");
+  assert.strictEqual(await page.isHidden("#qiTop"), true);
+});
+test("1.18.0: gruppi richiudibili nei Risultati con la riga dei valori principali", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.click("#bAddGroup"); await clickAt(page, { x: 190, y: 400 });
+  for (const s of [{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]) await clickAt(page, s);
+  const [g1, g2] = await page.evaluate(() => window.__SA.state.groups.map(g => g.id));
+  const sel = id => `#results .res[data-gid="${id}"]`;
+  ok2(!(await page.$eval(sel(g1), b => b.classList.contains("collapsed"))), "aperto all'inizio");
+  // clic sul titolo: chiuso, resta solo titolo + riga
+  await page.click(`${sel(g1)} > h3`);
+  const st = await page.$eval(sel(g1), b => ({ c: b.classList.contains("collapsed"), vis: [...b.children].filter(e => getComputedStyle(e).display !== "none").map(e => e.tagName + "." + e.className), sum: b.querySelector(".resg-sum").textContent, aria: b.querySelector(".rtog").getAttribute("aria-expanded") }));
+  ok2(st.c && st.aria === "false", "chiuso");
+  assert.deepStrictEqual(st.vis, ["H3.", "DIV.resg-sum"]);
+  // valori della riga = calcolo indipendente
+  let es = 0; for (const a of SHOTS) for (const b of SHOTS) es = Math.max(es, Math.hypot(a.x - b.x, a.y - b.y));
+  const c = { x: SHOTS.reduce((a, s) => a + s.x, 0) / SHOTS.length, y: SHOTS.reduce((a, s) => a + s.y, 0) / SHOTS.length }, mr = SHOTS.reduce((a, s) => a + Math.hypot(s.x - c.x, s.y - c.y), 0) / SHOTS.length;
+  const gqi = await page.$eval(`${sel(g1)} .rcard[data-key="gqi"] .qi-num`, e => e.textContent);
+  assert.strictEqual(st.sum, `group size ${fmtIt(es / 4, 1)} mm · raggio medio ${fmtIt(mr / 4, 1)} mm · GQI ${gqi}`);
+  // l'altro gruppo resta aperto; lo stato sopravvive agli aggiornamenti (nuovo foro nel gruppo 2)
+  ok2(!(await page.$eval(sel(g2), b => b.classList.contains("collapsed"))), "gruppo 2 aperto");
+  await clickAt(page, { x: 258, y: 380 });
+  ok2(await page.$eval(sel(g1), b => b.classList.contains("collapsed")), "ancora chiuso dopo l'aggiornamento");
+  // la stella della baseline nel titolo non chiude il gruppo
+  await page.click(`${sel(g2)} .bstarg`);
+  ok2(!(await page.$eval(sel(g2), b => b.classList.contains("collapsed"))), "stella senza chiusura");
+  await page.evaluate(() => window.__SA.setBaseline(null, true));
+  // riapertura con ▸; nuovo gruppo aperto; nuova foto: tutto riaperto
+  await page.click(`${sel(g1)} .rtog`);
+  ok2(!(await page.$eval(sel(g1), b => b.classList.contains("collapsed"))), "riaperto");
+  await page.click(`${sel(g1)} > h3`);
+  await loadTarget(page);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.resCollapsed]), []);
+});
+test("1.18.0: marcatori delle note più grandi, presi su tutta la pillola, trascinati senza salti", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await key(page, "n"); await clickAt(page, { x: 200, y: 150 });
+  await page.fill(".note-row textarea", "zona"); await key(page, "Escape");
+  await page.evaluate(() => window.__SA.setMode("pan"));
+  const m = await page.evaluate(() => { const SA = window.__SA, M = SA.noteMarkers(SA.toScreen, SA.state.view.scale, SA.calcContext(), true)[0]; return { x: M.x, y: M.y, ax: M.ax, ay: M.ay, n: { ...SA.state.notes[0] } }; });
+  // pillola alta 24 px: la presa vale su tutta la pillola + 5 px (prima: cerchio di 11 px dal centro)
+  assert.strictEqual(await page.evaluate(() => window.__SA.NOTE_H), 24);
+  const hitAt = (dx, dy) => page.evaluate(([x, y]) => { const h = window.__SA.hitTest(x, y); return h && h.kind; }, [m.x + dx, m.y + dy]);
+  assert.strictEqual(await hitAt(0, 0), "note"); assert.strictEqual(await hitAt(17, 14), "note", "angolo della pillola + margine"); assert.strictEqual(await hitAt(0, 30), null);
+  // disegnata grande: pixel scuro della pillola a 7 px dal centro in verticale (la pillola vecchia era alta 15 px)
+  await page.evaluate(() => { window.__SA.state.selected = null; }); await redraw(page);
+  const cv = await page.$eval("#canvas", c => { const r = c.getBoundingClientRect(); return { x: r.left, y: r.top }; });
+  const px = await page.evaluate(([x, y]) => { const c = document.getElementById("canvas"), d = c.getContext("2d").getImageData(Math.round(x * devicePixelRatio), Math.round(y * devicePixelRatio), 1, 1).data; return [...d]; }, [m.x - 6, m.y + 8]);
+  ok2(px[0] < 90 && px[1] < 100, "pillola scura: " + px);
+  // trascinamento dal bordo della pillola: la nota si sposta dello stesso vettore, senza saltare sotto il cursore
+  const grabX = cv.x + m.x + 12, grabY = cv.y + m.y + 8;
+  await page.mouse.move(grabX, grabY); await page.mouse.down(); await page.mouse.move(grabX + 20, grabY + 10, { steps: 4 }); await page.mouse.move(grabX + 40, grabY + 30, { steps: 4 }); await page.mouse.up();
+  const n2 = await page.evaluate(() => ({ ...window.__SA.state.notes[0] })), sc = await page.evaluate(() => window.__SA.state.view.scale);
+  near(n2.x - m.n.x, 40 / sc, 0.6, "spostamento x"); near(n2.y - m.n.y, 30 / sc, 0.6, "spostamento y");
+  // annulla
+  await key(page, "Control+z");
+  near(await page.evaluate(() => window.__SA.state.notes[0].x), m.n.x, 1e-9, "annulla");
+});
+test("1.18.0: inglese — riepilogo, Gestione immagine e gruppi chiusi tradotti", async page => {
+  await page.evaluate(() => window.__SA.setLang("en"));
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
+  await page.click("#results .res > h3");
+  assert.strictEqual((await page.textContent("#sec-orient > summary")).trim(), "Image handling");
+  const txt = (await page.textContent("#qiTop")) + (await page.textContent("#results .res")) + (await page.textContent("#sec-orient")) + (await page.textContent("#sec-data"));
+  ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
+  assert.match(await page.textContent("#results .resg-sum"), /^group size [\d.]+ mm · mean radius [\d.]+ mm · GQI \d+$/);
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
 

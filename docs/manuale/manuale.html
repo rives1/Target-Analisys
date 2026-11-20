@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.17</div>
+    <div class="sub">Manuale d'uso · versione 1.18</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -168,15 +168,17 @@
 <tr><td>⚑ Colpi da rivedere <kbd>V</kbd></td><td>Apre la coda dei fori da controllare e centra il primo sulla foto (capitolo 9). Il numero rosso è quanti ne restano.</td></tr>
 </table>
 <h2>Il pannello a destra</h2>
+<figure class="w55"><img src="imgj/67_riepilogo_qi.jpg"><figcaption>In cima al pannello: il GQI della sessione e, se acceso, il TQI, con il solo punteggio e la barra delle classi.</figcaption></figure>
+<p>In cima al pannello, appena ci sono gruppi con almeno 2 fori, c'è il <b>riepilogo della sessione</b>: il punteggio GQI di tutti i gruppi insieme e, se hai acceso il TQI e i gruppi hanno il punto di mira, il TQI accanto. Mostra solo il numero, il giudizio e la barra; un clic porta alle schede complete in fondo ai Risultati (capitolo 8). Scorre insieme al pannello.</p>
 <p>Le sezioni del pannello si aprono e si chiudono con un clic sul titolo. All'avvio è aperta solo «Calibrazione scala»: le altre si aprono quando servono. In ordine:</p>
 <table>
 <tr><th style="width:32%">Sezione</th><th>Contenuto</th></tr>
-<tr><td>Orientamento e prospettiva</td><td>Rotazione della foto, ritaglio, distorsione dell'obiettivo, correzione della prospettiva.</td></tr>
+<tr><td>Gestione immagine</td><td>Rotazione della foto, ritaglio, distorsione dell'obiettivo, correzione della prospettiva, ognuna nel suo riquadro.</td></tr>
 <tr><td>Calibrazione scala</td><td>La distanza nota e lo stato della calibrazione, con il semaforo di qualità.</td></tr>
 <tr><td>Parametri di tiro</td><td>Distanza, calibro, valore del click, che cosa disegnare sulla foto.</td></tr>
 <tr><td>Gruppi</td><td>Le rosate presenti sulla foto; quella evidenziata è il «gruppo attivo».</td></tr>
 <tr><td>Ricarica e condizioni</td><td>Dati della munizione e del meteo del gruppo attivo, profili di ricarica, quadrante del vento.</td></tr>
-<tr><td>Risultati</td><td>Le misure di ogni gruppo, in forma di schede («card»).</td></tr>
+<tr><td>Risultati</td><td>Le misure di ogni gruppo, in forma di schede («card»); ogni gruppo si può chiudere.</td></tr>
 <tr><td>Zone di punteggio</td><td>Anelli di bersagli ISSF, sagome IPSC/IDPA/silhouette, punteggio di ogni foro.</td></tr>
 <tr><td>Probabilità di colpire</td><td>Quanti colpi su 100 entrerebbero in un bersaglio di una certa misura.</td></tr>
 <tr><td>Punti del gruppo attivo</td><td>La tabella di tutti i punti: coordinate, distanze, click, esclusione e blocco dei colpi.</td></tr>
@@ -329,6 +331,8 @@
 <h1 class="chap" id="c8"><span class="n">8</span>I risultati, spiegati semplice</h1>
 <p class="lead">Ogni gruppo ha le sue schede. Ognuna mostra in grande il valore principale; con «Dettagli» si aprono i valori secondari (e restano aperti finché non li chiudi).</p>
 <figure class="w70"><img src="imgj/15_risultati_dettagli.jpg"><figcaption>Le schede del gruppo 1 con i dettagli aperti. I termini sottolineati, se cliccati, aprono la spiegazione nell'help tecnico.</figcaption></figure>
+<p>Con più gruppi i risultati si allungano: un clic sul titolo di un gruppo (o su ▾) lo <b>chiude</b>, e resta una riga con group size, raggio medio e GQI. Un altro clic lo riapre. Lo stato resta finché lavori sulla stessa foto; i gruppi nuovi si aprono.</p>
+<figure class="w55"><img src="imgj/68_gruppo_chiuso.jpg"><figcaption>Tutti i gruppi chiusi: di ciascuno restano il titolo e la riga dei valori principali.</figcaption></figure>
 
 <h2>Le misure della rosata</h2>
 <figure>
@@ -650,8 +654,8 @@
 
 <!-- =============================== 13 =============================== -->
 <h1 class="chap" id="c13"><span class="n">13</span>Sistemare la foto: rotazione, ritaglio, prospettiva, obiettivo</h1>
-<p>La sezione «Orientamento e prospettiva» corregge le foto non perfette.</p>
-<figure class="w55"><img src="imgj/17_orientamento.jpg"><figcaption>La sezione «Orientamento e prospettiva».</figcaption></figure>
+<p>La sezione «Gestione immagine» corregge le foto non perfette. Ha quattro riquadri, uno per ogni operazione: rotazione, ritaglio, distorsione dell'obiettivo e correzione prospettica.</p>
+<figure class="w55"><img src="imgj/17_orientamento.jpg"><figcaption>La sezione «Gestione immagine», divisa in quattro riquadri.</figcaption></figure>
 <h3>Rotazione</h3>
 <p>Se la foto è storta, «alto» e «destra» non coincidono con quelli del bersaglio e la correzione mescolerebbe alzo e brandeggio. Ruota di 90° con i pulsanti, scrivi un angolo, oppure usa <span class="btn">📐 Raddrizza con 2 punti</span> (tasto <kbd>5</kbd>): clicchi due punti su una linea del bersaglio che deve essere orizzontale o verticale e la foto si raddrizza. I punti già inseriti ruotano con la foto; le distanze non cambiano.</p>
 <h3>Ritaglio</h3>
@@ -681,7 +685,7 @@
 <p>Premi <span class="btn">✎ Nota</span> (tasto <kbd>N</kbd>) e clicca un foro o un punto qualsiasi del bersaglio: compare una pillola numerata N1, N2… e nella sezione «Note sull'immagine» scrivi il testo (un colpo partito male, un foro strappato, la luce, una raffica di vento).</p>
 <ul>
   <li>Una nota cliccata su un foro <b>segue il foro</b>: se lo sposti o ruoti la foto, la pillola resta accanto. Se elimini il foro, la nota resta nel punto in cui era.</li>
-  <li>Una nota su una zona segue la foto in tutte le trasformazioni; trascinando la pillola la sposti.</li>
+  <li>Una nota su una zona segue la foto in tutte le trasformazioni; trascinando la pillola la sposti. La pillola si prende in qualunque punto, non solo al centro, e non salta sotto il cursore.</li>
   <li>Le pillole stanno accanto al punto, collegate da una linea sottile: non coprono il foro.</li>
   <li>Con «Includi nel report PDF» le pillole compaiono sulla foto del report e i testi in una sezione dedicata.</li>
 </ul>
@@ -694,7 +698,7 @@
 <p><span class="btn">🔎 Dettaglio</span> (tasto <kbd>D</kbd>) apre una finestra che mostra sempre ingrandita la stessa zona, mentre la vista principale resta libera: puoi guardare l'intero bersaglio e il bordo di un foro nello stesso momento. Con 🎯 scegli il punto da osservare cliccando sulla foto; dentro la finestra trascini per spostarlo e la rotella (o − e +) cambia l'ingrandimento. La finestra si sposta trascinando la barra del titolo e si ridimensiona dall'angolo in basso a destra; la sua posizione viene ricordata. Sulla foto un rettangolo azzurro tratteggiato mostra la zona osservata.</p>
 <figure><img src="imgj/53_dettaglio.jpg"><figcaption>La finestra di dettaglio sul gruppo 2, con la vista principale che mostra tutti e tre i gruppi.</figcaption></figure>
 <h2>La scala sulla foto</h2>
-<p>In «Calibrazione scala», con la scala impostata, la casella «Scala sulla foto» disegna un <b>righello graduato</b> in un angolo e/o una <b>cornice</b> con le tacche e le dimensioni reali dei lati della foto. Righello e cornice sono in scala con il bersaglio anche quando ingrandisci, e con «Anche in Result Card e report» compaiono anche nelle immagini esportate, riferiti all'area ritagliata, con le dimensioni della foto intera. Chi guarda la Result Card tra un anno capisce subito quanto era grande il bersaglio.</p>
+<p>In «Calibrazione scala», con la scala impostata, la casella «Scala sulla foto» (attiva per default, con il solo righello) disegna un <b>righello graduato</b> in un angolo e/o una <b>cornice</b> con le tacche e le dimensioni reali dei lati della foto. Righello e cornice sono in scala con il bersaglio anche quando ingrandisci, e con «Anche in Result Card e report» compaiono anche nelle immagini esportate, riferiti all'area ritagliata, con le dimensioni della foto intera. Chi guarda la Result Card tra un anno capisce subito quanto era grande il bersaglio.</p>
 <figure><img src="imgj/51_scala_foto.jpg"><figcaption>Righello da 100 mm in basso a sinistra e cornice con le dimensioni reali: la foto copre 320 × 240 mm.</figcaption></figure>
 <h2>L'alone di incertezza dei fori</h2>
 <p>In «Parametri di tiro», «Alone di incertezza dei fori» disegna attorno al centro di ogni foro una macchia semitrasparente: è la zona in cui, al 95%, si trova il centro vero, calcolata dall'incertezza di marcatura (a mano o con lo snap, ×3 per i fori segnati difficili ◐). Così vedi a colpo d'occhio quali fori sono marcati con precisione e quali no. È solo un disegno: coordinate e calcoli non cambiano; l'effetto sui risultati è nella riga «Incertezza di misura».</p>
@@ -708,7 +712,7 @@
 <h3>Sessione JSON</h3>
 <p><span class="btn">💾 Salva sessione JSON</span> salva gli stessi dati in un file di testo. Con «Includi l'immagine nella sessione» spuntato contiene anche la foto; senza, per riaprirlo devi prima caricare la stessa foto. È il formato delle versioni precedenti, sempre leggibile.</p>
 <h3>Result Card e Report PDF</h3>
-<p>Il pulsante in cima al pannello <span class="btn">🖼 Esporta Result Card (PNG)</span> crea un'immagine riassuntiva del gruppo attivo o di tutti i gruppi, perfetta da mandare via chat o pubblicare.</p>
+<p>Il pulsante <span class="btn">🖼 Esporta Result Card (PNG)</span>, nella sezione «Dati» insieme al report e al menu «Gruppo attivo / Tutti i gruppi», crea un'immagine riassuntiva del gruppo attivo o di tutti i gruppi, perfetta da mandare via chat o pubblicare.</p>
 <p><span class="btn">📑 Report PDF</span> crea un documento A4 completo, con <b>testo vero</b>: puoi selezionarlo, copiarlo in un'email e cercarlo, ed è nitido in stampa. Contiene:</p>
 <ul>
   <li>la foto con i punti e i dati principali (distanza, calibro, click, colpi analizzati);</li>

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.17.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.18.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -310,7 +310,7 @@
   .row label { flex: 1 1 auto; font-size: 13px; }
   .row input[type=number] { width: 90px; }
   #caliberPreset { width: 100%; }
-  #exportBar { margin: 0 0 12px; }
+  #exportBar { margin: 2px 0 4px; }
   .pgroup { display: flex; align-items: center; gap: 6px; font-weight: 600; margin: -2px 0 6px; }
   .pgroup .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
   input, select, textarea { font: inherit; padding: 5px 7px; border: 1px solid var(--input-border); border-radius: 6px; background: var(--input-bg); color: var(--ink); }
@@ -407,6 +407,20 @@
   details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; margin: 6px 0; }
   .help { font-size: 12.5px; color: var(--help-ink); line-height: 1.45; }
   .help kbd { background: var(--kbd-bg); border: 1px solid var(--kbd-border); border-radius: 4px; padding: 0 4px; font-size: 11.5px; }
+  /* 1.18.0 */
+  .qitop { display: flex; gap: 8px; margin: 4px 0 8px; }
+  .qitop .qtb { flex: 1 1 0; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px 2px; background: var(--panel); cursor: pointer; text-align: left; color: var(--ink); font: inherit; }
+  .qitop .qtb:hover { border-color: var(--accent); }
+  .qitop .qtt { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .qitop .qi-num { font-size: 22px; }
+  .subsec { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 6px; margin: 8px 0; background: var(--hover); }
+  .subsec-h { font-weight: 700; font-size: 13px; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 7px; }
+  .subsec-h .ssi { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 6px; background: var(--line); font-size: 13px; }
+  .dsub { font-weight: 600; font-size: 13px; margin: 12px 0 2px; } .dsub:first-of-type { margin-top: 2px; }
+  .res > h3 { cursor: pointer; user-select: none; } .res .rtog { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12px; width: 18px; padding: 0; margin-right: 2px; }
+  .res.collapsed > :not(h3):not(.resg-sum) { display: none !important; } .res:not(.collapsed) > .resg-sum { display: none; }
+  .res .resg-sum { font-size: 12.5px; color: var(--muted); margin: -2px 0 2px 20px; }
+  .res .resg-sum b { color: var(--ink); font-weight: 600; }
   /* 1.17.0 */
   #originBar { position: absolute; left: 50%; bottom: 52px; transform: translateX(-50%); max-width: min(760px, 92%); z-index: 6; display: flex; gap: 8px; align-items: flex-start;
     background: var(--panel); color: var(--ink); border: 2px solid #ea580c; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
@@ -534,18 +548,13 @@
       </div>
     </div>
     <div id="layoutPop" hidden></div>
-    <div class="btns" id="exportBar">
-      <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
-      <button class="btn" id="bPdf" title="Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta">📑 Report PDF</button>
-      <select id="cardScope" title="Contenuto della Result Card">
-        <option value="active" selected>Gruppo attivo</option>
-        <option value="all">Tutti i gruppi</option>
-      </select>
-    </div>
+    <div id="qiTop" class="qitop" hidden></div>
 
     <section>
       <details class="box" id="sec-orient">
-        <summary>Orientamento e prospettiva</summary>
+        <summary>Gestione immagine</summary>
+        <div class="subsec" id="ss-rot">
+        <div class="subsec-h"><span class="ssi">⟳</span>Rotazione</div>
         <div id="rotStatus" class="status">Immagine non ruotata.</div>
         <div class="rotrow">
           <label for="rotDeg" style="flex:1 1 auto;font-size:13px" title="Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.">Rotazione (° , + = orario)</label>
@@ -557,14 +566,18 @@
           <button class="btn" id="bAlign" title="Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)">📐 Raddrizza con 2 punti</button>
           <button class="btn" id="bRot0" title="Riporta la foto all'orientamento originale">Azzera</button>
         </div>
-        <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Ritaglio della foto</div>
+        </div>
+        <div class="subsec" id="ss-crop">
+        <div class="subsec-h"><span class="ssi">✂</span>Ritaglio della foto</div>
         <div id="cropStatus" class="status">Foto intera.</div>
         <div class="btns">
           <button class="btn" id="bCrop" title="Trascina un rettangolo sulla foto per tenere solo quella parte (Invio = applica, Esc = annulla)">✂ Ritaglia</button>
           <button class="btn" id="bCropApply" title="Taglia la foto al rettangolo: definitivo (rotazione, prospettiva e distorsione vengono incorporate nella nuova foto, la scala non cambia)" disabled>✓ Applica ritaglio</button>
           <button class="btn" id="bCropUndo" title="Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)" disabled>↶ Annulla ritaglio</button>
         </div>
-        <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Distorsione dell'obiettivo</div>
+        </div>
+        <div class="subsec" id="ss-lens">
+        <div class="subsec-h"><span class="ssi">〰</span>Distorsione dell'obiettivo</div>
         <div id="lensStatus" class="status">Nessuna correzione della distorsione.</div>
         <div class="btns">
           <button class="btn" id="bLens" title="Clicca punti lungo 2 o più linee che nella realtà sono dritte (bordi del foglio, righe della griglia), vicino ai bordi della foto; Invio = linea successiva">〰 Calibra da linee</button>
@@ -583,7 +596,9 @@
           <button class="btn" id="bLensSave" title="Salva k1 e k2 correnti con un nome (es. modello del telefono)">Salva</button>
           <button class="btn" id="bLensDel" title="Elimina i coefficienti scelti" disabled>✕</button>
         </div>
-        <div style="margin:14px 0 6px;font-weight:600;font-size:13px">Correzione prospettica (foto di sbieco)</div>
+        </div>
+        <div class="subsec" id="ss-persp">
+        <div class="subsec-h"><span class="ssi">⬚</span>Correzione prospettica (foto di sbieco)</div>
         <div id="perspStatus" class="status">Nessuna correzione prospettica.</div>
         <div class="rotrow">
           <label for="perspPreset" style="flex:1 1 auto;font-size:13px">Rettangolo di riferimento</label>
@@ -607,6 +622,7 @@
           <button class="btn" id="bPerspOff" title="Torna alla foto originale (i punti vengono riportati su di essa)" disabled>Rimuovi correzione</button>
         </div>
         <div class="muted" style="font-size:12px;margin-top:4px">Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».</div>
+        </div>
       </details>
     </section>
 
@@ -630,9 +646,9 @@
           <button class="btn" id="bRefLock" title="Blocca i due estremi del riferimento di controllo">🔓 Riferimento</button>
         </div>
         <div class="smbox" id="smBox">
-          <label for="smOn" title="Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)"><input type="checkbox" id="smOn"> Scala sulla foto</label>
+          <label for="smOn" title="Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)"><input type="checkbox" id="smOn" checked> Scala sulla foto</label>
           <div class="row">
-            <select id="smKind" data-sm title="Cosa disegnare"><option value="ruler">Righello</option><option value="frame">Cornice con le dimensioni</option><option value="both" selected>Righello e cornice</option></select>
+            <select id="smKind" data-sm title="Cosa disegnare"><option value="ruler" selected>Righello</option><option value="frame">Cornice con le dimensioni</option><option value="both">Righello e cornice</option></select>
             <select id="smLen" data-sm title="Lunghezza del righello: automatica (valore tondo 1, 2 o 5 fino a circa 1/3 del lato corto) o scelta"><option value="auto" selected>auto</option><option value="1">1</option><option value="2">2</option><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="500">500</option></select>
             <select id="smUnit" data-sm title="Unità del righello e delle dimensioni"><option value="mm" selected>mm</option><option value="in">in</option></select>
             <select id="smPos" data-sm title="Angolo della foto in cui mettere il righello"><option value="bl" selected>↙ basso sx</option><option value="br">↘ basso dx</option><option value="tl">↖ alto sx</option><option value="tr">↗ alto dx</option></select>
@@ -909,6 +925,16 @@
     <section>
       <details class="box" id="sec-data">
         <summary>Dati</summary>
+        <div class="dsub">Result Card e report</div>
+        <div class="btns" id="exportBar">
+          <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
+          <button class="btn" id="bPdf" title="Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta">📑 Report PDF</button>
+          <select id="cardScope" title="Contenuto della Result Card">
+            <option value="active" selected>Gruppo attivo</option>
+            <option value="all">Tutti i gruppi</option>
+          </select>
+        </div>
+        <div class="dsub">Sessione ed esportazioni</div>
         <div class="btns">
           <button class="btn" id="bSaveZip" title="Salva la sessione in un unico file .zip: foto originale, punti, parametri, dati di ricarica e CSV. Si riapre con «Carica sessione» e si importa nel confronto">🗜 Salva sessione ZIP</button>
           <button class="btn" id="bSave">💾 Salva sessione JSON</button>
@@ -956,6 +982,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.18</b>: in cima al pannello il <b>GQI della sessione</b> (e il TQI, se acceso) con il solo punteggio: un clic porta alle card complete. Result Card PNG e report PDF sono ora nella sezione <b>Dati</b>. «Orientamento e prospettiva» diventa <b>Gestione immagine</b>, divisa in riquadri (rotazione, ritaglio, distorsione, prospettiva). Nei <b>Risultati</b> ogni gruppo si chiude cliccando il titolo e resta una riga con group size, raggio medio e GQI. La <b>scala sulla foto</b> (righello) è attiva per default. I <b>marcatori delle note</b> sono più grandi e si prendono su tutta la pillola; trascinando una nota su una zona non salta più sotto il cursore.</p>
           <p data-i18n><b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.</p>
           <p data-i18n><b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.</p>
           <p data-i18n><b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.</p>
@@ -1607,7 +1634,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <h3>Distorsione dell'obiettivo</h3>
 <p>Gli obiettivi grandangolari piegano le linee rette (barilotto: verso l'esterno; cuscinetto: verso l'interno), e le distanze misurate lontano dal centro della foto ne risentono. L'app usa il modello radiale di Brown-Conrady (lo stesso di OpenCV): un punto ideale u a distanza ρ dal centro della foto (ρ normalizzato sulla metà della diagonale) finisce in d = c + (u − c)·(1 + k₁ρ² + k₂ρ⁴).</p>
 <ul>
-  <li><b>Calibrazione da linee</b> (Orientamento e prospettiva → «〰 Calibra da linee»): clicca punti lungo almeno 2 linee che nella realtà sono dritte (bordo del foglio, righe della griglia, riquadro del bersaglio di prova), il più possibile vicino ai bordi della foto, dove la distorsione è maggiore; Invio = linea successiva; poi «Calcola». L'app cerca k₁ (e k₂ con almeno 3 linee e 12 punti) che rendono le linee più dritte (minimi quadrati totali, metodo «plumb line») e mostra lo scarto medio dalle rette prima e dopo.</li>
+  <li><b>Calibrazione da linee</b> (Gestione immagine → «〰 Calibra da linee»): clicca punti lungo almeno 2 linee che nella realtà sono dritte (bordo del foglio, righe della griglia, riquadro del bersaglio di prova), il più possibile vicino ai bordi della foto, dove la distorsione è maggiore; Invio = linea successiva; poi «Calcola». L'app cerca k₁ (e k₂ con almeno 3 linee e 12 punti) che rendono le linee più dritte (minimi quadrati totali, metodo «plumb line») e mostra lo scarto medio dalle rette prima e dopo.</li>
   <li>La correzione si applica alla foto originale, <b>prima</b> della prospettiva e della scala; punti, scala e rettangolo della prospettiva restano sugli stessi oggetti. I coefficienti si possono scrivere a mano e salvare con un nome: valgono per la stessa fotocamera, con lo stesso obiettivo/zoom e lo stesso formato della foto.</li>
   <li>Molti smartphone correggono già la distorsione nella foto: se lo scarto iniziale è sotto 1 px la correzione serve a poco. Preset per modello non ci sono: i coefficienti cambiano con obiettivo, zoom ed elaborazione della foto.</li>
   <li>La correzione è solo radiale (niente distorsione tangenziale né centro ottico spostato) e non corregge un foglio piegato.</li>
@@ -3386,6 +3413,7 @@ const I18N = (() => {
    "<b>Novità 1.15</b>: colori dei gruppi più scuri (niente giallo, leggibili su carta bianca e beige); <b>linea tratteggiata</b> con angolo e scarto dall'asse dopo il primo punto della scala e del riferimento; <b>campo dello zoom</b> con −/+ (senza rotella); <b>🔒 blocco</b> di mira, scala, riferimento e singoli fori (<kbd>K</kbd> o lucchetto nella tabella: non si spostano né si eliminano per errore); <b>👁 gruppi nascosti</b> sull'immagine (elenco Gruppi); <b>scala sulla foto</b> (righello e cornice con le dimensioni reali, anche in Result Card e report); <b>alone di incertezza</b> dei fori (Parametri di tiro); <b>✕ elimina il riferimento di controllo</b>; <b>✎ note</b> numerate su un foro o una zona, anche nel report; <b>differenze tra configurazioni</b> nel confronto (vista grafici, colonna Δ); <b>📏 righello</b> libero in mm, pollici, MOA e MRAD; <b>🔎 finestra di dettaglio</b> spostabile e ridimensionabile.": "<b>New in 1.15</b>: darker group colours (no yellow, readable on white and beige paper); <b>dashed line</b> with angle and deviation from the axis after the first point of the scale and of the reference; <b>zoom field</b> with −/+ (without a mouse wheel); <b>🔒 lock</b> of point of aim, scale, reference and single holes (<kbd>K</kbd> or padlock in the table: they cannot be moved or deleted by mistake); <b>👁 hidden groups</b> on the image (Groups list); <b>scale on the photo</b> (ruler and frame with the real size, also in Result Card and report); <b>uncertainty halo</b> of the holes (Shooting parameters); <b>✕ delete the check reference</b>; numbered <b>✎ notes</b> on a hole or an area, also in the report; <b>differences between configurations</b> in the comparison (charts view, Δ column); free <b>📏 ruler</b> in mm, inches, MOA and MRAD; movable and resizable <b>🔎 detail window</b>.",
    "<b>Novità 1.16</b>: <b>indice di qualità</b> della rosata. Il <b>GQI</b> (0–100, con classe Ottimo…Insufficiente) dice quanto il gruppo è compatto rispetto al raggio medio di riferimento che scegli nella sezione «Indice di qualità»; il <b>TQI</b> facoltativo aggiunge la centratura sulla mira. Accanto al punteggio c'è la sua attendibilità (intervallo); in fondo ai Risultati GQI e TQI dell'intera sessione e la <b>ripetibilità</b> dei centri tra i gruppi. Anche nel confronto, nel report, nel CSV e nel testo.": "<b>New in 1.16</b>: group <b>quality index</b>. The <b>GQI</b> (0–100, with a class Excellent…Insufficient) tells how compact the group is relative to the reference mean radius you choose in the «Quality index» section; the optional <b>TQI</b> adds centring on the point of aim. Next to the score is its reliability (interval); at the bottom of the Results the GQI and TQI of the whole session and the <b>repeatability</b> of the centres between groups. Also in the comparison, the report, the CSV and the text.",
    "<b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.": "<b>New in 1.17</b>: the <b>main toolbar</b> shows icons only (hover for the name, function and key). <b>⚑ Shots to review</b> (<kbd>V</kbd>, then <kbd>,</kbd> and <kbd>.</kbd>): difficult, overlapping or possible flyer holes, each centred and zoomed on the photo, to confirm, postpone or correct; the tag separates <b>marking</b> problems from <b>statistical</b> ones. <b>☆ Baseline</b>: a reference group remembered by the browser and saved in the session; each group shows the angular differences with distance, shots and conditions in plain view. In the charts view, <b>drag on the trend</b> to compare a period with everything before it (pooled σ, F test). The <b>⌖</b> button next to the results shows on the photo which holes the value comes from; hovering the panel fields (scale, caliber, distance, marking, click, perspective) lights up the matching element on the photo.",
+   "<b>Novità 1.18</b>: in cima al pannello il <b>GQI della sessione</b> (e il TQI, se acceso) con il solo punteggio: un clic porta alle card complete. Result Card PNG e report PDF sono ora nella sezione <b>Dati</b>. «Orientamento e prospettiva» diventa <b>Gestione immagine</b>, divisa in riquadri (rotazione, ritaglio, distorsione, prospettiva). Nei <b>Risultati</b> ogni gruppo si chiude cliccando il titolo e resta una riga con group size, raggio medio e GQI. La <b>scala sulla foto</b> (righello) è attiva per default. I <b>marcatori delle note</b> sono più grandi e si prendono su tutta la pillola; trascinando una nota su una zona non salta più sotto il cursore.": "<b>New in 1.18</b>: at the top of the panel the <b>session GQI</b> (and the TQI, if enabled) with the score only: a click takes you to the full cards. Result Card PNG and PDF report are now in the <b>Data</b> section. “Orientation and perspective” becomes <b>Image handling</b>, split into boxes (rotation, crop, distortion, perspective). In <b>Results</b> each group collapses by clicking its title, leaving a line with group size, mean radius and GQI. The <b>scale on the photo</b> (ruler) is on by default. <b>Note markers</b> are larger and can be grabbed anywhere on the pill; dragging a note on an area no longer makes it jump under the cursor.",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
@@ -3552,6 +3580,7 @@ const I18N = (() => {
    "Applica": "Apply",
    "Apre a schermo intero i grafici del gruppo attivo e il confronto tra gruppi (tasto A)": "Opens the charts of the active group and the group comparison full screen (key A)",
    "Apre una sessione salvata (.zip o .json)": "Opens a saved session (.zip or .json)",
+   "Apri il gruppo": "Expand the group",
    "Archivio ZIP": "ZIP archive",
    "Archivio delle sessioni": "Session archive",
    "Archivio non disponibile in questo browser.": "Archive not available in this browser.",
@@ -3645,6 +3674,7 @@ const I18N = (() => {
    "Cerchio (diametro)": "Circle (diameter)",
    "Chiudi": "Close",
    "Chiudi (si riattiva in Visualizzazione)": "Close (turn it back on in Display)",
+   "Chiudi il gruppo (resta una riga con i valori principali)": "Collapse the group (a line with the main values remains)",
    "Chiudi l'evidenziazione": "Close the highlight",
    "Chiudi l'evidenziazione (Esc)": "Close the highlight (Esc)",
    "Chiudi la finestra di dettaglio": "Close the detail window",
@@ -3870,6 +3900,7 @@ const I18N = (() => {
    "GQI · compattezza": "GQI · compactness",
    "GQI: raggio medio stimato da tutti i {0} fori inclusi con il modello circolare normale (cerchio pieno, {1}) confrontato con il riferimento (cerchio tratteggiato, {2} alla distanza del gruppo).": "GQI: mean radius estimated from all {0} included holes with the circular normal model (solid circle, {1}) compared with the reference (dashed circle, {2} at the group's distance).",
    "GROUP SIZE (centro-centro)": "GROUP SIZE (centre-to-centre)",
+   "Gestione immagine": "Image handling",
    "Giù": "Down",
    "Gli esempi numerici sono calcolati dal motore dell'app": "The numerical examples are computed by the app's engine",
    "Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale livello sia più preciso. Servono più colpi per livello (meglio 2–3 gruppi da 5–10 colpi ciascuno).": "The intervals overlap: with these shots it is <b>not possible to say</b> which level is more precise. More shots per level are needed (better 2–3 groups of 5–10 shots each).",
@@ -4226,6 +4257,7 @@ const I18N = (() => {
    "Report PDF salvato: {0} pagine": "PDF report saved: {0} pages",
    "Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta": "Printable PDF report (A4): image, metrics, charts, shots table, load data and notes; with several groups also comparison, dope card and precision per charge/seating",
    "Report {0}": "Report {0}",
+   "Result Card e report": "Result Card and report",
    "Result Card esportata": "Result Card exported",
    "Reticolo": "Reticle",
    "Reticolo con le tacche da usare per ogni distanza": "Reticle with the marks to use for each distance",
@@ -4278,6 +4310,7 @@ const I18N = (() => {
    "Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.": "Crop: drag a rectangle around the part to keep (aims and shots must stay inside); Enter or «✓ Apply crop» = cut, Esc = cancel.",
    "Rivedi dopo: va in fondo alla coda": "Review later: moves to the end of the queue",
    "Rosate dei gruppi scelti, sovrapposte o affiancate": "Selected groups, overlaid or side by side",
+   "Rotazione": "Rotation",
    "Rotazione (° , + = orario)": "Rotation (° , + = clockwise)",
    "Rotazione (°, + = oraria)": "Rotation (°, + = clockwise)",
    "Ruota di 90° in senso antiorario": "Rotate 90° counter-clockwise",
@@ -4351,6 +4384,7 @@ const I18N = (() => {
    "Sessione Shoot Analyzer": "Shoot Analyzer session",
    "Sessione caricata": "Session loaded",
    "Sessione creata con una versione più recente": "Session created with a newer version",
+   "Sessione ed esportazioni": "Session and exports",
    "Sessione salvata (e archiviata)": "Session saved (and archived)",
    "Sessione salvata in ZIP (e archiviata)": "ZIP session saved (and archived)",
    "Shoot Analyzer": "Shoot Analyzer",
@@ -4454,6 +4488,7 @@ const I18N = (() => {
    "V-spread = distanza verticale tra il foro più alto ({0}) e il più basso ({1}): {2}.": "V-spread = vertical distance between the highest hole ({0}) and the lowest ({1}): {2}.",
    "V-spread ↔ carica": "V-spread ↔ charge",
    "V-spread ↔ temperatura": "V-spread ↔ temperature",
+   "Vai alle card della sessione in fondo ai Risultati": "Go to the session cards at the bottom of Results",
    "Valore click": "Click value",
    "Valore click mirino": "Sight click value",
    "Valori diversi": "Different values",
@@ -4515,6 +4550,7 @@ const I18N = (() => {
    "brandeggio": "windage",
    "buona": "good",
    "canvas troppo grande": "canvas too large",
+   "centratura di riferimento non valida": "invalid reference centring",
    "centro del cerchio −0 del corpo": "centre of the body −0 circle",
    "centro della zona A": "centre of the A zone",
    "centro di ogni gruppo": "centre of each group",
@@ -4584,6 +4620,7 @@ const I18N = (() => {
    "fuori dal 70–130%: controllare (fori che si toccano possono dare un falso allarme)": "outside 70–130%: check (touching holes can give a false alarm)",
    "grani": "grains",
    "group size": "group size",
+   "group size <b>{0} mm</b>": "group size <b>{0} mm</b>",
    "gruppi": "groups",
    "gruppi della munizione (σ combinata)": "groups of the ammunition (pooled σ)",
    "gruppi.csv": "groups.csv",
@@ -4664,6 +4701,7 @@ const I18N = (() => {
    "perimetro": "perimeter",
    "personalizzato (10 ⌀ {0} mm, passo {1} mm)": "custom (10 ⌀ {0} mm, step {1} mm)",
    "personalizzato {0} {1}": "custom {0} {1}",
+   "pesi non validi": "invalid weights",
    "piastra": "plate",
    "pieno formato": "full size",
    "pixel": "pixels",
@@ -4683,6 +4721,7 @@ const I18N = (() => {
    "punto di mira, scala e valore click (dope)": "point of aim, scale and click value (dope)",
    "questo browser non sa decomprimere lo ZIP": "this browser cannot decompress the ZIP",
    "raggio medio": "mean radius",
+   "raggio medio <b>{0} mm</b>": "mean radius <b>{0} mm</b>",
    "raggio medio atteso": "expected mean radius",
    "raggio medio {0} – {1}": "mean radius {0} – {1}",
    "raggio previsto dal modello circolare normale con σ̂ = {0} (corretto per pochi colpi).": "radius predicted by the circular normal model with σ̂ = {0} (corrected for few shots).",
@@ -4700,6 +4739,9 @@ const I18N = (() => {
    "rosata": "shot group",
    "scala non calibrata": "scale not calibrated",
    "scala {0} px/mm; incertezza ±{1}%; {2}; foto {3}x{4} px": "scale {0} px/mm; uncertainty ±{1}%; {2}; photo {3}x{4} px",
+   "serve la distanza di tiro del gruppo": "the group's shooting distance is needed",
+   "serve la scala calibrata": "a calibrated scale is needed",
+   "servono almeno 2 fori": "at least 2 holes needed",
    "sessione": "session",
    "sessione corrente": "current session",
    "sessione.json": "session.json",
@@ -4952,7 +4994,7 @@ function withLang(l, fn) { const old = I18N.lang; I18N.lang = l; try { return fn
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.17.0";
+const APP_VERSION = "1.18.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -6207,7 +6249,7 @@ function hitTest(sx, sy) {
   }
   // note (dalla 1.15.0): il marcatore numerato, spostato dal punto, vince sul foro sotto di esso
   for (const m of noteMarkers(toScreen, state.view.scale, calcContext(), true)) {
-    const d = Math.hypot(m.x - sx, m.y - sy); if (d <= m.r + 2) candidates.push({ ref: { kind: "note", id: m.n.id }, d: d - 6 });
+    const d = noteHitDist(m, sx, sy); if (d <= 5) candidates.push({ ref: { kind: "note", id: m.n.id }, d: d - 8 });   // tutta la pillola + 5 px (dalla 1.18.0)
   }
   candidates.sort((a, b) => a.d - b.d);
   return candidates.length ? candidates[0].ref : null;
@@ -6295,6 +6337,7 @@ canvas.addEventListener("pointerdown", e => {
   const hit = e.button === 0 && !e.altKey && !TOOL_MODES.includes(state.mode) ? hitTest(x, y) : null;   // «Raddrizza»/«Prospettiva»: i punti non si prendono
   ptr = { id: e.pointerId, button: e.button, sx: x, sy: y, lastX: x, lastY: y, moved: false,
           target: hit, kind: hit ? "point" : "pan" };
+  if (hit && hit.kind === "note") { const p0 = refPoint(hit), w0 = toImage(x, y); if (p0) ptr.grab = { dx: p0.x - w0.x, dy: p0.y - w0.y }; }   // dalla 1.18.0
   // elemento bloccato (dalla 1.15.0) o nota legata a un foro: si seleziona ma trascinando si sposta la vista
   if (hit && (isLocked(hit) || !refPoint(hit))) { ptr.kind = "pan"; ptr.locked = isLocked(hit); }
   // «Sposta sagoma» (dalla 1.10.0): trascinare sposta il bersaglio del gruppo attivo, Shift+trascinare lo ruota
@@ -6312,7 +6355,7 @@ canvas.addEventListener("pointermove", e => {
   if (ptr.moved) {
     if (ptr.kind === "point") {
       const p = refPoint(ptr.target);
-      if (p) { const q = clampToImage(toImage(x, y)); p.x = q.x; p.y = q.y; refreshResults(); }
+      if (p) { const w = toImage(x, y), G = ptr.grab, q = clampToImage(G ? { x: w.x + G.dx, y: w.y + G.dy } : w); p.x = q.x; p.y = q.y; refreshResults(); }
     } else if (ptr.kind === "crop") {
       state.cropRect = cropRectNorm(ptr.w0, toImage(x, y)); refreshCrop();
     } else if (ptr.kind === "tgt") {
@@ -6568,7 +6611,7 @@ async function loadImageFile(file) {
   await setImage(file.name, dataUrl);
   state.calib = { p1: null, p2: null };
   state.groups = []; const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id;
-  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null; state.origin = null; baseFile.b = null;
+  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null; state.origin = null; baseFile.b = null; resCollapsed.clear();
   state.sessionId = newSessionId();
   resetHistory();
   state.savedSig = workSignature();
@@ -6698,7 +6741,7 @@ async function loadSessionText(text, opts = {}) {
   state.activeGroupId = state.groups.some(g => g.id === s.activeGroupId) ? s.activeGroupId : state.groups[0].id;
   state.notes = Array.isArray(s.notes) ? s.notes.filter(n => n && n.id != null) : [];
   state.hiddenGroups = new Set(Array.isArray(s.hiddenGroups) ? s.hiddenGroups : []);
-  state.ruler = null; state.origin = null;
+  state.ruler = null; state.origin = null; resCollapsed.clear();
   uid = Math.max(...allIds()) + 1;
   state.selected = null;
   state.sessionId = s.sessionId || `${s.savedAt}|${s.image && s.image.name}`;   // sessioni < 1.5.0: stesso id dell'archivio
@@ -7027,6 +7070,8 @@ function refreshResults() {
     box.innerHTML = html; out.appendChild(box);
   }
   out.insertAdjacentHTML("beforeend", qiSessionHTML());   // GQI/TQI della sessione e ripetibilità (dalla 1.16.0)
+  refreshQiTop();
+  decorateGroupToggles(out);   // gruppi richiudibili (dalla 1.18.0)
   out.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
   // dettagli delle card: restano aperti/chiusi tra un aggiornamento e l'altro; con densità «Dettagliata» tutti aperti
   const det = document.documentElement.dataset.density === "detail";
@@ -10482,6 +10527,11 @@ function drawRefGuide() {
    diventa una nota sulla zona (detachNotes). Nota su una zona: {id, text, x, y} in coordinate mondo (trasformata con
    gli altri punti da allPoints). Il numero è la posizione nell'elenco. Il marcatore è un cerchietto numerato spostato
    in alto a destra del punto, collegato da una linea: non copre il foro né il punto annotato. */
+/** Marcatore delle note (dalla 1.18.0 più grande: pillola alta 24 px, presa su tutta la pillola + 5 px). */
+const NOTE_R = 13, NOTE_H = 24;
+const noteW = (g, i) => { g.save(); g.font = "700 13px 'Segoe UI', system-ui, sans-serif"; const w = Math.max(2 * NOTE_R + 4, g.measureText(`N${i + 1}`).width + 14); g.restore(); return w; };
+/** Distanza del punto (sx, sy) dalla pillola della nota (0 = dentro). */
+function noteHitDist(m, sx, sy) { const w = noteW(ctx2d, m.i), dx = Math.max(0, Math.abs(sx - m.x) - w / 2), dy = Math.max(0, Math.abs(sy - m.y) - NOTE_H / 2); return Math.hypot(dx, dy); }
 function noteMarkers(T, scl, cc, screen = true, onlyGroupIds = null) {
   const out = [];
   state.notes.forEach((n, i) => {
@@ -10489,11 +10539,11 @@ function noteMarkers(T, scl, cc, screen = true, onlyGroupIds = null) {
       const g = state.groups.find(x => x.id === n.gid && x.shots.some(s => s.id === n.sid)) || state.groups.find(x => x.shots.some(s => s.id === n.sid));
       const s = g && g.shots.find(q => q.id === n.sid);
       if (!s || (screen && state.hiddenGroups.has(g.id)) || (onlyGroupIds && !onlyGroupIds.includes(g.id))) return;
-      const gcc = ccG(cc, g), holeR = gcc.pxPerMm && gcc.caliberMm > 0 ? gcc.caliberMm / 2 * gcc.pxPerMm * scl : 0, p = T(s), ar = Math.max(holeR, 5), d = ar + 13;
-      out.push({ n, i, g, ax: p.x, ay: p.y, ar, x: p.x + d * 0.71 + 4, y: p.y - d * 0.71, r: 9 });
+      const gcc = ccG(cc, g), holeR = gcc.pxPerMm && gcc.caliberMm > 0 ? gcc.caliberMm / 2 * gcc.pxPerMm * scl : 0, p = T(s), ar = Math.max(holeR, 5), d = ar + 22;
+      out.push({ n, i, g, ax: p.x, ay: p.y, ar, x: p.x + d * 0.71 + 6, y: p.y - d * 0.71, r: NOTE_R });
     } else if (isFinite(n.x) && isFinite(n.y)) {
       const p = T(n);
-      out.push({ n, i, g: null, ax: p.x, ay: p.y, ar: 2.5, x: p.x + 17, y: p.y - 13, r: 9 });
+      out.push({ n, i, g: null, ax: p.x, ay: p.y, ar: 3.5, x: p.x + 26, y: p.y - 20, r: NOTE_R });
     }
   });
   return out;
@@ -10505,15 +10555,16 @@ function drawNotes(g, T, scl, cc, LL, opts) {
     g.save();
     g.strokeStyle = COL_NOTE; g.lineWidth = 1.2; g.globalAlpha = 0.9;
     g.beginPath(); g.moveTo(m.ax + (m.x - m.ax) / L * m.ar, m.ay + (m.y - m.ay) / L * m.ar); g.lineTo(m.x - (m.x - m.ax) / L * m.r, m.y - (m.y - m.ay) / L * m.r); g.stroke();
-    if (!m.g) { g.fillStyle = COL_NOTE; g.beginPath(); g.arc(m.ax, m.ay, 2.2, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 1; g.stroke(); }
+    if (!m.g) { g.fillStyle = COL_NOTE; g.beginPath(); g.arc(m.ax, m.ay, 3.2, 0, Math.PI * 2); g.fill(); g.strokeStyle = "#fff"; g.lineWidth = 1.2; g.stroke(); }
     // pillola «N1», «N2»…: forma e lettera diverse dai numeri dei fori
-    g.globalAlpha = 1; g.font = "700 10px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-    const txt = `N${m.i + 1}`, w = Math.max(2 * m.r, g.measureText(txt).width + 8), h = 15;
-    g.fillStyle = COL_NOTE; g.strokeStyle = isSel ? "#facc15" : "#fff"; g.lineWidth = isSel ? 2.5 : 1.4;
-    g.beginPath(); if (g.roundRect) g.roundRect(m.x - w / 2, m.y - h / 2, w, h, h / 2); else g.rect(m.x - w / 2, m.y - h / 2, w, h); g.fill(); g.stroke();
+    g.globalAlpha = 1; g.font = "700 13px 'Segoe UI', system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+    const txt = `N${m.i + 1}`, w = noteW(g, m.i), h = NOTE_H;
+    g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = 4;
+    g.fillStyle = COL_NOTE; g.strokeStyle = isSel ? "#facc15" : "#fff"; g.lineWidth = isSel ? 3 : 1.8;
+    g.beginPath(); if (g.roundRect) g.roundRect(m.x - w / 2, m.y - h / 2, w, h, h / 2); else g.rect(m.x - w / 2, m.y - h / 2, w, h); g.fill(); g.shadowBlur = 0; g.stroke();
     g.fillStyle = "#fff"; g.fillText(txt, m.x, m.y + 0.5);
     g.restore();
-    LL.block(m.x, m.y, m.r + 2);
+    LL.block(m.x, m.y, w / 2 + 2);
   }
 }
 /** Dove si trova la nota, in parole (elenco, report). */
@@ -10946,6 +10997,24 @@ function qiExcludedText(ex) {
   return parts.length ? parts.join("; ") : "";
 }
 /** Card della sessione: GQI (e TQI) di tutti i gruppi del file aperto + ripetibilità tra gruppi (separata). */
+/** Riepilogo in cima al pannello (dalla 1.18.0): solo punteggio e barra del GQI della sessione, e del TQI quando è
+    acceso e calcolabile. Un clic porta alle card complete della sessione in fondo ai Risultati. */
+function refreshQiTop() {
+  const box = $("qiTop"), S = qiSet();
+  const hide = () => { box.hidden = true; box.innerHTML = ""; };
+  if (!S.gqiOn || !state.groups.length) return hide();
+  const level = (+params().ciLevel || 95) / 100, Q = Calc.sessionQuality(qiSessionData(S).map(d => d.q), qiCalcSet(S), level);
+  if (!Q.gqi) return hide();
+  const tile = (key, title, v, ci) => `<button type="button" class="qtb" data-qt="${key}" title="${esc(_t("Vai alle card della sessione in fondo ai Risultati"))}"><div class="qtt">${esc(title)}</div>${qiHead(v, S, title)}${qiBar(v, ci)}</button>`;
+  let html = tile("sgqi", _t("GQI della sessione"), Q.gqi.gqi, Q.gqi.gqiCi);
+  const T = Q.tqi;
+  if (S.tqiOn && T && T.k && T.tqi != null && !(S.errors.length && !(S.dRef > 0 && S.wP >= 0))) html += tile("stqi", _t("TQI della sessione"), T.tqi, null);
+  box.innerHTML = html; box.hidden = false;
+  box.querySelectorAll("button[data-qt]").forEach(b => b.addEventListener("click", () => {
+    const d = $("sec-results"); d.open = true; secShow("sec-results");
+    const c = document.querySelector(`#results .rcard[data-key="${b.dataset.qt}"]`); if (c) c.scrollIntoView({ block: "center", behavior: "smooth" });
+  }));
+}
 function qiSessionHTML() {
   const S = qiSet(); if (!S.gqiOn || !state.groups.length) return "";
   const data = qiSessionData(S), level = (+params().ciLevel || 95) / 100, Q = Calc.sessionQuality(data.map(d => d.q), qiCalcSet(S), level);
@@ -11404,6 +11473,40 @@ function drawParamHi(cc) {
     gr.shots.forEach(s => { const u = (s.snap ? +P.markSnap : +P.markHand) * (s.hard ? 3 : 1), r = Calc.haloRadius(u) * sc; hiRing(g, T(s), Math.max(2.5, r), COL_HI, 1.6); });
     note(_T`Incertezza di marcatura: cerchi al 95% (a mano ±${fmt(+P.markHand, 1)} px, snap ±${fmt(+P.markSnap, 1)} px, ×3 se difficile)`);
   }
+}
+
+/* ------------------- GRUPPI RICHIUDIBILI NEI RISULTATI (1.18.0) -------------------
+   Clic sul titolo del gruppo (o ▾/▸): il gruppo si chiude e mostra una riga con colpi, group size, raggio medio e
+   GQI. Lo stato vale per gruppo finché resta aperta la stessa foto/sessione (non è nella storia né nel file); i
+   gruppi nuovi si aprono. */
+const resCollapsed = new Set();
+function groupSumLine(g) {
+  const cc = calcContext(), gcc = ccG(cc, g), pts = inc(g), r = Calc.analyze(pts, g.poa, gcc), parts = [];   // i colpi sono già nel titolo
+  if (r.n >= 2 && r.mm) {
+    parts.push(_T`group size <b>${fmt(r.mm.es, 1)} mm</b>`, _T`raggio medio <b>${fmt(r.mm.mr, 1)} mm</b>`);
+    const S = qiSet(); if (S.gqiOn) { const q = qiOf(g, gcc, S); if (q.ok) parts.push(`GQI <b>${qiNum(q.gqi, S)}</b>`); }
+  } else if (r.n >= 2) parts.push(_t("scala non calibrata"));
+  else parts.push(_t("servono almeno 2 fori"));
+  return parts.join(" · ");
+}
+function setGroupCollapsed(gid, on) {
+  if (on) resCollapsed.add(gid); else resCollapsed.delete(gid);
+  const box = document.querySelector(`#results .res[data-gid="${gid}"]`); if (box) applyGroupToggle(box, gid);
+}
+function applyGroupToggle(box, gid) {
+  const on = resCollapsed.has(gid), b = box.querySelector(".rtog");
+  box.classList.toggle("collapsed", on);
+  if (b) { b.textContent = on ? "▸" : "▾"; b.setAttribute("aria-expanded", String(!on)); b.title = on ? _t("Apri il gruppo") : _t("Chiudi il gruppo (resta una riga con i valori principali)"); b.setAttribute("aria-label", b.title); }
+}
+function decorateGroupToggles(out) {
+  for (const id of [...resCollapsed]) if (!state.groups.some(g => g.id === id)) resCollapsed.delete(id);
+  out.querySelectorAll(".res[data-gid]").forEach(box => {
+    const gid = +box.dataset.gid, g = state.groups.find(x => x.id === gid), h = box.querySelector("h3"); if (!g || !h) return;
+    const b = document.createElement("button"); b.type = "button"; b.className = "rtog"; h.prepend(b);
+    const sum = document.createElement("div"); sum.className = "resg-sum"; sum.innerHTML = groupSumLine(g); h.after(sum);
+    h.addEventListener("click", e => { if (e.target.closest("button:not(.rtog), a, input, select")) return; setGroupCollapsed(gid, !resCollapsed.has(gid)); });
+    applyGroupToggle(box, gid);
+  });
 }
 
 /* ------------------- ORIGINE DEI RISULTATI SULL'IMMAGINE -------------------
@@ -12133,7 +12236,7 @@ setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); else { checkAutosave(); refreshArchiveInfo(); }
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
   VIEWCONE, coneData, corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,

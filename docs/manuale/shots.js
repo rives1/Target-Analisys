@@ -153,8 +153,12 @@ const GROUPS = [
   await ev(() => { const t = document.getElementById("qiTqiOn"); t.checked = true; t.dispatchEvent(new Event("change")); });
   await shotEl("#results .res.sess", "57_gqi_sessione", { wait: 300 });
   await openOnly("sec-quality"); await shotEl("#sec-quality", "58_impostazioni_qualita");
+  await shotEl("#qiTop", "67_riepilogo_qi", { wait: 300 });   // 1.18: riepilogo in cima (con il TQI acceso)
   await ev(() => { const t = document.getElementById("qiTqiOn"); t.checked = false; t.dispatchEvent(new Event("change")); });
   await openOnly("sec-results");
+  await ev(() => { window.__SA.state.groups.forEach(g => window.__SA.setGroupCollapsed(g.id, true)); document.querySelectorAll("#results .res.sess").forEach(e => { e.style.display = "none"; }); });   // 1.18: gruppi chiusi
+  await shotEl("#results", "68_gruppo_chiuso", { wait: 300 });
+  await ev(() => { window.__SA.state.groups.forEach(g => window.__SA.setGroupCollapsed(g.id, false)); document.querySelectorAll("#results .res.sess").forEach(e => { e.style.display = ""; }); });
   await openOnly("sec-points"); await ev(() => document.documentElement.style.setProperty("--side-w", "760px")); await page.waitForTimeout(200);
   await shotEl("#sec-points", "16_tabella_punti"); await ev(() => document.documentElement.style.removeProperty("--side-w"));
   await openOnly("sec-orient"); await shotEl("#sec-orient", "17_orientamento");
@@ -226,7 +230,7 @@ const GROUPS = [
   await openOnly("sec-results"); await page.selectOption("#densSel", "compact"); await shotEl("#results .res", "24_compatta"); await page.selectOption("#densSel", "standard");
   await page.click("#bLayout"); await shotEl("#layoutPop", "25_layout"); await page.click("#bLayClose");
   // Result Card
-  if (want("26_result_card")) { await ev(() => { document.getElementById("cardScope").value = "all"; });
+  if (want("26_result_card")) { await openOnly("sec-data"); await ev(() => { document.getElementById("cardScope").value = "all"; });   // dalla 1.18 in «Dati»
     const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]); fs.copyFileSync(await dl.path(), OUT + "26_result_card.png"); }
   // storico per confronto, dope e cono: sessioni a 200 e 300 m
   await ev(async () => {

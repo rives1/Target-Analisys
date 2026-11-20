@@ -7,11 +7,11 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.17.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.18.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
-Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.17.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.17.pdf).
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.18.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.18.pdf).
 
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
@@ -79,6 +79,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Sessione ZIP**: foto e misure in un unico file, da riaprire o importare nel confronto e nell'archivio.
 - **Stabilità colpo dopo colpo**: group size progressivo con la fascia attesa per caso, colpo da cui il gruppo si apre, spostamento del punto d'impatto; ordine di sparo modificabile.
 - **Report PDF con testo vero** (selezionabile), con calibrazione, colpi analizzati ed esclusi, modello statistico e incertezze, e tutti i grafici.
+- **Pannello più ordinato** (1.18): GQI (e TQI) della sessione in cima al pannello, solo punteggio; Result Card e report PDF nella sezione Dati; «Gestione immagine» divisa in riquadri; gruppi richiudibili nei Risultati con la riga dei valori principali; scala sulla foto attiva per default; marcatori delle note più grandi e trascinabili senza salti.
 - **Baseline persistente** (1.17): una rosata di riferimento (☆) ricordata dal browser e salvata nella sessione; per ogni gruppo le differenze in angolo delle metriche scelte, con distanza, numero di colpi e condizioni sempre in evidenza e il test F sulla dispersione.
 - **Coda dei colpi da rivedere** (⚑, tasto `V`): fori difficili, quasi sovrapposti (centri a meno di mezzo calibro) e possibili flyer, centrati e ingranditi sulla foto, con conferma, rimando o correzione; «marcatura» e «statistico» distinti.
 - **Origine del dato** (⌖ accanto ai risultati): fori, estremi, centro e cerchi del modello usati per ES, H/V-spread, raggio medio, CEP/R95/R99, GQI e correzione, evidenziati sulla foto.
