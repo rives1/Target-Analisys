@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.19.0] - 2026-11-20
+### Aggiunto
+- **Lingua russa** dell'interfaccia (menu «Русский»): dizionario `I18N.RU` con le stesse 1695 chiavi dell'inglese
+  (interfaccia, risultati, grafici, guida rapida, testo copiato, Result Card, report PDF, CSV); `I18N.locale()` →
+  `ru-RU` (virgola decimale, spazio delle migliaia, CSV con `;`); bussola С/В/Ю/З; nomi automatici «Группа N»;
+  avviso dell'help in russo. Help tecnico e manuale restano in italiano (scelta dell'utente). Una chiave senza
+  traduzione russa ricade sull'inglese e viene segnalata (`I18N.missing`).
+- **Unità di lunghezza localizzate** (`uL()`, `UNIT_RU`): in russo мм, см, м, пикс., дюйм, ярд, гПа, м/с, км/ч nei
+  valori composti dal codice (risultati, grafici, report, righello, scala sulla foto); MOA e MIL restano latini come
+  sulle torrette (scelta dell'utente).
+- **Font incorporati nel report PDF**: «SA Report Sans» Regular/Bold, sottoinsiemi di Liberation Sans 2.1.5
+  (391 caratteri: latino, cirillico, greco, simboli; metriche identiche a Helvetica) in `<script id="pdf-fonts">`,
+  scritti come Type0/CIDFontType2 Identity-H con ToUnicode (testo selezionabile e cercabile). Usati sempre in russo
+  e, in italiano/inglese, solo se il testo contiene caratteri che WinAnsi non ha (il report viene ricostruito);
+  altrimenti restano Helvetica/WinAnsi senza font incorporati. Licenza SIL OFL 1.1 in `fonts/OFL.txt`, generatore
+  in `tools/pdf-fonts.py`. Nei font incorporati ⌀ diventa Ø.
+### Corretto
+- Il menu dei coefficienti della distorsione non cambiava lingua finché non si ricaricava la pagina.
+- Report PDF: le etichette «Group size (c-c)», «Convex hull» e «H-spread / V-spread» non erano tradotte.
+### Test
+- `tests/i18n.test.js`: anche il dizionario russo (chiavi, segnaposto, tag e attributi tecnici invariati).
+- 79 scenari UI (2 nuovi: interfaccia russa con unità, bussola, nomi, vista grafici e testi mancanti; report PDF con
+  font incorporati solo quando servono e testo russo estratto tramite ToUnicode).
+
 ## [1.18.0] - 2026-11-20
 ### Aggiunto
 - **Riepilogo della sessione in cima al pannello** (`#qiTop`, `refreshQiTop`): GQI della sessione e, se il TQI è

@@ -2685,6 +2685,99 @@ test("1.18.0: inglese — riepilogo, Gestione immagine e gruppi chiusi tradotti"
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
 
+/* ------------------------------ 1.19.0 ------------------------------ */
+/** Testo di un PDF con font incorporati (Identity-H): decodifica <esadecimale> Tj con le ToUnicode dei font. */
+function pdfTextU(buf) {
+  const zlib = require("zlib"), t = buf.toString("latin1"), maps = {}, out = [];
+  // oggetti font Type0 → ToUnicode; le CMap sono stream non compressi
+  const fontObj = {};
+  for (const m of t.matchAll(/(\d+) 0 obj\n<< \/Type \/Font \/Subtype \/Type0 [^\n]*\/ToUnicode (\d+) 0 R >>/g)) fontObj[m[1]] = m[2];
+  const cmapOf = id => { const m = t.match(new RegExp(`\\n${id} 0 obj\\n<< /Length (\\d+) >>\\nstream\\n`)); const s = t.substr(m.index + m[0].length, +m[1]); const M = {};
+    for (const x of s.matchAll(/<([0-9A-F]{4})> <([0-9A-F]{4})>/g)) M[x[1]] = String.fromCharCode(parseInt(x[2], 16)); return M; };
+  const res = t.match(/\/Font << \/F1 (\d+) 0 R \/F2 (\d+) 0 R >>/);
+  maps.F1 = cmapOf(fontObj[res[1]]); maps.F2 = cmapOf(fontObj[res[2]]);
+  const re = /<< \/Length (\d+) \/Filter \/FlateDecode >>\nstream\n/g; let m;
+  while ((m = re.exec(t))) {
+    const start = m.index + m[0].length, data = buf.subarray(start, start + +m[1]);
+    let s; try { s = zlib.inflateSync(data).toString("latin1"); } catch { continue; }
+    let f = "F1";
+    for (const x of s.matchAll(/\/(F[12]) [\d.]+ Tf|<([0-9a-f]*)> Tj/g)) {
+      if (x[1]) { f = x[1]; continue; }
+      out.push(x[2].match(/.{4}/g).map(h => maps[f][h.toUpperCase()] || "?").join(""));
+    }
+  }
+  return out.join("\n");
+}
+test("1.19.0: lingua russa — interfaccia, unità, numeri, bussola, nomi dei gruppi", async page => {
+  // selettore con le tre lingue
+  assert.deepStrictEqual(await page.$$eval("#langSel option", o => o.map(x => x.value + ":" + x.textContent)), ["it:Italiano", "en:English", "ru:Русский"]);
+  await page.selectOption("#langSel", "ru");
+  assert.strictEqual(await page.evaluate(() => document.documentElement.lang), "ru");
+  assert.strictEqual(await page.evaluate(() => localStorage.getItem("shootAnalyzer.lang")), "ru");
+  assert.strictEqual((await page.textContent("#sec-orient > summary")).trim(), "Обработка изображения");
+  assert.strictEqual(await page.getAttribute("#bLoad", "aria-label"), "Загрузить фото");
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await expandAll(page);
+  // nome automatico del gruppo, unità cirilliche, virgola decimale
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].name), "Группа 1");
+  const res = await page.textContent("#results");
+  ok2(/\d,\d мм · \d,\d{3}"/.test(res), "group size in мм con la virgola: " + (res.match(/[\d,]+ [мm]м[^·]*·[^"]*"/) || [""])[0]);
+  ok2(!/\d mm\b|\d px\b/.test(res), "nessun «mm»/«px» latino nei risultati: " + (res.match(/.{20}\d (mm|px)\b/) || [""])[0]);
+  ok2(/MOA/.test(res) && /MIL/.test(res), "MOA e MIL restano latini");
+  assert.match(await page.$eval("#caliberPreset option[value='c308']", o => o.textContent), /7,82 мм$/);
+  // bussola in cirillico (С, В, Ю, З) nella tabella dei fori
+  const dirs = await page.$$eval("#points td", tds => tds.map(t => t.textContent.trim()).filter(t => /^\d+° /.test(t)));
+  ok2(dirs.length && dirs.every(d => /^\d+° [СВЮЗ]{1,3}$/.test(d)), "direzioni: " + dirs.join(", "));
+  // niente italiano e nessun testo senza traduzione, anche nella vista grafici
+  const side = await page.textContent("#side");
+  ok2(!ITALIAN.test(side), "pannello senza italiano: " + (side.match(ITALIAN) || [""])[0]);
+  await key(page, "a"); await page.waitForTimeout(300);
+  const ana = await page.textContent("#anaView");
+  ok2(!ITALIAN.test(ana), "vista grafici senza italiano: " + (ana.match(ITALIAN) || [""])[0]);
+  await key(page, "Escape");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+  // help tecnico in italiano con l'avviso in russo
+  await key(page, "h");
+  assert.strictEqual((await page.textContent("#helpLangNote")).trim(), "Техническая справка доступна только на итальянском языке.");
+  await key(page, "Escape");
+  // ritorno all'italiano: tutto come prima
+  await page.selectOption("#langSel", "it");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].name), "Gruppo 1");
+  ok2(/\d,\d mm · /.test(await page.textContent("#results")), "mm in italiano");
+  // il russo è ricordato dal browser
+  await page.selectOption("#langSel", "ru"); await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  assert.strictEqual(await page.inputValue("#langSel"), "ru");
+});
+test("1.19.0: report PDF — font incorporati solo quando servono, testo russo estraibile", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  const getPdf = async () => { const [d] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]); return require("fs").readFileSync(await d.path()); };
+  // italiano: font standard, nessun font incorporato
+  const b0 = await getPdf(), s0 = b0.toString("latin1");
+  ok2(/\/BaseFont \/Helvetica /.test(s0) && !/FontFile2/.test(s0), "italiano: Helvetica, nessun font incorporato");
+  // italiano con una nota in cirillico: font incorporati, la nota resta leggibile
+  await setField(page, "#ld-notes", "ветер порывами");
+  const b1 = await getPdf(), s1 = b1.toString("latin1");
+  ok2(/\/FontFile2/.test(s1) && /SAAAAA\+SAReportSans-Regular/.test(s1) && /\/Encoding \/Identity-H/.test(s1), "font incorporati");
+  const T1 = pdfTextU(b1);
+  ok2(T1.includes("ветер порывами") && T1.includes("Calibrazione"), "nota russa e testo italiano estraibili");
+  // russo: font incorporati, testo vero in russo, nessun «?»
+  await setField(page, "#ld-notes", "");
+  await page.selectOption("#langSel", "ru");
+  const b2 = await getPdf(), T2 = pdfTextU(b2);
+  checkPdf(b2);
+  for (const w of ["Калибровка", "ПРОАНАЛИЗИРОВАННЫЕ ВЫСТРЕЛЫ", "Средний радиус", "Размер группы (c-c)", "мм"]) ok2(T2.includes(w), "nel PDF russo: " + w);
+  ok2(!/\?/.test(T2.replace(/\?\)/g, "")), "nessun carattere perso: " + (T2.match(/.{15}\?.{5}/) || [""])[0]);
+  ok2(/\/Lang <FEFF00720075002D00520055>/.test(b2.toString("latin1")), "lingua del documento ru-RU");
+  // larghezze: metriche della Liberation Sans = Helvetica (stessa impaginazione del latino)
+  const w = await page.evaluate(() => { const F = window.__SA.pdfEmbFonts().R, M = F.map; return [65, 97, 48].map(c => M.get(c)[1]); });
+  assert.deepStrictEqual(w, [667, 556, 556], "larghezze di A, a, 0 come Helvetica");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
