@@ -8,5 +8,5 @@ python3 jpg.py
 node render.js && python3 pages.py
 node render.js pages.json && python3 pages.py
 node render.js pages.json
-cp manuale.pdf Manuale_Shoot_Analyzer_v1.19.pdf
-echo "Creato docs/manuale/Manuale_Shoot_Analyzer_v1.19.pdf"
+cp manuale.pdf Manuale_Shoot_Analyzer_v1.20.pdf
+echo "Creato docs/manuale/Manuale_Shoot_Analyzer_v1.20.pdf"

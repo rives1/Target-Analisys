@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.19.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.20.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -60,7 +60,6 @@
   .rc-more { margin-top: 4px; font-size: 12.5px; }
   .rcard.warnc { border-color: #f59e0b; } .rcard.warnc .rc-main { color: #b45309; }
   .rc-more > summary { cursor: pointer; color: var(--accent); font-size: 12px; }
-  .prof { border: 1px dashed var(--line); border-radius: var(--radius); padding: 6px 8px 0; margin-bottom: 8px; }
   .prof .row { margin-bottom: 6px; }
   .wdial-box { display: flex; align-items: center; gap: 10px; margin: 2px 0 4px; }
   .wdial { width: 120px; height: 120px; flex: none; }
@@ -103,7 +102,6 @@
   .lockbtn { border: 1px solid var(--line); background: transparent; color: var(--muted); border-radius: 4px; padding: 0 3px; font-size: 11px; cursor: pointer; line-height: 1.3; }
   .lockbtn.on { color: var(--ink); border-color: var(--ink); background: var(--hover); }
   .lockrow .btn.on { border-color: var(--ink); font-weight: 600; }
-  .smbox { border: 1px dashed var(--line); border-radius: var(--radius); padding: 6px 8px; margin-top: 6px; }
   .smbox .row { margin: 5px 0; gap: 4px; } .smbox select { flex: 1 1 auto; min-width: 0; }
   .note-row { border: 1px solid var(--line); border-radius: 6px; padding: 5px 6px; margin-bottom: 6px; }
   .note-row.sel { border-color: #facc15; box-shadow: 0 0 0 1px #facc15; }
@@ -415,8 +413,20 @@
   .qitop .qi-num { font-size: 22px; }
   .subsec { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px 6px; margin: 8px 0; background: var(--hover); }
   .subsec-h { font-weight: 700; font-size: 13px; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--line); display: flex; align-items: center; gap: 7px; }
+  .findbar { position: sticky; top: -14px; z-index: 4; background: var(--panel); margin: -2px -16px 8px; padding: 8px 16px 6px; border-bottom: 1px solid var(--line); }
+  [data-density=compact] .findbar { top: -8px; margin: -2px -10px 6px; padding: 6px 10px 5px; }
+  .findrow { display: flex; gap: 4px; align-items: center; }
+  .findrow input { flex: 1 1 auto; min-width: 0; padding: 5px 8px; }
+  .findrow .btn { padding: 3px 8px; min-width: 0; }
+  .findpos { font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 3.2em; text-align: right; }
+  .findpos.none { color: #b91c1c; }
+  .findwhere { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .findwhere b { color: var(--ink); font-weight: 600; }
+  .find-hit { outline: 2px solid rgba(234, 179, 8, .55); outline-offset: 1px; background-color: rgba(250, 204, 21, .16) !important; border-radius: 4px; }
+  .find-cur { outline: 3px solid #ea580c !important; outline-offset: 2px; background-color: rgba(234, 88, 12, .16) !important; border-radius: 4px; }
+  section.find-show[hidden] { display: block !important; }
+  section.find-show > details { box-shadow: 0 0 0 2px rgba(234, 88, 12, .35); }
   .subsec-h .ssi { display: inline-flex; width: 22px; height: 22px; align-items: center; justify-content: center; border-radius: 6px; background: var(--line); font-size: 13px; }
-  .dsub { font-weight: 600; font-size: 13px; margin: 12px 0 2px; } .dsub:first-of-type { margin-top: 2px; }
   .res > h3 { cursor: pointer; user-select: none; } .res .rtog { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 12px; width: 18px; padding: 0; margin-right: 2px; }
   .res.collapsed > :not(h3):not(.resg-sum) { display: none !important; } .res:not(.collapsed) > .resg-sum { display: none; }
   .res .resg-sum { font-size: 12.5px; color: var(--muted); margin: -2px 0 2px 20px; }
@@ -548,6 +558,16 @@
       </div>
     </div>
     <div id="layoutPop" hidden></div>
+    <div id="findBar" class="findbar" role="search">
+      <div class="findrow">
+        <input id="findIn" type="search" autocomplete="off" spellcheck="false" placeholder="🔍 Cerca un'impostazione… ( / )" aria-label="Cerca nelle impostazioni del pannello" title="Cerca tra titoli, etichette, pulsanti, menu e suggerimenti del pannello, anche nelle sezioni chiuse o nascoste. Invio o ↓ = occorrenza successiva · Maiusc+Invio o ↑ = precedente · Esc = azzera">
+        <span id="findPos" class="findpos" aria-live="polite"></span>
+        <button class="btn" id="bFindPrev" title="Occorrenza precedente (Maiusc+Invio, ↑)" aria-label="Occorrenza precedente" disabled>▲</button>
+        <button class="btn" id="bFindNext" title="Occorrenza successiva (Invio, ↓)" aria-label="Occorrenza successiva" disabled>▼</button>
+        <button class="btn" id="bFindClr" title="Azzera la ricerca (Esc)" aria-label="Azzera la ricerca" hidden>✕</button>
+      </div>
+      <div id="findWhere" class="findwhere" hidden></div>
+    </div>
     <div id="qiTop" class="qitop" hidden></div>
 
     <section>
@@ -629,12 +649,20 @@
     <section>
       <details class="box" id="sec-calib" open>
         <summary>Calibrazione scala</summary>
+        <div class="subsec" id="ss-scale">
+        <div class="subsec-h"><span class="ssi">⟷</span>Scala a 2 punti</div>
         <div id="calStatus" class="status warn">Non calibrato: seleziona «Scala» e clicca due punti a distanza nota.</div>
         <div class="row">
           <label for="calDist">Distanza nota tra i 2 punti</label>
           <input id="calDist" type="number" min="0" step="any" value="10">
           <select id="calUnit"><option value="mm">mm</option><option value="cm">cm</option><option value="in">in</option></select>
         </div>
+        <div class="row lockrow">
+          <button class="btn" id="bCalLock" title="Blocca i due punti della scala: non si possono spostare, rifare né eliminare finché non li sblocchi">🔓 Scala</button>
+        </div>
+        </div>
+        <div class="subsec" id="ss-ref">
+        <div class="subsec-h"><span class="ssi">📏</span>Riferimento di controllo</div>
         <div class="row">
           <button class="btn" id="bRef" title="Clicca i due estremi di un'altra lunghezza nota (es. il diametro di un anello, il lato di un quadretto): l'app la misura con la scala attuale e avvisa se non torna">📏 Riferimento di controllo</button>
           <input id="refLen" type="number" min="0" step="any" placeholder="lunghezza" style="width:80px" title="Lunghezza vera del riferimento di controllo">
@@ -642,11 +670,12 @@
           <button class="btn" id="bRefDel" title="Elimina il riferimento di controllo dall'immagine (anche: selezionalo e premi Canc, o tasto destro su un estremo)">✕</button>
         </div>
         <div class="row lockrow">
-          <button class="btn" id="bCalLock" title="Blocca i due punti della scala: non si possono spostare, rifare né eliminare finché non li sblocchi">🔓 Scala</button>
           <button class="btn" id="bRefLock" title="Blocca i due estremi del riferimento di controllo">🔓 Riferimento</button>
         </div>
-        <div class="smbox" id="smBox">
-          <label for="smOn" title="Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)"><input type="checkbox" id="smOn" checked> Scala sulla foto</label>
+        </div>
+        <div class="subsec smbox" id="smBox">
+        <div class="subsec-h"><span class="ssi">▭</span>Scala sulla foto</div>
+          <label for="smOn" title="Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)"><input type="checkbox" id="smOn" checked> Disegna sulla foto</label>
           <div class="row">
             <select id="smKind" data-sm title="Cosa disegnare"><option value="ruler" selected>Righello</option><option value="frame">Cornice con le dimensioni</option><option value="both">Righello e cornice</option></select>
             <select id="smLen" data-sm title="Lunghezza del righello: automatica (valore tondo 1, 2 o 5 fino a circa 1/3 del lato corto) o scelta"><option value="auto" selected>auto</option><option value="1">1</option><option value="2">2</option><option value="5">5</option><option value="10">10</option><option value="20">20</option><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="500">500</option></select>
@@ -662,6 +691,8 @@
     <section>
       <details class="box" id="sec-params">
         <summary>Parametri di tiro</summary>
+        <div class="subsec" id="ss-shot">
+        <div class="subsec-h"><span class="ssi">🎯</span>Distanza, calibro e mirino</div>
         <div class="row">
           <label for="shotDist" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">Distanza di tiro · gruppo attivo</label>
           <input id="shotDist" type="number" min="0" step="any" value="100" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">
@@ -684,10 +715,20 @@
             <option value="IPHY">in @100 yd (SMOA)</option>
           </select>
         </div>
+        </div>
+        <div class="subsec" id="ss-stat">
+        <div class="subsec-h"><span class="ssi">σ</span>Misura e statistica</div>
         <div class="row">
           <label for="markHand" title="Incertezza tipo (1σ per asse, in pixel della foto) del centro di un foro cliccato a mano e con lo snap; ×3 sui fori segnati come difficili (◐ nella tabella dei punti). Usata per l'incertezza di misura nei risultati.">Marcatura ± px (a mano · snap)</label>
           <input id="markHand" type="number" min="0" step="0.1" value="1.5" style="width:60px"><input id="markSnap" type="number" min="0" step="0.1" value="0.5" style="width:60px" title="Con lo snap">
         </div>
+        <div class="row">
+          <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
+          <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
+        </div>
+        </div>
+        <div class="subsec" id="ss-draw">
+        <div class="subsec-h"><span class="ssi">◎</span>Disegni sulla foto</div>
         <div class="row">
           <label for="ellipseOn" title="Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)"><input type="checkbox" id="ellipseOn" checked> Ellisse di dispersione al</label>
           <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
@@ -707,13 +748,10 @@
           <label for="heatOn" title="Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati"><input type="checkbox" id="heatOn"> Heatmap della densità</label>
         </div>
         <div class="row">
-          <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
-          <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
-        </div>
-        <div class="row">
           <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
           <input id="gridStep" type="number" min="0" step="any" value="0.1" title="Distanza tra due linee della griglia">
           <select id="gridUnit"><option value="MIL">MIL</option><option value="MOA">MOA</option></select>
+        </div>
         </div>
       </details>
     </section>
@@ -730,7 +768,8 @@
       <details class="box" id="sec-load">
         <summary>Ricarica e condizioni · gruppo attivo</summary>
         <div id="ldGroup" class="pgroup"></div>
-        <div class="prof" id="ldProfBox">
+        <div class="subsec prof" id="ldProfBox">
+        <div class="subsec-h"><span class="ssi">💾</span>Profili di ricarica</div>
           <div class="row"><select id="ldProfile" style="flex:1" title="Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro" aria-label="Profilo di ricarica"></select>
             <button class="btn" id="bProfDel" title="Elimina il profilo scelto">🗑</button></div>
           <div class="row"><input id="ldProfName" placeholder="nome del profilo (vuoto = automatico)" style="flex:1" aria-label="Nome del profilo">
@@ -739,7 +778,10 @@
             <button class="btn" id="bProfImp" title="Importa profili da un file JSON esportato (stesso nome = sostituito)">⇧ Importa profili</button>
             <input type="file" id="fProf" accept=".json,application/json" hidden></div>
         </div>
-        <div class="ld-grid" id="ldForm">
+        <div id="ldForm">
+        <div class="subsec" id="ss-ammo">
+        <div class="subsec-h"><span class="ssi">⦿</span>Munizione</div>
+        <div class="ld-grid">
           <label for="ld-date">Data</label><input id="ld-date" data-k="date" type="date">
           <label for="ld-case">Bossolo</label><input id="ld-case" data-k="case" placeholder="marca, n° ricariche…">
           <label for="ld-powder">Polvere</label>
@@ -748,6 +790,11 @@
           <label for="ld-jump" title="Distanza dell'ogiva della palla dall'inizio delle righe (jump), con la cartuccia camerata: profondità di seduta">Salto dalle righe</label>
           <div class="pair"><input id="ld-jump" data-k="jump" type="number" min="0" step="any" placeholder="es. 0,020" title="Salto dalle righe (jump): distanza della palla dall'inizio delle righe" style="flex:2"><select id="ld-jumpUnit" data-k="jumpUnit" style="flex:1"><option value="in">in</option><option value="mm">mm</option></select></div>
           <label for="ld-primer">Innesco</label><input id="ld-primer" data-k="primer">
+        </div>
+        </div>
+        <div class="subsec" id="ss-cond">
+        <div class="subsec-h"><span class="ssi">☁</span>Condizioni</div>
+        <div class="ld-grid">
           <label for="ld-weather">Meteo</label><input id="ld-weather" data-k="weather" list="weatherList" placeholder="condizioni atmosferiche">
           <label for="ld-temp">Temperatura</label>
           <div class="pair"><input id="ld-temp" data-k="temp" type="number" step="any" placeholder="°C"><span class="muted" style="align-self:center">°C</span></div>
@@ -760,12 +807,19 @@
             <select id="ld-windUnit" data-k="windUnit"><option>m/s</option><option>km/h</option><option>mph</option></select>
             <select id="ld-windDir" data-k="windDir" hidden title="Da dove soffia il vento, a ore (ore 12 = dal bersaglio verso il tiratore)"></select></div>
           <span></span><div id="windDial" class="wdial-box"></div>
+        </div>
+        </div>
+        <div class="subsec" id="ss-series">
+        <div class="subsec-h"><span class="ssi">⋮</span>Serie e note</div>
+        <div class="ld-grid">
           <label for="ld-shotsTotal">Colpi sparati</label>
           <input id="ld-shotsTotal" data-k="shotsTotal" type="number" min="0" step="1" placeholder="totali, flyer inclusi">
           <span></span><span class="muted" id="ldShotsInfo" style="font-size:12px;margin-top:-3px"></span>
           <label for="ld-foulers">Scaldacanna</label><input id="ld-foulers" data-k="foulers" type="number" min="0" step="1" placeholder="colpi prima del gruppo">
           <label for="ld-notes" style="grid-column:1/-1">Note</label>
           <textarea id="ld-notes" data-k="notes" rows="3"></textarea>
+        </div>
+        </div>
         </div>
         <datalist id="weatherList"><option value="Sereno"><option value="Poco nuvoloso"><option value="Nuvoloso"><option value="Coperto"><option value="Pioggia"><option value="Nebbia"><option value="Neve"></datalist>
         <div class="muted" style="font-size:11.5px;margin-top:6px">Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.</div>
@@ -783,12 +837,17 @@
       <details class="box" id="sec-quality">
         <summary>Indice di qualità (GQI / TQI)</summary>
         <div class="muted qi-note">Un punteggio 0–100 relativo ai riferimenti scelti qui: è un criterio dell'applicazione, non uno standard statistico. Il GQI misura solo la compattezza; il TQI aggiunge la centratura sulla mira.</div>
+        <div class="subsec" id="ss-gqi">
+        <div class="subsec-h"><span class="ssi">◉</span>Compattezza</div>
         <div class="row"><label for="qiGqiOn" title="Group Quality Index: compattezza della rosata (precisione), indipendente da dove cade rispetto alla mira"><input type="checkbox" id="qiGqiOn" checked> GQI · compattezza</label></div>
         <div class="row">
           <label for="qiMrRef" title="Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.">MR di riferimento (GQI = 80)</label>
           <input id="qiMrRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
           <select id="qiMrUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
         </div>
+        </div>
+        <div class="subsec" id="ss-tqi">
+        <div class="subsec-h"><span class="ssi">⊕</span>Centratura</div>
         <div class="row"><label for="qiTqiOn" title="Target Quality Index: combina compattezza (GQI) e centratura del gruppo sulla mira (AQI). Serve il punto di mira."><input type="checkbox" id="qiTqiOn"> TQI · compattezza + centratura</label></div>
         <div class="row">
           <label for="qiDRef" title="Distanza angolare centro gruppo–mira a cui corrisponde AQI = 80">Centratura di riferimento (AQI = 80)</label>
@@ -799,6 +858,9 @@
           <label for="qiWP" title="Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%">Peso precisione · accuratezza</label>
           <input id="qiWP" type="number" min="0" max="100" step="5" value="70" style="width:60px"><span class="muted">% · <span id="qiWA">30</span>%</span>
         </div>
+        </div>
+        <div class="subsec" id="ss-qiview">
+        <div class="subsec-h"><span class="ssi">▤</span>Presentazione</div>
         <div class="row">
           <label for="qiDec">Punteggio</label>
           <select id="qiDec"><option value="0" selected>intero 0–100</option><option value="1">con un decimale</option></select>
@@ -809,6 +871,7 @@
           <select id="qiClasses"><option value="5" selected>Cinque classi</option></select>
         </div>
         <div class="muted" id="qiClassInfo" style="font-size:11.5px"></div>
+        </div>
         <div class="status warn" id="qiValid" hidden></div>
       </details>
     </section>
@@ -816,6 +879,8 @@
     <section>
       <details class="box" id="sec-score">
         <summary>Zone di punteggio</summary>
+        <div class="subsec" id="ss-target">
+        <div class="subsec-h"><span class="ssi">◎</span>Bersaglio</div>
         <div class="row">
           <label for="scoreTarget">Bersaglio da gara</label>
           <select id="scoreTarget">
@@ -851,17 +916,20 @@
           <div class="row"><label for="vitalPreset">Taglia</label><select id="vitalPreset" title="Diametri indicativi della zona cuore-polmoni per classi di taglia (Chuck Hawks): non misure della specie"><option value="small" selected>Piccola (es. capriolo, camoscio) · ⌀ 22 cm</option><option value="medium">Media · ⌀ 27 cm</option><option value="large">Grande (es. cervo) · ⌀ 29 cm</option><option value="custom">Personalizzata</option></select></div>
           <div class="row"><label for="vitalW">Larghezza × altezza (cm)</label><input id="vitalW" type="number" min="0" step="any" value="22" style="width:70px"> × <input id="vitalH" type="number" min="0" step="any" value="22" style="width:70px" title="Altezza"></div>
         </div>
-        <div id="scoreAdj" hidden>
+        </div>
+        <div class="subsec" id="scoreAdj" hidden>
+        <div class="subsec-h"><span class="ssi">✥</span>Posizione del bersaglio · gruppo attivo</div>
           <div class="row"><label for="tgtDx" title="Spostamento del centro del bersaglio rispetto al punto di mira del gruppo attivo (+ = a destra / in alto)">Posizione · gruppo attivo (mm →, ↑)</label><input id="tgtDx" type="number" step="any" value="0" style="width:72px"><input id="tgtDy" type="number" step="any" value="0" style="width:72px" title="Spostamento verticale (+ = in alto)"></div>
           <div class="row"><label for="tgtRot">Rotazione (°, + = oraria)</label><input id="tgtRot" type="number" step="any" value="0" style="width:72px"></div>
           <div class="btns"><button class="btn" id="bTgtMove" title="Trascina sull'immagine per spostare il bersaglio del gruppo attivo; Shift+trascina per ruotarlo (Esc per finire)">✥ Sposta col mouse</button><button class="btn" id="bTgtReset">Azzera posizione</button></div>
         </div>
-        <div id="scoreCustom" hidden>
+        <div class="subsec" id="scoreCustom" hidden>
+        <div class="subsec-h"><span class="ssi">⚙</span>Anelli personalizzati</div>
           <div class="row"><label for="scoreD10">Diametro del 10 (mm)</label><input id="scoreD10" type="number" min="0" step="any" value="10"></div>
           <div class="row"><label for="scoreStep" title="Di quanto cresce il DIAMETRO da un anello al successivo">Passo tra gli anelli (mm, sul diametro)</label><input id="scoreStep" type="number" min="0" step="any" value="10"></div>
           <div class="row"><label for="scoreInner">10 interno ⌀ (mm, 0 = nessuno)</label><input id="scoreInner" type="number" min="0" step="any" value="0"></div>
         </div>
-        <div class="muted" style="font-size:12px" id="scoreNote">Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).</div>
+        <div class="muted" style="font-size:12px;margin-top:6px" id="scoreNote">Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).</div>
       </details>
     </section>
 
@@ -869,6 +937,8 @@
       <details class="box" id="sec-hit">
         <summary>Probabilità di colpire</summary>
         <div id="hitGroup" class="pgroup"></div>
+        <div class="subsec" id="ss-hitt">
+        <div class="subsec-h"><span class="ssi">◎</span>Bersaglio e distanza</div>
         <div class="row">
           <label for="hitShape">Bersaglio</label>
           <select id="hitShape"><option value="circle">Cerchio (diametro)</option><option value="rect">Rettangolo (largh. × alt.)</option><option value="target">Sagoma scelta in «Zone di punteggio»</option></select>
@@ -883,6 +953,7 @@
           <label for="hitDist" title="Vuoto = distanza a cui è stato sparato il gruppo">Distanza del bersaglio</label>
           <input id="hitDist" type="number" min="0" step="any" placeholder="= di tiro">
           <select id="hitDistUnit"><option value="m">m</option><option value="yd">yd</option></select>
+        </div>
         </div>
         <div id="hitOut"></div>
       </details>
@@ -925,7 +996,8 @@
     <section>
       <details class="box" id="sec-data">
         <summary>Dati</summary>
-        <div class="dsub">Result Card e report</div>
+        <div class="subsec" id="ss-export">
+        <div class="subsec-h"><span class="ssi">🖼</span>Result Card e report</div>
         <div class="btns" id="exportBar">
           <button class="btn primary" id="bCardPng">🖼 Esporta Result Card (PNG)</button>
           <button class="btn" id="bPdf" title="Report PDF stampabile (A4): immagine, metriche, grafici, tabella dei fori, dati di ricarica e note; con più gruppi anche confronto, dope card e precisione per carica/seduta">📑 Report PDF</button>
@@ -934,12 +1006,18 @@
             <option value="all">Tutti i gruppi</option>
           </select>
         </div>
-        <div class="dsub">Sessione ed esportazioni</div>
+        </div>
+        <div class="subsec" id="ss-session">
+        <div class="subsec-h"><span class="ssi">💾</span>Sessione</div>
         <div class="btns">
           <button class="btn" id="bSaveZip" title="Salva la sessione in un unico file .zip: foto originale, punti, parametri, dati di ricarica e CSV. Si riapre con «Carica sessione» e si importa nel confronto">🗜 Salva sessione ZIP</button>
           <button class="btn" id="bSave">💾 Salva sessione JSON</button>
           <button class="btn" id="bOpen" title="Apre una sessione salvata (.zip o .json)">📂 Carica sessione</button>
         </div>
+        <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
+        </div>
+        <div class="subsec" id="ss-tables">
+        <div class="subsec-h"><span class="ssi">📄</span>Testo, tabelle e help</div>
         <div class="btns">
           <button class="btn" id="bCardTxt">📋 Copia risultati (testo)</button>
         </div>
@@ -948,8 +1026,9 @@
           <button class="btn" id="bCsvGroups" title="Una riga per gruppo: misure in mm/MOA/MIL, statistiche, correzione, dati di ricarica. Separatore «;» e virgola decimale">📄 CSV gruppi</button>
           <button class="btn" id="bHelp" title="Significato di termini, misure e grafici, con formule ed esempi (tasto H)">📘 Help tecnico</button>
         </div>
-        <label class="muted" style="font-size:12.5px"><input type="checkbox" id="embedImg" checked> Includi l'immagine nella sessione</label>
-        <div style="margin-top:12px;font-weight:600;font-size:13px">Archivio delle sessioni</div>
+        </div>
+        <div class="subsec" id="ss-archive">
+        <div class="subsec-h"><span class="ssi">🗜</span>Archivio delle sessioni</div>
         <div id="archiveInfo">Archivio vuoto.</div>
         <div class="btns">
           <button class="btn" id="bZip" title="Un unico ZIP con tutte le sessioni archiviate: per ognuna sessione JSON, foto originale, CSV fori e gruppi; in più un CSV riepilogativo di tutti i gruppi">🗜 Esporta archivio (ZIP)</button>
@@ -957,7 +1036,9 @@
           <button class="btn" id="bArchClear">Svuota archivio</button>
         </div>
         <input type="file" id="fArch" accept=".json,.zip,application/json,application/zip" multiple hidden>
-        <div style="margin-top:12px;font-weight:600;font-size:13px">Bersaglio di autoverifica</div>
+        </div>
+        <div class="subsec" id="ss-tt">
+        <div class="subsec-h"><span class="ssi">🎯</span>Bersaglio di autoverifica</div>
         <div class="muted" style="font-size:12px">Un bersaglio da stampare con fori a posizioni note: fotografalo e misuralo come un bersaglio vero (scala sul righello, mira al centro della croce, fori); la verifica confronta le tue misure con i valori esatti e mette alla prova tutta la catena di misura.</div>
         <div class="row" style="flex-wrap:wrap;margin-top:4px">
           <label for="ttN" style="flex:0 0 auto">Fori</label><select id="ttN" style="flex:0 0 auto"><option value="5" selected>5</option><option value="10">10</option></select>
@@ -968,6 +1049,7 @@
           <button class="btn" id="bTtCheck" title="Confronta i fori del gruppo attivo con quelli veri del codice indicato: servono scala, punto di mira e lo stesso numero di fori">✓ Verifica il gruppo attivo</button>
         </div>
         <div id="ttResult"></div>
+        </div>
       </details>
     </section>
 
@@ -982,6 +1064,7 @@
           <p data-i18n><b>Click di alzo e brandeggio</b> (tabella dei punti, colonne «Alzo» e «Brand.»): i click impostati sulla torretta per ogni foro; un nuovo foro riprende quelli del precedente. Ogni gruppo ha la sua <b>distanza</b>. Con mira, scala e click il risultato mostra la <b>dope</b>: i click da impostare per colpire la mira a quella distanza.</p>
           <p data-i18n><b>Dope card</b> e <b>Precisione e ricarica</b> (vista grafici): i gruppi di questa sessione e dello storico messi in fila per distanza (click di alzo e brandeggio, CSV e PNG da stampare) e il CEP o il raggio medio per carica di polvere o per <b>salto dalle righe</b> (seduta), con il loro intervallo di confidenza.</p>
           <p data-i18n><b>📑 Report PDF</b> (accanto alla Result Card): file A4 con foto, misure, grafici, tabella dei fori, ricarica e note, confronto, dope card e precisione. Nei risultati i termini sottolineati (CEP, FOM, σ…) mostrano una spiegazione breve e, con un clic, aprono il glossario dell'help tecnico. <b>Convex hull</b>: si attiva nei Parametri di tiro.</p>
+          <p data-i18n><b>Novità 1.20</b>: <b>🔍 casella di ricerca</b> fissa in cima al pannello (tasto <kbd>/</kbd>): scrivi una parola (es. «calibro», «griglia», «CSV») e si illuminano le impostazioni che la contengono nel nome, nelle voci del menu o nel suggerimento; <kbd>Invio</kbd> o <kbd>↓</kbd> porta alla successiva, <kbd>Maiusc</kbd>+<kbd>Invio</kbd> o <kbd>↑</kbd> alla precedente, aprendo le sezioni chiuse (e mostrando per il momento quelle nascoste dal layout); <kbd>Esc</kbd> azzera. Le sezioni con più funzioni sono divise in <b>riquadri con titolo</b>, come Gestione immagine.</p>
           <p data-i18n><b>Novità 1.19</b>: interfaccia anche in <b>russo</b> (menu della lingua in alto; l'help tecnico resta in italiano). In russo le unità di lunghezza sono cirilliche (мм, см, м), MOA e MIL restano latini; il <b>report PDF</b> incorpora un font con il cirillico (anche in italiano, quando note o nomi contengono lettere che i font standard non hanno).</p>
           <p data-i18n><b>Novità 1.18</b>: in cima al pannello il <b>GQI della sessione</b> (e il TQI, se acceso) con il solo punteggio: un clic porta alle card complete. Result Card PNG e report PDF sono ora nella sezione <b>Dati</b>. «Orientamento e prospettiva» diventa <b>Gestione immagine</b>, divisa in riquadri (rotazione, ritaglio, distorsione, prospettiva). Nei <b>Risultati</b> ogni gruppo si chiude cliccando il titolo e resta una riga con group size, raggio medio e GQI. La <b>scala sulla foto</b> (righello) è attiva per default. I <b>marcatori delle note</b> sono più grandi e si prendono su tutta la pillola; trascinando una nota su una zona non salta più sotto il cursore.</p>
           <p data-i18n><b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.</p>
@@ -3416,6 +3499,7 @@ const I18N = (() => {
    "<b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.": "<b>New in 1.17</b>: the <b>main toolbar</b> shows icons only (hover for the name, function and key). <b>⚑ Shots to review</b> (<kbd>V</kbd>, then <kbd>,</kbd> and <kbd>.</kbd>): difficult, overlapping or possible flyer holes, each centred and zoomed on the photo, to confirm, postpone or correct; the tag separates <b>marking</b> problems from <b>statistical</b> ones. <b>☆ Baseline</b>: a reference group remembered by the browser and saved in the session; each group shows the angular differences with distance, shots and conditions in plain view. In the charts view, <b>drag on the trend</b> to compare a period with everything before it (pooled σ, F test). The <b>⌖</b> button next to the results shows on the photo which holes the value comes from; hovering the panel fields (scale, caliber, distance, marking, click, perspective) lights up the matching element on the photo.",
    "<b>Novità 1.18</b>: in cima al pannello il <b>GQI della sessione</b> (e il TQI, se acceso) con il solo punteggio: un clic porta alle card complete. Result Card PNG e report PDF sono ora nella sezione <b>Dati</b>. «Orientamento e prospettiva» diventa <b>Gestione immagine</b>, divisa in riquadri (rotazione, ritaglio, distorsione, prospettiva). Nei <b>Risultati</b> ogni gruppo si chiude cliccando il titolo e resta una riga con group size, raggio medio e GQI. La <b>scala sulla foto</b> (righello) è attiva per default. I <b>marcatori delle note</b> sono più grandi e si prendono su tutta la pillola; trascinando una nota su una zona non salta più sotto il cursore.": "<b>New in 1.18</b>: at the top of the panel the <b>session GQI</b> (and the TQI, if enabled) with the score only: a click takes you to the full cards. Result Card PNG and PDF report are now in the <b>Data</b> section. “Orientation and perspective” becomes <b>Image handling</b>, split into boxes (rotation, crop, distortion, perspective). In <b>Results</b> each group collapses by clicking its title, leaving a line with group size, mean radius and GQI. The <b>scale on the photo</b> (ruler) is on by default. <b>Note markers</b> are larger and can be grabbed anywhere on the pill; dragging a note on an area no longer makes it jump under the cursor.",
    "<b>Novità 1.19</b>: interfaccia anche in <b>russo</b> (menu della lingua in alto; l'help tecnico resta in italiano). In russo le unità di lunghezza sono cirilliche (мм, см, м), MOA e MIL restano latini; il <b>report PDF</b> incorpora un font con il cirillico (anche in italiano, quando note o nomi contengono lettere che i font standard non hanno).": "<b>New in 1.19</b>: the interface is also available in <b>Russian</b> (language menu at the top; the technical help stays in Italian). In Russian the length units are Cyrillic (мм, см, м) while MOA and MIL stay Latin; the <b>PDF report</b> embeds a font with Cyrillic (also in Italian or English when notes or names contain letters the standard fonts lack).",
+   "<b>Novità 1.20</b>: <b>🔍 casella di ricerca</b> fissa in cima al pannello (tasto <kbd>/</kbd>): scrivi una parola (es. «calibro», «griglia», «CSV») e si illuminano le impostazioni che la contengono nel nome, nelle voci del menu o nel suggerimento; <kbd>Invio</kbd> o <kbd>↓</kbd> porta alla successiva, <kbd>Maiusc</kbd>+<kbd>Invio</kbd> o <kbd>↑</kbd> alla precedente, aprendo le sezioni chiuse (e mostrando per il momento quelle nascoste dal layout); <kbd>Esc</kbd> azzera. Le sezioni con più funzioni sono divise in <b>riquadri con titolo</b>, come Gestione immagine.": "<b>New in 1.20</b>: <b>🔍 search box</b> fixed at the top of the panel (<kbd>/</kbd> key): type a word (e.g. “caliber”, “grid”, “CSV”) and the settings containing it in their name, menu items or tooltip light up; <kbd>Enter</kbd> or <kbd>↓</kbd> goes to the next one, <kbd>Shift</kbd>+<kbd>Enter</kbd> or <kbd>↑</kbd> to the previous one, opening closed sections (and temporarily showing those hidden by the layout); <kbd>Esc</kbd> clears. Sections with several functions are divided into <b>titled boxes</b>, like Image handling.",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>New in 1.9</b>: <b>density heatmap</b> (Shooting parameters); in the charts view <b>polar coordinates</b>, rotatable <b>3D density</b>, <b>visual comparison of groups</b> (overlaid or side by side, in mm or angles) and <b>reticle with holdover</b> (mark to use for each distance, FFP/SFP); in the Data section the <b>self-check target</b> to print, photograph and measure.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Hit probability</b>: set a circle (diameter) or a rectangle and, if you like, another distance; for the active group you read the probability that a shot hits and the «hits per 100», with the confidence interval, both with the correction applied and with the current zero. Circular normal model, like CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Autosave</b>: your work is saved in the browser (IndexedDB) shortly after each change; if you close by mistake, the app offers «Restore» when you reopen it. It does not replace «Save session»: browser data can be deleted together with the history.",
@@ -3572,6 +3656,7 @@ const I18N = (() => {
    "Andamento della metrica scelta nel tempo": "Trend of the chosen metric over time",
    "Andamento nel tempo": "Trend over time",
    "Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).": "Rings drawn around the point of aim of each group. Scoring follows the paper-target rule: a shot scores the ring touched by the edge of the hole (with the caliber set).",
+   "Anelli personalizzati": "Custom rings",
    "Angoli: confronta gruppi tirati a distanze diverse": "Angles: compare groups shot at different distances",
    "Angolo costante (σ {0} MIL): diametri proporzionali alla distanza, limite inferiore oltre la distanza più lunga tirata ({1}).": "Constant angle (σ {0} MIL): diameters proportional to distance, a lower bound beyond the longest distance shot ({1}).",
    "Angolo della foto in cui mettere il righello": "Corner of the photo where the ruler goes",
@@ -3600,12 +3685,15 @@ const I18N = (() => {
    "Aumenta lo zoom": "Zoom in",
    "Aumenta lo zoom (+)": "Zoom in (+)",
    "Azzera": "Reset",
+   "Azzera la ricerca": "Clear the search",
+   "Azzera la ricerca (Esc)": "Clear the search (Esc)",
    "Azzera posizione": "Reset position",
    "Baseline tolta.": "Baseline removed.",
    "Bersaglio": "Target",
    "Bersaglio SA-{0} salvato: stampalo al 100%": "Target SA-{0} saved: print it at 100%",
    "Bersaglio da gara": "Competition target",
    "Bersaglio di autoverifica": "Self-check target",
+   "Bersaglio e distanza": "Target and distance",
    "Blocca": "Lock",
    "Blocca i due estremi del riferimento di controllo": "Lock the two ends of the check reference",
    "Blocca i due punti della scala: non si possono spostare, rifare né eliminare finché non li sblocchi": "Lock the two scale points: they cannot be moved, redone or deleted until you unlock them",
@@ -3665,6 +3753,7 @@ const I18N = (() => {
    "Carica prima un'immagine.": "Load an image first.",
    "Carica una foto per iniziare.": "Load a photo to start.",
    "Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica": "Charge: compared with the same bullet and powder. Jump to the lands (seating): with the same bullet, powder and charge",
+   "Centratura": "Centring",
    "Centratura di riferimento (AQI = 80)": "Reference centring (AQI = 80)",
    "Centratura di riferimento: inserisci un numero maggiore di zero (il TQI è sospeso).": "Reference centring: enter a number greater than zero (the TQI is suspended).",
    "Centro dei primi {0} colpi: {1} {2} {3}, {4} {5} {6}": "Centre of the first {0} shots: {1} {2} {3}, {4} {5} {6}",
@@ -3672,6 +3761,8 @@ const I18N = (() => {
    "Centro gruppo X dalla mira (mm)": "Group centre X from aim (mm)",
    "Centro gruppo Y dalla mira (mm, + = alto)": "Group centre Y from aim (mm, + = up)",
    "Centro gruppo colpo dopo colpo": "Group centre shot by shot",
+   "Cerca nelle impostazioni del pannello": "Search the panel settings",
+   "Cerca tra titoli, etichette, pulsanti, menu e suggerimenti del pannello, anche nelle sezioni chiuse o nascoste. Invio o ↓ = occorrenza successiva · Maiusc+Invio o ↑ = precedente · Esc = azzera": "Searches the panel's titles, labels, buttons, menus and tooltips, also in closed or hidden sections. Enter or ↓ = next match · Shift+Enter or ↑ = previous · Esc = clear",
    "Cerchi della griglia ogni {0} mm (stessa scala in tutti i riquadri) · tratteggio: CEP, punteggiato: R95": "Grid circles every {0} mm (same scale in all panels) · dashed: CEP, dotted: R95",
    "Cerchio (diametro)": "Circle (diameter)",
    "Chiudi": "Close",
@@ -3707,6 +3798,7 @@ const I18N = (() => {
    "Colpo precedente nella coda (,)": "Previous shot in the queue (,)",
    "Colpo successivo nella coda (.)": "Next shot in the queue (.)",
    "Compatta": "Compact",
+   "Compattezza": "Compactness",
    "Compila almeno un dato di ricarica prima di salvare il profilo.": "Fill in at least one reloading field before saving the profile.",
    "Componenti": "Components",
    "Con correzione applicata: {0} ({1})": "With correction applied: {0} ({1})",
@@ -3794,7 +3886,9 @@ const I18N = (() => {
    "Direzione: ore {0} · {1}° {2}": "Direction: {0} o'clock · {1}° {2}",
    "Discreto": "Fair",
    "Disegna righello e cornice anche nella Result Card e nella foto del report PDF, riferiti all'area ritagliata": "Draws ruler and frame also in the Result Card and in the PDF report photo, referred to the cropped area",
+   "Disegna sulla foto": "Draw on the photo",
    "Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)": "Draws on the photo, to scale with the target, a graduated ruler and/or the real size of the photo's sides: a reference to understand how big the target is (a calibrated scale is needed; no calculation changes)",
+   "Disegni sulla foto": "Drawings on the photo",
    "Dispersione (senza immagine, rispetto al centro gruppo)": "Scatter (without image, relative to the group centre)",
    "Dispersione angolare supposta costante: limite superiore": "Angular dispersion assumed constant: upper bound",
    "Dispersione circa uniforme in tutte le direzioni (rapporto tra gli assi {0}:1).": "Dispersion roughly uniform in all directions (axis ratio {0}:1).",
@@ -3815,6 +3909,7 @@ const I18N = (() => {
    "Distanza nota tra i punti A e B: {0} {1} = {2} px della foto": "Known distance between points A and B: {0} {1} = {2} photo px",
    "Distanza tra due linee della griglia": "Distance between two grid lines",
    "Distanza {0} · calibro {1}": "Distance {0} · caliber {1}",
+   "Distanza, calibro e mirino": "Distance, caliber and sight",
    "Distanza: {0} · Calibro: {1} · Click: {2} {3}": "Distance: {0} · Caliber: {1} · Click: {2} {3}",
    "Distanze": "Distances",
    "Distanze dal centro gruppo ordinate contro quelle attese dalla distribuzione di Rayleigh (σ = {0} {1}): se il modello è adatto i punti stanno vicino alla diagonale. Test per simulazione ({2}): adattamento p {3} · anisotropia p {4} (rapporto assi {5}){6}.": "Distances from the group centre sorted against those expected from the Rayleigh distribution (σ = {0} {1}): if the model fits, the points lie near the diagonal. Simulation tests ({2}): fit p {3} · anisotropy p {4} (axis ratio {5}){6}.",
@@ -4091,6 +4186,7 @@ const I18N = (() => {
    "Misura accettabile ma migliorabile (scala entro ±2%, RMS < 1 mm): rifai la calibrazione o la foto più perpendicolare.": "Acceptable but improvable measurement (scale within ±2%, RMS < 1 mm): redo the calibration or take the photo more perpendicular.",
    "Misura coerente: scala e fori entro le tolleranze indicative (scala ±1%, RMS < 0,5 mm).": "Consistent measurement: scale and holes within the indicative tolerances (scale ±1%, RMS < 0.5 mm).",
    "Misura da rivedere: controlla la stampa (righello = 100 mm), la calibrazione della scala, la prospettiva della foto e il punto di mira.": "Measurement to review: check the print (ruler = 100 mm), the scale calibration, the photo perspective and the aiming point.",
+   "Misura e statistica": "Measurement and statistics",
    "Misure": "Measurements",
    "Misure e correzione": "Measurements and correction",
    "Modello": "Model",
@@ -4140,6 +4236,10 @@ const I18N = (() => {
    "Note": "Notes",
    "Note sull'immagine": "Notes on the image",
    "Numero di gruppi per la media mobile": "Number of groups for the moving average",
+   "Occorrenza precedente": "Previous match",
+   "Occorrenza precedente (Maiusc+Invio, ↑)": "Previous match (Shift+Enter, ↑)",
+   "Occorrenza successiva": "Next match",
+   "Occorrenza successiva (Invio, ↓)": "Next match (Enter, ↓)",
    "Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.": "Each group has its own data. A new group copies all the data of the active group (shots, foulers and notes included): correct the ones that change. Everything appears in the Result Card.",
    "Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo": "Each group has its own distance: a new group starts from that of the active group",
    "Oltre la distanza più lunga tirata": "Beyond the longest distance shot",
@@ -4180,6 +4280,7 @@ const I18N = (() => {
    "Poi clicca un foro (la nota lo segue anche se lo sposti) o una zona del bersaglio (N)": "Then click a hole (the note follows it even if you move it) or an area of the target (N)",
    "Pollo": "Chicken",
    "Polvere": "Powder",
+   "Posizione del bersaglio · gruppo attivo": "Target position · active group",
    "Posizione · gruppo attivo (mm →, ↑)": "Position · active group (mm →, ↑)",
    "Possibile flyer: distanza di Mahalanobis {0} dagli altri colpi (criterio ellittico), p = {1} < 5%/{2}": "Possible flyer: Mahalanobis distance {0} from the other shots (elliptical criterion), p = {1} < 5%/{2}",
    "Possibili flyer": "Possible flyers",
@@ -4191,11 +4292,13 @@ const I18N = (() => {
    "Preparazione del bersaglio…": "Preparing the target…",
    "Preparazione del report PDF…": "Preparing the PDF report…",
    "Preparazione dello ZIP ({0} sessioni)…": "Preparing the ZIP ({0} sessions)…",
+   "Presentazione": "Display",
    "Pressione": "Pressure",
    "Pressione (hPa)": "Pressure (hPa)",
    "Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)": "Atmospheric pressure in hPa (= mbar), as shown by your instrument (absolute or sea-level)",
    "Primo (FFP)": "First (FFP)",
    "Probabilità di colpire": "Hit probability",
+   "Profili di ricarica": "Reload profiles",
    "Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro": "Reload profiles saved in this browser: choosing one fills in case, powder, charge, bullet, jump and primer of the active group and sets the caliber",
    "Profilo di ricarica": "Reload profile",
    "Profilo «{0}» aggiornato.": "Profile «{0}» updated.",
@@ -4283,6 +4386,7 @@ const I18N = (() => {
    "Riduci lo zoom (−)": "Zoom out (−)",
    "Riferimento": "Reference",
    "Riferimento delle direzioni": "Reference for the directions",
+   "Riferimento di controllo": "Check reference",
    "Riferimento di controllo eliminato.": "Check reference deleted.",
    "Riferimento di controllo non inserito: pulsante «Riferimento», poi due punti.": "No check reference: “Reference” button, then two points.",
    "Riferimento di controllo: clicca i due estremi di una lunghezza nota diversa da quella della scala (es. il diametro di un anello). Esc = annulla.": "Check reference: click the two ends of a known length other than the scale one (e.g. the diameter of a ring). Esc = cancel.",
@@ -4348,6 +4452,7 @@ const I18N = (() => {
    "Scala": "Scale",
    "Scala A": "Scale A",
    "Scala B": "Scale B",
+   "Scala a 2 punti": "2-point scale",
    "Scala dal rettangolo della correzione prospettica (lato più corto {0} px nella foto)": "Scale from the perspective-correction rectangle (shortest side {0} px in the photo)",
    "Scala non calibrata": "Scale not calibrated",
    "Scala non impostata: modalità Scala (2), poi due punti a distanza nota.": "Scale not set: Scale mode (2), then two points at a known distance.",
@@ -4365,6 +4470,7 @@ const I18N = (() => {
    "Segmento di scala corto ({0} px): errore di scala fino a ±{1}%. Usa due punti più lontani (almeno 150 px).": "Short scale segment ({0} px): scale error up to ±{1}%. Use two points farther apart (at least 150 px).",
    "Segmento di scala {0} px": "Scale segment {0} px",
    "Selezione": "Selection",
+   "Serie e note": "Series and notes",
    "Serve almeno un secondo salto dalle righe per un confronto.": "At least a second jump value is needed for a comparison.",
    "Serve almeno una seconda carica per un confronto.": "At least a second charge is needed for a comparison.",
    "Serve il punto di mira al centro della croce.": "The aiming point at the centre of the cross is needed.",
@@ -4449,6 +4555,7 @@ const I18N = (() => {
    "Test dei flyer": "Flyer test",
    "Testo": "Text",
    "Testo della nota {0}": "Text of note {0}",
+   "Testo, tabelle e help": "Text, tables and help",
    "Tiro dinamico": "Action shooting",
    "Torna all'immagine (Esc)": "Back to the image (Esc)",
    "Torna alla foto originale (i punti vengono riportati su di essa)": "Back to the original photo (points are mapped back onto it)",
@@ -4671,8 +4778,10 @@ const I18N = (() => {
    "montone": "ram",
    "mph": "mph",
    "n.d.": "n/a",
+   "nel suggerimento: ": "in the tooltip: ",
    "nessun colpo valido": "no valid shot",
    "nessun gruppo": "no group",
+   "nessuna": "none",
    "nessuna apertura né spostamento oltre il caso": "no opening or shift beyond chance",
    "nessuna correzione": "no correction",
    "nessuno": "none",
@@ -4747,6 +4856,7 @@ const I18N = (() => {
    "sessione": "session",
    "sessione corrente": "current session",
    "sessione.json": "session.json",
+   "sezione nascosta nel layout (⚙)": "section hidden in the layout (⚙)",
    "shoot-analyzer_archivio_{0}.zip": "shoot-analyzer_archive_{0}.zip",
    "shoot-analyzer_profili_{0}.json": "shoot-analyzer_profiles_{0}.json",
    "showSaveFilePicker non utilizzabile, uso il download:": "showSaveFilePicker not usable, falling back to download:",
@@ -4928,6 +5038,7 @@ const I18N = (() => {
    "📐 Raddrizza con 2 punti": "📐 Level with 2 points",
    "📑 Report PDF": "📑 PDF report",
    "📘 Help tecnico": "📘 Technical help",
+   "🔍 Cerca un'impostazione… ( / )": "🔍 Search a setting… ( / )",
    "🔍 Lente": "🔍 Loupe",
    "🔎 Dettaglio": "🔎 Detail",
    "🔒 Blocca": "🔒 Lock",
@@ -5116,6 +5227,7 @@ const I18N = (() => {
    "<b>Novità 1.17</b>: la <b>barra principale</b> ha solo icone (passa il mouse per il nome, la funzione e il tasto). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>, poi <kbd>,</kbd> e <kbd>.</kbd>): fori difficili, sovrapposti o possibili flyer, ognuno centrato e ingrandito sulla foto, con conferma, rimando o correzione; l'etichetta separa i problemi di <b>marcatura</b> da quelli <b>statistici</b>. <b>☆ Baseline</b>: una rosata di riferimento ricordata dal browser e salvata nella sessione; ogni gruppo mostra le differenze in angolo con distanza, colpi e condizioni in evidenza. Nella vista grafici, <b>trascina sull'andamento</b> per confrontare un periodo con tutto ciò che viene prima (σ combinato, test F). Il pulsante <b>⌖</b> accanto ai risultati mostra sulla foto da quali fori nasce il valore; passando sui campi del pannello (scala, calibro, distanza, marcatura, click, prospettiva) l'elemento corrispondente si illumina sulla foto.": "<b>Новое в 1.17</b>: <b>главная панель инструментов</b> показывает только значки (наведите курсор, чтобы увидеть название, функцию и клавишу). <b>⚑ Выстрелы для проверки</b> (<kbd>V</kbd>, затем <kbd>,</kbd> и <kbd>.</kbd>): трудные, наложенные пробоины и возможные отрывы, каждая центрируется и увеличивается на фото, чтобы подтвердить, отложить или исправить; метка отделяет проблемы <b>разметки</b> от <b>статистических</b>. <b>☆ Базовая группа</b>: эталонная группа, запоминаемая браузером и сохраняемая в сессии; каждая группа показывает угловые различия, а дистанция, число выстрелов и условия видны сразу. В виде графиков <b>протяните по графику тренда</b>, чтобы сравнить период со всем предыдущим (объединённая σ, F-тест). Кнопка <b>⌖</b> рядом с результатами показывает на фото, из каких пробоин получено значение; при наведении на поля панели (масштаб, калибр, дистанция, разметка, клик, перспектива) подсвечивается соответствующий элемент на фото.",
    "<b>Novità 1.18</b>: in cima al pannello il <b>GQI della sessione</b> (e il TQI, se acceso) con il solo punteggio: un clic porta alle card complete. Result Card PNG e report PDF sono ora nella sezione <b>Dati</b>. «Orientamento e prospettiva» diventa <b>Gestione immagine</b>, divisa in riquadri (rotazione, ritaglio, distorsione, prospettiva). Nei <b>Risultati</b> ogni gruppo si chiude cliccando il titolo e resta una riga con group size, raggio medio e GQI. La <b>scala sulla foto</b> (righello) è attiva per default. I <b>marcatori delle note</b> sono più grandi e si prendono su tutta la pillola; trascinando una nota su una zona non salta più sotto il cursore.": "<b>Новое в 1.18</b>: вверху панели — <b>GQI сессии</b> (и TQI, если включён), только балл: клик ведёт к полным карточкам. Result Card PNG и PDF-отчёт теперь в разделе <b>Данные</b>. «Ориентация и перспектива» становится <b>Обработкой изображения</b>, разделённой на блоки (поворот, обрезка, дисторсия, перспектива). В <b>Результатах</b> каждая группа сворачивается кликом по заголовку, оставляя строку с размером группы, средним радиусом и GQI. <b>Шкала на фото</b> (линейка) включена по умолчанию. <b>Метки заметок</b> стали крупнее и захватываются в любом месте; при перетаскивании заметки на участке она больше не прыгает под курсор.",
    "<b>Novità 1.19</b>: interfaccia anche in <b>russo</b> (menu della lingua in alto; l'help tecnico resta in italiano). In russo le unità di lunghezza sono cirilliche (мм, см, м), MOA e MIL restano latini; il <b>report PDF</b> incorpora un font con il cirillico (anche in italiano, quando note o nomi contengono lettere che i font standard non hanno).": "<b>Новое в 1.19</b>: интерфейс доступен и на <b>русском языке</b> (меню языка вверху; техническая справка остаётся на итальянском). В русском интерфейсе единицы длины кириллические (мм, см, м), а MOA и MIL остаются латинскими; <b>PDF-отчёт</b> встраивает шрифт с кириллицей (также на итальянском или английском, если в заметках или названиях есть буквы, которых нет в стандартных шрифтах).",
+   "<b>Novità 1.20</b>: <b>🔍 casella di ricerca</b> fissa in cima al pannello (tasto <kbd>/</kbd>): scrivi una parola (es. «calibro», «griglia», «CSV») e si illuminano le impostazioni che la contengono nel nome, nelle voci del menu o nel suggerimento; <kbd>Invio</kbd> o <kbd>↓</kbd> porta alla successiva, <kbd>Maiusc</kbd>+<kbd>Invio</kbd> o <kbd>↑</kbd> alla precedente, aprendo le sezioni chiuse (e mostrando per il momento quelle nascoste dal layout); <kbd>Esc</kbd> azzera. Le sezioni con più funzioni sono divise in <b>riquadri con titolo</b>, come Gestione immagine.": "<b>Новое в 1.20</b>: <b>🔍 строка поиска</b>, закреплённая вверху панели (клавиша <kbd>/</kbd>): введите слово (например, «калибр», «сетка», «CSV»), и подсветятся настройки, у которых оно есть в названии, в пунктах меню или в подсказке; <kbd>Enter</kbd> или <kbd>↓</kbd> — к следующей, <kbd>Shift</kbd>+<kbd>Enter</kbd> или <kbd>↑</kbd> — к предыдущей; свёрнутые разделы раскрываются (а скрытые в компоновке временно показываются); <kbd>Esc</kbd> сбрасывает. Разделы с несколькими функциями разбиты на <b>блоки с заголовками</b>, как «Обработка изображения».",
    "<b>Novità 1.9</b>: <b>heatmap della densità</b> (Parametri di tiro); nella vista grafici <b>coordinate polari</b>, <b>densità 3D</b> ruotabile, <b>confronto visivo tra rosate</b> (sovrapposte o affiancate, in mm o in angoli) e <b>reticolo con holdover</b> (tacca da usare per ogni distanza, FFP/SFP); nella sezione Dati il <b>bersaglio di autoverifica</b> da stampare, fotografare e misurare.": "<b>Новое в 1.9</b>: <b>тепловая карта плотности</b> (параметры стрельбы); в виде графиков <b>полярные координаты</b>, вращаемая <b>3D-плотность</b>, <b>визуальное сравнение групп</b> (наложением или рядом, в мм или углах) и <b>сетка с выносом точки прицеливания</b> (деление для каждой дистанции, FFP/SFP); в разделе «Данные» <b>контрольная мишень</b>, чтобы распечатать, сфотографировать и измерить.",
    "<b>Probabilità di colpire</b>: imposta un cerchio (diametro) o un rettangolo e, se vuoi, un'altra distanza; per il gruppo attivo leggi la probabilità che un colpo vada a segno e i «colpi su 100», con l'intervallo di confidenza, sia con la correzione applicata sia con la taratura attuale. Modello normale circolare, come CEP/R95/R99.": "<b>Вероятность попадания</b>: задайте круг (диаметр) или прямоугольник и, при желании, другую дистанцию; для активной группы показывается вероятность попадания выстрела и «попаданий из 100» с доверительным интервалом — как с применённой поправкой, так и при текущей пристрелке. Круговая нормальная модель, как для CEP/R95/R99.",
    "<b>Salvataggio automatico</b>: il lavoro viene salvato nel browser (IndexedDB) poco dopo ogni modifica; se chiudi per errore, alla riapertura l'app propone «Ripristina». Non sostituisce «Salva sessione»: i dati del browser possono essere cancellati con la cronologia.": "<b>Автосохранение</b>: работа сохраняется в браузере (IndexedDB) вскоре после каждого изменения; если вы случайно закрыли страницу, при повторном открытии приложение предложит «Восстановить». Это не заменяет «Сохранить сессию»: данные браузера могут быть удалены вместе с историей.",
@@ -5272,6 +5384,7 @@ const I18N = (() => {
    "Andamento della metrica scelta nel tempo": "Тренд выбранной метрики во времени",
    "Andamento nel tempo": "Тренд во времени",
    "Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).": "Кольца рисуются вокруг точки прицеливания каждой группы. Подсчёт очков по правилу бумажных мишеней: выстрел засчитывается по кольцу, которого касается край пробоины (при заданном калибре).",
+   "Anelli personalizzati": "Пользовательские кольца",
    "Angoli: confronta gruppi tirati a distanze diverse": "Углы: сравнивайте группы, отстрелянные на разных дистанциях",
    "Angolo costante (σ {0} MIL): diametri proporzionali alla distanza, limite inferiore oltre la distanza più lunga tirata ({1}).": "Постоянный угол (σ {0} MIL): диаметры пропорциональны дистанции; за пределами наибольшей отстрелянной дистанции ({1}) — нижняя граница.",
    "Angolo della foto in cui mettere il righello": "Угол фото, в котором размещается линейка",
@@ -5300,12 +5413,15 @@ const I18N = (() => {
    "Aumenta lo zoom": "Увеличить масштаб",
    "Aumenta lo zoom (+)": "Увеличить масштаб (+)",
    "Azzera": "Сбросить",
+   "Azzera la ricerca": "Сбросить поиск",
+   "Azzera la ricerca (Esc)": "Сбросить поиск (Esc)",
    "Azzera posizione": "Сбросить положение",
    "Baseline tolta.": "Базовая группа убрана.",
    "Bersaglio": "Мишень",
    "Bersaglio SA-{0} salvato: stampalo al 100%": "Мишень SA-{0} сохранена: печатайте в масштабе 100%",
    "Bersaglio da gara": "Соревновательная мишень",
    "Bersaglio di autoverifica": "Контрольная мишень",
+   "Bersaglio e distanza": "Мишень и дистанция",
    "Blocca": "Заблокировать",
    "Blocca i due estremi del riferimento di controllo": "Заблокировать оба конца контрольного эталона",
    "Blocca i due punti della scala: non si possono spostare, rifare né eliminare finché non li sblocchi": "Заблокировать две точки масштаба: их нельзя сдвинуть, переделать или удалить, пока вы их не разблокируете",
@@ -5365,6 +5481,7 @@ const I18N = (() => {
    "Carica prima un'immagine.": "Сначала загрузите изображение.",
    "Carica una foto per iniziare.": "Загрузите фото, чтобы начать.",
    "Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica": "Навеска: сравнивается при той же пуле и порохе. Джамп до нарезов (посадка): при той же пуле, порохе и навеске",
+   "Centratura": "Центровка",
    "Centratura di riferimento (AQI = 80)": "Эталонная центровка (AQI = 80)",
    "Centratura di riferimento: inserisci un numero maggiore di zero (il TQI è sospeso).": "Эталонная центровка: введите число больше нуля (TQI приостановлен).",
    "Centro dei primi {0} colpi: {1} {2} {3}, {4} {5} {6}": "Центр первых {0} выстрелов: {1} {2} {3}, {4} {5} {6}",
@@ -5372,6 +5489,8 @@ const I18N = (() => {
    "Centro gruppo X dalla mira (mm)": "Центр группы X от ТП (мм)",
    "Centro gruppo Y dalla mira (mm, + = alto)": "Центр группы Y от ТП (мм, + = вверх)",
    "Centro gruppo colpo dopo colpo": "Центр группы от выстрела к выстрелу",
+   "Cerca nelle impostazioni del pannello": "Поиск по настройкам панели",
+   "Cerca tra titoli, etichette, pulsanti, menu e suggerimenti del pannello, anche nelle sezioni chiuse o nascoste. Invio o ↓ = occorrenza successiva · Maiusc+Invio o ↑ = precedente · Esc = azzera": "Поиск по заголовкам, подписям, кнопкам, меню и подсказкам панели, в том числе в свёрнутых и скрытых разделах. Enter или ↓ = следующее совпадение · Shift+Enter или ↑ = предыдущее · Esc = сбросить",
    "Cerchi della griglia ogni {0} mm (stessa scala in tutti i riquadri) · tratteggio: CEP, punteggiato: R95": "Круги сетки через каждые {0} мм (одинаковый масштаб на всех панелях) · штрихи: CEP, точки: R95",
    "Cerchio (diametro)": "Круг (диаметр)",
    "Chiudi": "Закрыть",
@@ -5407,6 +5526,7 @@ const I18N = (() => {
    "Colpo precedente nella coda (,)": "Предыдущий выстрел в очереди (,)",
    "Colpo successivo nella coda (.)": "Следующий выстрел в очереди (.)",
    "Compatta": "Компактно",
+   "Compattezza": "Кучность",
    "Compila almeno un dato di ricarica prima di salvare il profilo.": "Заполните хотя бы одно поле снаряжения, прежде чем сохранять профиль.",
    "Componenti": "Компоненты",
    "Con correzione applicata: {0} ({1})": "С применённой поправкой: {0} ({1})",
@@ -5494,7 +5614,9 @@ const I18N = (() => {
    "Direzione: ore {0} · {1}° {2}": "Направление: {0} ч · {1}° {2}",
    "Discreto": "Удовлетворительно",
    "Disegna righello e cornice anche nella Result Card e nella foto del report PDF, riferiti all'area ritagliata": "Рисует линейку и рамку также в Result Card и на фото PDF-отчёта, относительно обрезанной области",
+   "Disegna sulla foto": "Рисовать на фото",
    "Disegna sulla foto, in scala con il bersaglio, un righello graduato e/o le dimensioni reali dei lati della foto: un riferimento per capire quanto è grande il bersaglio (serve la scala calibrata; nessun calcolo cambia)": "Рисует на фото, в масштабе мишени, градуированную линейку и/или реальные размеры сторон фото: ориентир, чтобы понять, насколько велика мишень (нужен откалиброванный масштаб; расчёты не меняются)",
+   "Disegni sulla foto": "Построения на фото",
    "Dispersione (senza immagine, rispetto al centro gruppo)": "Рассеивание (без изображения, относительно центра группы)",
    "Dispersione angolare supposta costante: limite superiore": "Угловое рассеивание принято постоянным: верхняя граница",
    "Dispersione circa uniforme in tutte le direzioni (rapporto tra gli assi {0}:1).": "Рассеивание примерно одинаково во всех направлениях (отношение осей {0}:1).",
@@ -5515,6 +5637,7 @@ const I18N = (() => {
    "Distanza nota tra i punti A e B: {0} {1} = {2} px della foto": "Известное расстояние между точками A и B: {0} {1} = {2} пикс. фото",
    "Distanza tra due linee della griglia": "Расстояние между двумя линиями сетки",
    "Distanza {0} · calibro {1}": "Дистанция {0} · калибр {1}",
+   "Distanza, calibro e mirino": "Дистанция, калибр и прицел",
    "Distanza: {0} · Calibro: {1} · Click: {2} {3}": "Дистанция: {0} · Калибр: {1} · Клик: {2} {3}",
    "Distanze": "Дистанции",
    "Distanze dal centro gruppo ordinate contro quelle attese dalla distribuzione di Rayleigh (σ = {0} {1}): se il modello è adatto i punti stanno vicino alla diagonale. Test per simulazione ({2}): adattamento p {3} · anisotropia p {4} (rapporto assi {5}){6}.": "Расстояния от центра группы, упорядоченные относительно ожидаемых по распределению Рэлея (σ = {0} {1}): если модель подходит, точки лежат около диагонали. Тесты моделированием ({2}): соответствие p {3} · анизотропия p {4} (отношение осей {5}){6}.",
@@ -5791,6 +5914,7 @@ const I18N = (() => {
    "Misura accettabile ma migliorabile (scala entro ±2%, RMS < 1 mm): rifai la calibrazione o la foto più perpendicolare.": "Измерение приемлемое, но его можно улучшить (масштаб в пределах ±2%, RMS < 1 мм): повторите калибровку или снимите фото перпендикулярнее.",
    "Misura coerente: scala e fori entro le tolleranze indicative (scala ±1%, RMS < 0,5 mm).": "Измерение согласованное: масштаб и пробоины в пределах ориентировочных допусков (масштаб ±1%, RMS < 0,5 мм).",
    "Misura da rivedere: controlla la stampa (righello = 100 mm), la calibrazione della scala, la prospettiva della foto e il punto di mira.": "Измерение нужно проверить: проверьте печать (линейка = 100 мм), калибровку масштаба, перспективу фото и точку прицеливания.",
+   "Misura e statistica": "Измерение и статистика",
    "Misure": "Измерения",
    "Misure e correzione": "Измерения и поправка",
    "Modello": "Модель",
@@ -5840,6 +5964,10 @@ const I18N = (() => {
    "Note": "Заметки",
    "Note sull'immagine": "Заметки на изображении",
    "Numero di gruppi per la media mobile": "Число групп для скользящего среднего",
+   "Occorrenza precedente": "Предыдущее совпадение",
+   "Occorrenza precedente (Maiusc+Invio, ↑)": "Предыдущее совпадение (Shift+Enter, ↑)",
+   "Occorrenza successiva": "Следующее совпадение",
+   "Occorrenza successiva (Invio, ↓)": "Следующее совпадение (Enter, ↓)",
    "Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.": "У каждой группы свои данные. Новая группа копирует все данные активной группы (включая выстрелы, прогревочные и заметки): исправьте то, что меняется. Всё отображается в Result Card.",
    "Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo": "У каждой группы своя дистанция: новая группа начинает с дистанции активной группы",
    "Oltre la distanza più lunga tirata": "За пределами наибольшей отстрелянной дистанции",
@@ -5880,6 +6008,7 @@ const I18N = (() => {
    "Poi clicca un foro (la nota lo segue anche se lo sposti) o una zona del bersaglio (N)": "Затем кликните пробоину (заметка будет следовать за ней, даже если её сдвинуть) или участок мишени (N)",
    "Pollo": "Курица",
    "Polvere": "Порох",
+   "Posizione del bersaglio · gruppo attivo": "Положение мишени · активная группа",
    "Posizione · gruppo attivo (mm →, ↑)": "Положение · активная группа (мм →, ↑)",
    "Possibile flyer: distanza di Mahalanobis {0} dagli altri colpi (criterio ellittico), p = {1} < 5%/{2}": "Возможный отрыв: расстояние Махаланобиса {0} от остальных выстрелов (эллиптический критерий), p = {1} < 5%/{2}",
    "Possibili flyer": "Возможные отрывы",
@@ -5891,11 +6020,13 @@ const I18N = (() => {
    "Preparazione del bersaglio…": "Подготовка мишени…",
    "Preparazione del report PDF…": "Подготовка PDF-отчёта…",
    "Preparazione dello ZIP ({0} sessioni)…": "Подготовка ZIP ({0} сессий)…",
+   "Presentazione": "Отображение",
    "Pressione": "Давление",
    "Pressione (hPa)": "Давление (гПа)",
    "Pressione atmosferica in hPa (= mbar), come indicata dal tuo strumento (assoluta o riferita al livello del mare)": "Атмосферное давление в гПа (= мбар), как показывает ваш прибор (абсолютное или приведённое к уровню моря)",
    "Primo (FFP)": "Первая (FFP)",
    "Probabilità di colpire": "Вероятность попадания",
+   "Profili di ricarica": "Профили снаряжения",
    "Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro": "Профили снаряжения, сохранённые в этом браузере: выбор профиля заполняет гильзу, порох, навеску, пулю, джамп и капсюль активной группы и задаёт калибр",
    "Profilo di ricarica": "Профиль снаряжения",
    "Profilo «{0}» aggiornato.": "Профиль «{0}» обновлён.",
@@ -5983,6 +6114,7 @@ const I18N = (() => {
    "Riduci lo zoom (−)": "Уменьшить масштаб (−)",
    "Riferimento": "Эталон",
    "Riferimento delle direzioni": "Начало отсчёта направлений",
+   "Riferimento di controllo": "Контрольный эталон",
    "Riferimento di controllo eliminato.": "Контрольный эталон удалён.",
    "Riferimento di controllo non inserito: pulsante «Riferimento», poi due punti.": "Контрольный эталон не задан: кнопка «Эталон», затем две точки.",
    "Riferimento di controllo: clicca i due estremi di una lunghezza nota diversa da quella della scala (es. il diametro di un anello). Esc = annulla.": "Контрольный эталон: кликните два конца известной длины, отличной от масштабной (например, диаметра кольца). Esc = отмена.",
@@ -6048,6 +6180,7 @@ const I18N = (() => {
    "Scala": "Масштаб",
    "Scala A": "Масштаб A",
    "Scala B": "Масштаб B",
+   "Scala a 2 punti": "Масштаб по 2 точкам",
    "Scala dal rettangolo della correzione prospettica (lato più corto {0} px nella foto)": "Масштаб по прямоугольнику коррекции перспективы (короткая сторона {0} пикс. на фото)",
    "Scala non calibrata": "Масштаб не откалиброван",
    "Scala non impostata: modalità Scala (2), poi due punti a distanza nota.": "Масштаб не задан: режим «Масштаб» (2), затем две точки на известном расстоянии.",
@@ -6065,6 +6198,7 @@ const I18N = (() => {
    "Segmento di scala corto ({0} px): errore di scala fino a ±{1}%. Usa due punti più lontani (almeno 150 px).": "Короткий отрезок масштаба ({0} пикс.): ошибка масштаба до ±{1}%. Используйте две точки подальше друг от друга (не менее 150 пикс.).",
    "Segmento di scala {0} px": "Отрезок масштаба {0} пикс.",
    "Selezione": "Выбор",
+   "Serie e note": "Серия и заметки",
    "Serve almeno un secondo salto dalle righe per un confronto.": "Для сравнения нужно хотя бы второе значение джампа.",
    "Serve almeno una seconda carica per un confronto.": "Для сравнения нужна хотя бы вторая навеска.",
    "Serve il punto di mira al centro della croce.": "Нужна точка прицеливания в центре креста.",
@@ -6149,6 +6283,7 @@ const I18N = (() => {
    "Test dei flyer": "Тест отрывов",
    "Testo": "Текст",
    "Testo della nota {0}": "Текст заметки {0}",
+   "Testo, tabelle e help": "Текст, таблицы и справка",
    "Tiro dinamico": "Практическая стрельба",
    "Torna all'immagine (Esc)": "Назад к изображению (Esc)",
    "Torna alla foto originale (i punti vengono riportati su di essa)": "Вернуться к исходному фото (точки переносятся на него)",
@@ -6371,8 +6506,10 @@ const I18N = (() => {
    "montone": "баран",
    "mph": "миль/ч",
    "n.d.": "н/д",
+   "nel suggerimento: ": "в подсказке: ",
    "nessun colpo valido": "нет пригодных выстрелов",
    "nessun gruppo": "нет групп",
+   "nessuna": "нет",
    "nessuna apertura né spostamento oltre il caso": "ни раскрытия, ни смещения сверх случайного",
    "nessuna correzione": "без коррекции",
    "nessuno": "нет",
@@ -6447,6 +6584,7 @@ const I18N = (() => {
    "sessione": "сессия",
    "sessione corrente": "текущая сессия",
    "sessione.json": "session.json",
+   "sezione nascosta nel layout (⚙)": "раздел скрыт в компоновке (⚙)",
    "shoot-analyzer_archivio_{0}.zip": "shoot-analyzer_archive_{0}.zip",
    "shoot-analyzer_profili_{0}.json": "shoot-analyzer_profiles_{0}.json",
    "showSaveFilePicker non utilizzabile, uso il download:": "showSaveFilePicker недоступен, используется загрузка:",
@@ -6628,6 +6766,7 @@ const I18N = (() => {
    "📐 Raddrizza con 2 punti": "📐 Выровнять по 2 точкам",
    "📑 Report PDF": "📑 PDF-отчёт",
    "📘 Help tecnico": "📘 Техническая справка",
+   "🔍 Cerca un'impostazione… ( / )": "🔍 Найти настройку… ( / )",
    "🔍 Lente": "🔍 Лупа",
    "🔎 Dettaglio": "🔎 Детализация",
    "🔒 Blocca": "🔒 Заблокировать",
@@ -6710,7 +6849,7 @@ const PDF_FONTS = {"R":{"name":"SAReportSans-Regular","b64":"AAEAAAALAIAAAwAwT1M
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.19.0";
+const APP_VERSION = "1.20.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -8259,6 +8398,7 @@ document.addEventListener("keydown", e => {
   }
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
   if (typing) return;
+  if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); const f = $("findIn"); f.focus(); f.select(); return; }
   if (k === "escape") { if (state.origin) { state.origin = null; refreshOriginUI(); refreshResults(); requestDraw(); return; } if (TOOL_MODES.includes(state.mode)) setMode(state.prevMode); return; }
   if (k === "enter" && state.mode === "crop") { e.preventDefault(); applyCrop(); return; }
   if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); updateHint(); requestDraw(); return; }
@@ -11973,12 +12113,120 @@ function setLang(l, save = true) {
   if (!$("restoreBar").hidden) checkAutosave();
   if (anaOpen()) { refreshAnaHeader(); drawCharts(); drawCompare(); }
   if (helpOpen()) fillHelp();
+  if (find.q) findRun(find.q, true);   // i testi sono cambiati
 }
 let autosaveLast = null;
 function renderAutosaveInfo() {
   if (!autosaveLast || DB.broken) return;
   $("autosaveInfo").textContent = _T`Salvato automaticamente alle ${autosaveLast.at.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" })}${autosaveLast.dirty ? "" : _t(" · sessione salvata su file")}`;
 }
+
+/* --------------------- RICERCA NELLE IMPOSTAZIONI (1.20.0) --------------------- */
+// Cerca nel pannello destro tra titoli di sezione e di riquadro, etichette, pulsanti, menu (testo delle voci)
+// e suggerimenti (title/placeholder/aria-label). Non cerca nei contenuti calcolati (risultati, tabelle, elenchi).
+// Tutte le occorrenze sono evidenziate in giallo tenue, quella corrente in arancio; la sezione chiusa viene aperta,
+// quella nascosta dal layout mostrata finché è la corrente (classe find-show: il layout salvato non cambia).
+const FIND_SKIP = "#results, #points, #rvList, #notesList, #hitOut, #groups, #archiveInfo, #ttResult, #calStatus, #ldGroup, #hitGroup, #pointsGroup, #layoutPop, #findBar, #sec-guide .help, [data-nofind]";
+const FIND_SEL = "summary, .subsec-h, label, button, select";
+const find = { q: "", hits: [], i: -1, shown: null, t: 0 };
+function findNorm(t) { return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim(); }
+/** Elemento non applicabile ora: dentro un contenitore nascosto (sotto il livello della sezione). */
+function findInactive(el) {
+  for (let e = el; e && e.id !== "sideScroll"; e = e.parentElement) {
+    if (e.tagName === "SECTION" || e.tagName === "DETAILS") break;
+    if (e.hidden) return true;
+  }
+  return false;
+}
+/** Testi in cui cercare per un elemento: [testo visibile, suggerimenti]. */
+function findTexts(el) {
+  let vis;
+  if (el.tagName === "SELECT") vis = [...el.options].map(o => o.textContent).join(" · ");
+  else if (el.tagName === "SUMMARY") vis = [...el.childNodes].map(n => n.textContent).join("");
+  else vis = el.textContent;
+  const tips = [el.getAttribute("title"), el.getAttribute("aria-label")];
+  if (el.tagName === "LABEL") { const c = el.htmlFor && $(el.htmlFor); if (c) tips.push(c.getAttribute("title"), c.getAttribute("placeholder")); }
+  return [vis, tips.filter(Boolean).join(" · ")];
+}
+function findCollect(q) {
+  const nq = findNorm(q), out = [];
+  if (nq.length < 2) return out;
+  const root = $("sideScroll"), seen = new Set();
+  for (const el of root.querySelectorAll(FIND_SEL)) {
+    if (el.closest(FIND_SKIP) || findInactive(el)) continue;
+    if (el.tagName !== "SUMMARY" && el.closest("label") && el.closest("label") !== el) continue;   // controllo dentro un'etichetta: vale l'etichetta
+    const [vis, tip] = findTexts(el);
+    const inVis = findNorm(vis).includes(nq), inTip = !inVis && findNorm(tip).includes(nq);
+    if (!inVis && !inTip) continue;
+    if (seen.has(el)) continue; seen.add(el);
+    out.push({ el, tip: inTip ? tip : null });
+  }
+  return out;
+}
+function findWhereText(h) {
+  const sec = h.el.closest("details"), sub = h.el.closest(".subsec");
+  const parts = [];
+  if (sec && h.el.tagName !== "SUMMARY") { const sm = sec.querySelector(":scope > summary"); if (sm) parts.push(sm.childNodes[0] ? sm.childNodes[0].textContent.trim() : sm.textContent.trim()); }
+  if (sub && !h.el.classList.contains("subsec-h")) { const hh = sub.querySelector(":scope > .subsec-h"); if (hh) parts.push([...hh.childNodes].filter(n => !(n.classList && n.classList.contains("ssi"))).map(n => n.textContent).join("").trim()); }
+  return parts;
+}
+function findClearMarks() {
+  document.querySelectorAll("#sideScroll .find-hit, #sideScroll .find-cur").forEach(e => e.classList.remove("find-hit", "find-cur"));
+  if (find.shown) { find.shown.classList.remove("find-show"); find.shown = null; }
+}
+function findRender() {
+  findClearMarks();
+  const n = find.hits.length, pos = $("findPos"), where = $("findWhere");
+  $("bFindPrev").disabled = $("bFindNext").disabled = n < 2 && !(n === 1 && find.i < 0);
+  $("bFindClr").hidden = !find.q;
+  pos.classList.toggle("none", !!find.q && findNorm(find.q).length >= 2 && !n);
+  if (!find.q || findNorm(find.q).length < 2) { pos.textContent = ""; where.hidden = true; return; }
+  if (!n) { pos.textContent = _t("nessuna"); where.hidden = true; return; }
+  for (const h of find.hits) h.el.classList.add("find-hit");
+  const h = find.hits[find.i];
+  pos.textContent = (find.i + 1) + " / " + n;
+  if (!h) { where.hidden = true; return; }
+  h.el.classList.remove("find-hit"); h.el.classList.add("find-cur");
+  const sec = h.el.closest("section");
+  if (sec && sec.hidden) { sec.classList.add("find-show"); find.shown = sec; }
+  const det = h.el.closest("details");
+  if (det && !det.open && h.el.tagName !== "SUMMARY") det.open = true;
+  const parts = findWhereText(h);
+  let html = parts.length ? parts.map(p => "<b>" + escHtml(p) + "</b>").join(" › ") : "";
+  if (sec && sec.classList.contains("find-show")) html += (html ? " · " : "") + escHtml(_t("sezione nascosta nel layout (⚙)"));
+  if (h.tip) html += (html ? "<br>" : "") + escHtml(_t("nel suggerimento: ")) + "«" + escHtml(h.tip.length > 160 ? h.tip.slice(0, 157) + "…" : h.tip) + "»";
+  where.innerHTML = html; where.hidden = !html;
+  h.el.scrollIntoView({ block: "center", behavior: "auto" });
+}
+function findRun(q, keep = false) {
+  const prev = keep && find.hits[find.i] ? find.hits[find.i].el : null;
+  find.q = q; find.hits = findCollect(q);
+  find.i = find.hits.length ? 0 : -1;
+  if (prev) { const j = find.hits.findIndex(h => h.el === prev); if (j >= 0) find.i = j; }
+  findRender();
+}
+function findStep(d) {
+  // ricalcola: nel frattempo possono essere cambiati menu, voci applicabili (riquadri mostrati/nascosti) o lingua
+  const prev = find.hits[find.i] ? find.hits[find.i].el : null;
+  find.hits = findCollect(find.q);
+  const n = find.hits.length;
+  find.i = prev ? find.hits.findIndex(h => h.el === prev) : -1;
+  if (n) find.i = ((find.i < 0 ? (d > 0 ? -1 : 0) : find.i) + d + n) % n;
+  findRender();
+}
+function findClear() { $("findIn").value = ""; find.q = ""; find.hits = []; find.i = -1; findRender(); }
+function escHtml(t) { return String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+$("findIn").addEventListener("input", () => { clearTimeout(find.t); find.t = setTimeout(() => findRun($("findIn").value), 120); });
+$("findIn").addEventListener("keydown", e => {
+  if (e.key === "Enter" || e.key === "ArrowDown" || e.key === "ArrowUp") {
+    e.preventDefault(); clearTimeout(find.t);
+    if ($("findIn").value !== find.q) findRun($("findIn").value);
+    else findStep(e.key === "ArrowUp" || (e.key === "Enter" && e.shiftKey) ? -1 : 1);
+  } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); if (find.q) findClear(); else $("findIn").blur(); }
+});
+$("bFindNext").addEventListener("click", () => findStep(1));
+$("bFindPrev").addEventListener("click", () => findStep(-1));
+$("bFindClr").addEventListener("click", () => { findClear(); $("findIn").focus(); });
 
 /* ------------------------------ VARIE ------------------------------ */
 let toastT;
@@ -14014,7 +14262,7 @@ setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); else { checkAutosave(); refreshArchiveInfo(); }
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { pdfEmbFonts, resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { find, findRun, findStep, findClear, findCollect, pdfEmbFonts, resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
   VIEWCONE, coneData, corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,

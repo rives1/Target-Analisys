@@ -67,7 +67,7 @@
 <section class="cover">
   <div class="top">
     <h1>Shoot Analyzer</h1>
-    <div class="sub">Manuale d'uso · versione 1.19</div>
+    <div class="sub">Manuale d'uso · versione 1.20</div>
     <div class="desc">Come misurare le rosate dalla foto del bersaglio, leggere i risultati e i grafici e trasformarli in correzioni e scelte concrete al poligono. Scritto per chi tira, non per chi fa statistica.</div>
   </div>
   <img src="imgj/04_panoramica.jpg" alt="">
@@ -174,18 +174,28 @@
 <table>
 <tr><th style="width:32%">Sezione</th><th>Contenuto</th></tr>
 <tr><td>Gestione immagine</td><td>Rotazione della foto, ritaglio, distorsione dell'obiettivo, correzione della prospettiva, ognuna nel suo riquadro.</td></tr>
-<tr><td>Calibrazione scala</td><td>La distanza nota e lo stato della calibrazione, con il semaforo di qualità.</td></tr>
-<tr><td>Parametri di tiro</td><td>Distanza, calibro, valore del click, che cosa disegnare sulla foto.</td></tr>
+<tr><td>Calibrazione scala</td><td>Scala a 2 punti (distanza nota, stato e semaforo di qualità), riferimento di controllo, scala disegnata sulla foto.</td></tr>
+<tr><td>Parametri di tiro</td><td>Distanza, calibro e mirino; incertezza di marcatura e livello degli intervalli di confidenza; che cosa disegnare sulla foto.</td></tr>
 <tr><td>Gruppi</td><td>Le rosate presenti sulla foto; quella evidenziata è il «gruppo attivo».</td></tr>
-<tr><td>Ricarica e condizioni</td><td>Dati della munizione e del meteo del gruppo attivo, profili di ricarica, quadrante del vento.</td></tr>
+<tr><td>Ricarica e condizioni</td><td>Profili di ricarica; munizione, condizioni (con il quadrante del vento), colpi e note del gruppo attivo.</td></tr>
 <tr><td>Risultati</td><td>Le misure di ogni gruppo, in forma di schede («card»); ogni gruppo si può chiudere.</td></tr>
 <tr><td>Zone di punteggio</td><td>Anelli di bersagli ISSF, sagome IPSC/IDPA/silhouette, punteggio di ogni foro.</td></tr>
 <tr><td>Probabilità di colpire</td><td>Quanti colpi su 100 entrerebbero in un bersaglio di una certa misura.</td></tr>
 <tr><td>Punti del gruppo attivo</td><td>La tabella di tutti i punti: coordinate, distanze, click, esclusione e blocco dei colpi.</td></tr>
 <tr><td>Note sull'immagine</td><td>Le annotazioni numerate N1, N2… legate a un foro o a una zona del bersaglio.</td></tr>
-<tr><td>Dati</td><td>Salvare, aprire, esportare, archivio delle sessioni, bersaglio di autoverifica.</td></tr>
+<tr><td>Dati</td><td>Result Card e report, sessione, testo e CSV, archivio delle sessioni, bersaglio di autoverifica.</td></tr>
 <tr><td>Guida rapida e scorciatoie</td><td>Un promemoria sempre a portata di mano.</td></tr>
 </table>
+<p>Dentro le sezioni con più funzioni ogni gruppo di comandi sta in un <b>riquadro con un titolo</b> e un'icona (per esempio, in «Parametri di tiro»: «Distanza, calibro e mirino», «Misura e statistica», «Disegni sulla foto»): così si capisce a colpo d'occhio dove finisce una cosa e ne comincia un'altra.</p>
+<h2>Cercare un'impostazione</h2>
+<figure class="w45"><img src="imgj/69_ricerca.jpg"><figcaption>Ricerca di «calibro»: tutte le occorrenze in giallo, quella corrente in arancio; sotto la casella, dove si trova.</figcaption></figure>
+<p>Le impostazioni sono tante. Invece di aprire le sezioni una per una, scrivi una parola nella <b>casella di ricerca</b> in cima al pannello (oppure premi <kbd>/</kbd>, che ci porta il cursore): «calibro», «griglia», «CSV», «vento»… Non servono maiuscole né accenti. Si illuminano in giallo tutte le impostazioni che contengono la parola nel nome, in una voce del menu o nel suggerimento che compare passando il mouse; quella corrente è in arancio e il pannello scorre fino a lei, aprendo la sezione se era chiusa. A destra della casella vedi a quale occorrenza sei (per esempio «2 / 7»), sotto la sezione e il riquadro in cui si trova e, se la parola è solo nel suggerimento, il testo del suggerimento.</p>
+<ul>
+  <li><kbd>Invio</kbd> o <kbd>↓</kbd> (o il pulsante ▼): occorrenza successiva; dopo l'ultima si ricomincia dalla prima.</li>
+  <li><kbd>Maiusc</kbd>+<kbd>Invio</kbd> o <kbd>↑</kbd> (o ▲): occorrenza precedente.</li>
+  <li><kbd>Esc</kbd> (o ✕): azzera la ricerca e toglie le evidenziazioni; un secondo <kbd>Esc</kbd> esce dalla casella.</li>
+</ul>
+<p>La ricerca riguarda solo le impostazioni e i comandi, non i valori calcolati (risultati, tabella dei punti). Le voci che in quel momento non si applicano non vengono contate: «Fattore di potenza», per esempio, compare solo dopo aver scelto un bersaglio IPSC. Se l'impostazione è in una sezione che hai nascosto con ⚙, la sezione viene mostrata finché ci sei sopra, senza cambiare il layout salvato.</p>
 <p>In fondo al pannello il pulsante <span class="btn">📊 Grafici e confronto tra gruppi</span> (tasto <kbd>A</kbd>) apre la vista dei grafici a schermo intero (capitolo 12). In alto ci sono la lingua (italiano, inglese o russo), il tema chiaro o scuro, la densità delle informazioni e il pulsante ⚙ per riordinare le sezioni (capitolo 16).</p>
 
 <!-- =============================== 4 =============================== -->

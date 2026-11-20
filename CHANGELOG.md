@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.20.0] - 2026-11-20
+### Aggiunto
+- **Ricerca nelle impostazioni** (`#findBar`, fissa in cima al pannello destro; tasto `/`): cerca tra titoli di
+  sezione e di riquadro, etichette, pulsanti, voci dei menu e suggerimenti (title, aria-label, segnaposto del campo
+  collegato), senza maiuscole né accenti, anche nelle sezioni chiuse o nascoste dal layout; non cerca nei valori
+  calcolati (risultati, tabelle, elenchi). Tutte le occorrenze in giallo tenue, la corrente in arancio, portata in
+  vista con la sua sezione aperta; contatore «n / N», posizione «sezione › riquadro» e testo del suggerimento se la
+  parola è solo lì. Invio/↓ successiva, Maiusc+Invio/↑ precedente (circolare), Esc azzera, secondo Esc esce. Le voci
+  non applicabili in quel momento (riquadri nascosti) non contano; una sezione nascosta dal layout viene mostrata
+  finché contiene l'occorrenza corrente, senza toccare il layout salvato. La ricerca si ricalcola a ogni passo e al
+  cambio di lingua.
+### Modificato
+- **Riquadri con titolo** (come «Gestione immagine») in Calibrazione scala (scala a 2 punti, riferimento di
+  controllo, scala sulla foto), Parametri di tiro (distanza/calibro/mirino, misura e statistica, disegni sulla
+  foto), Ricarica e condizioni (profili, munizione, condizioni, serie e note), Indice di qualità (compattezza,
+  centratura, presentazione), Zone di punteggio (bersaglio, posizione, anelli personalizzati), Probabilità di colpire
+  e Dati (Result Card e report, sessione, testo/tabelle/help, archivio, autoverifica). Id dei comandi invariati; il
+  livello degli intervalli di confidenza è passato accanto alla marcatura; i lucchetti di scala e riferimento sono
+  ciascuno nel proprio riquadro. Le sezioni con una sola funzione (Gruppi, Risultati, Punti, Revisione, Note) restano
+  com'erano.
+- Casella «Scala sulla foto» → «Disegna sulla foto» (il titolo del riquadro dice già «Scala sulla foto»).
+- **File di contesto ridotto**: un solo `docs/context/CONTEXT_v1.20.0.md` con la situazione attuale (niente storia
+  delle versioni; decisioni vigenti in forma compatta).
+### Test
+- 81 scenari UI (2 nuovi: riquadri e comandi al loro posto, ancora funzionanti e tradotti; ricerca con occorrenze,
+  navigazione circolare, sezione chiusa aperta, sezione nascosta mostrata e ri-nascosta, suggerimenti, accenti,
+  voci non applicabili, niente risultati, inglese).
+
 ## [1.19.0] - 2026-11-20
 ### Aggiunto
 - **Lingua russa** dell'interfaccia (menu «Русский»): dizionario `I18N.RU` con le stesse 1695 chiavi dell'inglese

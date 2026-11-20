@@ -2778,6 +2778,110 @@ test("1.19.0: report PDF — font incorporati solo quando servono, testo russo e
   assert.deepStrictEqual(w, [667, 556, 556], "larghezze di A, a, 0 come Helvetica");
 });
 
+/* ------------------------------ 1.20.0 ------------------------------ */
+test("1.20.0: pannello — sezioni divise in riquadri con titolo, comandi al loro posto e funzionanti", async page => {
+  // ogni sezione con più funzioni ha almeno due riquadri, ognuno con un titolo
+  for (const id of ["sec-orient", "sec-calib", "sec-params", "sec-load", "sec-quality", "sec-score", "sec-hit", "sec-data"]) {
+    const t = await page.$$eval("#" + id + " .subsec", ss => ss.map(s => { const h = s.querySelector(":scope > .subsec-h"); return h ? [...h.childNodes].filter(n => !(n.classList && n.classList.contains("ssi"))).map(n => n.textContent).join("").trim() : ""; }));
+    ok2(t.length >= (id === "sec-score" || id === "sec-hit" ? 1 : 2), id + ": riquadri " + t.length);
+    ok2(t.every(x => x.length > 2), id + ": titoli " + JSON.stringify(t));
+  }
+  const where = { calDist: "ss-scale", bCalLock: "ss-scale", bRef: "ss-ref", bRefLock: "ss-ref", smOn: "smBox", shotDist: "ss-shot", clickVal: "ss-shot", markHand: "ss-stat", ciLevel: "ss-stat",
+    gridOn: "ss-draw", heatOn: "ss-draw", ldProfile: "ldProfBox", "ld-powder": "ss-ammo", "ld-wind": "ss-cond", "ld-notes": "ss-series", qiMrRef: "ss-gqi", qiWP: "ss-tqi", qiDec: "ss-qiview",
+    scoreTarget: "ss-target", tgtDx: "scoreAdj", scoreD10: "scoreCustom", hitShape: "ss-hitt", bCardPng: "ss-export", bSaveZip: "ss-session", embedImg: "ss-session", bCsvShots: "ss-tables",
+    bHelp: "ss-tables", bZip: "ss-archive", bTtPdf: "ss-tt" };
+  for (const [id, box] of Object.entries(where)) assert.strictEqual(await page.$eval("#" + id, e => { const s = e.closest(".subsec"); return s && s.id; }), box, id);
+  // i dati di ricarica divisi in tre griglie si scrivono ancora nel gruppo attivo
+  await setField(page, "#ld-powder", "Vihtavuori N140"); await setField(page, "#ld-temp", 18); await setField(page, "#ld-notes", "prova");
+  assert.deepStrictEqual(await page.evaluate(() => { const l = window.__SA.state.groups[0].load; return [l.powder, l.temp, l.notes]; }), ["Vihtavuori N140", "18", "prova"]);
+  // i riquadri che dipendono dal bersaglio compaiono e spariscono come prima
+  assert.strictEqual(await page.isHidden("#scoreAdj"), true); assert.strictEqual(await page.isHidden("#scoreCustom"), true);
+  await page.selectOption("#scoreTarget", "custom");
+  ok2(await page.isVisible("#scoreAdj") && await page.isVisible("#scoreCustom"), "riquadri del bersaglio personalizzato visibili");
+  await page.selectOption("#scoreTarget", "none");
+  assert.strictEqual(await page.isHidden("#scoreCustom"), true);
+  // titoli tradotti
+  for (const [l, re] of [["en", ITALIAN], ["ru", /[A-Za-zÀ-ú]{4,}/]]) {
+    await page.evaluate(l => window.__SA.setLang(l), l);
+    const hs = await page.$$eval("#side .subsec-h", hs => hs.map(h => h.textContent));
+    ok2(hs.every(h => !re.test(h.replace(/Result Card|GQI|TQI|CSV/g, ""))), l + ": " + hs.find(h => re.test(h.replace(/Result Card|GQI|TQI|CSV/g, ""))));
+    assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l + ": testi senza traduzione");
+  }
+});
+
+test("1.20.0: ricerca nelle impostazioni — occorrenze, navigazione, sezioni chiuse e nascoste, suggerimenti", async page => {
+  // tutto chiuso, «Dati» nascosta dal layout come farebbe ⚙
+  await page.evaluate(() => { document.querySelectorAll("#side details").forEach(d => { d.open = false; }); document.getElementById("sec-data").closest("section").hidden = true; });
+  // la casella è fissa in cima: resta visibile anche scorrendo il pannello
+  await page.evaluate(() => { document.querySelectorAll("#side details").forEach(d => { d.open = true; }); document.getElementById("sideScroll").scrollTop = 99999; });
+  const fy = await page.evaluate(() => document.getElementById("findBar").getBoundingClientRect().top - document.getElementById("sideScroll").getBoundingClientRect().top);
+  ok2(Math.abs(fy) <= 1, "barra in cima anche scorrendo: " + fy);
+  await page.evaluate(() => { document.querySelectorAll("#side details").forEach(d => { d.open = false; }); document.getElementById("sideScroll").scrollTop = 0; });
+  // «/» porta il fuoco nella casella
+  await key(page, "/");
+  assert.strictEqual(await page.evaluate(() => document.activeElement.id), "findIn");
+  const state = () => page.evaluate(() => {
+    const F = window.__SA.find, h = F.hits[F.i];
+    return { n: F.hits.length, i: F.i, pos: document.getElementById("findPos").textContent, where: document.getElementById("findWhere").textContent,
+      cur: h ? (h.el.id || h.el.htmlFor || h.el.textContent.trim().slice(0, 30)) : null,
+      marks: [document.querySelectorAll("#side .find-hit").length, document.querySelectorAll("#side .find-cur").length] };
+  });
+  const run = async q => { await page.fill("#findIn", q); await page.press("#findIn", "Enter"); return state(); };
+  // «calibro»: più occorrenze, tutte evidenziate, la prima corrente e visibile, la sua sezione aperta
+  let st = await run("calibro");
+  ok2(st.n >= 4, "occorrenze di «calibro»: " + st.n);
+  assert.strictEqual(st.i, 0); assert.strictEqual(st.pos, "1 / " + st.n);
+  assert.deepStrictEqual(st.marks, [st.n - 1, 1]);
+  const ids = await page.evaluate(() => window.__SA.find.hits.map(h => h.el.htmlFor || h.el.id));
+  ok2(ids.includes("caliber"), "etichetta del campo calibro tra le occorrenze: " + ids);
+  const vis = async () => page.evaluate(() => {
+    const F = window.__SA.find, e = F.hits[F.i].el, r = e.getBoundingClientRect(), sc = document.getElementById("sideScroll").getBoundingClientRect(), fb = document.getElementById("findBar").getBoundingClientRect();
+    const d = e.closest("details");
+    return r.height > 0 && r.top >= fb.bottom - 2 && r.bottom <= sc.bottom + 2 && (!d || d.open || e.tagName === "SUMMARY");
+  });
+  ok2(await vis(), "occorrenza corrente visibile, sezione aperta");
+  // Invio avanza, Maiusc+Invio e ↑ tornano indietro, si riparte dall'inizio dopo l'ultima
+  await page.press("#findIn", "Enter"); assert.strictEqual((await state()).i, 1); ok2(await vis(), "seconda visibile");
+  await page.press("#findIn", "ArrowDown"); assert.strictEqual((await state()).i, 2);
+  await page.press("#findIn", "Shift+Enter"); assert.strictEqual((await state()).i, 1);
+  await page.press("#findIn", "ArrowUp"); await page.press("#findIn", "ArrowUp");
+  st = await state(); assert.strictEqual(st.i, st.n - 1, "da prima a ultima"); ok2(await vis(), "ultima visibile");
+  await page.click("#bFindNext"); assert.strictEqual((await state()).i, 0, "dopo l'ultima, la prima");
+  await page.click("#bFindPrev"); assert.strictEqual((await state()).i, st.n - 1);
+  // trovata solo nel suggerimento: è indicato, con sezione › riquadro
+  st = await run("barilotto");
+  assert.strictEqual(st.n, 1); assert.strictEqual(st.cur, "lensK1");
+  ok2(/Gestione immagine › Distorsione dell'obiettivo/.test(st.where) && /nel suggerimento: «.*barilotto/.test(st.where), st.where);
+  // senza accenti e maiuscole; il segnaposto del campo collegato vale come suggerimento
+  st = await run("VELOCITA"); assert.strictEqual(st.cur, "ld-wind");
+  // sezione nascosta dal layout: mostrata finché serve, il layout non cambia
+  st = await run("Esporta archivio");
+  assert.strictEqual(st.cur, "bZip"); ok2(await page.isVisible("#bZip"), "comando nella sezione nascosta visibile");
+  ok2(/sezione nascosta nel layout/.test(st.where), st.where);
+  assert.strictEqual(await page.evaluate(() => document.getElementById("sec-data").closest("section").hidden), true, "layout invariato");
+  await page.press("#findIn", "Escape");
+  assert.strictEqual(await page.inputValue("#findIn"), ""); assert.strictEqual(await page.isHidden("#bZip"), true, "di nuovo nascosta");
+  assert.deepStrictEqual((await state()).marks, [0, 0]);
+  await page.press("#findIn", "Escape"); assert.notStrictEqual(await page.evaluate(() => document.activeElement.id), "findIn", "secondo Esc: esce");
+  // voci non applicabili ora (riquadri nascosti) non contano; nessuna occorrenza = «nessuna»
+  st = await run("fattore di potenza");
+  assert.strictEqual(st.n, 0); assert.strictEqual(st.pos, "nessuna"); ok2(await page.$eval("#findPos", e => e.classList.contains("none")), "segnalata");
+  await page.evaluate(() => { document.getElementById("sec-score").open = true; });
+  await page.selectOption("#scoreTarget", "ipsc"); await page.dispatchEvent("#scoreTarget", "change");
+  st = await run("fattore di potenza"); assert.strictEqual(st.n, 1); assert.strictEqual(st.cur, "ipscPF");
+  // non cerca nei contenuti calcolati (risultati, tabella dei punti, elenco dei gruppi)
+  await page.selectOption("#scoreTarget", "none"); await page.dispatchEvent("#scoreTarget", "change");
+  await expandAll(page); await loadTarget(page); await setupGroup(page, POA, SHOTS); await expandAll(page);
+  await run("gruppo");
+  ok2(await page.evaluate(() => window.__SA.find.hits.every(h => !h.el.closest("#results, #points, #groups, #qiTop"))), "solo impostazioni");
+  // in inglese la ricerca segue la lingua (anche la posizione)
+  await page.evaluate(() => window.__SA.setLang("en"));
+  st = await run("caliber");
+  ok2(st.n >= 3 && !ITALIAN.test(st.where), "in inglese: " + st.n + " " + st.where);
+  st = await run("zzzz"); assert.strictEqual(st.pos, "none");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), []);
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
@@ -2796,7 +2900,7 @@ test("1.19.0: report PDF — font incorporati solo quando servono, testo russo e
       console.log("  ✓ " + t.name);
     } catch (e) {
       failed++;
-      console.log("  ✗ " + t.name + "\n      " + String(e && e.stack || e).split("\n").slice(0, 4).join("\n      "));
+      console.log("  ✗ " + t.name + "\n      " + String(e && e.stack || e).split("\n").slice(0, 9).join("\n      "));
     }
     await context.close();
   }

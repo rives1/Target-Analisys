@@ -159,6 +159,13 @@ const GROUPS = [
   await ev(() => { window.__SA.state.groups.forEach(g => window.__SA.setGroupCollapsed(g.id, true)); document.querySelectorAll("#results .res.sess").forEach(e => { e.style.display = "none"; }); });   // 1.18: gruppi chiusi
   await shotEl("#results", "68_gruppo_chiuso", { wait: 300 });
   await ev(() => { window.__SA.state.groups.forEach(g => window.__SA.setGroupCollapsed(g.id, false)); document.querySelectorAll("#results .res.sess").forEach(e => { e.style.display = ""; }); });
+  // 1.20: ricerca nelle impostazioni («calibro», seconda occorrenza: il campo nei Parametri di tiro)
+  await openOnly("none"); await page.fill("#findIn", "calibro"); await page.press("#findIn", "Enter");
+  await ev(() => { const F = window.__SA.find, j = F.hits.findIndex(h => h.el.htmlFor === "caliber"); if (j > 0) { F.i = j - 1; window.__SA.findStep(1); } });
+  await ev(() => document.activeElement.blur());
+  await page.mouse.move(5, 5);
+  { const c = await ev(() => { const a = document.getElementById("side").getBoundingClientRect(), b = document.getElementById("sec-params").getBoundingClientRect(); return { x: a.left, y: a.top, width: a.width, height: Math.min(b.bottom + 12, innerHeight) - a.top }; }); await shotPage("69_ricerca", c); }
+  await ev(() => window.__SA.findClear());
   await openOnly("sec-points"); await ev(() => document.documentElement.style.setProperty("--side-w", "760px")); await page.waitForTimeout(200);
   await shotEl("#sec-points", "16_tabella_punti"); await ev(() => document.documentElement.style.removeProperty("--side-w"));
   await openOnly("sec-orient"); await shotEl("#sec-orient", "17_orientamento");
