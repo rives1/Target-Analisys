@@ -757,6 +757,20 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   const lowLeft = Calc.errorWheel([{ id: 1, ...at(225) }, { id: 2, ...at(230) }], C0, 3, "R"), lowLeftL = Calc.errorWheel([{ id: 1, ...at(225) }, { id: 2, ...at(230) }], C0, 3, "L");
   eq(lowLeft.sectors.find(s => s.n).key, "jerk", "destrorso: basso a sinistra = strappo"); eq(lowLeftL.sectors.find(s => s.n).key, "grip", "mancino: specchiato");
   eq(Calc.errorWheel([{ id: 1, ...at(22.4) }], C0, 3).sectors[0].n, 1, "confine del settore delle ore 12"); eq(Calc.errorWheel([{ id: 1, ...at(22.6) }], C0, 3).sectors[1].n, 1, "oltre: ore 1–2");
+  // 1.22: stima del BC — dati sintetici dal modello stesso: il BC deve tornare; con le tabelle AB (G7 0,243) a 600 e 1000 m
+  const ob = { v0: 2550 * 0.3048, model: "G7", sightH: 0.07, zero: 100, atm: Calc.atmosphere() };
+  const syn = Calc.trajectory({ ...ob, bc: 0.31, dists: [500, 900] });
+  const E1 = Calc.estimateBC(ob, syn.rows.map(r => ({ d: r.x, mil: r.vMil, sig: 0.05 })));
+  near(E1.bc, 0.31, 0.002, "BC ricostruito dai dati sintetici"); ok(E1.chi2 < 1e-3, "residui nulli");
+  ok(E1.rows.every(r => Math.abs(r.bcAlone - 0.31) < 0.003), "BC per distanza coerente"); ok(E1.rows.every(r => r.sens < 0), "più BC → meno alzo");
+  const E2 = Calc.estimateBC(ob, [{ d: 600, mil: 5.6, sig: 0.05 }, { d: 1000, mil: 14.74, sig: 0.05 }]);
+  near(E2.bc, 0.243, 0.004, "BC dalle tabelle AB (G7 0,243)"); ok(E2.relSig < 0.02, "a 600–1000 m il BC è ben determinato");
+  const E3 = Calc.estimateBC(ob, [{ d: 150, mil: 0.3, sig: 0.05 }, { d: 200, mil: 0.61, sig: 0.05 }]);
+  ok(E3.relSig > 0.1, "a 150–200 m il BC è poco determinato");
+  const E4 = Calc.estimateBC(ob, [{ d: 600, mil: 5.6 * 1.05, sig: 0.05 }, { d: 1000, mil: 14.74, sig: 0.05 }]);
+  ok(E4.chi2 > 4 && Math.abs(E4.rows[0].bcAlone - E4.rows[1].bcAlone) > 0.01, "osservazioni incoerenti → χ² alto, BC per distanza diversi");
+  near(E4.relSig, E4.relSigRaw * Math.sqrt(E4.chi2), 1e-9, "incertezza allargata col fattore di Birge"); eq(E2.birge, 1, "dati coerenti: nessun allargamento");
+  eq(Calc.estimateBC({ ...ob, v0: 0 }, [{ d: 600, mil: 5.6, sig: 0.05 }]), null, "senza V0 → null");
 }
 
 console.log(`OK — ${passed} verifiche superate`);

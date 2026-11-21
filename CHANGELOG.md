@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.22.0] - 2026-11-21
+### Aggiunto
+- **Modalità Esperto / Base** (menu in cima al pannello, ricordata nel browser, predefinita Esperto): in Base i Risultati
+  mostrano solo group size (valore e angolo), correzione (con dope) e punteggio; nascosti raggio medio, CEP/R95/R99,
+  forma, stabilità, vento, GQI/TQI, baseline, incertezza di misura, diagnostica, le sezioni «Indice di qualità» e
+  «Probabilità di colpire», il GQI in cima al pannello e la pagina «Confronto tra gruppi» (pulsante e tasto C). La
+  ricerca ignora le sezioni nascoste. Report, CSV, Result Card e testo restano completi.
+- **Stima guidata del BC** (`Calc.estimateBC`, pulsante 🧮 accanto al coefficiente balistico): correzioni di alzo
+  osservate a due distanze (MIL o MOA, con incertezza; precompilabili dalla Dope Card della stessa munizione), V0 fissa;
+  BC ai minimi quadrati pesati con nuovo azzeramento a ogni prova, BC per singola distanza, sensibilità, incertezza
+  (allargata col fattore di Birge se le distanze sono incoerenti), attendibilità, avvisi su zona transonica e distanze
+  vicine all'azzeramento, confronto col BC inserito; «Usa questo BC» lo scrive nel gruppo (annullabile).
+- Help tecnico: sezione «Stima del BC».
+### Modificato
+- **Pulsante ⊟** in cima al pannello: ora comprime/espande tutti i blocchi visibili del pannello (non più i gruppi).
+- **CSV**: tipi distinti nel nome, `ShAn-CSVShots-…` e `ShAn-CSVGroups-…`.
+- **Guida rapida e scorciatoie** riscritta per flusso di lavoro (9 passi, pannello, scorciatoie per categoria), senza le
+  novità per versione; tolte dai dizionari EN/RU le voci della guida precedente.
+
 ## [1.21.0] - 2026-11-21
 ### Aggiunto
 - **Dati di arma e munizione per gruppo** (Ricarica e condizioni): riquadro «Arma» (nome, altezza dell'ottica con

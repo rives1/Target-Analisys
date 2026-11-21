@@ -317,7 +317,7 @@ test("export CSV dei fori e dei gruppi (; e virgola decimale)", async page => {
   await page.fill("#ld-notes", 'prova; "nuova" carica'); await page.dispatchEvent("#ld-notes", "change");
   await page.evaluate(() => { window.showSaveFilePicker = undefined; });
   const f = await download(page, "#bCsvShots");
-  assert.match(f.name, /^ShAn-CSV- - -\d{8}-\d{4}\.csv$/);
+  assert.match(f.name, /^ShAn-CSVShots- - -\d{8}-\d{4}\.csv$/);
   assert.ok(f.text.startsWith("\uFEFF"), "BOM UTF-8");
   assert.ok(f.text.includes("\r\n") && !/[^\r]\n/.test(f.text), "righe CRLF");
   const R = parseCsv(f.text.slice(1));
@@ -745,7 +745,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
   // CSV in formato inglese: virgola come separatore, punto decimale
   const f = await download(page, "#bCsvShots");
-  assert.match(f.name, /^ShAn-CSV- - -\d{8}-\d{4}\.csv$/);
+  assert.match(f.name, /^ShAn-CSVShots- - -\d{8}-\d{4}\.csv$/);
   const R = parseCsv(f.text.slice(1), ",");
   ok2(R.length === 9 && R.every(r => r.length === R[0].length), "8 fori + intestazione, colonne allineate");
   const col = n => R[0].indexOf(n);
@@ -2900,7 +2900,7 @@ test("1.21.0: arma, BC e velocità nel gruppo e nei profili; nomi dei file ShAn;
   const [dl] = await Promise.all([page.waitForEvent("download"), page.keyboard.press("Control+s")]);
   assert.match(dl.suggestedFilename(), /^ShAn-Session-Tikka T3x-Lapua 155-\d{8}-\d{4}\.zip$/);
   const f = await download(page, "#bCsvGroups");
-  assert.match(f.name, /^ShAn-CSV-Tikka T3x-Lapua 155-\d{8}-\d{4}\.csv$/);
+  assert.match(f.name, /^ShAn-CSVGroups-Tikka T3x-Lapua 155-\d{8}-\d{4}\.csv$/);
   ok2(/Arma/.test(f.text.split("\n")[0]) && f.text.includes("Tikka T3x") && f.text.includes("Lapua 155"), "CSV dei gruppi con arma e profilo");
   // dati cambiati: il profilo non vale più (spazio nel nome); riapplicato torna
   await setField(page, "#ld-powder", "N150");
@@ -2919,12 +2919,13 @@ test("1.21.0: arma, BC e velocità nel gruppo e nei profili; nomi dei file ShAn;
   // blocco Dati: sessione prima di tutto, ZIP in blu, Result Card no
   assert.strictEqual(await page.$eval("#sec-data .subsec", e => e.id), "ss-session");
   ok2(await page.$eval("#bSaveZip", e => e.classList.contains("primary")) && !(await page.$eval("#bCardPng", e => e.classList.contains("primary"))), "colori dei pulsanti");
-  // chiudi/apri tutti i gruppi dal pulsante in cima al pannello
-  await page.click("#bGrpFold");
-  assert.deepStrictEqual(await page.$$eval("#results .res[data-gid]", bs => bs.map(b => b.classList.contains("collapsed"))), [true, true]);
-  assert.strictEqual((await page.textContent("#bGrpFold")).trim(), "⊞");
-  await page.click("#bGrpFold");
-  assert.deepStrictEqual(await page.$$eval("#results .res[data-gid]", bs => bs.map(b => b.classList.contains("collapsed"))), [false, false]);
+  // 1.22: il pulsante in cima al pannello comprime/espande tutti i blocchi
+  await page.click("#bSecFold");
+  ok2(await page.$$eval("#sideScroll > section:not([hidden]) > details.box", ds => ds.every(d => !d.open)), "tutti i blocchi compressi");
+  assert.strictEqual((await page.textContent("#bSecFold")).trim(), "⊞");
+  await page.click("#bSecFold");
+  ok2(await page.$$eval("#sideScroll > section:not([hidden]) > details.box", ds => ds.every(d => d.open)), "tutti i blocchi espansi");
+  assert.strictEqual((await page.textContent("#bSecFold")).trim(), "⊟");
 });
 
 test("1.21.0: pagine separate, calcolatore balistico e Monte Carlo nel confronto", async page => {
@@ -2990,6 +2991,85 @@ test("1.21.0: ruota degli errori (pistola) sulla foto e nella pagina del gruppo"
   await page.selectOption("#diagHand2", "L");
   assert.strictEqual(await page.inputValue("#diagHand"), "L", "mano sincronizzata con il pannello");
   ok2(/Ore 4–5 · Strappo del grilletto/.test(await page.textContent("#diagInfo")), "mancino: stessa causa, posizione specchiata");
+});
+
+test("1.22.0: Modalità Base, blocchi comprimibili, guida senza novità", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await expandAll(page);
+  const keys = () => page.$$eval("#results .res[data-gid] .rcard", cs => cs.map(c => c.dataset.key));
+  ok2((await keys()).includes("mr") && (await keys()).includes("gqi"), "Esperto: tutte le card");
+  ok2(!/Novità|New in/.test(await page.textContent("#sec-guide")), "guida senza le novità per versione");
+  ok2(/1\. Carica la foto/.test(await page.textContent("#sec-guide")) && /Scorciatoie – strumenti/.test(await page.textContent("#sec-guide")), "guida per flusso di lavoro");
+  await page.selectOption("#uiModeSel", "basic");
+  assert.deepStrictEqual(await keys(), ["es", "corr"], "Base: solo group size e correzione");
+  ok2(await page.isHidden("#sec-quality") && await page.isHidden("#sec-hit") && await page.isHidden("#bCompare") && await page.isHidden("#qiTop"), "Base: Qualità, Probabilità, Confronto nascosti");
+  ok2(!/raggio medio/.test(await page.textContent("#results .resg-sum")), "riga riassuntiva senza raggio medio");
+  await key(page, "c");
+  ok2(!(await page.evaluate(() => window.__SA.anaOpen())), "C non apre il confronto in Base");
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  ok2(await page.isHidden("#bAnaSwitch"), "niente pulsante verso il confronto"); await key(page, "Escape");
+  await page.fill("#findIn", "GQI"); await page.dispatchEvent("#findIn", "input"); await page.waitForTimeout(300);
+  ok2(await page.evaluate(() => window.__SA.find.hits.every(h => !h.el.closest(".xp-only"))), "la ricerca ignora le sezioni nascoste");
+  await page.fill("#findIn", ""); await page.dispatchEvent("#findIn", "input");
+  // gli export restano completi
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const f = await download(page, "#bCsvGroups");
+  assert.match(f.name, /^ShAn-CSVGroups- - -\d{8}-\d{4}\.csv$/);
+  ok2(/CEP/.test(f.text.split("\n")[0]) && /GQI/.test(f.text.split("\n")[0]), "CSV dei gruppi completo anche in Base");
+  ok2(await page.evaluate(() => localStorage.getItem("shootAnalyzer.uiMode")) === "basic", "scelta ricordata");
+  // ⊟ in Base agisce sui blocchi visibili
+  await page.click("#bSecFold");
+  ok2(await page.$$eval("#sideScroll > section:not([hidden]) > details.box", ds => ds.filter(d => d.offsetParent).every(d => !d.open)), "blocchi compressi");
+  await page.click("#bSecFold");
+  await page.selectOption("#uiModeSel", "expert");
+  ok2((await keys()).includes("mr") && !(await page.isHidden("#sec-quality")), "di nuovo Esperto");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
+test("1.22.0: stima guidata del BC", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await expandAll(page);
+  await page.click("#bBcWiz");
+  ok2(await page.isVisible("#bcWiz"), "finestra aperta");
+  ok2(/Mancano .*velocità iniziale, altezza ottica, azzeramento/.test(await page.textContent("#bcWizInfo")) || /Mancano .*velocità iniziale/.test(await page.textContent("#bcWizInfo")), "dati mancanti: " + await page.textContent("#bcWizInfo"));
+  await page.click("#bBwClose");
+  await setField(page, "#ld-sightH", 70); await setField(page, "#ld-zero", 100); await setField(page, "#ld-bc", "0.243"); await page.selectOption("#ld-bcModel", "G7");
+  await setField(page, "#ld-v0", 777.24);
+  // correzioni «osservate» sintetiche con BC 0,300 G7 a 500 e 900 m
+  const obs = await page.evaluate(() => window.__SA.Calc.trajectory({ v0: 777.24, bc: 0.3, model: "G7", sightH: 0.07, zero: 100, atm: window.__SA.Calc.atmosphere(), dists: [500, 900] }).rows.map(r => +r.vMil.toFixed(2)));
+  await page.click("#bBcWiz");
+  assert.strictEqual(await page.inputValue("#bwUnit"), "MIL");
+  await setField(page, "#bwD1", 500); await setField(page, "#bwC1", obs[0]); await setField(page, "#bwD2", 900); await setField(page, "#bwC2", obs[1]);
+  const t = await page.textContent("#bcWizOut");
+  ok2(/BC stimato 0,(299|300|301) G7/.test(t) && /inserito 0,243 → \+2\d,\d%/.test(t) && /Attendibilità: buona/.test(t), "stima: " + t.slice(0, 300));
+  assert.strictEqual(await page.locator("#bcWizOut table.cmp tbody tr").count(), 2);
+  // conversione dell'unità: i valori diventano MOA
+  await page.focus("#bwUnit"); await page.selectOption("#bwUnit", "MOA");
+  ok2(Math.abs(+(await page.inputValue("#bwC1")) - obs[0] * 3.4377) < 0.02, "correzione convertita in MOA");
+  ok2(/BC stimato 0,(299|300|301) G7/.test(await page.textContent("#bcWizOut")), "stessa stima in MOA");
+  // distanze corte: poco affidabile
+  await page.selectOption("#bwUnit", "MIL");
+  await setField(page, "#bwD1", 150); await setField(page, "#bwC1", 0.3); await setField(page, "#bwD2", 200); await setField(page, "#bwC2", 0.6);
+  ok2(/poco affidabile/.test(await page.textContent("#bcWizOut")), "distanze corte segnalate");
+  await setField(page, "#bwD1", 500); await setField(page, "#bwC1", obs[0]); await setField(page, "#bwD2", 900); await setField(page, "#bwC2", obs[1]);
+  for (const l of ["en", "ru"]) { await page.evaluate(l => { window.__SA.setLang(l); window.__SA.bwRun(); }, l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => { window.__SA.setLang("it"); window.__SA.bwRun(); });
+  await page.click("#bBwUse");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].load.bc), "0.3");
+  ok2(/inserito 0,300 → [+−]?0,\d%/.test(await page.textContent("#bcWizOut")), "dopo «Usa» il BC inserito coincide");
+  await key(page, "Escape"); ok2(await page.isHidden("#bcWiz"), "Esc chiude");
+  await page.keyboard.press("Control+z");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].load.bc), "0.243", "annullabile");
+  // dalla Dope Card: il gruppo a 100 m con i click
+  for (let i = 0; i < 5; i++) await setDialCell(page, i, "dv", 10);
+  for (const f of ["D1", "C1", "D2", "C2"]) await page.evaluate(id => { document.getElementById(id).value = ""; }, "bw" + f);
+  await page.click("#bBcWiz");
+  assert.strictEqual(await page.inputValue("#bwD1"), "100", "distanza presa dalla dope");
+  ok2(/vicina all'azzeramento/.test(await page.textContent("#bcWizOut")), "avviso: distanza dell'azzeramento");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

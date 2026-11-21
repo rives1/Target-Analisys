@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.21.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.22.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -70,7 +70,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Calcolatore balistico** (1.21): modello a massa puntiforme con funzioni G1/G7 standard, atmosfera dai dati del gruppo, vento laterale; caduta e deriva a una distanza qualsiasi e confronto con la dope card misurata. Dati in **Ricarica e condizioni**: arma (nome, altezza ottica, azzeramento), BC con modello, velocità iniziale e SD (anche nei profili).
 - **Monte Carlo della velocità** (1.21): group size atteso per distanza (totale, solo angolo, solo velocità) e rosata simulata.
 - **Ruota degli errori per pistola** (1.21, indicativa): sulla foto e come grafico interattivo, destrorso/mancino.
-- **Nomi dei file** (1.21): `ShAn-<tipo>-<arma>-<profilo>-AAAAMMGG-hhmm` (Session, SessionDB, ResCar, PDFReport, CSV, Profiles, ResTxt, DopeCard, Reticle, TestTarget); campi vuoti = spazio. Il cono di dispersione è stato tolto (codice commentato).
+- **Nomi dei file** (1.21): `ShAn-<tipo>-<arma>-<profilo>-AAAAMMGG-hhmm` (Session, SessionDB, ResCar, PDFReport, CSVShots, CSVGroups, Profiles, ResTxt, DopeCard, Reticle, TestTarget); campi vuoti = spazio. Il cono di dispersione è stato tolto (codice commentato).
+- **Modalità Base / Esperto** (1.22): in Base restano group size, correzione e punteggio; Qualità, Probabilità e Confronto sono nascosti. Cambia solo la visualizzazione: report, CSV e Result Card restano completi.
+- **Stima guidata del BC** (1.22, pulsante 🧮 accanto al BC): dalle correzioni di alzo osservate a due distanze (anche dalla Dope Card) ricava il BC con la V0 fissa, con incertezza, coerenza tra le distanze e confronto col BC inserito.
+- **⊟ in cima al pannello** (1.22): comprime o espande tutti i blocchi. CSV con nomi distinti: `CSVShots` e `CSVGroups`.
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.
