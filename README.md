@@ -7,11 +7,11 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.20.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.21.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
-Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.20.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.20.pdf).
+Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Manuale_Shoot_Analyzer_v1.20.pdf`](docs/manuale/Manuale_Shoot_Analyzer_v1.20.pdf) (aggiornato alla 1.20: per decisione dell'utente il manuale non segue più ogni versione; le novità successive sono nel [CHANGELOG](CHANGELOG.md), nella Guida rapida e nell'help tecnico).
 
 - **Online**: apri https://rives1.github.io/Target-Analisys/
 - **Offline**: scarica `src/index.html` e aprilo con doppio clic. Il file è l'intera applicazione: si può copiare su una chiavetta o inviare per email.
@@ -28,7 +28,7 @@ Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Man
 2. **Scala**: clicca due punti a distanza nota, il più lontani possibile, e inserisci il valore.
 3. **Mira**: clicca il punto mirato. **Foro**: clicca il centro di ogni foro (la lente 🔍 aiuta; con **🧲 Snap** il punto si aggancia al centro del foro). Nella tabella dei punti puoi segnare i **click di alzo e brandeggio** impostati per ogni foro.
 4. Imposta distanza di tiro (ogni gruppo ha la sua), calibro (elenco o valore libero) e valore del click del mirino.
-5. Leggi risultati e correzione; apri **📊 Grafici e confronto tra gruppi** (in fondo al pannello) per i grafici e il confronto; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (JSON).
+5. Leggi risultati e correzione; apri **📊 Grafici del gruppo** (tasto `A`) o **📈 Confronto tra gruppi** (tasto `C`), in fondo al pannello; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (**ZIP**, `Ctrl+S`).
 
 Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i dati di ricarica e condizioni del gruppo attivo). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
 
@@ -67,7 +67,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Etichetta del group size** accanto a ogni gruppo sull'immagine e nella Result Card.
 - **Sagome**: IPSC (A/C/D, minor/major), IDPA (punti persi), silhouette metalliche (pieno formato, 1/2, 1/5), zona vitale; spostabili e ruotabili sulla foto, usate per punteggio e probabilità di colpire. **Punteggio decimale ISSF** (fino a 10,9).
 - **Correlazioni ricarica/condizioni**: alzo vs carica e temperatura, brandeggio vs vento trasversale, V-spread vs carica e temperatura (regressione con IC della pendenza); **ladder/OCW** con carica per singolo foro, senza «nodi» automatici.
-- **Cono di dispersione**: lo stesso gruppo a distanze diverse (mappa 2D e cono 3D con piani di sezione), angolo costante, entro 2 volte la distanza tirata.
+- **Calcolatore balistico** (1.21): modello a massa puntiforme con funzioni G1/G7 standard, atmosfera dai dati del gruppo, vento laterale; caduta e deriva a una distanza qualsiasi e confronto con la dope card misurata. Dati in **Ricarica e condizioni**: arma (nome, altezza ottica, azzeramento), BC con modello, velocità iniziale e SD (anche nei profili).
+- **Monte Carlo della velocità** (1.21): group size atteso per distanza (totale, solo angolo, solo velocità) e rosata simulata.
+- **Ruota degli errori per pistola** (1.21, indicativa): sulla foto e come grafico interattivo, destrorso/mancino.
+- **Nomi dei file** (1.21): `ShAn-<tipo>-<arma>-<profilo>-AAAAMMGG-hhmm` (Session, SessionDB, ResCar, PDFReport, CSV, Profiles, ResTxt, DopeCard, Reticle, TestTarget); campi vuoti = spazio. Il cono di dispersione è stato tolto (codice commentato).
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.
@@ -104,14 +107,15 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 Trascina un punto per spostarlo · tasto destro su un punto = elimina · `Alt`+clic = foro sopra un punto esistente ·
 rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfondo o tasto centrale = pan.
 `1`–`6` strumenti (`5` = raddrizza, `6` = prospettiva, `Esc` annulla) · `Ctrl+Z` / `Ctrl+Y` undo/redo · `Canc` elimina il punto selezionato · `Backspace` elimina l'ultimo ·
-`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici e confronto · `H` help tecnico · `Ctrl+S` salva · `Ctrl+O` apri foto ·
+`X` escludi/includi il foro selezionato · `F` adatta · `L` lente · `G` griglia · `T` tema · `A` grafici del gruppo · `C` confronto tra gruppi · `H` help tecnico · `Ctrl+S` salva la sessione ZIP · `/` cerca un'impostazione · `Ctrl+O` apri foto ·
 `R` righello · `N` nota · `D` finestra di dettaglio · `K` blocca/sblocca l'elemento selezionato · `+` / `−` zoom.
 
 ### Limiti
 
 - La correzione prospettica richiede un rettangolo reale di dimensioni note nella foto e un bersaglio piano: non corregge un foglio piegato o ondulato. La distorsione dell'obiettivo (dalla 1.10.0) è corretta solo nella componente radiale (k1, k2), calibrata da linee dritte cliccate dall'utente.
 - Sagome: contorni IPSC Mini, zona C IPSC, collo/spalle/zona −1 IDPA e silhouette metalliche ricostruiti dai disegni (approssimati, dichiarato nell'app); taglie della zona vitale indicative.
-- Cono di dispersione: modello ad angolo costante, limitato a 2 volte la distanza più lunga tirata; niente balistica.
+- Calcolatore balistico semplificato: niente spin drift, Coriolis, angolo di tiro, salto aerodinamico; BC del produttore e pressione da intendere come pressione della stazione; meno affidabile sotto Mach 1,2. Il Monte Carlo è un limite inferiore della dispersione reale.
+- Ruota degli errori: euristica per pistola, le tabelle diffuse non concordano tutte.
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
 - Freccia e correzione virtuale valgono alla distanza del gruppo e mostrano solo lo spostamento del centro: il gruppo successivo avrà comunque un centro casuale. La colonna «Effetto ES / RM» descrive il gruppo, non è un criterio di esclusione.

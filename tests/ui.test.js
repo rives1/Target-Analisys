@@ -206,6 +206,9 @@ test("vista a schermo intero: grafici e confronto tra gruppi", async page => {
   await page.click("#bAnalysis");
   assert.ok(await page.isVisible("#anaView"));
   assert.ok(await page.evaluate(() => document.getElementById("chScatter").width > 0), "grafico a dispersione disegnato");
+  assert.ok(await page.isHidden("#cmpBox"), "1.21.0: il confronto è in un'altra pagina");
+  await page.click("#bAnaSwitch");
+  assert.ok(await page.isVisible("#cmpBox") && await page.isHidden("#chartsBox"), "pagina del confronto");
   assert.ok(await page.evaluate(() => document.getElementById("chTrend").width > 0), "andamento disegnato");
   assert.strictEqual(await page.locator("#cmpBody table.cmp tbody tr").count(), 2);
   // le scorciatoie dell'immagine sono disattivate mentre la vista è aperta
@@ -219,7 +222,9 @@ test("vista a schermo intero: grafici e confronto tra gruppi", async page => {
   await page.keyboard.press("Escape");
   assert.ok(await page.isHidden("#anaView"));
   await key(page, "a");
-  assert.ok(await page.isVisible("#anaView"), "tasto A");
+  assert.ok(await page.isVisible("#anaView") && await page.isVisible("#chartsBox"), "tasto A");
+  await key(page, "c");
+  assert.ok(await page.isVisible("#cmpBox") && await page.isHidden("#chartsBox"), "tasto C dentro la vista");
   await page.click("#bAnaClose");
   assert.ok(await page.isHidden("#anaView"));
   // il pulsante resta visibile in fondo al pannello anche scorrendo
@@ -250,12 +255,12 @@ test("Result Card PNG e testo con foto ruotata", async page => {
   await setField(page, "#rotDeg", 7.5);
   await page.evaluate(() => { window.showSaveFilePicker = undefined; });   // download diretto, senza dialog
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
-  assert.match(dl.suggestedFilename(), /^bersaglio_Gruppo_1_card_\d{4}-\d\d-\d\d--\d\d-\d\d\.png$/);
+  assert.match(dl.suggestedFilename(), /^ShAn-ResCar- - -\d{8}-\d{4}\.png$/);
   await page.click("#bAddGroup"); await clickAt(page, { x: 300, y: 400 });
   for (const q of [{ x: 330, y: 380 }, { x: 345, y: 395 }]) await clickAt(page, q);
   await page.selectOption("#cardScope", "all");
   const [dl2] = await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
-  assert.match(dl2.suggestedFilename(), /tutti_i_gruppi_card_/);
+  assert.match(dl2.suggestedFilename(), /^ShAn-ResCar-/);
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Foto ruotata di 7,50° in senso orario/);
 });
 
@@ -312,7 +317,7 @@ test("export CSV dei fori e dei gruppi (; e virgola decimale)", async page => {
   await page.fill("#ld-notes", 'prova; "nuova" carica'); await page.dispatchEvent("#ld-notes", "change");
   await page.evaluate(() => { window.showSaveFilePicker = undefined; });
   const f = await download(page, "#bCsvShots");
-  assert.match(f.name, /^bersaglio_fori_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  assert.match(f.name, /^ShAn-CSV- - -\d{8}-\d{4}\.csv$/);
   assert.ok(f.text.startsWith("\uFEFF"), "BOM UTF-8");
   assert.ok(f.text.includes("\r\n") && !/[^\r]\n/.test(f.text), "righe CRLF");
   const R = parseCsv(f.text.slice(1));
@@ -627,7 +632,7 @@ test("archivio delle sessioni ed esportazione ZIP", async page => {
   await page.setInputFiles("#fArch", { name: "vecchia.json", mimeType: "application/json", buffer: Buffer.from(old) });
   await page.waitForFunction(() => /^3 sessioni/.test(document.getElementById("archiveInfo").textContent), null, { timeout: 5000 });
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bZip")]);
-  assert.match(dl.suggestedFilename(), /^shoot-analyzer_archivio_\d{4}-\d\d-\d\d--\d\d-\d\d\.zip$/);
+  assert.match(dl.suggestedFilename(), /^ShAn-SessionDB- - -\d{8}-\d{4}\.zip$/);
   const Z = readZip(require("fs").readFileSync(await dl.path()));
   const names = Object.keys(Z);
   ok2(names.includes("LEGGIMI.txt") && names.includes("riepilogo_gruppi.csv"), "file alla radice");
@@ -740,7 +745,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
   // CSV in formato inglese: virgola come separatore, punto decimale
   const f = await download(page, "#bCsvShots");
-  assert.match(f.name, /^bersaglio_shots_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  assert.match(f.name, /^ShAn-CSV- - -\d{8}-\d{4}\.csv$/);
   const R = parseCsv(f.text.slice(1), ",");
   ok2(R.length === 9 && R.every(r => r.length === R[0].length), "8 fori + intestazione, colonne allineate");
   const col = n => R[0].indexOf(n);
@@ -756,7 +761,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await Promise.all([page.waitForEvent("download"), page.click("#bSave")]);
   await page.waitForFunction(() => /^1 session archived/.test(document.getElementById("archiveInfo").textContent), null, { timeout: 5000 });
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bZip")]);
-  assert.match(dl.suggestedFilename(), /^shoot-analyzer_archive_/);
+  assert.match(dl.suggestedFilename(), /^ShAn-SessionDB-/);
   const Z = readZip(require("fs").readFileSync(await dl.path()));
   const names = Object.keys(Z);
   ok2(names.includes("README.txt") && names.includes("groups_summary.csv"), "file alla radice in inglese");
@@ -764,7 +769,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   ok2(/CSV in English format/.test(Z["README.txt"].toString("utf8")), "LEGGIMI in inglese");
   // report PDF in inglese (le chiavi del report passano dal dizionario)
   const [pdf] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
-  assert.match(pdf.suggestedFilename(), /_report_.*\.pdf$/);
+  assert.match(pdf.suggestedFilename(), /^ShAn-PDFReport-.*\.pdf$/);
   // help tecnico: resta in italiano, con avviso
   await key(page, "h");
   await page.waitForFunction(() => window.__SA.helpOpen());
@@ -914,7 +919,7 @@ test("dope card: righe per distanza, filtro munizione, CSV e PNG", async page =>
   await key(page, "3"); await clickAt(page, { x: 600, y: 400 });
   for (const p of [{ x: 600, y: 380 }, { x: 610, y: 395 }]) await clickAt(page, p);
   await page.click("#groups .g:first-child .dot");   // gruppo attivo = prima munizione
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   assert.strictEqual(await page.inputValue("#dopeLoad"), "SMK 168 · N140 · 44.5 gr", "munizione del gruppo attivo");
   const rows = await page.$$eval("#dopeBody tbody tr", trs => trs.map(tr => [...tr.querySelectorAll("td")].map(td => td.textContent.trim())));
   assert.strictEqual(rows.length, 2, "due distanze per questa munizione");
@@ -928,13 +933,13 @@ test("dope card: righe per distanza, filtro munizione, CSV e PNG", async page =>
   assert.strictEqual(await page.inputValue("#dopeLoad"), "*", "la scelta dell'utente resta");
   await page.selectOption("#dopeLoad", "SMK 168 · N140 · 44.5 gr");
   const f = await download(page, "#bDopeCsv");
-  assert.match(f.name, /^dope_card_\d{4}-\d\d-\d\d--\d\d-\d\d\.csv$/);
+  assert.match(f.name, /^ShAn-DopeCard- - -\d{8}-\d{4}\.csv$/);
   ok2(!/"-?\d+,\d+"/.test(f.text), "in italiano i numeri con la virgola decimale non hanno virgolette");
   const C = parseCsv(f.text.slice(1));
   assert.strictEqual(C.length, 3, "CSV: intestazione + 2 righe " + JSON.stringify(C)); assert.strictEqual(C[0][0], "Distanza (m)");
   near(parseFloat(C[2][1].replace(",", ".")), exp[1], 0.006, "CSV: click di alzo a 200 m");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bDopePng")]);
-  assert.match(dl.suggestedFilename(), /^dope_card_.*\.png$/);
+  assert.match(dl.suggestedFilename(), /^ShAn-DopeCard-.*\.png$/);
   ok2(require("fs").statSync(await dl.path()).size > 3000, "PNG non vuoto");
   ok2(await page.isVisible("#chDope"), "grafico della dope");
 });
@@ -951,7 +956,7 @@ test("carica e precisione: CEP per carica con gruppi combinati e intervallo", as
   };
   await add("42.0", { x: 200, y: 100 });
   await add("43.0", { x: 560, y: 120 });
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
   assert.deepStrictEqual(L.levels.map(x => [x.charge, x.groups.length]), [[42, 2], [43, 1]], "42 e 42.0 sono la stessa carica; 2 gruppi combinati");
   // σ combinata = media delle s² pesata per ν (verifica indipendente)
@@ -1088,7 +1093,7 @@ test("precisione e seduta: salto dalle righe nei dati, livelli combinati, raggio
   await add("0.508", "mm", { x: 200, y: 100 });   // 0,508 mm = 0,020 in: stesso livello
   await add("0.040", "in", { x: 560, y: 120 });
   assert.strictEqual((await S(page)).g.load.jump, "0.040", "il nuovo gruppo copia il salto e lo si corregge");
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   await page.selectOption("#chgVar", "jump"); await page.selectOption("#chgMetric", "mr");
   const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
   assert.strictEqual(L.v, "jump"); assert.strictEqual(L.metric, "mr");
@@ -1131,7 +1136,7 @@ test("report PDF: file valido, una o più pagine, nome e contenuto", async page 
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100); await setField(page, "#ld-charge", "44.5"); await setField(page, "#ld-notes", "nota per il report");
   const [d1] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bPdf")]);
-  assert.match(d1.suggestedFilename(), /^bersaglio_report_\d{4}-\d\d-\d\d--\d\d-\d\d\.pdf$/);
+  assert.match(d1.suggestedFilename(), /^ShAn-PDFReport- - -\d{8}-\d{4}\.pdf$/);
   const b1 = require("fs").readFileSync(await d1.path());
   const p1 = checkPdf(b1);
   ok2(p1 >= 2 && p1 <= 5, `gruppo attivo: ${p1} pagine`);
@@ -1197,7 +1202,7 @@ test("confronto visivo tra rosate: sovrapposte, affiancate, origine e unità", a
   await setField(page, "#shotDist", 100);
   await page.click("#bAddGroup"); await key(page, "3"); await clickAt(page, { x: 300, y: 400 });
   for (const q of [{ x: 330, y: 380 }, { x: 350, y: 395 }, { x: 320, y: 410 }]) await clickAt(page, q);
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   assert.strictEqual((await page.$$("#visList input[type=checkbox]")).length, 2, "un gruppo per riga");
   assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.vis.length), 5 + 1 + 3 + 1, "fori e centri di entrambi");
   // origine = mira, mm: il primo foro è 120 px = 30 mm a destra e 2,5 mm sopra la mira
@@ -1246,7 +1251,7 @@ test("reticolo e holdover: tacche, torrette, SFP, MOA, direzione e PNG", async p
   await page.uncheck("#rtWind"); r = await cells(); near(r[2], 0, 1e-9, "senza brandeggio");
   ok2(/sotto il centro|sopra il centro/.test(await page.textContent("#rtBody")), "istruzione a parole");
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bRtPng")]);
-  assert.match(dl.suggestedFilename(), /^reticolo_.*\.png$/);
+  assert.match(dl.suggestedFilename(), /^ShAn-Reticle-.*\.png$/);
   ok2(require("fs").statSync(await dl.path()).size > 5000, "PNG non vuoto");
 });
 
@@ -1256,7 +1261,7 @@ test("bersaglio di autoverifica: PDF, foto del bersaglio stampato, misura e veri
   const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bTtPdf")]);
   const code = +(await page.inputValue("#ttCode"));
   ok2(code >= 1000 && code <= 9999, "codice nuovo");
-  assert.strictEqual(dl.suggestedFilename(), `bersaglio_prova_SA-${code}.pdf`);
+  assert.match(dl.suggestedFilename(), /^ShAn-TestTarget- - -\d{8}-\d{4}\.pdf$/);
   const buf = require("fs").readFileSync(await dl.path());
   assert.strictEqual(checkPdf(buf, true), 1, "una pagina");
   ok2(buf.toString("latin1").includes("/Width 2480 /Height 3508"), "A4 a 300 dpi");
@@ -1372,7 +1377,7 @@ test("correlazioni ricarica/condizioni e ladder con carica per foro", async page
     for (let i = 1; i < 4; i++) { const g = JSON.parse(JSON.stringify(g0)); g.id = 500 + i; g.name = "C" + i; g.load.charge = String(43.5 + 0.5 * i).replace(".", ","); g.load.temp = String(10 + 5 * i);
       g.poa = { ...g0.poa }; g.shots = g0.shots.map((q, j) => ({ ...q, id: 600 + i * 10 + j, y: q.y - 8 * i })); st.groups.push(g); }
     S.commit(); });
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   let C = await page.evaluate(() => window.__SA.corData());
   assert.strictEqual(C.pts.length, 4, "4 gruppi");
   const exp = await page.evaluate(() => { const S = window.__SA, cc = S.calcContext(); const ys = S.state.groups.map(g => S.Calc.dope(g.shots, g.poa, { ...cc, distMm: 100000 }).v.mil);
@@ -1394,34 +1399,19 @@ test("correlazioni ricarica/condizioni e ladder con carica per foro", async page
   }
   const chs = await page.evaluate(() => window.__SA.state.groups.find(g => g.id === window.__SA.state.activeGroupId).shots.map(q => q.ch));
   assert.deepStrictEqual(chs.map(v => Math.round(v * 10) / 10), [44, 44.2, 44.4, 44.6, 44.8], "carica per foro salvata");
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
   await page.selectOption("#corPair", "ladder"); C = await page.evaluate(() => window.__SA.corData());
   assert.strictEqual(C.pts.filter(p => p.x >= 44 && p.x <= 44.81 && p.x !== 44.5 && p.x !== 45).length >= 5, true, "un punto per foro con la sua carica");
   ok2(/non indica «nodi»/.test(await page.textContent("#corBody")), "nessun nodo automatico");
 });
 
-test("cono di dispersione: σ angolare, distanze entro 2×, mappa e 3D ruotabile", async page => {
+test("1.21.0: cono di dispersione rimosso (codice commentato)", async page => {
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
-  await setField(page, "#shotDist", 100);
-  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
-  let C = await page.evaluate(() => window.__SA.coneData());
-  const sig = await page.evaluate(() => { const S = window.__SA, g = S.state.groups[0], d = S.Calc.dispersion(g.shots); return d.sigma / S.calcContext().pxPerMm / 100; });
-  near(C.sigma, sig, 1e-9, "σ in MIL = σ mm / distanza in m");
-  assert.deepStrictEqual(C.dists, [50, 100, 150, 200], "distanze automatiche: ½, 1, 1½, 2 volte");
-  await setField(page, "#coneDists", "100; 300; 150");
-  C = await page.evaluate(() => window.__SA.coneData());
-  assert.deepStrictEqual(C.dists, [100, 150], "oltre 2× esclusa"); assert.deepStrictEqual(C.dropped, [300]);
-  ok2(/Distanze escluse/.test(await page.textContent("#coneBody")), "avviso");
-  const t = await page.textContent("#coneBody"), R95 = 2 * Math.sqrt(-2 * Math.log(0.05)) * sig * 150;
-  ok2(t.includes(R95.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 })), "R95 a 150 m proporzionale alla distanza");
-  ok2((await page.evaluate(() => window.__SA.CH.hits.conemap.length)) === 10, "5 fori × 2 distanze");
-  await page.locator("#chCone3d").scrollIntoViewIfNeeded();
-  const b = await page.locator("#chCone3d").boundingBox(), az0 = await page.evaluate(() => window.__SA.VIEWCONE.az);
-  await page.mouse.move(b.x + 100, b.y + 100); await page.mouse.down(); await page.mouse.move(b.x + 180, b.y + 100, { steps: 3 }); await page.mouse.up();
-  ok2(await page.evaluate(() => window.__SA.VIEWCONE.az) !== az0, "trascinando il cono ruota");
-  await page.selectOption("#coneSrc", "load");
-  ok2(await page.evaluate(() => window.__SA.coneData().rows.length) >= 1, "gruppi della munizione");
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.locator("#coneBox, #chCone3d, #chConeMap").count(), 0, "nessun pannello del cono");
+  assert.strictEqual(await page.evaluate(() => typeof window.__SA.coneData), "undefined");
+  ok2(!/Cono di dispersione/.test(await page.textContent("#anaView")), "nessun titolo");
 });
 
 test("distorsione dell'obiettivo: calibrazione da linee, punti riportati, sessione e annulla", async page => {
@@ -2149,7 +2139,7 @@ test("1.15.0: differenze tra le configurazioni nel confronto", async page => {
   await page.click("#bAddGroup");   // copia i dati di ricarica
   await setField(page, "#ld-charge", "45"); await setField(page, "#shotDist", 200);
   await key(page, "3"); await clickAt(page, { x: 600, y: 400 }); for (const p of [{ x: 640, y: 420 }, { x: 650, y: 380 }, { x: 630, y: 400 }]) await clickAt(page, p);
-  await key(page, "a");
+  await key(page, "c");
   const box = await page.textContent("#cmpDiff");
   ok2(/Carica/.test(box) && /Distanza/.test(box), "carica e distanza diverse: " + box.slice(0, 200));
   ok2(!/Palla|Temperatura/.test(box), "palla e temperatura uguali: nascoste");
@@ -2187,7 +2177,7 @@ test("1.15.0 in inglese: note, blocco, righello, scala sulla foto, differenze se
   const side = await page.textContent("#side");
   ok2(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
   assert.match(await page.textContent("#notesList"), /Hole 2 · Group 1/);
-  await key(page, "a");
+  await key(page, "c");
   const diff = await page.textContent("#cmpDiff");
   assert.match(diff, /Charge/); ok2(!ITALIAN.test(diff), "differenze in inglese: " + diff);
   await key(page, "Escape");
@@ -2273,7 +2263,7 @@ test("1.16.0: GQI e TQI della sessione, ripetibilità, confronto, esportazioni, 
   ok2(await page.$('#results .rcard[data-key="stqi"] .qi-num'), "TQI di sessione");
   ok2(/Ripetibilità tra gruppi/.test(sess) && /Attesa per caso/.test(sess), "ripetibilità separata");
   // confronto: colonne GQI e TQI
-  await key(page, "a");
+  await key(page, "c");
   const head = await page.textContent("#cmpBody thead"); ok2(/GQI/.test(head) && /TQI/.test(head), "colonne nel confronto");
   await page.waitForTimeout(300);
   const qcells = await page.$$eval("#cmpBody tbody tr", trs => trs.map(tr => { const td = [...tr.children]; return td[td.length - 5].textContent + "|" + td[td.length - 4].textContent; }));
@@ -2317,7 +2307,7 @@ test("1.16.0: storico con valutazione originale, sessioni vecchie compatibili, i
   const h = await page.evaluate(() => window.__SA.cmpState.history.map(x => ({ orig: x.qiOrig, qi: x.qi })));
   ok2(h.length === 1 && h[0].orig && h[0].orig.from === "snapshot" && h[0].qi && h[0].qi.mr > 0, "valutazione originale dall'istantanea");
   await setField(page, "#qiMrRef", 1.0);
-  await key(page, "a");
+  await key(page, "c");
   assert.match(await page.textContent("#cmpBody tbody"), /orig\. \d+/, "storico: originale accanto al ricalcolo");
   ok2(Math.abs(await page.evaluate(() => window.__SA.cmpState.history[0].qiOrig.gqi) - h[0].orig.gqi) < 1e-12, "l'originale non viene riscritto");
   await key(page, "Escape");
@@ -2512,7 +2502,7 @@ test("1.17.0: baseline persistente — card, condizioni, sessione, browser", asy
   const other = await page.evaluate(() => window.__SA.baselineState().baseline.bid);
   await page.evaluate(t => window.__SA.loadSessionText(t), ses);
   assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), other, "non sostituita");
-  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__SA.openAnalysis("cmp")); await page.waitForTimeout(150);
   ok2(await page.isVisible("#bBaseFile"), "«Usa questa» proposto");
   await page.click("#bBaseFile");
   assert.strictEqual(await page.evaluate(() => window.__SA.baselineState().baseline.bid), B.bid);
@@ -2528,7 +2518,7 @@ test("1.17.0: selezione di un periodo nell'andamento — σ combinato contro tut
   const G = [[{ x: 560, y: 400 }, { x: 600, y: 420 }, { x: 540, y: 370 }, { x: 590, y: 360 }], [{ x: 250, y: 400 }, { x: 266, y: 408 }, { x: 240, y: 388 }], [{ x: 650, y: 520 }, { x: 668, y: 532 }, { x: 636, y: 512 }, { x: 660, y: 500 }]];
   for (const pts of G) { await page.click("#bAddGroup"); await clickAt(page, { x: pts[0].x - 60, y: pts[0].y }); for (const s of pts) await clickAt(page, s); }
   await page.evaluate(() => { const { state, commit } = window.__SA; state.groups.forEach((g, i) => { g.load.date = `2026-0${i + 1}-10`; }); commit(); });
-  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__SA.openAnalysis("cmp")); await page.waitForTimeout(150);
   // trascinamento sul grafico: dagli ultimi due punti
   await page.evaluate(() => document.getElementById("chTrend").scrollIntoView({ block: "center" }));
   const geo = await page.evaluate(() => { const r = document.getElementById("chTrend").getBoundingClientRect(), G = window.__SA.CH.trendGeom; return { x: r.left, y: r.top + r.height / 2, G }; });
@@ -2567,7 +2557,7 @@ test("1.17.0: inglese — coda di revisione, origine, baseline e periodo tradott
   for (const k of ["es", "mr", "gqi", "corr"]) { await page.evaluate(k => { const SA = window.__SA; SA.state.origin = null; SA.toggleOrigin(SA.state.groups[0].id, k); }, k); ok2(!ITALIAN.test(await page.textContent("#originText")), "origine " + k + ": " + await page.textContent("#originText")); }
   for (const id of ["caliber", "calDist", "shotDist", "markHand", "clickVal"]) { await page.focus("#" + id); await redraw(page); }
   await page.evaluate(() => document.activeElement.blur());
-  await page.evaluate(() => window.__SA.openAnalysis()); await page.waitForTimeout(150);
+  await page.evaluate(() => window.__SA.openAnalysis("cmp")); await page.waitForTimeout(150);
   await page.evaluate(() => window.__SA.setRange(1, 1));
   const txt = (await page.textContent("#sec-review")) + (await page.textContent("#results")) + (await page.textContent("#baseBox")) + (await page.textContent("#cmpRange"));
   ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
@@ -2853,7 +2843,8 @@ test("1.20.0: ricerca nelle impostazioni — occorrenze, navigazione, sezioni ch
   assert.strictEqual(st.n, 1); assert.strictEqual(st.cur, "lensK1");
   ok2(/Gestione immagine › Distorsione dell'obiettivo/.test(st.where) && /nel suggerimento: «.*barilotto/.test(st.where), st.where);
   // senza accenti e maiuscole; il segnaposto del campo collegato vale come suggerimento
-  st = await run("VELOCITA"); assert.strictEqual(st.cur, "ld-wind");
+  st = await run("VELOCITA");
+  { const ids = await page.evaluate(() => window.__SA.find.hits.map(h => h.el.htmlFor || h.el.id)); ok2(ids.includes("ld-wind") && ids.includes("ld-v0"), "anche dal segnaposto: " + ids); }
   // sezione nascosta dal layout: mostrata finché serve, il layout non cambia
   st = await run("Esporta archivio");
   assert.strictEqual(st.cur, "bZip"); ok2(await page.isVisible("#bZip"), "comando nella sezione nascosta visibile");
@@ -2880,6 +2871,125 @@ test("1.20.0: ricerca nelle impostazioni — occorrenze, navigazione, sezioni ch
   ok2(st.n >= 3 && !ITALIAN.test(st.where), "in inglese: " + st.n + " " + st.where);
   st = await run("zzzz"); assert.strictEqual(st.pos, "none");
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), []);
+});
+
+/* ------------------------------ 1.21.0 ------------------------------ */
+test("1.21.0: arma, BC e velocità nel gruppo e nei profili; nomi dei file ShAn; ZIP principale; chiudi tutti i gruppi", async page => {
+  page.on("dialog", d => d.accept());
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await expandAll(page);
+  // il riquadro «Arma» e i campi della munizione
+  assert.strictEqual(await page.$eval("#ld-weapon", e => e.closest(".subsec").id), "ss-weapon");
+  for (const id of ["ld-bc", "ld-bcModel", "ld-v0", "ld-v0Unit", "ld-v0sd"]) assert.strictEqual(await page.$eval("#" + id, e => e.closest(".subsec").id), "ss-ammo", id);
+  assert.strictEqual(await page.inputValue("#ld-bcModel"), "G1", "modello predefinito"); assert.strictEqual(await page.inputValue("#ld-v0Unit"), "m/s");
+  await setField(page, "#ld-weapon", "Tikka T3x"); await setField(page, "#ld-sightH", 45); await setField(page, "#ld-zero", 100);
+  await setField(page, "#ld-bc", "0.243"); await page.selectOption("#ld-bcModel", "G7"); await setField(page, "#ld-v0", 800); await setField(page, "#ld-v0sd", 8);
+  await page.selectOption("#ld-v0Unit", "fps");
+  assert.strictEqual((await page.textContent("#ldV0sdU")).trim(), "fps", "la SD segue l'unità della velocità");
+  await page.selectOption("#ld-v0Unit", "m/s");
+  const L = await page.evaluate(() => window.__SA.state.groups[0].load);
+  assert.deepStrictEqual([L.weapon, L.sightH, L.zero, L.bc, L.bcModel, L.v0, L.v0sd], ["Tikka T3x", "45", "100", "0.243", "G7", "800", "8"]);
+  // profilo: contiene arma e balistica; il nome del profilo entra nel nome dei file
+  await page.fill("#ldProfName", "Lapua 155"); await page.click("#bProfSave");
+  const P = await page.evaluate(() => JSON.parse(localStorage.getItem("shootAnalyzer.loadProfiles")));
+  ok2(P.length === 1 && P[0].weapon === "Tikka T3x" && P[0].bc === "0.243" && P[0].bcModel === "G7" && P[0].v0sd === "8", "profilo con arma e balistica");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].load.profile), "Lapua 155");
+  // Ctrl+S salva lo ZIP con il nome ShAn-Session-<arma>-<profilo>-AAAAMMGG-hhmm
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.keyboard.press("Control+s")]);
+  assert.match(dl.suggestedFilename(), /^ShAn-Session-Tikka T3x-Lapua 155-\d{8}-\d{4}\.zip$/);
+  const f = await download(page, "#bCsvGroups");
+  assert.match(f.name, /^ShAn-CSV-Tikka T3x-Lapua 155-\d{8}-\d{4}\.csv$/);
+  ok2(/Arma/.test(f.text.split("\n")[0]) && f.text.includes("Tikka T3x") && f.text.includes("Lapua 155"), "CSV dei gruppi con arma e profilo");
+  // dati cambiati: il profilo non vale più (spazio nel nome); riapplicato torna
+  await setField(page, "#ld-powder", "N150");
+  assert.strictEqual(await page.evaluate(() => window.__SA.groupProfileName(window.__SA.state.groups[0])), "");
+  assert.match(await page.evaluate(() => window.__SA.fileName("PDFReport", "pdf")), /^ShAn-PDFReport-Tikka T3x- -\d{8}-\d{4}\.pdf$/);
+  await page.selectOption("#ldProfile", "Lapua 155"); await page.dispatchEvent("#ldProfile", "change");
+  if (await page.isVisible("#bProfApply")) await page.click("#bProfApply");
+  assert.strictEqual(await page.evaluate(() => window.__SA.groupProfileName(window.__SA.state.groups[0])), "Lapua 155", "profilo riapplicato");
+  // caratteri non ammessi da Windows → spazi; nuovo gruppo eredita l'arma
+  await setField(page, "#ld-weapon", 'A/B:C*"x"');
+  assert.match(await page.evaluate(() => window.__SA.fileName("ResCar", "png")), /^ShAn-ResCar-A B C x- -\d{8}-\d{4}\.png$/);
+  await page.click("#bAddGroup");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[1].load.weapon), 'A/B:C*"x"', "il nuovo gruppo copia l'arma");
+  // riepilogo testuale e report
+  ok2((await page.evaluate(() => window.__SA.loadLines(window.__SA.state.groups[0]).map(r => r.join(": ")).join("\n"))).match(/Balistica: BC 0,243 G7 · V0 800 m\/s · SD 8 m\/s/), "riga balistica");
+  // blocco Dati: sessione prima di tutto, ZIP in blu, Result Card no
+  assert.strictEqual(await page.$eval("#sec-data .subsec", e => e.id), "ss-session");
+  ok2(await page.$eval("#bSaveZip", e => e.classList.contains("primary")) && !(await page.$eval("#bCardPng", e => e.classList.contains("primary"))), "colori dei pulsanti");
+  // chiudi/apri tutti i gruppi dal pulsante in cima al pannello
+  await page.click("#bGrpFold");
+  assert.deepStrictEqual(await page.$$eval("#results .res[data-gid]", bs => bs.map(b => b.classList.contains("collapsed"))), [true, true]);
+  assert.strictEqual((await page.textContent("#bGrpFold")).trim(), "⊞");
+  await page.click("#bGrpFold");
+  assert.deepStrictEqual(await page.$$eval("#results .res[data-gid]", bs => bs.map(b => b.classList.contains("collapsed"))), [false, false]);
+});
+
+test("1.21.0: pagine separate, calcolatore balistico e Monte Carlo nel confronto", async page => {
+  page.on("dialog", d => d.accept());
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await expandAll(page);
+  for (let i = 0; i < 5; i++) await setDialCell(page, i, "dv", 10);
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  ok2(/servono.*velocità iniziale, coefficiente balistico/.test(await page.textContent("#balBody")), "dati mancanti indicati");
+  ok2(await page.isHidden("#chartsBox") && await page.isHidden("#diagBox") && await page.isHidden("#holdBox"), "pagina del confronto senza i grafici del gruppo");
+  await key(page, "Escape");
+  await setField(page, "#ld-sightH", 70); await setField(page, "#ld-zero", 100); await setField(page, "#ld-bc", "0.243"); await page.selectOption("#ld-bcModel", "G7");
+  await setField(page, "#ld-v0", 777.24); await setField(page, "#ld-v0sd", 6);
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await setField(page, "#balDist", 600);
+  const t = await page.textContent("#balBody");
+  ok2(/Dati di «Gruppo 1»: V0 777 m\/s · BC 0,243 G7/.test(t) && /valori standard ICAO per temperatura, pressione, umidità/.test(t), "dati usati: " + t.slice(0, 200));
+  ok2(/A 600 m: caduta .* → alzo \+5,(59|6\d) MIL/.test(t), "stima a 600 m (≈ 5,6 MIL come la tabella AB): " + t);
+  assert.strictEqual(await page.locator("#balBody table.cmp tbody tr").count(), 1, "una riga di dope da confrontare");
+  ok2(await page.evaluate(() => document.getElementById("chBal").width > 0), "grafico disegnato");
+  // vento del gruppo: da ore 3 a 4 m/s → deriva a sinistra, brandeggio a destra
+  await key(page, "Escape"); await setField(page, "#ld-wind", 4); await page.click('#windDial g[data-h="3"]');
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  ok2(/deriva .* a sinistra → brandeggio \+/.test(await page.textContent("#balBody")), "deriva col vento");
+  // Monte Carlo
+  const mc = await page.evaluate(() => { const D = window.__SA.mcData(); return D.msg ? D.msg : { n: D.sim.rows.length, vel: D.sim.rows.map(r => r.esVel), ang: D.sigAng, pool: D.pool.sigma }; });
+  ok2(mc.n === 10 && mc.vel.every((v, i) => i === 0 || v >= mc.vel[i - 1]) && mc.ang > 0 && mc.ang <= mc.pool, "simulazione: " + JSON.stringify(mc));
+  await setField(page, "#mcAt", 450);
+  assert.strictEqual(await page.locator("#mcBody table.cmp tbody tr").count(), 11, "10 distanze + la rosata");
+  assert.strictEqual((await page.textContent("#mcAtLbl")).trim(), "450 m");
+  ok2(await page.evaluate(() => document.getElementById("chMC").width > 0 && document.getElementById("chMCRos").width > 0), "grafici Monte Carlo");
+  // inglese e russo: nessun testo senza traduzione nelle due pagine
+  for (const l of ["en", "ru"]) {
+    await page.evaluate(l => window.__SA.setLang(l), l);
+    await page.evaluate(() => { window.__SA.openAnalysis("group"); window.__SA.openAnalysis("cmp"); });
+    assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l);
+  }
+  await page.evaluate(() => window.__SA.setLang("en"));
+  ok2(!ITALIAN.test(await page.textContent("#balBox")) && !ITALIAN.test(await page.textContent("#mcBox")), "pannelli in inglese");
+});
+
+test("1.21.0: ruota degli errori (pistola) sulla foto e nella pagina del gruppo", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await expandAll(page);
+  const D = await page.evaluate(() => { const W = window.__SA.wheelData(window.__SA.state.groups[0], "poa", "R"); return { n: W.pts.length, inner: W.W.inner, sum: W.W.sectors.reduce((a, s) => a + s.n, 0), keys: W.W.sectors.map(s => s.n) }; });
+  assert.strictEqual(D.inner + D.sum, D.n, "ogni colpo in un settore o nella zona centrale");
+  const L = await page.evaluate(() => window.__SA.wheelData(window.__SA.state.groups[0], "poa", "L").W.sectors.map(s => s.n));
+  assert.deepStrictEqual(L, [D.keys[0], D.keys[7], D.keys[6], D.keys[5], D.keys[4], D.keys[3], D.keys[2], D.keys[1]], "mancino: specchiata");
+  // sovrapposta alla foto: cambia il disegno
+  const before = await page.evaluate(() => document.getElementById("canvas").toDataURL().length);
+  await page.check("#diagOn"); await page.waitForTimeout(200);
+  ok2(await page.evaluate(() => document.getElementById("canvas").toDataURL().length) !== before, "ruota disegnata sulla foto");
+  // pagina del gruppo: grafico interattivo
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  ok2(await page.isVisible("#diagBox") && await page.isHidden("#cmpBox"), "ruota nella pagina del gruppo");
+  ok2(/euristica/.test(await page.textContent("#diagNote")), "dichiarata indicativa");
+  const hit = await page.evaluate(() => { const h = window.__SA.CH.hits.diag.find(h => h.i === 5); const a = (h.a0 + 22.5) * Math.PI / 180; return { x: h.cx + 0.6 * h.R * Math.sin(a), y: h.cy - 0.6 * h.R * Math.cos(a) }; });
+  await page.click("#chDiag", { position: hit });
+  ok2(/Ore 7–8 · Strappo del grilletto/.test(await page.textContent("#diagInfo")), "clic sul settore delle 7–8: " + await page.textContent("#diagInfo"));
+  await page.selectOption("#diagHand2", "L");
+  assert.strictEqual(await page.inputValue("#diagHand"), "L", "mano sincronizzata con il pannello");
+  ok2(/Ore 4–5 · Strappo del grilletto/.test(await page.textContent("#diagInfo")), "mancino: stessa causa, posizione specchiata");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

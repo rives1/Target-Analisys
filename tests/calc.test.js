@@ -708,4 +708,55 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.QI_VERSION, "GQI-TQI/1", "versione dell'algoritmo");
 }
 
+
+/* ---------------- 1.21.0: calcolatore balistico, Monte Carlo della velocità, ruota degli errori ---------------- */
+{
+  // tabelle standard: valori noti (Applied Ballistics, ABDOC130: a Mach 3 G1 ≈ 0,51, G7 ≈ 0,24)
+  near(Calc.cdOf("G1", 3), 0.5133, 1e-4, "Cd G1 a Mach 3"); near(Calc.cdOf("G7", 3), 0.2424, 1e-4, "Cd G7 a Mach 3");
+  near(Calc.cdOf("G7", 0), 0.1198, 1e-9, "Cd G7 a Mach 0"); near(Calc.cdOf("G1", 9), Calc.cdOf("G1", 5), 1e-12, "oltre la tabella: ultimo valore");
+  // atmosfera standard ICAO
+  const A0 = Calc.atmosphere();
+  near(A0.rho, 1.225, 1e-3, "ρ ICAO"); near(A0.c, 340.29, 0.05, "velocità del suono a 15 °C"); eq(A0.std, ["temp", "pressure", "humidity"], "valori standard usati");
+  const A1 = Calc.atmosphere({ tempC: 30, pressHPa: 950, rh: 80 });
+  ok(A1.rho < Calc.atmosphere({ tempC: 30, pressHPa: 950, rh: 0 }).rho, "l'umidità riduce la densità"); near(A1.rho, 91605 / (287.058 * 303.15) + 3395 / (461.495 * 303.15), 2e-3, "ρ a 30 °C, 950 hPa, UR 80% (vapore 33,9 hPa)");
+  // traiettoria contro le tabelle di Applied Ballistics (ABDOC118, 175 SMK a 2550 fps, livello del mare, azzeramento 100 m):
+  // un solo parametro geometrico (altezza ottica ≈ 70 mm, non dichiarata nel documento) allinea sia G1 sia G7 su tutta la tabella
+  const AB = { G7: [0.243, { 200: 0.61, 300: 1.56, 400: 2.72, 500: 4.05, 600: 5.6, 700: 7.38, 800: 9.46, 900: 11.9, 1000: 14.74 }],
+    G1: [0.475, { 200: 0.61, 300: 1.57, 400: 2.73, 500: 4.08, 600: 5.64, 700: 7.43, 800: 9.49, 900: 11.86, 1000: 14.56, 1200: 20.99, 1500: 33.26 }] };
+  for (const [model, [bc, ref]] of Object.entries(AB)) {
+    const T = Calc.trajectory({ v0: 2550 * 0.3048, bc, model, sightH: 0.07, zero: 100, dists: Object.keys(ref).map(Number) });
+    for (const r of T.rows) near(r.vMil, ref[r.x], Math.max(0.03, ref[r.x] * 0.004), `${model} BC ${bc}: alzo a ${r.x} m (AB ${ref[r.x]} MIL)`);
+  }
+  const Z = Calc.trajectory({ v0: 800, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [100] });
+  near(Z.rows[0].drop, 0, 1e-6, "alla distanza di azzeramento la palla è sulla linea di mira");
+  // deriva del vento: formula di Didion (tempo di ritardo) = vento × (t − x / V0), esatta per il modello a massa puntiforme
+  const W = Calc.trajectory({ v0: 800, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [300, 600, 900], wind: { cross: 4, head: 0 } });
+  for (const r of W.rows) near(r.drift, -4 * (r.t - r.x / 800), Math.abs(r.drift) * 0.01, `deriva a ${r.x} m = vento × ritardo (vento da destra → a sinistra)`);
+  ok(W.rows.every(r => r.hMil > 0), "correzione di brandeggio verso destra");
+  const Nw = Calc.trajectory({ v0: 800, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [600] }), Hw = Calc.trajectory({ v0: 800, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [600], wind: { cross: 0, head: 5 } });
+  ok(Hw.rows[0].vMil > Nw.rows[0].vMil, "vento contrario: più alzo");
+  ok(Calc.trajectory({ v0: 800, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [600], atm: Calc.atmosphere({ tempC: 15, pressHPa: 800 }) }).rows[0].vMil < Nw.rows[0].vMil, "aria rarefatta: meno alzo");
+  eq(Calc.trajectory({ v0: 0, bc: 0.5, model: "G1", sightH: 0.04, zero: 100, dists: [100] }), null, "dati mancanti → null");
+  // Monte Carlo: senza SD la parte della velocità è nulla; con SD cresce con la distanza; la sola parte angolare resta costante
+  const o = { v0: 800, bc: 0.45, model: "G1", sightH: 0.04, zero: 100 };
+  const M0 = Calc.velocitySpread(o, [100, 500, 1000], 0.1, 0);
+  ok(M0.rows.every(r => r.sigVel === 0 && r.esVel === 0), "SD nulla: nessun effetto della velocità");
+  const M = Calc.velocitySpread(o, [100, 300, 600, 1000], 0.1, 8);
+  ok(M.rows.every((r, i) => i === 0 || r.sigVel > M.rows[i - 1].sigVel), "la parte della velocità cresce con la distanza (in angolo)");
+  ok(M.rows.every(r => Math.abs(r.esAng / M.rows[0].esAng - 1) < 0.15), "la parte angolare è costante in angolo");
+  const th = Calc.zeroAngle({ ...o, atm: Calc.atmosphere() }), dv = d => Math.abs(Calc.trajectory({ ...o, v0: 808, theta: th, dists: [d] }).rows[0].vMil - Calc.trajectory({ ...o, v0: 792, theta: th, dists: [d] }).rows[0].vMil) / 2;
+  near(M.rows[3].sigVel, dv(1000), dv(1000) * 0.12, "σ verticale della velocità ≈ derivata × SD");
+  ok(M.rows.every(r => Math.abs(r.sigV ** 2 - (0.1 ** 2 + r.sigVel ** 2)) < 0.15 * r.sigV ** 2), "varianze verticali sommate");
+  near(Calc.velocitySpread(o, [600], 0.1, 8).rows[0].esTot, Calc.velocitySpread(o, [600], 0.1, 8).rows[0].esTot, 0, "seme fisso: risultato ripetibile");
+  // ruota degli errori: settori di 45° centrati sulle ore; zona centrale; specchio per il mancino
+  const C0 = { x: 0, y: 0 }, at = (deg, r = 10) => ({ x: r * Math.sin(deg * Math.PI / 180), y: -r * Math.cos(deg * Math.PI / 180) });   // y immagine in basso
+  const pts = [0, 45, 90, 135, 180, 225, 270, 315].map((d, i) => ({ id: i, ...at(d) })).concat([{ id: 9, x: 1, y: 1 }]);
+  const R = Calc.errorWheel(pts, C0, 3, "R");
+  eq(R.sectors.map(s => s.n), [1, 1, 1, 1, 1, 1, 1, 1], "un colpo per settore"); eq(R.inner, 1, "uno nella zona centrale");
+  eq(R.sectors.map(s => s.key), ["high", "heel", "thumb", "grip", "dip", "jerk", "finger", "recoil"], "ordine dei settori");
+  const lowLeft = Calc.errorWheel([{ id: 1, ...at(225) }, { id: 2, ...at(230) }], C0, 3, "R"), lowLeftL = Calc.errorWheel([{ id: 1, ...at(225) }, { id: 2, ...at(230) }], C0, 3, "L");
+  eq(lowLeft.sectors.find(s => s.n).key, "jerk", "destrorso: basso a sinistra = strappo"); eq(lowLeftL.sectors.find(s => s.n).key, "grip", "mancino: specchiato");
+  eq(Calc.errorWheel([{ id: 1, ...at(22.4) }], C0, 3).sectors[0].n, 1, "confine del settore delle ore 12"); eq(Calc.errorWheel([{ id: 1, ...at(22.6) }], C0, 3).sectors[1].n, 1, "oltre: ore 1–2");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

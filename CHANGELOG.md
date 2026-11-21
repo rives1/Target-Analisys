@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.21.0] - 2026-11-21
+### Aggiunto
+- **Dati di arma e munizione per gruppo** (Ricarica e condizioni): riquadro «Arma» (nome, altezza dell'ottica con
+  unità mm/cm/in, distanza di azzeramento m/yd) e in «Munizione» coefficiente balistico con modello G1/G7, velocità
+  iniziale (m/s o fps) e sua SD. Copiati nei nuovi gruppi, salvati nei profili di ricarica (il nome del profilo resta
+  nel gruppo finché i dati coincidono), nel riepilogo testuale e nel report («Arma», «Balistica»), nel CSV dei gruppi
+  (11 colonne in fondo, compreso il profilo) e nelle differenze tra configurazioni.
+- **Due pagine** al posto della vista unica: «📊 Grafici del gruppo» (tasto A: grafici del gruppo attivo, ruota degli
+  errori, reticolo) e «📈 Confronto tra gruppi» (tasto C: confronto e storico, dope card, calcolatore balistico, carica,
+  correlazioni, confronto visivo, Monte Carlo). Due pulsanti in fondo al pannello, passaggio dall'una all'altra con il
+  pulsante in alto o con A/C; si disegna solo la pagina aperta.
+- **Calcolatore balistico semplificato** (`Calc.trajectory`): massa puntiforme, RK4, tabelle Cd(Mach) G1/G7 standard,
+  densità dell'aria da temperatura/pressione/umidità (ICAO dove mancano), vento laterale e frontale dal quadrante,
+  azzeramento con altezza dell'ottica. Caduta, deriva, correzioni in MIL e click, velocità, tempo di volo e Mach a una
+  distanza scelta; tabella e grafico di confronto con la dope card misurata (Δ e ⚠ fuori dall'IC). Verificato contro le
+  tabelle di Applied Ballistics (G1 e G7, entro 0,02 MIL fino a 1000 m) e la formula di Didion per la deriva.
+- **Simulazione Monte Carlo** (`Calc.velocitySpread`): dispersione angolare intrinseca dai gruppi della munizione
+  (σ combinata meno la parte della velocità alle distanze tirate) + V0 normale con la SD del cronografo; group size
+  atteso per distanza (totale, solo angolo, solo velocità), σ verticale e rosata simulata alla distanza scelta.
+- **Ruota degli errori per pistola** (`Calc.errorWheel`), dichiarata indicativa: 8 settori della «pie chart» NRA attorno al
+  punto di mira, zona centrale = CEP del gruppo, destrorso/mancino (specchiata), settori con flyer in rosso; sovrapposta
+  alla foto (casella in «Disegni sulla foto») e come grafico interattivo nella pagina del gruppo (clic = descrizione).
+- **Pulsante ⊟** in cima al pannello: chiude tutti i gruppi nei Risultati, di nuovo per riaprirli.
+- Help tecnico: sezioni «Calcolatore balistico», «Monte Carlo della velocità», «Ruota degli errori (pistola)».
+### Modificato
+- **Nomi dei file**: `ShAn-<tipo>-<arma>-<profilo di ricarica>-AAAAMMGG-hhmm.<est>` con i dati del gruppo attivo
+  (Result Card di un gruppo: quel gruppo); campo vuoto = spazio tra i due «-»; caratteri non ammessi da Windows → spazi.
+  Tipi: Session (ZIP e JSON), SessionDB (archivio), ResCar, PDFReport, CSV (fori e gruppi), Profiles, ResTxt,
+  DopeCard (CSV e PNG), Reticle, TestTarget. Archivio, profili e bersaglio di autoverifica senza arma né profilo. Le
+  cartelle dentro lo ZIP d'archivio mantengono il formato di data precedente.
+- **ZIP come salvataggio principale**: `Ctrl+S` salva la sessione ZIP; nel blocco Dati il riquadro «Sessione» è il primo
+  e «Salva sessione ZIP» è il pulsante blu (la Result Card non più).
+- Reticolo e holdover nella pagina del gruppo; la scelta della munizione della dope resta nella pagina del confronto.
+### Rimosso
+- **Cono di dispersione** (pannello, report, preferenze, help): codice commentato con le istruzioni per reintrodurlo.
+### Decisioni
+- Il **manuale non viene più aggiornato** a ogni versione finché l'utente non lo chiede (resta quello della 1.20).
+### Test
+- calc: 818 verifiche (50 nuove: tabelle Cd, atmosfera, traiettorie contro AB, deriva di Didion, vento contrario, aria
+  rarefatta, Monte Carlo, ruota). UI: 84 scenari (3 nuovi; il test del cono sostituito da quello della rimozione).
+
 ## [1.20.0] - 2026-11-20
 ### Aggiunto
 - **Ricerca nelle impostazioni** (`#findBar`, fissa in cima al pannello destro; tasto `/`): cerca tra titoli di
