@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.23.0] - 2026-11-24
+### Aggiunto
+- **Velocità per foro** («Velocità per foro (cronografo)» in «Punti del gruppo attivo»): colonna V0 nella tabella dei
+  punti, nell'unità della velocità del gruppo (salvata in m/s, quindi resta giusta cambiando m/s ↔ fps); Invio passa al
+  foro successivo (anche nella colonna Carica). Sotto la tabella n, media, SD (n − 1) ed ES, con «Usa come V0/SD del
+  gruppo» (un solo passo di Ctrl+Z). I fori esclusi restano nelle statistiche della velocità (l'esclusione riguarda il
+  punto d'impatto). Sulla foto la velocità accanto al numero del foro e «V media» nell'etichetta del group size (opzione
+  «Velocità dei colpi sulla foto» in Disegni sulla foto); «V media» anche nella riga del gruppo nei Risultati e nel
+  pannello in tempo reale; riga «Velocità per foro» nei dati di ricarica (report, Result Card), colonna V0 nella tabella
+  dei fori del report, colonne «Velocità del foro» e «Unità velocità» in fondo al CSV dei fori.
+- **Tour guidato** (🎓 nel titolo del pannello): 5 passi (foto e raddrizzamento, scala, mira e colpi, correzione,
+  salvataggio) con il comando evidenziato e la pagina oscurata ma utilizzabile; ←/→ cambiano passo, Esc chiude. Al
+  primo avvio un piccolo invito, una volta sola (ricordato nel browser; sparisce anche caricando una foto).
+- **Provenienza dei file esportati** (Dati): autore (nel browser) e filigrana visibile facoltativa (riga in basso con
+  app, autore, data, foto e inizio dell'impronta). Sempre: metadati iTXt nei PNG (Result Card, dope card, reticolo:
+  Software, Author, Creation Time, Source, ShootAnalyzer:PhotoSHA256), Author e impronta nelle Info del report PDF e del
+  bersaglio di prova, righe «Impronta della foto (SHA-256)» e «Autore» nella calibrazione del report, `author` e
+  `image.sha256` nella sessione. L'impronta è quella della foto di lavoro (il file della sessione ZIP).
+  `Calc.sha256` (FIPS 180-4, senza crypto.subtle), verificata con i vettori ufficiali e con Node.
+- **Spazio di archiviazione locale** (Dati): «Verifica e misura» (spazio di foto e sessioni, stima del browser, sessioni
+  e foto leggibili, foto decodificabili e delle dimensioni attese, foto orfane), «Ripara» (solo foto orfane/illeggibili e
+  voci illeggibili), elenco delle sessioni archiviate con dimensione ed eliminazione singola, eliminazione delle sessioni
+  più vecchie di N giorni, «Ottimizza le foto» (JPEG 0,9 alla stessa risoluzione, tenuto solo se risparmia ≥ 20%; i punti
+  restano validi, si perdono EXIF e impronta originale).
+### Modificato
+- **Scala**: dopo il secondo punto il campo «Distanza nota tra i 2 punti» si evidenzia (contorno arancio pulsante,
+  etichetta in grassetto, sezione aperta, fuoco nel campo) finché non lo si conferma o se ne esce.
+- Guida rapida: 🎓 nel paragrafo «Pannello».
+- Test UI: l'invito al tour è dato per visto (`addInitScript`), tranne nel test del tour.
+
 ## [1.22.0] - 2026-11-21
 ### Aggiunto
 - **Modalità Esperto / Base** (menu in cima al pannello, ricordata nel browser, predefinita Esperto): in Base i Risultati

@@ -31,6 +31,8 @@ async function openApp(context) {
   page.on("pageerror", e => page.problems.push("pageerror: " + e.message));
   page.on("console", m => { if (m.type() === "error") page.problems.push("console: " + m.text()); });
   page.on("request", r => { if (!/^(file|data|blob):/.test(r.url())) page.problems.push("rete: " + r.url()); });
+  // 1.23.0: l'invito al tour guidato (primo avvio) è dato per visto, tranne nel test del tour
+  await page.addInitScript(() => { try { localStorage.setItem("shootAnalyzer.tourSeen", "1"); } catch { /* storage non disponibile */ } });
   await page.goto(APP_URL);
   await page.waitForFunction(() => window.__SA && window.__SA.state);
   await expandAll(page);
@@ -549,7 +551,7 @@ test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione
   assert.match(await page.textContent("#results"), new RegExp(`Punteggio.*${si.total} / 50`));
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Punteggio \(ISSF 10 m pistola ad aria\): \d+ \/ 50/);
   const csvF = await page.evaluate(() => window.__SA.csvShots()), csvG = await page.evaluate(() => window.__SA.csvGroups());
-  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\);Carica del foro \(gr\)$/);
+  assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\);Carica del foro \(gr\);Velocità del foro;Unità velocità$/);
   assert.match(csvG, new RegExp(`;ISSF 10 m pistola ad aria;${si.total};50;`));
   // bersaglio personalizzato
   await page.selectOption("#scoreTarget", "custom");
@@ -3070,6 +3072,230 @@ test("1.22.0: stima guidata del BC", async page => {
   await page.click("#bBcWiz");
   assert.strictEqual(await page.inputValue("#bwD1"), "100", "distanza presa dalla dope");
   ok2(/vicina all'azzeramento/.test(await page.textContent("#bcWizOut")), "avviso: distanza dell'azzeramento");
+});
+
+/* ------------------------------ 1.23.0 ------------------------------ */
+/** Blocchi di un PNG: [{ type, data (Buffer), crcOk }]. */
+function pngChunks(buf) {
+  const zlib = require("zlib"), out = []; let o = 8;
+  const crcT = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crcT[n] = c >>> 0; }
+  const crc = b => { let c = 0xFFFFFFFF; for (const x of b) c = crcT[(c ^ x) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+  while (o < buf.length) {
+    const len = buf.readUInt32BE(o), type = buf.toString("latin1", o + 4, o + 8), data = buf.subarray(o + 8, o + 8 + len);
+    out.push({ type, data, crcOk: crc(buf.subarray(o + 4, o + 8 + len)) === buf.readUInt32BE(o + 8 + len) });
+    o += 12 + len;
+  }
+  void zlib;
+  return out;
+}
+const iTXt = chunks => Object.fromEntries(chunks.filter(c => c.type === "iTXt").map(c => { const i = c.data.indexOf(0); return [c.data.toString("latin1", 0, i), c.data.subarray(i + 5).toString("utf8")]; }));
+
+test("1.23.0: distanza nota evidenziata dopo il secondo punto della scala", async page => {
+  await loadTarget(page);
+  await page.evaluate(() => { document.getElementById("sec-calib").open = false; });
+  await key(page, "2");
+  await clickAt(page, { x: 100, y: 500 });
+  ok2(!(await page.evaluate(() => document.getElementById("calDist").classList.contains("attn"))), "non evidenziato dopo il primo punto");
+  await clickAt(page, { x: 300, y: 500 });
+  await page.waitForTimeout(50);
+  const st = await page.evaluate(() => ({ attn: document.getElementById("calDist").classList.contains("attn"), row: document.getElementById("calDist").closest(".row").classList.contains("attn-row"),
+    focus: document.activeElement && document.activeElement.id, open: document.getElementById("sec-calib").open }));
+  assert.deepStrictEqual(st, { attn: true, row: true, focus: "calDist", open: true });
+  await page.keyboard.type("50"); await page.keyboard.press("Enter");
+  ok2(!(await page.evaluate(() => document.getElementById("calDist").classList.contains("attn"))), "evidenziazione tolta dopo la conferma");
+  near(await page.evaluate(() => window.__SA.calcContext().pxPerMm), 4, 0.01, "scala impostata dal campo evidenziato");
+  // una nuova scala riparte dal primo punto: niente evidenziazione finché non c'è il secondo
+  await key(page, "2"); await clickAt(page, { x: 120, y: 520 });
+  ok2(!(await page.evaluate(() => document.getElementById("calDist").classList.contains("attn"))), "primo punto di una nuova scala");
+});
+
+test("1.23.0: velocità per foro — colonna, Invio, media/SD/ES, foto, riepiloghi, V0/SD del gruppo, CSV, sessione", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  ok2(!(await page.$('#points input[data-dial="v"]')), "colonna nascosta finché non si attiva");
+  await page.check("#vPerShot");
+  assert.strictEqual(await page.locator('#points input[data-dial="v"]').count(), 5);
+  ok2(/V0/.test(await page.textContent("#points thead")), "intestazione V0");
+  ok2(/colonna V0/.test(await page.textContent("#points .vstat")), "invito a scrivere le velocità");
+  // Invio passa al foro successivo
+  const first = page.locator('#points input[data-dial="v"]').first();
+  await first.click(); await first.fill("800"); await page.keyboard.press("Enter");
+  const foc = await page.evaluate(() => { const a = document.activeElement, g = window.__SA.state.groups[0]; return a && a.dataset.dial === "v" && +a.dataset.sid === g.shots[1].id; });
+  ok2(foc, "Invio: fuoco sul V0 del foro 2");
+  await page.keyboard.type("805"); await page.keyboard.press("Enter");
+  for (const [i, v] of [[2, 810], [3, 795], [4, 790]]) await setDialCell(page, i, "v", v);
+  const VS = await page.evaluate(() => window.__SA.velStats(window.__SA.state.groups[0]));
+  near(VS.mean, 800, 1e-9, "media"); near(VS.sd, Math.sqrt(62.5), 1e-9, "SD (n − 1)"); near(VS.es, 20, 1e-9, "ES"); assert.strictEqual(VS.n, 5);
+  ok2(/800,0 m\/s/.test(await page.textContent("#points .vstat")) && /SD 7,9/.test(await page.textContent("#points .vstat")) && /ES 20,0/.test(await page.textContent("#points .vstat")), "riepilogo: " + await page.textContent("#points .vstat"));
+  ok2(/V media 800,0 m\/s/.test(await page.textContent("#results .resg-sum")), "velocità media nella riga del gruppo: " + await page.textContent("#results .resg-sum"));
+  ok2(/V media/.test(await page.textContent("#livePanel")), "velocità media nel pannello in tempo reale");
+  // un foro escluso resta nelle statistiche della velocità (l'esclusione riguarda l'impatto)
+  await page.evaluate(() => { const g = window.__SA.state.groups[0]; window.__SA.toggleExclude ? 0 : 0; g.shots[4].excluded = true; window.__SA.commit(); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.velStats(window.__SA.state.groups[0]).n), 5);
+  await page.keyboard.press("Control+z");
+  // etichette sulla foto: numero · velocità
+  const labels = await page.evaluate(() => { const L = window.__SA.LabelLayout.prototype, add = L.add, seen = []; L.add = function (t, ...a) { seen.push(t); return add.call(this, t, ...a); }; window.__SA.fitView(); return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => { L.add = add; r(seen); }))); });
+  ok2(labels.some(t => /^1 · 800$/.test(t)), "etichetta del foro con la velocità: " + labels.slice(0, 8).join(" | "));
+  ok2(labels.some(t => /^ES .* · V media 800 m\/s$/.test(t)), "velocità media nell'etichetta del gruppo: " + labels.filter(t => /^ES/.test(t)).join(" | "));
+  await page.uncheck("#vLabelOn");
+  const labels2 = await page.evaluate(() => { const L = window.__SA.LabelLayout.prototype, add = L.add, seen = []; L.add = function (t, ...a) { seen.push(t); return add.call(this, t, ...a); }; window.__SA.fitView(); return new Promise(r => requestAnimationFrame(() => requestAnimationFrame(() => { L.add = add; r(seen); }))); });
+  ok2(!labels2.some(t => / · 800$/.test(t)) && !labels2.some(t => /V media/.test(t)), "senza «Velocità dei colpi sulla foto» niente velocità sull'immagine");
+  await page.check("#vLabelOn");
+  // «Usa come V0/SD» (un passo di annulla)
+  await page.click("#bVelUse");
+  assert.deepStrictEqual(await page.evaluate(() => { const L = window.__SA.state.groups[0].load; return [L.v0, L.v0sd]; }), ["800", "7.9"]);
+  assert.strictEqual(await page.inputValue("#ld-v0"), "800");
+  await page.keyboard.press("Control+z");
+  assert.deepStrictEqual(await page.evaluate(() => { const L = window.__SA.state.groups[0].load; return [L.v0 || "", L.v0sd || ""]; }), ["", ""], "annullabile");
+  // unità della velocità del gruppo: le velocità salvate (m/s) si mostrano in fps
+  await page.selectOption("#ld-v0Unit", "fps");
+  near(+(await page.inputValue('#points input[data-dial="v"] >> nth=0')), 800 / 0.3048, 0.01, "V0 del foro in fps");
+  await setDialCell(page, 0, "v", 2700);
+  near(await page.evaluate(() => window.__SA.state.groups[0].shots[0].v), 2700 * 0.3048, 1e-9, "scritta in fps, salvata in m/s");
+  await page.selectOption("#ld-v0Unit", "m/s");
+  // CSV dei fori, dati di ricarica (report/Result Card), sessione
+  const csv = await page.evaluate(() => window.__SA.csvShots());
+  const head = csv.split(/\r?\n/)[0].split(";"), row = csv.split(/\r?\n/)[1].split(";");
+  const iv = head.findIndex(h => /Velocità del foro/.test(h));
+  ok2(iv > 0 && row[iv] === "823,0" && row[iv + 1] === "m/s", "CSV: " + head.slice(-3).join("|") + " → " + row.slice(-3).join("|"));
+  ok2(await page.evaluate(() => window.__SA.loadLines(window.__SA.state.groups[0]).some(([a, b]) => a === "Velocità per foro" && /5 colpi · media/.test(b))), "riga «Velocità per foro» nei dati di ricarica");
+  const ses = await page.evaluate(() => JSON.stringify(window.__SA.buildSession(true)));
+  await page.evaluate(t => window.__SA.loadSessionText(t), ses);
+  near(await page.evaluate(() => window.__SA.state.groups[0].shots[2].v), 810, 1e-9, "velocità ripristinate dalla sessione");
+  ok2(await page.isChecked("#vPerShot"), "colonna attiva ripristinata con i parametri");
+  // annulla della singola velocità
+  await setDialCell(page, 2, "v", "");
+  ok2(await page.evaluate(() => window.__SA.state.groups[0].shots[2].v === undefined), "campo vuoto = velocità tolta");
+  await page.keyboard.press("Control+z");
+  near(await page.evaluate(() => window.__SA.state.groups[0].shots[2].v), 810, 1e-9, "Ctrl+Z la rimette");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
+test("1.23.0: provenienza — metadati PNG e PDF, impronta SHA-256, filigrana facoltativa", async page => {
+  const fs = require("fs"), crypto = require("crypto");
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.fill("#provAuthor", "  Tiratore Ж  "); await page.dispatchEvent("#provAuthor", "change");
+  assert.deepStrictEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("shootAnalyzer.provenance"))), { author: "Tiratore Ж", wm: false });
+  // impronta = SHA-256 dei byte della foto di lavoro
+  const sha = await page.evaluate(() => window.__SA.photoSha());
+  const bytes = await page.evaluate(() => { const u = window.__SA.state.image.dataUrl; return u.slice(u.indexOf(",") + 1); });
+  assert.strictEqual(sha, crypto.createHash("sha256").update(Buffer.from(bytes, "base64")).digest("hex"));
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bCardPng")]);
+  const png = fs.readFileSync(await dl.path()), ch = pngChunks(png), meta = iTXt(ch);
+  ok2(ch.every(c => c.crcOk) && ch[0].type === "IHDR" && ch[ch.length - 1].type === "IEND", "PNG valido");
+  assert.strictEqual(meta.Author, "Tiratore Ж"); assert.strictEqual(meta["ShootAnalyzer:PhotoSHA256"], sha);
+  ok2(/^Shoot Analyzer \d+\.\d+\.\d+$/.test(meta.Software) && /^bersaglio\.png \(800×600 px\)$/.test(meta.Source) && !isNaN(Date.parse(meta["Creation Time"])), JSON.stringify(meta));
+  // filigrana: l'immagine cambia (riga in basso), i metadati restano
+  const px = async () => page.evaluate(async () => { const c = document.createElement("canvas"); c.width = 400; c.height = 300; const k = c.getContext("2d"); k.fillStyle = "#fff"; k.fillRect(0, 0, 400, 300);
+    const b = await window.__SA.exportPng(c), bm = await createImageBitmap(b), d = document.createElement("canvas"); d.width = 400; d.height = 300; d.getContext("2d").drawImage(bm, 0, 0);
+    const a = d.getContext("2d").getImageData(0, 0, 400, 300).data; let dark = 0; for (let i = 0; i < a.length; i += 4) if (a[i] < 200) dark++; return dark; });
+  assert.strictEqual(await px(), 0, "senza filigrana l'immagine non cambia");
+  await page.check("#provWm");
+  ok2(await px() > 50, "con la filigrana compare la riga di provenienza");
+  // PDF: Author e impronta nelle Info, righe nel report
+  await page.uncheck("#provWm");
+  const pdf = await page.evaluate(async () => { const b = await window.__SA.exportReportPdf("active"); const u = new Uint8Array(await b.arrayBuffer()); let s = ""; for (const x of u) s += String.fromCharCode(x); return s; });
+  const hex = s => "<FEFF" + [...s].map(c => c.codePointAt(0).toString(16).padStart(4, "0")).join("").toUpperCase() + ">";
+  ok2(pdf.includes("/Author " + hex("Tiratore Ж")), "Author nelle Info del PDF");
+  ok2(pdf.includes("/ShootAnalyzerPhotoSHA256 " + hex(sha)), "impronta nelle Info del PDF");
+  // sessione: autore e impronta
+  const ses = await page.evaluate(() => window.__SA.buildSession(false));
+  assert.strictEqual(ses.author, "Tiratore Ж"); assert.strictEqual(ses.image.sha256, sha);
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
+test("1.23.0: spazio di archiviazione — misura, integrità, eliminazione, riparazione, ottimizzazione", async page => {
+  page.on("dialog", d => d.accept());
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await page.evaluate(async () => { await window.__SA.doAutosave(); await window.__SA.archiveCurrent(); });
+  let S = await page.evaluate(() => window.__SA.storageScan().then(s => JSON.parse(JSON.stringify(s))));
+  assert.strictEqual(S.nImg, 1); assert.strictEqual(S.list.length, 1); assert.strictEqual(S.auto, true);
+  assert.deepStrictEqual(S.problems, []); assert.deepStrictEqual(S.orphans, []);
+  ok2(S.photos > 1000 && S.sessions > 500 && S.total === S.photos + S.sessions, "dimensioni: " + JSON.stringify([S.photos, S.sessions]));
+  await page.click("#bStoCheck");
+  await page.waitForFunction(() => /Occupati/.test(document.getElementById("stoInfo").textContent));
+  ok2(/Integrità: tutte/.test(await page.textContent("#stoOut")) && await page.locator("#stoOut button[data-sto-del]").count() === 1, "verifica: " + await page.textContent("#stoOut"));
+  // sessione vecchia + foto rumorosa (PNG grande) usata solo da lei; foto orfana e voce illeggibile
+  await page.evaluate(async () => {
+    const { idb } = window.__SA, c = document.createElement("canvas"); c.width = 300; c.height = 200; const k = c.getContext("2d"), d = k.createImageData(300, 200);
+    let s = 7; for (let i = 0; i < d.data.length; i++) { s = (s * 1103515245 + 12345) >>> 0; const p = i >> 2, x = p % 300, y = (p / 300) | 0; d.data[i] = i % 4 === 3 ? 255 : Math.max(0, Math.min(255, 128 + 90 * Math.sin(x / 17 + (i % 4)) * Math.cos(y / 23) + ((s >>> 16) & 15) - 8)); }   // «foto»: sfumature + rumore
+    k.putImageData(d, 0, 0); const blob = await new Promise(r => c.toBlob(r, "image/png"));
+    await idb("images", "readwrite", st => st.put({ name: "rumore.png", w: 300, h: 200, blob }, "rumore"));
+    await idb("images", "readwrite", st => st.put({ name: "orfana.png", w: 10, h: 10, blob: new Blob([new Uint8Array([1, 2, 3])], { type: "image/png" }) }, "orfana"));
+    const old = new Date(Date.now() - 200 * 86400000).toISOString();
+    await idb("archive", "readwrite", st => st.put({ id: "vecchia", savedAt: old, name: "vecchia.png", imageKey: "rumore", session: { groups: [] }, groups: 0, shots: 0 }));
+    await idb("archive", "readwrite", st => st.put({ id: "rotta", savedAt: new Date().toISOString(), name: "rotta.png", imageKey: null, session: null, groups: 0, shots: 0 }));
+  });
+  S = await page.evaluate(() => window.__SA.storageScan().then(s => JSON.parse(JSON.stringify(s))));
+  assert.deepStrictEqual(S.orphans, ["orfana"]);
+  ok2(S.problems.some(p => p.kind === "img" && p.key === "orfana") && S.problems.some(p => p.kind === "arch" && p.id === "rotta"), "problemi: " + JSON.stringify(S.problems));
+  // ottimizzazione: la foto rumorosa in JPEG alla stessa risoluzione
+  const O = await page.evaluate(() => window.__SA.storageOptimize(false));
+  ok2(O && O.n >= 1 && O.after < O.before, "ottimizzazione: " + JSON.stringify(O));
+  const R = await page.evaluate(async () => { const r = await window.__SA.idb("images", "readonly", st => st.get("rumore")); const bm = await createImageBitmap(r.blob); return [r.blob.type, bm.width, bm.height, !!r.optimized]; });
+  assert.deepStrictEqual(R, ["image/jpeg", 300, 200, true]);
+  // riparazione: via la foto orfana e la voce illeggibile
+  await page.click("#bStoCheck"); await page.waitForSelector("#bStoFix");
+  await page.click("#bStoFix");
+  await page.waitForFunction(() => /Integrità: tutte/.test(document.getElementById("stoOut").textContent));
+  S = await page.evaluate(() => window.__SA.storageScan().then(s => JSON.parse(JSON.stringify(s))));
+  assert.deepStrictEqual([S.orphans, S.problems.filter(p => p.kind !== "info"), S.list.map(e => e.id).sort()], [[], [], ["vecchia", S.list.find(e => e.id !== "vecchia").id].sort()]);
+  // elimina le sessioni più vecchie di 90 giorni: resta quella di oggi, la sua foto rumorosa sparisce
+  await setField(page, "#stoDays", 90); await page.click("#bStoOld");
+  await page.waitForFunction(() => window.__SA.STO.last && window.__SA.STO.last.list.length === 1);
+  S = await page.evaluate(() => window.__SA.storageScan().then(s => JSON.parse(JSON.stringify(s))));
+  assert.strictEqual(S.nImg, 1, "foto liberata");
+  // eliminazione singola dal pulsante della riga
+  await page.click("#stoOut button[data-sto-del]");
+  await page.waitForFunction(() => window.__SA.STO.last && window.__SA.STO.last.list.length === 0);
+  ok2(/Archivio vuoto/.test(await page.textContent("#archiveInfo")), "archivio vuoto");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); await page.click("#bStoCheck"); await page.waitForTimeout(100); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
+test("1.23.0: tour guidato — invito al primo avvio, 5 passi, frecce, Esc, lingue", async page => {
+  ok2(await page.isHidden("#tourAsk"), "nei test l'invito è già stato visto");
+  await page.evaluate(() => { localStorage.removeItem("shootAnalyzer.tourSeen"); window.__SA.initTour(); });
+  ok2(await page.isVisible("#tourAsk"), "invito al primo avvio");
+  await page.click("#bTourAskGo");
+  ok2(await page.isHidden("#tourAsk") && await page.isVisible("#tourCard") && await page.isVisible("#tourHi"), "tour aperto");
+  assert.strictEqual(await page.evaluate(() => localStorage.getItem("shootAnalyzer.tourSeen")), "1");
+  assert.strictEqual(await page.textContent("#tourStep"), "Passo 1 di 5");
+  const inside = sel => page.evaluate(sel => { const h = document.getElementById("tourHi").getBoundingClientRect(), r = document.querySelector(sel).getBoundingClientRect();
+    return r.left >= h.left - 1 && r.right <= h.right + 1 && r.top >= h.top - 1 && r.bottom <= h.bottom + 1; }, sel);
+  await page.waitForTimeout(300);   // transizione del riquadro
+  ok2(await inside("#bLoad"), "passo 1: evidenziato «Carica foto»");
+  const noOverlap = () => page.evaluate(() => { const h = document.getElementById("tourHi").getBoundingClientRect(), c = document.getElementById("tourCard").getBoundingClientRect();
+    return c.right <= h.left || c.left >= h.right || c.bottom <= h.top || c.top >= h.bottom || document.getElementById("tourHi").classList.contains("nohole"); });
+  ok2(await noOverlap(), "la scheda non copre il comando");
+  await page.keyboard.press("ArrowRight"); await page.waitForTimeout(300);
+  assert.strictEqual(await page.textContent("#tourStep"), "Passo 2 di 5");
+  ok2(await page.evaluate(() => document.getElementById("sec-calib").open) && await inside('#modes [data-mode="calib"]'), "passo 2: scala");
+  await page.click("#bTourNext"); await page.click("#bTourNext");
+  assert.strictEqual(await page.textContent("#tourT"), "4 · Leggi la correzione");
+  ok2(await page.evaluate(() => document.getElementById("sec-results").open), "passo 4: risultati aperti");
+  await page.keyboard.press("ArrowLeft"); assert.strictEqual(await page.textContent("#tourStep"), "Passo 3 di 5");
+  await page.click("#bTourNext"); await page.click("#bTourNext"); await page.waitForTimeout(300);
+  assert.strictEqual(await page.textContent("#bTourNext"), "Fine ✓");
+  ok2(await inside("#bSaveZip") && await noOverlap(), "passo 5: salva");
+  await page.click("#bTourNext");
+  ok2(await page.isHidden("#tourCard") && await page.isHidden("#tourHi"), "Fine chiude il tour");
+  // 🎓 riapre; Esc chiude; le scorciatoie restano attive durante il tour
+  await page.click("#bTour"); ok2(await page.isVisible("#tourCard"), "🎓 apre il tour");
+  await key(page, "Escape"); ok2(await page.isHidden("#tourCard"), "Esc chiude");
+  // l'invito sparisce caricando una foto
+  await page.evaluate(() => { localStorage.removeItem("shootAnalyzer.tourSeen"); window.__SA.initTour(); });
+  await loadTarget(page);
+  ok2(await page.isHidden("#tourAsk"), "invito nascosto dopo il caricamento della foto");
+  for (const l of ["en", "ru"]) {
+    await page.evaluate(l => window.__SA.setLang(l), l);
+    await page.evaluate(() => { localStorage.removeItem("shootAnalyzer.tourSeen"); window.__SA.initTour(); window.__SA.startTour(); });
+    for (let i = 0; i < 5; i++) await page.evaluate(() => window.__SA.tourStep(1));
+    assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l);
+  }
+  ok2(/Step 1 of 5|Шаг/.test(await page.evaluate(() => { window.__SA.setLang("en"); window.__SA.startTour(); return document.getElementById("tourStep").textContent; })), "passo tradotto");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

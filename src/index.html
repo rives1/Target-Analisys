@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.22.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.23.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -487,6 +487,32 @@
   /* Modalità Base (1.22.0): restano group size, correzione e punteggio; le esportazioni non cambiano */
   html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] #bAnaSwitch, html[data-ui="basic"] #qiTop { display: none !important; }
   details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
+  /* 1.23.0: campo della distanza nota evidenziato dopo il secondo punto della scala */
+  #calDist.attn { outline: 3px solid #f59e0b; outline-offset: 1px; background: rgba(245,158,11,.16); animation: attnPulse 1.1s ease-in-out 4; }
+  .row.attn-row > label { color: #b45309; font-weight: 700; }
+  @keyframes attnPulse { 50% { outline-color: rgba(245,158,11,.25); } }
+  /* 1.23.0: spazio di archiviazione locale */
+  .sto-tab { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 4px; }
+  .sto-tab td { padding: 2px 4px; border-top: 1px solid var(--line); vertical-align: top; }
+  .sto-tab td.v { text-align: right; white-space: nowrap; }
+  .sto-tab button { padding: 0 6px; }
+  .sto-ok { color: #15803d; } .sto-bad { color: #b91c1c; }
+  #stoOut .status { margin-top: 4px; }
+  /* 1.23.0: velocità per foro */
+  .pts input.dial.vin { width: 62px; }
+  .vstat { font-size: 12.5px; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+  .vstat .btn { padding: 2px 8px; font-size: 12px; }
+  /* 1.23.0: tour guidato */
+  #tourHi { position: fixed; border: 3px solid #f59e0b; border-radius: 8px; box-shadow: 0 0 0 9999px rgba(15,23,42,.45); pointer-events: none; z-index: 40; transition: left .2s, top .2s, width .2s, height .2s; }
+  #tourHi.nohole { border: 0; width: 0; height: 0; left: 50%; top: 50%; }
+  #tourCard { position: fixed; z-index: 41; width: min(340px, calc(100vw - 24px)); background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.3); padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+  #tourCard h3 { margin: 4px 0 6px; font-size: 15px; }
+  #tourCard .tour-h { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 12px; }
+  #tourCard .btns { justify-content: flex-end; margin-top: 8px; }
+  #tourAsk { position: fixed; left: 16px; bottom: 16px; z-index: 39; max-width: 340px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); padding: 10px 12px; font-size: 13px; }
+  #tourAsk .btns { margin-top: 6px; }
+  #tourHi[hidden], #tourCard[hidden], #tourAsk[hidden] { display: none; }
+  #bTour { border: 1px solid var(--input-border); background: var(--input-bg); border-radius: 6px; cursor: pointer; padding: 3px 7px; font-size: 14px; color: var(--ink); }
 </style>
 </head>
 <body>
@@ -579,6 +605,7 @@
         <select id="uiModeSel" title="Modalità Esperto: tutte le metriche, i pannelli e il confronto · Modalità Base: solo group size, correzione e punteggio (gli export restano completi)" aria-label="Modalità Esperto / Base">
           <option value="expert">Esperto</option><option value="basic">Base</option></select>
         <button id="bLayout" title="Layout del pannello: ordine e visibilità delle sezioni (salvati nel browser)" aria-label="Layout del pannello">⚙</button>
+        <button id="bTour" title="Tour guidato: i 5 passi del flusso di lavoro (foto, scala, mira e colpi, correzione, salvataggio)" aria-label="Tour guidato">🎓</button>
       </div>
     </div>
     <div id="layoutPop" hidden></div>
@@ -766,6 +793,9 @@
         </div>
         <div class="row">
           <label for="esLabelOn" title="Scrive il group size (ES centro-centro, in mm e nell'unità dei click) sopra ogni gruppo, sull'immagine e nella Result Card"><input type="checkbox" id="esLabelOn" checked> Etichetta del group size</label>
+        </div>
+        <div class="row">
+          <label for="vLabelOn" title="Scrive accanto a ogni foro la velocità misurata col cronografo (colonna V0 della tabella dei punti) e la velocità media nell'etichetta del group size"><input type="checkbox" id="vLabelOn" checked> Velocità dei colpi sulla foto</label>
         </div>
         <div class="row">
           <label for="corrArrowOn" title="Freccia dal centro del gruppo al punto in cui andrebbe dopo i click di correzione (arrotondati), con una crocetta; esatta alla distanza del gruppo"><input type="checkbox" id="corrArrowOn" checked> Freccia di correzione sulla foto</label>
@@ -1009,6 +1039,7 @@
         <summary>Punti del gruppo attivo</summary>
         <div id="pointsGroup" class="pgroup"></div>
         <label class="muted" style="font-size:12.5px" title="Aggiunge alla tabella la colonna «Carica» per indicare la carica di ogni foro (ladder test); vuoto = carica del gruppo"><input type="checkbox" id="chPerShot"> Carica per foro (ladder)</label>
+        <label class="muted" style="font-size:12.5px" title="Aggiunge alla tabella la colonna «V0» per la velocità iniziale di ogni foro letta sul cronografo (unità della velocità del gruppo); sotto la tabella media, SD ed ES delle velocità"><input type="checkbox" id="vPerShot"> Velocità per foro (cronografo)</label>
         <div id="points"></div>
       </details>
     </section>
@@ -1061,6 +1092,15 @@
           </select>
         </div>
         </div>
+        <div class="subsec" id="ss-prov">
+        <div class="subsec-h"><span class="ssi">🏷</span>Provenienza dei file esportati</div>
+        <div class="row">
+          <label for="provAuthor">Autore</label>
+          <input id="provAuthor" type="text" maxlength="80" placeholder="nome o sigla" autocomplete="off" title="Scritto nei metadati di Result Card, dope card, reticolo e report PDF (e nella filigrana, se attiva). Salvato in questo browser, non nella sessione." style="flex:1">
+        </div>
+        <label class="muted" style="font-size:12.5px" title="Aggiunge in basso alle immagini PNG esportate e a ogni pagina del report una riga con app e versione, autore, data, nome e impronta SHA-256 della foto"><input type="checkbox" id="provWm"> Filigrana visibile su immagini e report</label>
+        <div class="muted" style="font-size:11.5px">I file esportati riportano sempre nei metadati app e versione, data, autore, nome e impronta SHA-256 della foto di lavoro (la stessa della sessione ZIP).</div>
+        </div>
         <div class="subsec" id="ss-tables">
         <div class="subsec-h"><span class="ssi">📄</span>Testo, tabelle e help</div>
         <div class="btns">
@@ -1081,6 +1121,21 @@
           <button class="btn" id="bArchClear">Svuota archivio</button>
         </div>
         <input type="file" id="fArch" accept=".json,.zip,application/json,application/zip" multiple hidden>
+        </div>
+        <div class="subsec" id="ss-storage">
+        <div class="subsec-h"><span class="ssi">💽</span>Spazio di archiviazione locale</div>
+        <div id="stoInfo" class="muted" style="font-size:12px">Salvataggio automatico, archivio e foto occupano spazio nel browser: «Verifica» lo misura e controlla che tutto sia leggibile.</div>
+        <div class="btns">
+          <button class="btn" id="bStoCheck" title="Misura lo spazio occupato nel browser e controlla l'integrità di salvataggio automatico, archivio e foto (non modifica nulla)">🩺 Verifica e misura</button>
+          <button class="btn" id="bStoOpt" title="Ricomprime in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser quando si risparmia almeno il 20%: le coordinate dei punti restano valide. I file già salvati sul disco non cambiano.">🗜 Ottimizza le foto</button>
+        </div>
+        <div class="row">
+          <label for="stoDays">Elimina le sessioni archiviate più vecchie di</label>
+          <input id="stoDays" type="number" min="1" step="1" value="90" style="width:64px" title="Giorni dalla data di salvataggio">
+          <span class="muted">giorni</span>
+          <button class="btn" id="bStoOld" title="Elimina dall'archivio del browser le sessioni salvate prima di quel numero di giorni (chiede conferma; i file sul disco non vengono toccati)">Elimina</button>
+        </div>
+        <div id="stoOut"></div>
         </div>
         <div class="subsec" id="ss-tt">
         <div class="subsec-h"><span class="ssi">🎯</span>Bersaglio di autoverifica</div>
@@ -1111,7 +1166,7 @@
           <p data-i18n><b>7. Leggi i risultati</b> (Risultati): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, e la <b>probabilità di colpire</b> un cerchio o un rettangolo. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; un clic sul titolo del gruppo lo riduce a una riga.</p>
           <p data-i18n><b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, dope card e calcolatore balistico, precisione per carica, correlazioni, confronto visivo e simulazione Monte Carlo. <kbd>Esc</kbd> torna all'immagine.</p>
           <p data-i18n><b>9. Salva ed esporta</b> (Dati): <b>Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) è il salvataggio principale (foto, punti e dati, si riapre con «Carica sessione»). Il salvataggio automatico nel browser propone «Ripristina» alla riapertura, ma non sostituisce il file. Poi Result Card PNG, report PDF, CSV dei fori e dei gruppi (separatore «;», virgola decimale), archivio ZIP di tutte le sessioni e bersaglio di autoverifica. Nomi dei file: <b>ShAn-tipo-arma-profilo-data-ora</b>.</p>
-          <p data-i18n><b>Pannello</b>: <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.</p>
+          <p data-i18n><b>Pannello</b>: <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.</p>
           <p data-i18n><b>Scorciatoie – strumenti</b>: <kbd>1</kbd> mano · <kbd>2</kbd> scala · <kbd>3</kbd> mira · <kbd>4</kbd> foro · <kbd>5</kbd> raddrizza · <kbd>6</kbd> prospettiva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>Esc</kbd> annulla lo strumento.</p>
           <p data-i18n><b>Scorciatoie – modifica</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annulla / ripeti · <kbd>Canc</kbd> elimina il punto selezionato · <kbd>Backspace</kbd> elimina l'ultimo · <kbd>X</kbd> escludi / includi il foro · <kbd>K</kbd> blocca / sblocca · <kbd>M</kbd> snap.</p>
           <p data-i18n><b>Scorciatoie – vista</b>: rotella o <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>F</kbd> adatta · trascina lo sfondo o tasto centrale = sposta · <kbd>L</kbd> lente (<kbd>Maiusc</kbd>+rotella = ingrandimento) · <kbd>G</kbd> griglia · <kbd>D</kbd> finestra di dettaglio · <kbd>T</kbd> tema.</p>
@@ -1339,6 +1394,18 @@
 <input type="file" id="fJson" accept=".json,.zip,application/json,application/zip" hidden>
 <input type="file" id="fHist" accept=".json,.zip,application/json,application/zip" multiple hidden>
 <div id="toast"></div>
+<!-- ============ TOUR GUIDATO (1.23.0) ============ -->
+<div id="tourHi" hidden></div>
+<div id="tourCard" role="dialog" aria-modal="false" aria-labelledby="tourT" hidden>
+  <div class="tour-h"><span id="tourStep"></span><button class="btn" id="bTourX" title="Chiudi il tour (Esc)" aria-label="Chiudi il tour">✕</button></div>
+  <h3 id="tourT"></h3>
+  <div id="tourB"></div>
+  <div class="btns"><button class="btn" id="bTourPrev" title="Passo precedente (←)">◀ Indietro</button><button class="btn primary" id="bTourNext" title="Passo successivo (→)">Avanti ▶</button></div>
+</div>
+<div id="tourAsk" role="dialog" aria-labelledby="tourAskT" hidden>
+  <div id="tourAskT" data-i18n><b>Prima volta qui?</b> Un tour di 5 passi mostra il flusso di lavoro: foto, scala, mira e colpi, correzione, salvataggio.</div>
+  <div class="btns"><button class="btn primary" id="bTourAskGo">🎓 Inizia il tour</button><button class="btn" id="bTourAskNo">No, grazie</button></div>
+</div>
 <div id="chTip" role="tooltip"></div>
 
 <!-- ==================================================================
@@ -3638,7 +3705,42 @@ const Calc = (() => {
     return { inner, sectors, total: pts.length };
   }
 
-  return { LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
+  /* ---------------- SHA-256 (dalla 1.23.0): impronta della foto per la provenienza dei file esportati ----------------
+     Implementazione FIPS 180-4 su byte (Uint8Array) → esadecimale minuscolo; senza crypto.subtle (che da file:// può mancare). */
+  const SHA_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+  function sha256(bytes) {
+    const u = bytes instanceof Uint8Array ? bytes : new TextEncoder().encode(String(bytes));
+    const n = u.length, total = Math.ceil((n + 9) / 64) * 64, m = new Uint8Array(total);
+    m.set(u); m[n] = 0x80;
+    const dv = new DataView(m.buffer), bits = n * 8;
+    dv.setUint32(total - 8, Math.floor(bits / 4294967296)); dv.setUint32(total - 4, bits >>> 0);
+    const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]), W = new Uint32Array(64);
+    for (let o = 0; o < total; o += 64) {
+      for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) {
+        const a = W[i - 15], b = W[i - 2];
+        const s0 = ((a >>> 7) | (a << 25)) ^ ((a >>> 18) | (a << 14)) ^ (a >>> 3), s1 = ((b >>> 17) | (b << 15)) ^ ((b >>> 19) | (b << 13)) ^ (b >>> 10);
+        W[i] = (W[i - 16] + s0 + W[i - 7] + s1) | 0;
+      }
+      let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (let i = 0; i < 64; i++) {
+        const S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7)), ch = (e & f) ^ (~e & g);
+        const t1 = (h + S1 + ch + SHA_K[i] + W[i]) | 0;
+        const S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10)), mj = (a & b) ^ (a & c) ^ (b & c);
+        const t2 = (S0 + mj) | 0;
+        h = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+    }
+    return [...H].map(x => x.toString(16).padStart(8, "0")).join("");
+  }
+
+  return { sha256, LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
     solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
@@ -3836,7 +3938,6 @@ const I18N = (() => {
    "<b>Il punto d'impatto si sposta</b> durante la serie: {0}.": "<b>The point of impact shifts</b> during the string: {0}.",
    "<b>Lavoro non salvato trovato</b> del {0} alle {1}: ": "<b>Unsaved work found</b> from {0} at {1}: ",
    "<b>Ore {0} · {1}</b>: {2} colpi{3}. {4}": "<b>{0} o'clock · {1}</b>: {2} shots{3}. {4}",
-   "<b>Pannello</b>: <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Panel</b>: <b>🔍</b> search for a setting (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> to step, <kbd>Esc</kbd> clears) · <b>⊟</b> collapses or expands all blocks · <b>Expert / Basic</b>: Basic keeps group size, correction and score and hides Quality, Probability and Comparison (exports stay complete) · density Compact / Standard / Detailed · <b>⚙</b> order and visibility of the sections · theme · language.",
    "<b>Scorciatoie – modifica</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annulla / ripeti · <kbd>Canc</kbd> elimina il punto selezionato · <kbd>Backspace</kbd> elimina l'ultimo · <kbd>X</kbd> escludi / includi il foro · <kbd>K</kbd> blocca / sblocca · <kbd>M</kbd> snap.": "<b>Shortcuts – editing</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> undo / redo · <kbd>Del</kbd> deletes the selected point · <kbd>Backspace</kbd> deletes the last one · <kbd>X</kbd> exclude / include the shot · <kbd>K</kbd> lock / unlock · <kbd>M</kbd> snap.",
    "<b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.": "<b>Shortcuts – pages and files</b>: <kbd>A</kbd> group charts · <kbd>C</kbd> comparison · <kbd>H</kbd> technical help · <kbd>V</kbd> shots to review (<kbd>,</kbd> / <kbd>.</kbd> previous / next) · <kbd>/</kbd> search · <kbd>Ctrl+O</kbd> load photo · <kbd>Ctrl+S</kbd> save the ZIP session · <kbd>Esc</kbd> closes windows and pages.",
    "<b>Scorciatoie – strumenti</b>: <kbd>1</kbd> mano · <kbd>2</kbd> scala · <kbd>3</kbd> mira · <kbd>4</kbd> foro · <kbd>5</kbd> raddrizza · <kbd>6</kbd> prospettiva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>Esc</kbd> annulla lo strumento.": "<b>Shortcuts – tools</b>: <kbd>1</kbd> hand · <kbd>2</kbd> scale · <kbd>3</kbd> aim · <kbd>4</kbd> shot · <kbd>5</kbd> straighten · <kbd>6</kbd> perspective · <kbd>R</kbd> ruler · <kbd>N</kbd> note · <kbd>Esc</kbd> cancels the tool.",
@@ -3959,8 +4060,6 @@ const I18N = (() => {
    "<tr><td>Probabilità per colpo</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>": "<tr><td>Probability per shot</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>",
    "<tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr>": "<tr><td>Group centre offset</td><td class=\"v\">{0}{1}</td></tr>",
    "<tr><td>Scostamento dalla mira</td><td class=\"v\">{0}</td></tr>": "<tr><td>Offset from the aim</td><td class=\"v\">{0}</td></tr>",
-   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
-   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).\">Effetto ES / RM</th><th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Effect of the shot on the group: group size / mean radius with the shot − without it (mm). Red = enlarges it, green = tightens it. For an excluded shot: what would happen by putting it back. Do not exclude a shot just because it enlarges the group: there must be a cause (see the guide).\">Effect ES / MR</th><th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
    "= di tiro": "= shooting distance",
    "A segno (qualsiasi zona)": "Hit (any zone)",
    "A3 orizzontale · 420 × 297 mm": "A3 landscape · 420 × 297 mm",
@@ -5567,7 +5666,104 @@ const I18N = (() => {
    "🗜 Esporta archivio (ZIP)": "🗜 Export archive (ZIP)",
    "🗜 Salva sessione ZIP": "🗜 Save ZIP session",
    "🧮 Stima del coefficiente balistico": "🧮 Ballistic coefficient estimate",
-   "🧲 Snap": "🧲 Snap"
+   "🧲 Snap": "🧲 Snap",
+   "<b>Pannello</b>: <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Panel</b>: <b>🎓</b> 5-step guided tour · <b>🔍</b> search for a setting (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> to step, <kbd>Esc</kbd> clears) · <b>⊟</b> collapses or expands all blocks · <b>Expert / Basic</b>: Basic keeps group size, correction and score and hides Quality, Probability and Comparison (exports stay complete) · density Compact / Standard / Detailed · <b>⚙</b> order and visibility of the sections · theme · language.",
+   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}{1}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).\">Effetto ES / RM</th><th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{2}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}{1}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Effect of the shot on the group: group size / mean radius with the shot − without it (mm). Red = enlarges it, green = tightens it. For an excluded shot: what would happen by putting it back. Do not exclude a shot just because it enlarges the group: there must be a cause (see the guide).\">Effect ES / MR</th><th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{2}<th></th></tr>",
+   "Scala: scrivi la distanza nota tra i due punti nel campo evidenziato.": "Scale: type the known distance between the two points in the highlighted field.",
+   "1 · Carica e raddrizza la foto": "1 · Load and straighten the photo",
+   "<b>📂 Carica foto</b> (<kbd>Ctrl+O</kbd>) o trascina la foto sull'immagine. Poi, in «Gestione immagine»: <b>📐 Raddrizza</b> (<kbd>5</kbd>) con due punti su una linea che deve risultare orizzontale o verticale, <b>⬚ Prospettiva</b> (<kbd>6</kbd>) se la foto è di sbieco; il ritaglio toglie lo sfondo.": "<b>📂 Load photo</b> (<kbd>Ctrl+O</kbd>) or drag the photo onto the image area. Then, in «Image handling»: <b>📐 Straighten</b> (<kbd>5</kbd>) with two points on a line that must end up horizontal or vertical, <b>⬚ Perspective</b> (<kbd>6</kbd>) if the photo was taken at an angle; cropping removes the background.",
+   "2 · Imposta la scala": "2 · Set the scale",
+   "<b>↔ Scala</b> (<kbd>2</kbd>): clicca due punti a distanza nota, per esempio due linee della griglia, poi scrivi la distanza nel campo che si evidenzia in «Calibrazione scala». Il semaforo indica la qualità della scala.": "<b>↔ Scale</b> (<kbd>2</kbd>): click two points at a known distance, for example two grid lines, then type the distance in the field that lights up in «Scale calibration». The traffic light shows the quality of the scale.",
+   "3 · Segna mira e colpi": "3 · Mark aim and shots",
+   "<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Parametri di tiro».": "<b>⊕ Aim</b> (<kbd>3</kbd>) on the point you aimed at, then <b>◉ Shot</b> (<kbd>4</kbd>) on the centre of each hole. Drag a point to move it, right-click to delete it; <b>🧲 Snap</b> (<kbd>M</kbd>) locks it onto the centre of the hole. Calibre, distance and click value are in «Shooting parameters».",
+   "4 · Leggi la correzione": "4 · Read the correction",
+   "In «Risultati» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione.": "«Results» shows the <b>group size</b> and the <b>correction</b> in clicks to dial on the turrets (elevation and windage); the arrow on the photo shows where the group will go after the correction.",
+   "5 · Salva": "5 · Save",
+   "<b>🗜 Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) conserva foto, punti e dati; nella stessa sezione Result Card, report PDF e CSV. Il tour si riapre quando vuoi con <b>🎓</b> in cima al pannello.": "<b>🗜 Save ZIP session</b> (<kbd>Ctrl+S</kbd>) keeps photo, points and data; the same section has Result Card, PDF report and CSV. Reopen the tour any time with <b>🎓</b> at the top of the panel.",
+   "Fine ✓": "Done ✓",
+   "Avanti ▶": "Next ▶",
+   "Velocità del foro": "Shot velocity",
+   "Scrive media e SD delle velocità misurate nei campi «Velocità iniziale» e «SD velocità» della munizione del gruppo (Ricarica e condizioni); si annulla con Ctrl+Z": "Writes the mean and SD of the measured velocities into the «Muzzle velocity» and «Velocity SD» fields of the group's ammunition (Load and conditions); undo with Ctrl+Z",
+   "Usa come V0/SD del gruppo": "Use as group V0/SD",
+   "Scrivi nella colonna V0 la velocità di ogni foro letta sul cronografo (Invio = foro successivo).": "Type the chronograph velocity of each hole in the V0 column (Enter = next hole).",
+   "V media": "Mean V",
+   "Velocità per foro": "Velocity per shot",
+   "Impronta della foto (SHA-256)": "Photo fingerprint (SHA-256)",
+   "Autore": "Author",
+   "Salvataggio automatico": "Autosave",
+   "Salvataggio automatico: sessione illeggibile": "Autosave: unreadable session",
+   " + salvataggio automatico": " + autosave",
+   "Integrità: tutte le sessioni e le foto sono leggibili.": "Integrity: all sessions and photos are readable.",
+   "Elimina le foto non più usate, le foto illeggibili e le voci d'archivio illeggibili (il salvataggio automatico illeggibile viene azzerato)": "Deletes photos no longer used, unreadable photos and unreadable archive entries (an unreadable autosave is cleared)",
+   "Ripara": "Repair",
+   "La foto è condivisa con altre sessioni: si libera solo quando non la usa più nessuna": "The photo is shared with other sessions: its space is freed only when none uses it any more",
+   "Elimina questa sessione dall'archivio del browser (i file sul disco non vengono toccati)": "Delete this session from the browser archive (files on disk are not touched)",
+   "* foto condivisa con altre sessioni o con il salvataggio automatico.": "* photo shared with other sessions or with the autosave.",
+   "Verifica in corso…": "Checking…",
+   "Eliminare questa sessione dall'archivio del browser? I file già salvati sul disco non vengono toccati.": "Delete this session from the browser archive? Files already saved on disk are not touched.",
+   "Sessione eliminata dall'archivio": "Session deleted from the archive",
+   "Indica un numero di giorni maggiore di zero.": "Enter a number of days greater than zero.",
+   "Ricomprimere in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser? Le coordinate dei punti restano valide e la perdita è trascurabile per la misura, ma la foto nel browser non sarà più identica all'originale (cambia anche la sua impronta SHA-256 e si perdono i dati EXIF). I file già salvati sul disco non cambiano.": "Recompress the photos stored in the browser as JPEG (quality 0.9, same resolution)? Point coordinates stay valid and the loss is negligible for measuring, but the photo in the browser will no longer be identical to the original (its SHA-256 fingerprint changes too and EXIF data is lost). Files already saved on disk do not change.",
+   "Ottimizzazione delle foto…": "Optimising photos…",
+   "Nessuna foto da ottimizzare: già compatte.": "No photos to optimise: already compact.",
+   "{0} colpi · media {1}{2}": "{0} shots · mean {1}{2}",
+   " · SD {0} · ES {1}": " · SD {0} · ES {1}",
+   "V0 del gruppo: {0}{1} (Ctrl+Z per annullare).": "Group V0: {0}{1} (Ctrl+Z to undo).",
+   ", SD {0}": ", SD {0}",
+   "V media {0}": "Mean V {0}",
+   "Passo {0} di {1}": "Step {0} of {1}",
+   "<th class=\"x\" title=\"Velocità iniziale di questo foro letta sul cronografo ({0}, l'unità della velocità del gruppo); vuoto = non misurata. Invio = foro successivo\">V0</th>": "<th class=\"x\" title=\"Muzzle velocity of this shot read on the chronograph ({0}, the group's velocity unit); empty = not measured. Enter = next hole\">V0</th>",
+   "Velocità: {0}": "Velocity: {0}",
+   "Foto «{0}»: dati mancanti": "Photo «{0}»: data missing",
+   "Foto «{0}»: {1} × {2} px invece di {3} × {4}": "Photo «{0}»: {1} × {2} px instead of {3} × {4}",
+   "Foto «{0}»: non decodificabile": "Photo «{0}»: cannot be decoded",
+   "{0}: la foto non è più nel browser (nello ZIP mancherà)": "{0}: the photo is no longer in the browser (it will be missing from the ZIP)",
+   "Archivio «{0}»": "Archive «{0}»",
+   "Archivio «{0}»: sessione illeggibile": "Archive «{0}»: unreadable session",
+   " · il browser stima {0} usati per questo sito{1}": " · the browser estimates {0} used by this site{1}",
+   " su {0} disponibili": " of {0} available",
+   "{0} problemi di integrità": "{0} integrity problems",
+   "{0} foto non più usate da nessuna sessione.": "{0} photos no longer used by any session.",
+   "Eliminare {0} sessioni dall'archivio del browser? I file già salvati sul disco non vengono toccati.": "Delete {0} sessions from the browser archive? Files already saved on disk are not touched.",
+   "{0} sessioni eliminate dall'archivio": "{0} sessions deleted from the archive",
+   "Nessuna sessione archiviata più vecchia di {0} giorni.": "No archived session older than {0} days.",
+   "Riparato: {0} foto e {1} sessioni eliminate.": "Repaired: {0} photos and {1} sessions deleted.",
+   "Foto ottimizzate: {0} di {1}, da {2} a {3}.": "Photos optimised: {0} of {1}, from {2} to {3}.",
+   "V media <b>{0}</b>": "mean V <b>{0}</b>",
+   "Tour guidato: i 5 passi del flusso di lavoro (foto, scala, mira e colpi, correzione, salvataggio)": "Guided tour: the 5 steps of the workflow (photo, scale, aim and shots, correction, saving)",
+   "Tour guidato": "Guided tour",
+   "Scrive accanto a ogni foro la velocità misurata col cronografo (colonna V0 della tabella dei punti) e la velocità media nell'etichetta del group size": "Writes next to each hole the velocity measured with the chronograph (V0 column of the points table) and the mean velocity in the group size label",
+   "Velocità dei colpi sulla foto": "Shot velocities on the photo",
+   "Aggiunge alla tabella la colonna «V0» per la velocità iniziale di ogni foro letta sul cronografo (unità della velocità del gruppo); sotto la tabella media, SD ed ES delle velocità": "Adds the «V0» column to the table for the chronograph muzzle velocity of each shot (the group's velocity unit); below the table the mean, SD and ES of the velocities",
+   "Velocità per foro (cronografo)": "Velocity per shot (chronograph)",
+   "Provenienza dei file esportati": "Provenance of exported files",
+   "nome o sigla": "name or initials",
+   "Scritto nei metadati di Result Card, dope card, reticolo e report PDF (e nella filigrana, se attiva). Salvato in questo browser, non nella sessione.": "Written in the metadata of Result Card, dope card, reticle and PDF report (and in the watermark, if enabled). Saved in this browser, not in the session.",
+   "Aggiunge in basso alle immagini PNG esportate e a ogni pagina del report una riga con app e versione, autore, data, nome e impronta SHA-256 della foto": "Adds at the bottom of exported PNG images and of every report page a line with app and version, author, date, photo name and SHA-256 fingerprint",
+   "Filigrana visibile su immagini e report": "Visible watermark on images and reports",
+   "I file esportati riportano sempre nei metadati app e versione, data, autore, nome e impronta SHA-256 della foto di lavoro (la stessa della sessione ZIP).": "Exported files always carry in their metadata app and version, date, author, name and SHA-256 fingerprint of the working photo (the same as in the session ZIP).",
+   "Spazio di archiviazione locale": "Local storage",
+   "Salvataggio automatico, archivio e foto occupano spazio nel browser: «Verifica» lo misura e controlla che tutto sia leggibile.": "Autosave, archive and photos take up space in the browser: «Check» measures it and verifies that everything is readable.",
+   "Misura lo spazio occupato nel browser e controlla l'integrità di salvataggio automatico, archivio e foto (non modifica nulla)": "Measures the space used in the browser and checks the integrity of autosave, archive and photos (changes nothing)",
+   "🩺 Verifica e misura": "🩺 Check and measure",
+   "Ricomprime in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser quando si risparmia almeno il 20%: le coordinate dei punti restano valide. I file già salvati sul disco non cambiano.": "Recompresses the photos stored in the browser as JPEG (quality 0.9, same resolution) when this saves at least 20%: point coordinates stay valid. Files already saved on disk do not change.",
+   "🗜 Ottimizza le foto": "🗜 Optimise photos",
+   "Elimina le sessioni archiviate più vecchie di": "Delete archived sessions older than",
+   "Giorni dalla data di salvataggio": "Days since saving",
+   "giorni": "days",
+   "Elimina dall'archivio del browser le sessioni salvate prima di quel numero di giorni (chiede conferma; i file sul disco non vengono toccati)": "Deletes from the browser archive the sessions saved more than that many days ago (asks for confirmation; files on disk are not touched)",
+   "Chiudi il tour (Esc)": "Close the tour (Esc)",
+   "Chiudi il tour": "Close the tour",
+   "Passo precedente (←)": "Previous step (←)",
+   "◀ Indietro": "◀ Back",
+   "Passo successivo (→)": "Next step (→)",
+   "<b>Prima volta qui?</b> Un tour di 5 passi mostra il flusso di lavoro: foto, scala, mira e colpi, correzione, salvataggio.": "<b>First time here?</b> A 5-step tour shows the workflow: photo, scale, aim and shots, correction, saving.",
+   "🎓 Inizia il tour": "🎓 Start the tour",
+   "No, grazie": "No, thanks",
+   "SD {0}": "SD {0}",
+   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
+   "Occupati <b>{0}</b>: foto {1} ({2}), sessioni {3} (archiviate: {4}{5}){6}.": "Used <b>{0}</b>: photos {1} ({2}), sessions {3} (archived: {4}{5}){6}.",
+   "gruppi: {0} · fori: {1}": "groups: {0} · holes: {1}"
   }/*END-EN-DICT*/;
   /* Dizionario russo (dalla 1.19.0): stesse chiavi italiane. Una chiave assente in russo finisce in «missing» e
      ripiega sull'inglese (meglio dell'italiano per chi legge il russo). Unità angolari lasciate in caratteri latini
@@ -5741,7 +5937,6 @@ const I18N = (() => {
    "<b>Il punto d'impatto si sposta</b> durante la serie: {0}.": "<b>Точка попадания смещается</b> в ходе серии: {0}.",
    "<b>Lavoro non salvato trovato</b> del {0} alle {1}: ": "<b>Найдена несохранённая работа</b> от {0} в {1}: ",
    "<b>Ore {0} · {1}</b>: {2} colpi{3}. {4}": "<b>{0} ч · {1}</b>: {2} выстр.{3}. {4}",
-   "<b>Pannello</b>: <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Панель</b>: <b>🔍</b> поиск настройки (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> и <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> для перехода, <kbd>Esc</kbd> сбрасывает) · <b>⊟</b> сворачивает или разворачивает все блоки · <b>Эксперт / Базовый</b>: в базовом режиме остаются размер группы, поправка и очки, а «Качество», «Вероятность» и «Сравнение» скрыты (экспорт остаётся полным) · плотность «Компактно / Стандартно / Подробно» · <b>⚙</b> порядок и видимость разделов · тема · язык.",
    "<b>Scorciatoie – modifica</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annulla / ripeti · <kbd>Canc</kbd> elimina il punto selezionato · <kbd>Backspace</kbd> elimina l'ultimo · <kbd>X</kbd> escludi / includi il foro · <kbd>K</kbd> blocca / sblocca · <kbd>M</kbd> snap.": "<b>Клавиши – правка</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> отменить / вернуть · <kbd>Del</kbd> удаляет выбранную точку · <kbd>Backspace</kbd> удаляет последнюю · <kbd>X</kbd> исключить / включить выстрел · <kbd>K</kbd> заблокировать / разблокировать · <kbd>M</kbd> привязка.",
    "<b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.": "<b>Клавиши – страницы и файлы</b>: <kbd>A</kbd> графики группы · <kbd>C</kbd> сравнение · <kbd>H</kbd> техническая справка · <kbd>V</kbd> выстрелы для проверки (<kbd>,</kbd> / <kbd>.</kbd> предыдущий / следующий) · <kbd>/</kbd> поиск · <kbd>Ctrl+O</kbd> загрузить фото · <kbd>Ctrl+S</kbd> сохранить сессию ZIP · <kbd>Esc</kbd> закрывает окна и страницы.",
    "<b>Scorciatoie – strumenti</b>: <kbd>1</kbd> mano · <kbd>2</kbd> scala · <kbd>3</kbd> mira · <kbd>4</kbd> foro · <kbd>5</kbd> raddrizza · <kbd>6</kbd> prospettiva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>Esc</kbd> annulla lo strumento.": "<b>Клавиши – инструменты</b>: <kbd>1</kbd> рука · <kbd>2</kbd> масштаб · <kbd>3</kbd> прицел · <kbd>4</kbd> пробоина · <kbd>5</kbd> выровнять · <kbd>6</kbd> перспектива · <kbd>R</kbd> линейка · <kbd>N</kbd> заметка · <kbd>Esc</kbd> отменяет инструмент.",
@@ -5864,8 +6059,6 @@ const I18N = (() => {
    "<tr><td>Probabilità per colpo</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>": "<tr><td>Вероятность на выстрел</td><td class=\"big\">{0}</td><td class=\"big\">{1}</td></tr>",
    "<tr><td>Scostamento centro gruppo</td><td class=\"v\">{0}{1}</td></tr>": "<tr><td>Смещение центра группы</td><td class=\"v\">{0}{1}</td></tr>",
    "<tr><td>Scostamento dalla mira</td><td class=\"v\">{0}</td></tr>": "<tr><td>Смещение от точки прицеливания</td><td class=\"v\">{0}</td></tr>",
-   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Тип</th><th title=\"Исключить из группы (клавиша X на выбранном выстреле)\">Искл.</th><th class=\"x\" title=\"Клики по вертикали, выставленные на барабанчике для этого выстрела (+ = вверх). Новый выстрел берёт значения предыдущего; исправление выстрела обновляет и следующие с тем же значением.\">Верт.</th><th class=\"x\" title=\"Клики по горизонтали, выставленные на барабанчике для этого выстрела (+ = вправо)\">Гор.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Расстояние от точки прицеливания (мм)\">От ТП</th><th class=\"x\" title=\"Расстояние от центра группы (мм)\">От центра</th>\n    <th class=\"x\" title=\"Направление от центра группы: градусы по часовой стрелке от «верха» (С) и румб\">Напр.</th>\n    <th class=\"x\" title=\"Клики по вертикали, чтобы привести точку в точку прицеливания\">Клики ↕</th><th class=\"x\" title=\"Клики по горизонтали, чтобы привести точку в точку прицеливания\">Клики ↔</th>{1}<th></th></tr>",
-   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).\">Effetto ES / RM</th><th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Тип</th><th title=\"Исключить из группы (клавиша X на выбранном выстреле)\">Искл.</th><th class=\"x\" title=\"Клики по вертикали, выставленные на барабанчике для этого выстрела (+ = вверх). Новый выстрел берёт значения предыдущего; исправление выстрела обновляет и следующие с тем же значением.\">Верт.</th><th class=\"x\" title=\"Клики по горизонтали, выставленные на барабанчике для этого выстрела (+ = вправо)\">Гор.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Расстояние от точки прицеливания (мм)\">От ТП</th><th class=\"x\" title=\"Расстояние от центра группы (мм)\">От центра</th>\n    <th class=\"x\" title=\"Направление от центра группы: градусы по часовой стрелке от «верха» (С) и румб\">Напр.</th>\n    <th class=\"x\" title=\"Влияние выстрела на группу: размер группы / средний радиус с выстрелом − без него (мм). Красный = увеличивает, зелёный = уменьшает. Для исключённого выстрела: что будет, если вернуть его. Не исключайте выстрел только потому, что он увеличивает группу: нужна причина (см. руководство).\">Влияние ES / MR</th><th class=\"x\" title=\"Клики по вертикали, чтобы привести точку в точку прицеливания\">Клики ↕</th><th class=\"x\" title=\"Клики по горизонтали, чтобы привести точку в точку прицеливания\">Клики ↔</th>{1}<th></th></tr>",
    "= di tiro": "= стрельбы",
    "A segno (qualsiasi zona)": "Попадание (любая зона)",
    "A3 orizzontale · 420 × 297 mm": "A3 альбомная · 420 × 297 мм",
@@ -7472,7 +7665,104 @@ const I18N = (() => {
    "🗜 Esporta archivio (ZIP)": "🗜 Экспорт архива (ZIP)",
    "🗜 Salva sessione ZIP": "🗜 Сохранить сессию ZIP",
    "🧮 Stima del coefficiente balistico": "🧮 Оценка баллистического коэффициента",
-   "🧲 Snap": "🧲 Привязка"
+   "🧲 Snap": "🧲 Привязка",
+   "<b>Pannello</b>: <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Панель</b>: <b>🎓</b> обзорный тур из 5 шагов · <b>🔍</b> поиск настройки (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> и <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> для перехода, <kbd>Esc</kbd> сбрасывает) · <b>⊟</b> сворачивает или разворачивает все блоки · <b>Эксперт / Базовый</b>: в базовом режиме остаются размер группы, поправка и очки, а «Качество», «Вероятность» и «Сравнение» скрыты (экспорт остаётся полным) · плотность «Компактно / Стандартно / Подробно» · <b>⚙</b> порядок и видимость разделов · тема · язык.",
+   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}{1}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).\">Effetto ES / RM</th><th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{2}<th></th></tr>": "<tr><th>Тип</th><th title=\"Исключить из группы (клавиша X на выбранном выстреле)\">Искл.</th><th class=\"x\" title=\"Клики по вертикали, выставленные на барабанчике для этого выстрела (+ = вверх). Новый выстрел берёт значения предыдущего; исправление выстрела обновляет и следующие с тем же значением.\">Верт.</th><th class=\"x\" title=\"Клики по горизонтали, выставленные на барабанчике для этого выстрела (+ = вправо)\">Гор.</th>{0}{1}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Расстояние от точки прицеливания (мм)\">От ТП</th><th class=\"x\" title=\"Расстояние от центра группы (мм)\">От центра</th>\n    <th class=\"x\" title=\"Направление от центра группы: градусы по часовой стрелке от «верха» (С) и румб\">Напр.</th>\n    <th class=\"x\" title=\"Влияние выстрела на группу: размер группы / средний радиус с выстрелом − без него (мм). Красный = увеличивает, зелёный = уменьшает. Для исключённого выстрела: что будет, если вернуть его. Не исключайте выстрел только потому, что он увеличивает группу: нужна причина (см. руководство).\">Влияние ES / MR</th><th class=\"x\" title=\"Клики по вертикали, чтобы привести точку в точку прицеливания\">Клики ↕</th><th class=\"x\" title=\"Клики по горизонтали, чтобы привести точку в точку прицеливания\">Клики ↔</th>{2}<th></th></tr>",
+   "Scala: scrivi la distanza nota tra i due punti nel campo evidenziato.": "Масштаб: введите известное расстояние между двумя точками в выделенное поле.",
+   "1 · Carica e raddrizza la foto": "1 · Загрузите и выровняйте фото",
+   "<b>📂 Carica foto</b> (<kbd>Ctrl+O</kbd>) o trascina la foto sull'immagine. Poi, in «Gestione immagine»: <b>📐 Raddrizza</b> (<kbd>5</kbd>) con due punti su una linea che deve risultare orizzontale o verticale, <b>⬚ Prospettiva</b> (<kbd>6</kbd>) se la foto è di sbieco; il ritaglio toglie lo sfondo.": "<b>📂 Загрузить фото</b> (<kbd>Ctrl+O</kbd>) или перетащите фото на изображение. Затем в «Обработка изображения»: <b>📐 Выровнять</b> (<kbd>5</kbd>) по двум точкам линии, которая должна стать горизонтальной или вертикальной, <b>⬚ Перспектива</b> (<kbd>6</kbd>), если фото снято под углом; обрезка убирает фон.",
+   "2 · Imposta la scala": "2 · Задайте масштаб",
+   "<b>↔ Scala</b> (<kbd>2</kbd>): clicca due punti a distanza nota, per esempio due linee della griglia, poi scrivi la distanza nel campo che si evidenzia in «Calibrazione scala». Il semaforo indica la qualità della scala.": "<b>↔ Масштаб</b> (<kbd>2</kbd>): кликните две точки на известном расстоянии, например две линии сетки, затем введите расстояние в поле, которое подсветится в «Калибровка масштаба». Светофор показывает качество масштаба.",
+   "3 · Segna mira e colpi": "3 · Отметьте точку прицеливания и выстрелы",
+   "<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Parametri di tiro».": "<b>⊕ Прицел</b> (<kbd>3</kbd>) на точку прицеливания, затем <b>◉ Пробоина</b> (<kbd>4</kbd>) на центр каждой пробоины. Перетащите точку, чтобы сдвинуть, правая кнопка — удалить; <b>🧲 Привязка</b> (<kbd>M</kbd>) притягивает её к центру пробоины. Калибр, дистанция и цена клика — в «Параметры стрельбы».",
+   "4 · Leggi la correzione": "4 · Прочитайте поправку",
+   "In «Risultati» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione.": "В «Результатах» — <b>размер группы</b> и <b>поправка</b> в кликах для барабанчиков (вертикаль и горизонталь); стрелка на фото показывает, куда сместится группа после поправки.",
+   "5 · Salva": "5 · Сохраните",
+   "<b>🗜 Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) conserva foto, punti e dati; nella stessa sezione Result Card, report PDF e CSV. Il tour si riapre quando vuoi con <b>🎓</b> in cima al pannello.": "<b>🗜 Сохранить сессию ZIP</b> (<kbd>Ctrl+S</kbd>) сохраняет фото, точки и данные; в том же разделе — Result Card, PDF-отчёт и CSV. Тур можно открыть снова кнопкой <b>🎓</b> вверху панели.",
+   "Fine ✓": "Готово ✓",
+   "Avanti ▶": "Далее ▶",
+   "Velocità del foro": "Скорость выстрела",
+   "Scrive media e SD delle velocità misurate nei campi «Velocità iniziale» e «SD velocità» della munizione del gruppo (Ricarica e condizioni); si annulla con Ctrl+Z": "Записывает среднее и SD измеренных скоростей в поля «Начальная скорость» и «СКО скорости» патрона группы (Снаряжение и условия); отмена — Ctrl+Z",
+   "Usa come V0/SD del gruppo": "Использовать как V0/SD группы",
+   "Scrivi nella colonna V0 la velocità di ogni foro letta sul cronografo (Invio = foro successivo).": "Введите в столбец V0 скорость каждого выстрела по хронографу (Enter — следующая пробоина).",
+   "V media": "Ср. V",
+   "Velocità per foro": "Скорость по выстрелам",
+   "Impronta della foto (SHA-256)": "Отпечаток фото (SHA-256)",
+   "Autore": "Автор",
+   "Salvataggio automatico": "Автосохранение",
+   "Salvataggio automatico: sessione illeggibile": "Автосохранение: сессия не читается",
+   " + salvataggio automatico": " + автосохранение",
+   "Integrità: tutte le sessioni e le foto sono leggibili.": "Целостность: все сессии и фото читаются.",
+   "Elimina le foto non più usate, le foto illeggibili e le voci d'archivio illeggibili (il salvataggio automatico illeggibile viene azzerato)": "Удаляет неиспользуемые и нечитаемые фото и нечитаемые записи архива (нечитаемое автосохранение сбрасывается)",
+   "Ripara": "Исправить",
+   "La foto è condivisa con altre sessioni: si libera solo quando non la usa più nessuna": "Фото общее с другими сессиями: место освободится, только когда его не использует ни одна",
+   "Elimina questa sessione dall'archivio del browser (i file sul disco non vengono toccati)": "Удалить эту сессию из архива браузера (файлы на диске не затрагиваются)",
+   "* foto condivisa con altre sessioni o con il salvataggio automatico.": "* фото общее с другими сессиями или с автосохранением.",
+   "Verifica in corso…": "Проверка…",
+   "Eliminare questa sessione dall'archivio del browser? I file già salvati sul disco non vengono toccati.": "Удалить эту сессию из архива браузера? Файлы, уже сохранённые на диске, не затрагиваются.",
+   "Sessione eliminata dall'archivio": "Сессия удалена из архива",
+   "Indica un numero di giorni maggiore di zero.": "Укажите число дней больше нуля.",
+   "Ricomprimere in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser? Le coordinate dei punti restano valide e la perdita è trascurabile per la misura, ma la foto nel browser non sarà più identica all'originale (cambia anche la sua impronta SHA-256 e si perdono i dati EXIF). I file già salvati sul disco non cambiano.": "Пересжать фото, сохранённые в браузере, в JPEG (качество 0,9, то же разрешение)? Координаты точек остаются верными, потеря для измерений пренебрежима, но фото в браузере уже не будет идентично оригиналу (меняется и отпечаток SHA-256, теряются данные EXIF). Файлы, уже сохранённые на диске, не меняются.",
+   "Ottimizzazione delle foto…": "Оптимизация фото…",
+   "Nessuna foto da ottimizzare: già compatte.": "Нечего оптимизировать: фото уже компактны.",
+   "{0} colpi · media {1}{2}": "{0} выстр. · среднее {1}{2}",
+   " · SD {0} · ES {1}": " · СКО {0} · ES {1}",
+   "V0 del gruppo: {0}{1} (Ctrl+Z per annullare).": "V0 группы: {0}{1} (Ctrl+Z — отмена).",
+   ", SD {0}": ", СКО {0}",
+   "V media {0}": "Ср. V {0}",
+   "Passo {0} di {1}": "Шаг {0} из {1}",
+   "<th class=\"x\" title=\"Velocità iniziale di questo foro letta sul cronografo ({0}, l'unità della velocità del gruppo); vuoto = non misurata. Invio = foro successivo\">V0</th>": "<th class=\"x\" title=\"Начальная скорость этого выстрела по хронографу ({0}, единица скорости группы); пусто — не измерена. Enter — следующая пробоина\">V0</th>",
+   "Velocità: {0}": "Скорость: {0}",
+   "Foto «{0}»: dati mancanti": "Фото «{0}»: нет данных",
+   "Foto «{0}»: {1} × {2} px invece di {3} × {4}": "Фото «{0}»: {1} × {2} пикс. вместо {3} × {4}",
+   "Foto «{0}»: non decodificabile": "Фото «{0}»: не декодируется",
+   "{0}: la foto non è più nel browser (nello ZIP mancherà)": "{0}: фото больше нет в браузере (в ZIP его не будет)",
+   "Archivio «{0}»": "Архив «{0}»",
+   "Archivio «{0}»: sessione illeggibile": "Архив «{0}»: сессия не читается",
+   " · il browser stima {0} usati per questo sito{1}": " · по оценке браузера сайт занимает {0}{1}",
+   " su {0} disponibili": " из {0} доступных",
+   "{0} problemi di integrità": "Проблем целостности: {0}",
+   "{0} foto non più usate da nessuna sessione.": "Фото, не используемых ни одной сессией: {0}.",
+   "Eliminare {0} sessioni dall'archivio del browser? I file già salvati sul disco non vengono toccati.": "Удалить из архива браузера сессий: {0}? Файлы, уже сохранённые на диске, не затрагиваются.",
+   "{0} sessioni eliminate dall'archivio": "Удалено сессий из архива: {0}",
+   "Nessuna sessione archiviata più vecchia di {0} giorni.": "Нет сессий в архиве старше {0} дн.",
+   "Riparato: {0} foto e {1} sessioni eliminate.": "Исправлено: удалено фото — {0}, сессий — {1}.",
+   "Foto ottimizzate: {0} di {1}, da {2} a {3}.": "Оптимизировано фото: {0} из {1}, с {2} до {3}.",
+   "V media <b>{0}</b>": "ср. V <b>{0}</b>",
+   "Tour guidato: i 5 passi del flusso di lavoro (foto, scala, mira e colpi, correzione, salvataggio)": "Обзорный тур: 5 шагов работы (фото, масштаб, прицел и выстрелы, поправка, сохранение)",
+   "Tour guidato": "Обзорный тур",
+   "Scrive accanto a ogni foro la velocità misurata col cronografo (colonna V0 della tabella dei punti) e la velocità media nell'etichetta del group size": "Пишет рядом с каждой пробоиной скорость по хронографу (столбец V0 таблицы точек) и среднюю скорость в подписи размера группы",
+   "Velocità dei colpi sulla foto": "Скорости выстрелов на фото",
+   "Aggiunge alla tabella la colonna «V0» per la velocità iniziale di ogni foro letta sul cronografo (unità della velocità del gruppo); sotto la tabella media, SD ed ES delle velocità": "Добавляет в таблицу столбец «V0» для начальной скорости каждого выстрела по хронографу (единица скорости группы); под таблицей — среднее, SD и ES скоростей",
+   "Velocità per foro (cronografo)": "Скорость по выстрелам (хронограф)",
+   "Provenienza dei file esportati": "Происхождение экспортируемых файлов",
+   "nome o sigla": "имя или инициалы",
+   "Scritto nei metadati di Result Card, dope card, reticolo e report PDF (e nella filigrana, se attiva). Salvato in questo browser, non nella sessione.": "Записывается в метаданные Result Card, дроп-карты, сетки и PDF-отчёта (и в водяной знак, если включён). Хранится в этом браузере, не в сессии.",
+   "Aggiunge in basso alle immagini PNG esportate e a ogni pagina del report una riga con app e versione, autore, data, nome e impronta SHA-256 della foto": "Добавляет внизу экспортируемых PNG и каждой страницы отчёта строку с программой и версией, автором, датой, именем и отпечатком SHA-256 фото",
+   "Filigrana visibile su immagini e report": "Видимый водяной знак на изображениях и отчётах",
+   "I file esportati riportano sempre nei metadati app e versione, data, autore, nome e impronta SHA-256 della foto di lavoro (la stessa della sessione ZIP).": "Экспортируемые файлы всегда содержат в метаданных программу и версию, дату, автора, имя и отпечаток SHA-256 рабочего фото (того же, что в сессии ZIP).",
+   "Spazio di archiviazione locale": "Локальное хранилище",
+   "Salvataggio automatico, archivio e foto occupano spazio nel browser: «Verifica» lo misura e controlla che tutto sia leggibile.": "Автосохранение, архив и фото занимают место в браузере: «Проверить» измеряет его и проверяет, что всё читается.",
+   "Misura lo spazio occupato nel browser e controlla l'integrità di salvataggio automatico, archivio e foto (non modifica nulla)": "Измеряет занятое в браузере место и проверяет целостность автосохранения, архива и фото (ничего не меняет)",
+   "🩺 Verifica e misura": "🩺 Проверить и измерить",
+   "Ricomprime in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser quando si risparmia almeno il 20%: le coordinate dei punti restano valide. I file già salvati sul disco non cambiano.": "Пересжимает фото в браузере в JPEG (качество 0,9, то же разрешение), если это экономит не менее 20%: координаты точек остаются верными. Файлы на диске не меняются.",
+   "🗜 Ottimizza le foto": "🗜 Оптимизировать фото",
+   "Elimina le sessioni archiviate più vecchie di": "Удалить сессии архива старше",
+   "Giorni dalla data di salvataggio": "Дней с даты сохранения",
+   "giorni": "дн.",
+   "Elimina dall'archivio del browser le sessioni salvate prima di quel numero di giorni (chiede conferma; i file sul disco non vengono toccati)": "Удаляет из архива браузера сессии, сохранённые раньше указанного числа дней (с подтверждением; файлы на диске не затрагиваются)",
+   "Chiudi il tour (Esc)": "Закрыть тур (Esc)",
+   "Chiudi il tour": "Закрыть тур",
+   "Passo precedente (←)": "Предыдущий шаг (←)",
+   "◀ Indietro": "◀ Назад",
+   "Passo successivo (→)": "Следующий шаг (→)",
+   "<b>Prima volta qui?</b> Un tour di 5 passi mostra il flusso di lavoro: foto, scala, mira e colpi, correzione, salvataggio.": "<b>Впервые здесь?</b> Тур из 5 шагов покажет порядок работы: фото, масштаб, прицел и выстрелы, поправка, сохранение.",
+   "🎓 Inizia il tour": "🎓 Начать тур",
+   "No, grazie": "Нет, спасибо",
+   "SD {0}": "СКО {0}",
+   "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Тип</th><th title=\"Исключить из группы (клавиша X на выбранном выстреле)\">Искл.</th><th class=\"x\" title=\"Клики по вертикали, выставленные на барабанчике для этого выстрела (+ = вверх). Новый выстрел берёт значения предыдущего; исправление выстрела обновляет и следующие с тем же значением.\">Верт.</th><th class=\"x\" title=\"Клики по горизонтали, выставленные на барабанчике для этого выстрела (+ = вправо)\">Гор.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Расстояние от точки прицеливания (мм)\">От ТП</th><th class=\"x\" title=\"Расстояние от центра группы (мм)\">От центра</th>\n    <th class=\"x\" title=\"Направление от центра группы: градусы по часовой стрелке от «верха» (С) и румб\">Напр.</th>\n    <th class=\"x\" title=\"Клики по вертикали, чтобы привести точку в точку прицеливания\">Клики ↕</th><th class=\"x\" title=\"Клики по горизонтали, чтобы привести точку в точку прицеливания\">Клики ↔</th>{1}<th></th></tr>",
+   "Occupati <b>{0}</b>: foto {1} ({2}), sessioni {3} (archiviate: {4}{5}){6}.": "Занято <b>{0}</b>: фото {1} ({2}), сессии {3} (в архиве: {4}{5}){6}.",
+   "gruppi: {0} · fori: {1}": "групп: {0} · пробоин: {1}"
   }/*END-RU-DICT*/;
   const DICT = { en: EN, ru: RU };
   const LANGS = ["it", "en", "ru"];
@@ -7538,7 +7828,7 @@ const PDF_FONTS = {"R":{"name":"SAReportSans-Regular","b64":"AAEAAAALAIAAAwAwT1M
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.22.0";
+const APP_VERSION = "1.23.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -7737,7 +8027,7 @@ function params() {
     hitDist: num("hitDist"), hitDistUnit: $("hitDistUnit").value,
     scoreTarget: $("scoreTarget").value, scoreD10: num("scoreD10"), scoreStep: num("scoreStep"), scoreInner: num("scoreInner"),
     // dalla 1.10.0: sagome e punteggio decimale
-    scoreDec: $("scoreDec").checked, chPerShot: $("chPerShot").checked, ipscPF: $("ipscPF").value, silScale: $("silScale").value, vitalPreset: $("vitalPreset").value, vitalW: num("vitalW"), vitalH: num("vitalH"),
+    scoreDec: $("scoreDec").checked, chPerShot: $("chPerShot").checked, vPerShot: $("vPerShot").checked, vLabelOn: $("vLabelOn").checked, ipscPF: $("ipscPF").value, silScale: $("silScale").value, vitalPreset: $("vitalPreset").value, vitalW: num("vitalW"), vitalH: num("vitalH"),
     // dalla 1.9.0: confronto visivo e reticolo
     visLayout: $("visLayout").value, visRef: $("visRef").value, visUnit: $("visUnit").value,
     rtType: $("rtType").value, rtStep: num("rtStep"), rtUnit: $("rtUnit").value, rtLab: num("rtLab"), rtPlane: $("rtPlane").value,
@@ -7776,7 +8066,7 @@ function setParams(p) {
   if (p.scoreDec !== undefined) $("scoreDec").checked = !!p.scoreDec;
   if (p.chPerShot !== undefined) $("chPerShot").checked = !!p.chPerShot;
   if (p.rtWind !== undefined) $("rtWind").checked = !!p.rtWind;
-  for (const k of ["haloOn", "smOn", "smExport", "notesReport", "qiGqiOn", "qiTqiOn", "qiCiOn", "diagOn", "balWind"]) if (p[k] !== undefined) $(k).checked = !!p[k];
+  for (const k of ["haloOn", "smOn", "smExport", "notesReport", "qiGqiOn", "qiTqiOn", "qiCiOn", "diagOn", "balWind", "vPerShot", "vLabelOn"]) if (p[k] !== undefined) $(k).checked = !!p[k];
   $("diagHand2").value = $("diagHand").value;   // la mano compare in due menu (opzioni dell'immagine e pagina del gruppo)
   if (typeof syncRtControls === "function") syncRtControls();
   if (p.hitDist !== undefined) $("hitDist").value = p.hitDist > 0 ? p.hitDist : "";   // 0 = distanza di tiro (campo vuoto)
@@ -8373,6 +8663,11 @@ const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
 const dialUsed = g => g.shots.some(q => (+q.dv || 0) !== 0 || (+q.dh || 0) !== 0);
 /** Corregge i click di un foro; i fori successivi che avevano lo stesso valore (ripreso dal precedente) lo seguono. */
 function setDial(g, id, key, v) {
+  if (key === "v") {   // velocità del foro (1.23.0): scritta nell'unità della velocità del gruppo, salvata in m/s; vuoto = non misurata; non si propaga
+    const s = g.shots.find(q => q.id === id); if (!s) return;
+    if (isFinite(v) && v > 0) s.v = v * V_TO_MS[vUnitOf(g)]; else delete s.v;
+    commit(); return;
+  }
   if (key === "ch") {   // carica per foro (ladder, dalla 1.10.0): vuoto = carica del gruppo; propagata come i click
     const i = g.shots.findIndex(q => q.id === id); if (i < 0) return;
     const old = g.shots[i].ch, nv = isFinite(v) && v > 0 ? v : undefined;
@@ -8390,6 +8685,43 @@ function setDial(g, id, key, v) {
   commit();
 }
 const dopeOf = (g, cc) => g.poa ? Calc.dope(inc(g), g.poa, cc) : null;
+/* --- velocità per foro (1.23.0): sh.v in m/s, mostrata nell'unità della velocità del gruppo (Munizione) ---
+   Media, SD (n − 1) ed ES su tutti i fori con la velocità, esclusi compresi: l'esclusione riguarda il punto d'impatto, non il cronografo. */
+const vUnitOf = g => loadV((g && g.load) || {}, "v0Unit");
+const vShow = (ms, u) => ms / V_TO_MS[u];
+function velStats(g) {
+  if (!g) return null;
+  const vs = g.shots.map(s => s.v).filter(v => v != null && isFinite(v) && v > 0), n = vs.length;
+  if (!n) return null;
+  const mean = vs.reduce((a, b) => a + b, 0) / n;
+  const sd = n >= 2 ? Math.sqrt(vs.reduce((a, b) => a + (b - mean) ** 2, 0) / (n - 1)) : null;
+  return { n, mean, sd, es: Math.max(...vs) - Math.min(...vs), u: vUnitOf(g) };
+}
+const velTxt = (ms, u, d = 0) => `${fmt(vShow(ms, u), d)} ${uL(u)}`;
+/** Testo compatto delle velocità del gruppo: n, media, SD, ES. */
+function velSummary(S) {
+  return _T`${S.n} colpi · media ${velTxt(S.mean, S.u, 1)}${S.sd != null ? _T` · SD ${fmt(vShow(S.sd, S.u), 1)} · ES ${fmt(vShow(S.es, S.u), 1)}` : ""}`;
+}
+/** «Usa come V0/SD»: media e SD delle velocità misurate nei campi della munizione del gruppo (un solo passo di Ctrl+Z). */
+function useVelAsV0(g) {
+  const S = velStats(g); if (!S) return;
+  g.load = g.load || defaultLoad();
+  g.load.v0 = fmtPlain(vShow(S.mean, S.u), 1);
+  if (S.sd != null) g.load.v0sd = fmtPlain(vShow(S.sd, S.u), 1);
+  g.load.profile = groupProfileName(g, true);
+  commit();
+  toast(_T`V0 del gruppo: ${velTxt(S.mean, S.u, 1)}${S.sd != null ? _T`, SD ${fmt(vShow(S.sd, S.u), 1)}` : ""} (Ctrl+Z per annullare).`);
+}
+/** 1.23.0: dopo il secondo punto della scala evidenzia il campo della distanza nota (fino alla conferma o all'uscita dal campo). */
+function calAttn(on) {
+  const el = $("calDist"); if (!el) return;
+  const row = el.closest(".row");
+  el.classList.toggle("attn", on); if (row) row.classList.toggle("attn-row", on);
+  if (!on) return;
+  const sec = $("sec-calib"); if (sec && !sec.open) sec.open = true;
+  setTimeout(() => { el.scrollIntoView({ block: "nearest" }); el.focus(); el.select(); }, 0);
+  toast(_t("Scala: scrivi la distanza nota tra i due punti nel campo evidenziato."));
+}
 /** Click (con segno) di un angolo in MIL, nell'unità di click della sessione. */
 const milClk = (mil, cc) => Calc.milToClicks(mil, cc.clickValue, cc.clickUnit);
 const sgn = (v, d) => (v > 0 ? "+" : "") + fmt(v, d);
@@ -8692,7 +9024,8 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
       g.restore();
       if (isSel && s.lock && !opts.light) { const o = (Math.max(holeR, 5) + 9) * 0.71; drawLock(g, p.x - o, p.y - o); LL.block(p.x - o, p.y - o, 8); }
       LL.block(p.x, p.y, Math.max(holeR, 5) + (f && f.flagged && !opts.light ? 7 : 1));
-      LL.add(`${i + 1}${s.excluded ? _t(" escl.") : ""}${f && f.flagged ? " ⚠" : ""}`, f && f.flagged ? "#c2410c" : grp.color, 11, { x: p.x, y: p.y, r: Math.max(holeR, 6) + 2 }, 2);
+      const vTag = s.v != null && P.vLabelOn && !opts.light ? ` · ${fmt(vShow(s.v, vUnitOf(grp)), 0)}` : "";   // velocità del foro (1.23.0)
+      LL.add(`${i + 1}${s.excluded ? _t(" escl.") : ""}${f && f.flagged ? " ⚠" : ""}${vTag}`, f && f.flagged ? "#c2410c" : grp.color, 11, { x: p.x, y: p.y, r: Math.max(holeR, 6) + 2 }, 2);
     });
     // freccia di correzione e fori con la correzione virtuale (dalla 1.12.0)
     if (!opts.light) drawCorrection(g, T, grp, gcc, r, holeR, LL, opts);
@@ -8700,7 +9033,8 @@ function drawOverlay(g, T, scl, cc, opts = {}) {
     if (r.n >= 2 && r.mm && params().esLabelOn && !opts.light) {
       const ys = shotsIn.map(q => T(q).y), c = T(r.centroid), top = Math.min(...ys) - Math.max(holeR, 6) - 20;
       const u = r.ang && r.ang.es ? (r.ang.es[gcc.clickUnit] != null ? gcc.clickUnit : "MOA") : null;
-      const txt = `ES ${fmt(r.mm.es, 1)} ${uL("mm")}${u ? ` · ${fmt(r.ang.es[u], 2)} ${uL(u)}` : ""}`;
+      const VS = P.vLabelOn ? velStats(grp) : null;   // 1.23.0: velocità media del gruppo nell'etichetta
+      const txt = `ES ${fmt(r.mm.es, 1)} ${uL("mm")}${u ? ` · ${fmt(r.ang.es[u], 2)} ${uL(u)}` : ""}${VS ? ` · ${_T`V media ${velTxt(VS.mean, VS.u, 0)}`}` : ""}`;
       LL.add(txt, grp.color, 12, { x: c.x, y: top + 7, r: 0, pref: "top" }, 1);
     }
     // punto di mira
@@ -8968,8 +9302,8 @@ function handleClick(ip, alt = false) {
   if (state.mode === "calib") {
     const c = state.calib;
     if (c.lock && c.p1) { lockedToast(); return; }   // scala bloccata: un nuovo clic non la rifà
-    if (!c.p1 || c.p2) { state.calib = { p1: pt, p2: null, ...(c.r1 ? { r1: c.r1, r2: c.r2 } : {}), ...(c.refLock ? { refLock: 1 } : {}) }; }
-    else { c.p2 = pt; setMode(activeGroup() && activeGroup().poa ? "shot" : "poa"); setTimeout(() => $("calDist").select(), 0); }
+    if (!c.p1 || c.p2) { state.calib = { p1: pt, p2: null, ...(c.r1 ? { r1: c.r1, r2: c.r2 } : {}), ...(c.refLock ? { refLock: 1 } : {}) }; calAttn(false); }
+    else { c.p2 = pt; setMode(activeGroup() && activeGroup().poa ? "shot" : "poa"); calAttn(true); }
     commit();
   } else if (state.mode === "poa") {
     const g = ensureGroup();
@@ -9078,6 +9412,80 @@ function updateHint() {
   h.textContent = msgs[state.mode];
 }
 
+
+/* ------------------------------ TOUR GUIDATO (1.23.0) ------------------------------
+   Cinque passi sul flusso di lavoro, con il comando di ogni passo evidenziato (il resto della pagina oscurato ma
+   utilizzabile: il tour non blocca i clic). 🎓 nel titolo del pannello lo avvia; al primo avvio un piccolo invito
+   (una volta sola, ricordato nel browser). Esc chiude, ←/→ cambiano passo. */
+const TOUR_KEY = "shootAnalyzer.tourSeen", TOUR = { i: -1 };
+const tourOpen = () => TOUR.i >= 0;
+const tourSteps = () => [
+  { el: ["#bLoad"], sec: "sec-orient", t: _t("1 · Carica e raddrizza la foto"),
+    b: _t("<b>📂 Carica foto</b> (<kbd>Ctrl+O</kbd>) o trascina la foto sull'immagine. Poi, in «Gestione immagine»: <b>📐 Raddrizza</b> (<kbd>5</kbd>) con due punti su una linea che deve risultare orizzontale o verticale, <b>⬚ Prospettiva</b> (<kbd>6</kbd>) se la foto è di sbieco; il ritaglio toglie lo sfondo.") },
+  { el: ['#modes [data-mode="calib"]'], sec: "sec-calib", t: _t("2 · Imposta la scala"),
+    b: _t("<b>↔ Scala</b> (<kbd>2</kbd>): clicca due punti a distanza nota, per esempio due linee della griglia, poi scrivi la distanza nel campo che si evidenzia in «Calibrazione scala». Il semaforo indica la qualità della scala.") },
+  { el: ['#modes [data-mode="poa"]', '#modes [data-mode="shot"]'], sec: "sec-groups", t: _t("3 · Segna mira e colpi"),
+    b: _t("<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Parametri di tiro».") },
+  { el: ["#sec-results"], sec: "sec-results", t: _t("4 · Leggi la correzione"),
+    b: _t("In «Risultati» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione.") },
+  { el: ["#bSaveZip"], sec: "sec-data", t: _t("5 · Salva"),
+    b: _t("<b>🗜 Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) conserva foto, punti e dati; nella stessa sezione Result Card, report PDF e CSV. Il tour si riapre quando vuoi con <b>🎓</b> in cima al pannello.") },
+];
+function tourMarkSeen() { try { localStorage.setItem(TOUR_KEY, "1"); } catch { /* storage non disponibile */ } $("tourAsk").hidden = true; }
+function initTour() {
+  let seen = true; try { seen = !!localStorage.getItem(TOUR_KEY); } catch { seen = true; }
+  $("tourAsk").hidden = seen;
+}
+function startTour() {
+  tourMarkSeen();
+  if (anaOpen()) closeAnalysis();
+  if (helpOpen()) closeHelp();
+  if (bcWizOpen()) closeBcWiz();
+  TOUR.i = 0; tourShow();
+}
+function endTour() {
+  if (!tourOpen()) return;
+  TOUR.i = -1; $("tourHi").hidden = true; $("tourCard").hidden = true; $("bTour").focus();
+}
+function tourStep(d) {
+  const n = tourSteps().length, j = TOUR.i + d;
+  if (j < 0) return;
+  if (j >= n) { endTour(); return; }
+  TOUR.i = j; tourShow();
+}
+function tourShow() {
+  const S = tourSteps(), s = S[TOUR.i];
+  if (s.sec) { const d = $(s.sec); if (d && !d.open) d.open = true; }
+  const first = document.querySelector(s.el[0]);
+  if (first && first.closest("#side")) first.scrollIntoView({ block: "center" });
+  $("tourStep").textContent = _T`Passo ${TOUR.i + 1} di ${S.length}`;
+  $("tourT").textContent = s.t; $("tourB").innerHTML = s.b;
+  $("bTourPrev").disabled = TOUR.i === 0;
+  $("bTourNext").textContent = TOUR.i === S.length - 1 ? _t("Fine ✓") : _t("Avanti ▶");
+  $("tourHi").hidden = false; $("tourCard").hidden = false;
+  tourPlace(); requestAnimationFrame(tourPlace);
+  $("bTourNext").focus({ preventScroll: true });
+}
+/** Riquadro evidenziato attorno ai comandi del passo e scheda accanto (sotto, sopra, a sinistra o a destra). */
+function tourPlace() {
+  if (!tourOpen()) return;
+  const s = tourSteps()[TOUR.i], hi = $("tourHi"), card = $("tourCard"), vw = innerWidth, vh = innerHeight;
+  const rs = s.el.map(q => document.querySelector(q)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0);
+  const cw = card.offsetWidth, chh = card.offsetHeight, clampX = x => Math.max(4, Math.min(vw - cw - 4, x)), clampY = y => Math.max(4, Math.min(vh - chh - 4, y));
+  if (!rs.length) {   // comando non visibile (sezione nascosta dal layout): solo la scheda al centro
+    hi.classList.add("nohole"); hi.style.left = hi.style.top = hi.style.width = hi.style.height = "";
+    card.style.left = `${clampX((vw - cw) / 2)}px`; card.style.top = `${clampY((vh - chh) / 2)}px`; return;
+  }
+  hi.classList.remove("nohole");
+  const p = 6, R = { l: Math.max(2, Math.min(...rs.map(r => r.left)) - p), t: Math.max(2, Math.min(...rs.map(r => r.top)) - p),
+    r: Math.min(vw - 2, Math.max(...rs.map(r => r.right)) + p), b: Math.min(vh - 2, Math.max(...rs.map(r => r.bottom)) + p) };
+  Object.assign(hi.style, { left: `${R.l}px`, top: `${R.t}px`, width: `${Math.max(0, R.r - R.l)}px`, height: `${Math.max(0, R.b - R.t)}px` });
+  const gap = 12, over = (x, y) => x < R.r && x + cw > R.l && y < R.b && y + chh > R.t;
+  const C = [[clampX(R.l), R.b + gap], [clampX(R.l), R.t - gap - chh], [R.l - gap - cw, clampY(R.t)], [R.r + gap, clampY(R.t)]];
+  const pos = C.find(([x, y]) => x >= 4 && x + cw <= vw - 4 && y >= 4 && y + chh <= vh - 4 && !over(x, y)) || [clampX((vw - cw) / 2), clampY(vh - chh - 16)];
+  card.style.left = `${pos[0]}px`; card.style.top = `${pos[1]}px`;
+}
+
 /* ------------------------------ TASTIERA ------------------------------ */
 document.addEventListener("keydown", e => {
   const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName);
@@ -9085,6 +9493,10 @@ document.addEventListener("keydown", e => {
   if ((e.ctrlKey || e.metaKey) && k === "s") { e.preventDefault(); saveSessionZip(); return; }   // dalla 1.21: lo ZIP è il salvataggio principale
   // Vista grafici/confronto aperta: Esc chiude; le scorciatoie dell'immagine sono disattivate (agirebbero «alla cieca»).
   if (state.busy) { e.preventDefault(); return; }   // rettifica in corso
+  if (tourOpen()) {   // tour guidato (1.23.0): Esc chiude, frecce cambiano passo; le altre scorciatoie restano attive
+    if (k === "escape") { e.preventDefault(); endTour(); return; }
+    if (!typing && (k === "arrowright" || k === "arrowleft")) { e.preventDefault(); tourStep(k === "arrowright" ? 1 : -1); return; }
+  }
   if (bcWizOpen()) { if (k === "escape") { e.preventDefault(); closeBcWiz(); } return; }   // stima del BC: niente scorciatoie
   if (helpOpen()) {   // help tecnico aperto: Esc chiude, le scorciatoie dell'immagine sono disattivate
     if (k === "escape") { e.preventDefault(); closeHelp(); }
@@ -9190,6 +9602,7 @@ async function setImage(name, dataUrl) {
   state.persp = null; state.perspPts = []; state.lens = null; state.lensLines = [];
   state.base = { w: bitmap.width, h: bitmap.height, bitmap }; state.baseKey = "orig";
   $("drop").style.display = "none";
+  if (!$("tourAsk").hidden) tourMarkSeen();   // 1.23.0: chi carica una foto non ha bisogno dell'invito al tour
   fitView();
 }
 function readAs(file, how) {
@@ -9245,7 +9658,8 @@ function buildSession(embed = $("embedImg").checked) {
     // il formato più basso che basta: la sessione resta leggibile dalle versioni precedenti quando possibile
     app: "ShootAnalyzer", format: state.lens ? 4 : state.persp ? 3 : state.rot ? 2 : 1, appVersion: APP_VERSION, savedAt: new Date().toISOString(),
     sessionId: state.sessionId,
-    image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, dataUrl: embed ? state.image.dataUrl : null } : null,
+    author: provGet().author || undefined,   // dalla 1.23.0: provenienza (autore del browser, impronta della foto)
+    image: state.image ? { name: state.image.name, w: state.image.w, h: state.image.h, sha256: photoSha() || undefined, dataUrl: embed ? state.image.dataUrl : null } : null,
     rotation: state.rot,   // gradi, + = orario; i punti sono nel sistema della foto ruotata
     persp: state.persp,    // correzione prospettica {src (px foto originale), wMm, hMm}: i punti sono sulla foto rettificata
     lens: state.lens,      // dalla 1.10.0: distorsione dell'obiettivo {k1, k2}; persp.src e punti sono sulla foto senza distorsione
@@ -9525,9 +9939,9 @@ function refreshLists() {
   const g = activeGroup(), cc = calcContext(), pts = $("points");
   $("pointsGroup").innerHTML = g ? _T`<span class="dot" style="background:${g.color}"></span>${esc(g.name)}<span class="muted" style="font-weight:400">· ${inc(g).length} colpi${g.shots.length > inc(g).length ? ` (${esclusi(g.shots.length - inc(g).length)})` : ""}</span>` : "";
   if (!g || (!g.poa && !g.shots.length && !state.calib.p1)) { pts.innerHTML = _T`<div class="muted">Nessun punto.</div>`; return; }
-  const T = pointTable(g, cc), SI = scoreHere(g), chOn = params().chPerShot, IM = influenceMap(g, ccG(cc, g));
+  const T = pointTable(g, cc), SI = scoreHere(g), chOn = params().chPerShot, vOn = params().vPerShot, vu = vUnitOf(g), IM = influenceMap(g, ccG(cc, g));
   const selKey = JSON.stringify(state.selected);
-  const head = _T`<tr><th>Tipo</th><th title="Escludi dal gruppo (tasto X sul foro selezionato)">Escl.</th><th class="x" title="Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.">Alzo</th><th class="x" title="Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)">Brand.</th>${chOn ? _T`<th class="x" title="Carica di polvere di questo foro (gr) per i ladder test; vuoto = quella del gruppo">Carica</th>` : ""}<th class="x">X</th><th class="x">Y</th>
+  const head = _T`<tr><th>Tipo</th><th title="Escludi dal gruppo (tasto X sul foro selezionato)">Escl.</th><th class="x" title="Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.">Alzo</th><th class="x" title="Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)">Brand.</th>${chOn ? _T`<th class="x" title="Carica di polvere di questo foro (gr) per i ladder test; vuoto = quella del gruppo">Carica</th>` : ""}${vOn ? _T`<th class="x" title="Velocità iniziale di questo foro letta sul cronografo (${uL(vu)}, l'unità della velocità del gruppo); vuoto = non misurata. Invio = foro successivo">V0</th>` : ""}<th class="x">X</th><th class="x">Y</th>
     <th class="x" title="Distanza dal punto di mira (mm)">Da mira</th><th class="x" title="Distanza dal centro gruppo (mm)">Da centro</th>
     <th class="x" title="Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale">Direz.</th>
     <th class="x" title="Effetto del foro sul gruppo: group size / raggio medio con il foro − senza (mm). Rosso = lo allarga, verde = lo stringe. Per un foro escluso: cosa succederebbe rimettendolo. Non escludere un foro solo perché allarga il gruppo: serve una causa (vedi la guida).">Effetto ES / RM</th><th class="x" title="Click verticali per portare il punto sulla mira">Click ↕</th><th class="x" title="Click orizzontali per portare il punto sulla mira">Click ↔</th>${SI ? _T`<th class="x" title="Punteggio (${esc(SI.t.name)}): anello toccato dal bordo del foro; * = 10 interno; ≈ = sulla linea">Punti</th>` : ""}<th></th></tr>`;
@@ -9543,7 +9957,7 @@ function refreshLists() {
     const del = rw.ref ? `<button data-del='${JSON.stringify(rw.ref)}' title="${lk ? _t("Bloccato: sbloccalo per eliminarlo") : _t("Elimina")}" ${lk ? "disabled" : ""}>✕</button>` : "";
     const dialCell = (r, key) => r.kind === "shot" ? `<input class="dial" type="number" step="any" data-dial="${key}" data-sid="${r.ref.id}" value="${+r[key] || 0}" aria-label="${key === "dv" ? _t("Alzo") : _t("Brand.")}">`
       : r.kind === "centroid" && r.dial ? `<span class="muted" title="${_t("Media dei fori inclusi")}">${fmt(r.dial[key], 1)}</span>` : "";
-    return `<tr class="${cls}" ${rw.ref ? `data-ref='${JSON.stringify(rw.ref)}'` : _T`title="Correzione da applicare alle torrette"`}><td>${tipo}</td><td>${chk}</td><td class="x">${dialCell(rw, "dv")}</td><td class="x">${dialCell(rw, "dh")}</td>${chOn ? `<td class="x">${rw.kind === "shot" ? `<input class="dial" type="number" step="any" min="0" data-dial="ch" data-sid="${rw.ref.id}" value="${rw.ref && g.shots.find(q => q.id === rw.ref.id).ch != null ? g.shots.find(q => q.id === rw.ref.id).ch : ""}" placeholder="${esc(String((g.load && g.load.charge) || ""))}" aria-label="${_t("Carica")}">` : ""}</td>` : ""}
+    return `<tr class="${cls}" ${rw.ref ? `data-ref='${JSON.stringify(rw.ref)}'` : _T`title="Correzione da applicare alle torrette"`}><td>${tipo}</td><td>${chk}</td><td class="x">${dialCell(rw, "dv")}</td><td class="x">${dialCell(rw, "dh")}</td>${chOn ? `<td class="x">${rw.kind === "shot" ? `<input class="dial" type="number" step="any" min="0" data-dial="ch" data-sid="${rw.ref.id}" value="${rw.ref && g.shots.find(q => q.id === rw.ref.id).ch != null ? g.shots.find(q => q.id === rw.ref.id).ch : ""}" placeholder="${esc(String((g.load && g.load.charge) || ""))}" aria-label="${_t("Carica")}">` : ""}</td>` : ""}${vOn ? `<td class="x">${rw.kind === "shot" ? (() => { const s = g.shots.find(q => q.id === rw.ref.id); return `<input class="dial vin" type="number" step="any" min="0" data-dial="v" data-sid="${rw.ref.id}" value="${s && s.v != null ? fmtPlain(vShow(s.v, vu), 2) : ""}" placeholder="${esc(uL(vu))}" aria-label="${_t("Velocità del foro")}">`; })() : ""}</td>` : ""}
       <td class="x">${rw.x}</td><td class="x">${rw.y}</td><td class="x">${rw.dPoa}</td><td class="x">${rw.dC}</td><td class="x">${rw.dir}</td><td class="x">${rw.kind === "shot" ? influenceCell(IM.get(rw.ref.id)) : ""}</td>
       <td class="x">${clk(rw.cv, rw.cvDir, rw.cvAng)}</td><td class="x">${clk(rw.ch, rw.chDir, rw.chAng)}</td>${SI ? `<td class="x"><b>${rw.kind === "shot" ? scoreCell(SI.byId.get(rw.ref.id)) : rw.kind === "centroid" ? `<span title="Totale del gruppo">Σ ${scoreTot(SI)}</span>` : ""}</b></td>` : ""}<td>${del}</td></tr>`;
   }).join("");
@@ -9552,10 +9966,26 @@ function refreshLists() {
     <div class="muted" style="font-size:11.5px;margin-top:4px">X, Y in ${T.coordUnit}. Distanze in ${T.k ? "mm" : _t("pixel")}; direzione dal centro gruppo (0° = alto, senso orario).
     ${T.k && T.ref ? _T` Click (${fmt(cc.clickValue, 3)} ${cc.clickUnit}) per portare il punto sulla mira: la correzione da applicare è quella del <b>centro gruppo</b>.` : _t(" Per i click servono punto di mira e scala calibrata.")}
     ${T.flyerNote}${nFly > 1 ? _T` <b>${nFly} possibili flyer</b> (⚠): spunta «Escl.» per toglierli dalle statistiche.` : nFly ? _T` <b>1 possibile flyer</b> (⚠): spunta «Escl.» per toglierlo dalle statistiche.` : ""}</div>`;
+  if (vOn) {   // velocità per foro (1.23.0): riepilogo sotto la tabella e «Usa come V0/SD»
+    const VS = velStats(g), box = document.createElement("div"); box.className = "vstat";
+    box.innerHTML = VS ? `⏱ <span>${_T`Velocità: ${velSummary(VS)}`}</span><button class="btn" id="bVelUse" title="${_t("Scrive media e SD delle velocità misurate nei campi «Velocità iniziale» e «SD velocità» della munizione del gruppo (Ricarica e condizioni); si annulla con Ctrl+Z")}">${_t("Usa come V0/SD del gruppo")}</button>`
+      : `<span class="muted">${_t("Scrivi nella colonna V0 la velocità di ogni foro letta sul cronografo (Invio = foro successivo).")}</span>`;
+    pts.appendChild(box);
+    if (VS) $("bVelUse").onclick = () => useVelAsV0(g);
+  }
   pts.querySelectorAll("button[data-del]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); deleteRef(JSON.parse(b.dataset.del)); }));
   pts.querySelectorAll("input[data-dial]").forEach(inp => {
     inp.addEventListener("click", ev => ev.stopPropagation());
     inp.addEventListener("change", () => setDial(g, +inp.dataset.sid, inp.dataset.dial, parseFloat(inp.value)));
+    // 1.23.0: Invio conferma e passa allo stesso campo del foro successivo (velocità e carica si scrivono in fila)
+    if (inp.dataset.dial === "v" || inp.dataset.dial === "ch") inp.addEventListener("keydown", e => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const key = inp.dataset.dial, sid = +inp.dataset.sid, ids = g.shots.map(s => s.id), next = ids[ids.indexOf(sid) + 1];
+      setDial(g, sid, key, parseFloat(inp.value));
+      const el = next != null ? document.querySelector(`#points input[data-dial="${key}"][data-sid="${next}"]`) : null;
+      if (el) { el.focus(); el.select(); } else if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    });
   });
   pts.querySelectorAll("input[data-ex]").forEach(cb => {
     cb.addEventListener("click", ev => ev.stopPropagation());
@@ -9714,7 +10144,7 @@ function refreshLive() {
   el.innerHTML = `<div class="lp-h"><span class="dot" style="background:${I.g.color}"></span><b>${esc(I.g.name)}</b><button id="bLiveClose" title="${_t("Chiudi (si riattiva in Visualizzazione)")}" aria-label="${_t("Chiudi")}">✕</button></div>
     <table><tr><td>${_t("Fori")}</td><td class="v"><b>${I.n}</b>${I.nAll > I.n ? ` <span class="muted">(${esclusi(I.nAll - I.n)})</span>` : ""}</td></tr>
     <tr><td>${_t("Group size")}</td><td class="v"><b>${I.n >= 2 ? v(I.es, "es") : "–"}</b></td></tr>
-    ${uiBasic() ? "" : `<tr><td>${_t("Raggio medio")}</td><td class="v">${I.n >= 2 ? v(I.mr, "mr") : "–"}</td></tr>`}</table>
+    ${uiBasic() ? "" : `<tr><td>${_t("Raggio medio")}</td><td class="v">${I.n >= 2 ? v(I.mr, "mr") : "–"}</td></tr>`}${(() => { const VS = velStats(I.g); return VS ? `<tr><td>${_t("V media")}</td><td class="v">${velTxt(VS.mean, VS.u, 1)}${VS.sd != null ? ` <span class="muted">· ${_T`SD ${fmt(vShow(VS.sd, VS.u), 1)}`}</span>` : ""}</td></tr>` : ""; })()}</table>
     ${I.n >= 2 && I.es == null ? `<div class="muted">${_t("Calibra la scala per i mm.")}</div>` : ""}
     ${I.warn ? `<div class="lp-w">⚠ ${_t("meno di 5 colpi – statistiche indicative")}</div>` : ""}
     ${state.virtCorr ? `<div class="lp-v">${_t("Correzione virtuale attiva")}</div>` : ""}`;
@@ -10426,6 +10856,7 @@ function loadLines(g) {
   if (v("primer")) out.push([_t("Innesco"), v("primer")]);
   const bal = [v("bc") ? `BC ${num("bc", 3)} ${loadV(L, "bcModel")}` : "", v("v0") ? `V0 ${num("v0", 0)} ${uL(loadV(L, "v0Unit"))}` : "", v("v0sd") ? _T`SD ${num("v0sd", 1)} ${uL(loadV(L, "v0Unit"))}` : ""].filter(Boolean).join(" · ");
   if (bal) out.push([_t("Balistica"), bal]);
+  { const VS = velStats(g); if (VS) out.push([_t("Velocità per foro"), velSummary(VS)]); }   // 1.23.0
   const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : "", v("humidity") ? _T`UR ${num("humidity", 0)}%` : "",
     v("pressure") ? `${num("pressure", 1)} ${uL("hPa")}` : ""].filter(Boolean).join(" · ");
   if (met) out.push([_t("Meteo"), met]);
@@ -10685,8 +11116,73 @@ async function exportCard(scope = "active") {
     k.font = `${weight} ${size}px "Segoe UI", system-ui, sans-serif`; k.fillStyle = color;
     k.fillText(t, tx, ty, Wpanel - 10); ty += size + gap;
   }
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  const blob = await exportPng(c);   // filigrana e metadati (1.23.0)
   if (await FileStore.saveBlob(fileName("ResCar", "png", groups.length === 1 ? groups[0] : activeGroup()), blob)) toast(_t("Result Card esportata"));
+}
+
+/* ------------------------------ PROVENIENZA E FILIGRANA (1.23.0) ------------------------------
+   Autore e filigrana sono preferenze del browser (non della sessione). I metadati si scrivono sempre: PNG (blocchi iTXt
+   UTF-8: Software, Author, Creation Time, Source, ShootAnalyzer:PhotoSHA256) e PDF (Info: Author, Creator, date, foto e impronta).
+   La filigrana visibile è facoltativa. L'impronta SHA-256 è quella della foto di lavoro, cioè il file che va nella sessione
+   ZIP: chi riceve la sessione può verificarla; dopo un ritaglio è l'impronta della foto ritagliata. */
+const PROV_KEY = "shootAnalyzer.provenance";
+function provGet() {
+  try { const o = JSON.parse(localStorage.getItem(PROV_KEY) || "{}"); return { author: String(o.author || "").trim().slice(0, 80), wm: !!o.wm }; }
+  catch { return { author: "", wm: false }; }
+}
+function provSet(o) { try { localStorage.setItem(PROV_KEY, JSON.stringify({ ...provGet(), ...o })); } catch { /* storage non disponibile */ } }
+function initProv() { const P = provGet(); $("provAuthor").value = P.author; $("provWm").checked = P.wm; }
+/** Byte di un data: URL (sincrono). */
+function dataUrlBytes(u) {
+  const i = u.indexOf(","), raw = /;base64/.test(u.slice(0, i)) ? atob(u.slice(i + 1)) : decodeURIComponent(u.slice(i + 1)), a = new Uint8Array(raw.length);
+  for (let k = 0; k < raw.length; k++) a[k] = raw.charCodeAt(k);
+  return a;
+}
+/** SHA-256 della foto di lavoro (calcolata una volta per foto). */
+function photoSha() {
+  const im = state.image; if (!im || !im.dataUrl) return "";
+  if (im.shaOf !== im.dataUrl) { im.sha = Calc.sha256(dataUrlBytes(im.dataUrl)); im.shaOf = im.dataUrl; }
+  return im.sha;
+}
+function provInfo() {
+  const P = provGet(), im = state.image, d = new Date();
+  return { app: `Shoot Analyzer ${APP_VERSION}`, author: P.author, wm: P.wm, iso: d.toISOString(), dateTxt: d.toLocaleString(I18N.locale()),
+    photo: im ? im.name || "" : "", size: im ? `${im.w}×${im.h} px` : "", sha: photoSha() };
+}
+/** Riga della filigrana: app, autore, data, foto e inizio dell'impronta. */
+const provLine = I => [I.app, I.author, I.dateTxt, I.photo, I.sha ? `SHA-256 ${I.sha.slice(0, 16)}…` : ""].filter(Boolean).join(" · ");
+/** Filigrana visibile in basso a destra (pixel del canvas, indipendente dalla trasformazione corrente). */
+function drawWatermark(cv, I) {
+  const k = cv.getContext("2d"), W = cv.width, H = cv.height, fs = Math.max(11, Math.round(Math.min(W, H) / 70)), t = provLine(I);
+  k.save(); k.setTransform(1, 0, 0, 1, 0, 0);
+  k.font = `600 ${fs}px "Segoe UI", system-ui, sans-serif`; k.textBaseline = "middle"; k.textAlign = "right";
+  const w = Math.min(k.measureText(t).width, W - 2 * fs), y = H - fs * 1.1;
+  k.globalAlpha = 0.6; k.fillStyle = "#ffffff"; k.fillRect(W - w - fs * 1.5, y - fs * 0.8, w + fs, fs * 1.6);
+  k.globalAlpha = 0.9; k.fillStyle = "#374151"; k.fillText(t, W - fs, y, W - 2 * fs);
+  k.restore();
+}
+/** Aggiunge a un PNG i metadati di provenienza (blocchi iTXt subito dopo IHDR). */
+async function pngWithMeta(blob, I) {
+  const u8 = new Uint8Array(await blob.arrayBuffer());
+  if (u8.length < 33 || u8[1] !== 0x50 || u8[2] !== 0x4E || u8[3] !== 0x47) return blob;
+  const enc = new TextEncoder(), chunks = [];
+  const fields = [["Software", I.app], ["Author", I.author], ["Creation Time", I.iso], ["Source", I.photo ? `${I.photo} (${I.size})` : ""], ["ShootAnalyzer:PhotoSHA256", I.sha]];
+  for (const [key, val] of fields) {
+    if (!val) continue;
+    const kb = enc.encode(key), vb = enc.encode(String(val)), body = new Uint8Array(4 + kb.length + 5 + vb.length);
+    body.set(enc.encode("iTXt")); body.set(kb, 4); body.set(vb, 4 + kb.length + 5);   // parola chiave, 0, non compresso, 0, lingua "", 0, traduzione "", 0, testo
+    const ch = new Uint8Array(8 + body.length), dv = new DataView(ch.buffer);
+    dv.setUint32(0, body.length - 4); ch.set(body, 4); dv.setUint32(4 + body.length, crc32(body));
+    chunks.push(ch);
+  }
+  return new Blob([u8.subarray(0, 33), ...chunks, u8.subarray(33)], { type: "image/png" });
+}
+/** PNG da esportare: filigrana (se attiva) e metadati. */
+async function exportPng(cv) {
+  const I = provInfo();
+  if (I.wm) drawWatermark(cv, I);
+  const blob = await new Promise(res => cv.toBlob(res, "image/png"));
+  return pngWithMeta(blob, I);
 }
 
 /* ------------------------------ REPORT PDF (dalla 1.8.0) ------------------------------
@@ -10709,7 +11205,7 @@ function makePdf(pages, info = {}) {
   objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
   objs[2] = `<< /Type /Pages /Kids [${kids.map(k => `${k} 0 R`).join(" ")}] /Count ${n} >>`;
   const d = new Date(), z = v => String(v).padStart(2, "0");
-  objs[3] = `<< /Title ${pdfStr(info.title || "Shoot Analyzer")} /Producer ${pdfStr("Shoot Analyzer " + APP_VERSION)} /CreationDate (D:${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}) >>`;
+  objs[3] = `<< /Title ${pdfStr(info.title || "Shoot Analyzer")}${info.author ? ` /Author ${pdfStr(info.author)}` : ""} /Producer ${pdfStr("Shoot Analyzer " + APP_VERSION)} /CreationDate (D:${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}) >>`;
   push("%PDF-1.4\n");
   push(new Uint8Array([0x25, 0xE2, 0xE3, 0xCF, 0xD3, 0x0A]));   // commento binario: segnala un file non di solo testo
   const writeObj = (num, body, stream) => {
@@ -10832,7 +11328,7 @@ async function writeVectorPdf(pages, meta = {}, outline = []) {
   obj(2, `<< /Type /Pages /Kids [${pageIds.map(p => `${p.page} 0 R`).join(" ")}] /Count ${pages.length} >>`);
   const d = new Date(), z = v => String(v).padStart(2, "0"), tz = -d.getTimezoneOffset();
   const date = `D:${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}${tz >= 0 ? "+" : "-"}${z(Math.floor(Math.abs(tz) / 60))}'${z(Math.abs(tz) % 60)}'`;
-  const info = { Title: meta.title || "Shoot Analyzer", Subject: meta.subject, Keywords: meta.keywords, Creator: `Shoot Analyzer ${APP_VERSION}`, Producer: `Shoot Analyzer ${APP_VERSION}`, ...(meta.extra || {}) };
+  const info = { Title: meta.title || "Shoot Analyzer", Author: meta.author, Subject: meta.subject, Keywords: meta.keywords, Creator: `Shoot Analyzer ${APP_VERSION}`, Producer: `Shoot Analyzer ${APP_VERSION}`, ...(meta.extra || {}) };
   obj(3, "<< " + Object.entries(info).filter(([, v]) => v).map(([k, v]) => `/${k} ${pdfStr(v)}`).join(" ") + ` /CreationDate (${date}) /ModDate (${date}) >>`);
   if (!emb) {
     obj(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
@@ -10963,6 +11459,7 @@ class ReportDoc {
       this.cur = this.pages[i];
       this.put(this.title, this.M, this.H - this.M + 5, { size: 15, color: "#9ca3af" });
       this.put(_T`pagina ${i + 1} di ${n}`, this.W - this.M, this.H - this.M + 5, { size: 15, color: "#9ca3af", align: "right" });
+      if (meta.prov && meta.prov.wm) this.put(provLine(meta.prov), this.M, this.H - this.M - 20, { size: 13, color: "#a8afb9" });   // filigrana (1.23.0)
       for (const im of this.cur.imgs) {
         const c = document.createElement("canvas"); c.width = im.cv.width; c.height = im.cv.height;
         const k = c.getContext("2d"); k.fillStyle = "#fff"; k.fillRect(0, 0, c.width, c.height); k.drawImage(im.cv, 0, 0);   // JPEG: niente trasparenza
@@ -11035,16 +11532,20 @@ async function exportReportPdf(scope = "active") {
 function reportMeta(groups, cc, base) {
   const q = cc.pxPerMm ? calibQuality(cc) : null;
   const cal = q ? _T`scala ${fmt(cc.pxPerMm, 4)} px/mm; incertezza ±${fmt(q.relErr * 100, 2)}%; ${q.desc}; foto ${state.image.w}x${state.image.h} px` : _t("scala non calibrata");
-  return { title: _T`Report ${base}`, lang: I18N.locale(),
+  const PI = provInfo();   // 1.23.0: provenienza
+  return { title: _T`Report ${base}`, lang: I18N.locale(), author: PI.author, prov: PI,
     subject: _T`Analisi della dispersione: ${groups.map(g => `${g.name} (${inc(g).length})`).join(", ")}`,
     keywords: ["Shoot Analyzer", _t("dispersione"), _t("rosata"), "group size", "CEP", distText(groups) || ""].filter(Boolean).join(", "),
-    extra: { ShootAnalyzerCalibration: cal, ShootAnalyzerModel: _t("normale circolare bivariata (sigma per asse, IC chi-quadro)") } };
+    extra: { ShootAnalyzerCalibration: cal, ShootAnalyzerModel: _t("normale circolare bivariata (sigma per asse, IC chi-quadro)"), ShootAnalyzerPhoto: PI.photo ? `${PI.photo} (${PI.size})` : "", ShootAnalyzerPhotoSHA256: PI.sha } };
 }
 const plainTxt = h => String(h || "").replace(/<br\s*\/?>/gi, " ").replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
 /** Righe della sezione «Calibrazione» del report. */
 function calibReportRows(cc, p) {
   const rows = [], c = state.calib, P = q => `(${fmt(q.x, 1)}; ${fmt(q.y, 1)})`;
   rows.push([_t("Foto"), _T`${state.image.name || "—"} · ${state.image.w} × ${state.image.h} px`]);
+  { const PI = provInfo();   // 1.23.0: provenienza
+    if (PI.sha) rows.push([_t("Impronta della foto (SHA-256)"), PI.sha.match(/.{16}/g).join(" ")]);
+    if (PI.author) rows.push([_t("Autore"), PI.author]); }
   if (!cc.pxPerMm) { rows.push([_t("Scala"), _t("non calibrata: misure in pixel, nessun valore in mm o angolo")]); return rows; }
   const q = calibQuality(cc), L = calibLevel(cc, q), lvName = { g: _t("buona"), y: _t("discreta"), r: _t("da verificare") }[L.lvl];
   if (c.p1 && c.p2) rows.push([_t("Metodo"), _T`2 punti: A ${P(c.p1)} px, B ${P(c.p2)} px (coordinate della foto di lavoro)`],
@@ -11160,14 +11661,18 @@ function buildReport(R, groups, p, cc, now) {
     if (shotRows.length) {
       R.sub(_T`Fori · X, Y in ${PT.coordUnit}`);
       const SI = scoreHere(g);
-      R.table([_t("Foro"), "X", "Y", _t("Da mira"), _t("Da centro"), _t("Direz."), "Click ↕", "Click ↔", _t("Alzo"), _t("Brand."), ...(SI ? [_t("Punti")] : [])],
+      const VS = velStats(g), vu = vUnitOf(g), vOf = x => { const s = x.kind === "shot" && g.shots.find(q => q.id === x.ref.id); return s && s.v != null ? fmt(vShow(s.v, vu), 0) : x.kind === "centroid" && VS ? fmt(vShow(VS.mean, vu), 0) : ""; };
+      const cols = [{ w: .16 }, { w: .08, align: "right" }, { w: .08, align: "right" }, { w: .09, align: "right" }, { w: .09, align: "right" }, { w: .12, align: "right" },
+        { w: .1, align: "right" }, { w: .1, align: "right" }, { w: .06, align: "right" }, { w: .06, align: "right" }, ...(SI ? [{ w: .06, align: "right" }] : []), ...(VS ? [{ w: .07, align: "right" }] : [])];
+      const wSum = cols.reduce((a, c) => a + c.w, 0);
+      R.table([_t("Foro"), "X", "Y", _t("Da mira"), _t("Da centro"), _t("Direz."), "Click ↕", "Click ↔", _t("Alzo"), _t("Brand."), ...(SI ? [_t("Punti")] : []), ...(VS ? [`V0 ${uL(vu)}`] : [])],
         shotRows.map(x => ({ bold: x.kind !== "shot", color: x.excluded ? "#9ca3af" : null,
           cells: [x.label + (x.excluded ? _t(" (escl.)") : "") + (x.flag ? " ⚠" : ""), x.x, x.y, x.dPoa, x.dC, x.dir,
             x.cv == null ? "" : clickTxt(x.cv, x.cvDir), x.ch == null ? "" : clickTxt(x.ch, x.chDir),
             x.kind === "shot" ? sgn(x.dv, 0) : "", x.kind === "shot" ? sgn(x.dh, 0) : "",
-            ...(SI ? [x.kind === "shot" ? scoreCell(SI.byId.get(x.ref.id)).replace(/<[^>]+>/g, "") : x.kind === "centroid" ? `Σ ${scoreTot(SI)}` : ""] : [])] })),
-        [{ w: .16 }, { w: .08, align: "right" }, { w: .08, align: "right" }, { w: .09, align: "right" }, { w: .09, align: "right" }, { w: .12, align: "right" },
-          { w: .1, align: "right" }, { w: .1, align: "right" }, { w: .06, align: "right" }, { w: .06, align: "right" }, ...(SI ? [{ w: .06, align: "right" }] : [])].map(c => SI ? c : { ...c, w: c.w / 0.94 }), 15);
+            ...(SI ? [x.kind === "shot" ? scoreCell(SI.byId.get(x.ref.id)).replace(/<[^>]+>/g, "") : x.kind === "centroid" ? `Σ ${scoreTot(SI)}` : ""] : []),
+            ...(VS ? [vOf(x)] : [])] })),
+        cols.map(c => ({ ...c, w: c.w / wSum })), 15);
     }
   }
   // sezioni d'insieme (se ci sono dati)
@@ -11860,7 +12365,7 @@ async function exportDopePng() {
     y += RH; });
   k.font = F(400, 11); k.fillStyle = "#6b7280";
   k.fillText(_t("Solo distanze tirate. Il brandeggio vale per il vento di quel giorno."), 20, y + 14, W - 40);
-  const blob = await new Promise(res => c.toBlob(res, "image/png"));
+  const blob = await exportPng(c);   // filigrana e metadati (1.23.0)
   if (await FileStore.saveBlob(fileName("DopeCard", "png"), blob)) toast(_t("Dope card esportata (PNG)"));
 }
 
@@ -12409,7 +12914,7 @@ function csvShotsTable(src) {
   const head = [_t("Immagine"), _t("Gruppo"), _t("Data"), _t("Foro"), _t("Escluso"), "Flyer", _t("X dal punto di mira (mm)"), _t("Y dal punto di mira (mm, + = alto)"),
     _t("Distanza dal punto di mira (mm)"), _t("Distanza dal centro gruppo (mm)"), _t("Direzione dal centro gruppo (°)"), _t("Direzione"),
     _t("Click verticali"), _t("Verso verticale"), _t("Click orizzontali"), _t("Verso orizzontale"), _t("Unità click"), "X (px)", "Y (px)",
-    _t("Punti"), _t("10 interno"), _t("Sulla linea"), _t("Alzo impostato (click)"), _t("Brandeggio impostato (click)"), _t("Carica del foro (gr)")];
+    _t("Punti"), _t("10 interno"), _t("Sulla linea"), _t("Alzo impostato (click)"), _t("Brandeggio impostato (click)"), _t("Carica del foro (gr)"), _t("Velocità del foro"), _t("Unità velocità")];
   const rows = [];
   for (const g of src.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
@@ -12424,7 +12929,7 @@ function csvShotsTable(src) {
         k && ref ? csvNum(Calc.dist(p, ref) * k) : "", k && c ? csvNum(Calc.dist(p, c) * k) : "",
         cp && (p.x !== c.x || p.y !== c.y) ? csvNum(cp.deg, 1) : "", cp && (p.x !== c.x || p.y !== c.y) ? cp.label : "",
         cr ? cr.vClicks : "", cr ? _t(cr.vDir) : "", cr ? cr.hClicks : "", cr ? _t(cr.hDir) : "", cr ? gcc.clickUnit : "",
-        csvNum(p.x, 2), csvNum(p.y, 2), sc ? (sc.label != null ? sc.label : sc.dec ? csvNum(sc.value, 1) : sc.value) : "", sc ? yesNo(!!sc.inner) : "", sc ? yesNo(sc.line) : "", csvClk(p.dv), csvClk(p.dh), p.ch != null ? csvNum(p.ch, 2) : ""]);
+        csvNum(p.x, 2), csvNum(p.y, 2), sc ? (sc.label != null ? sc.label : sc.dec ? csvNum(sc.value, 1) : sc.value) : "", sc ? yesNo(!!sc.inner) : "", sc ? yesNo(sc.line) : "", csvClk(p.dv), csvClk(p.dh), p.ch != null ? csvNum(p.ch, 2) : "", p.v != null ? csvNum(vShow(p.v, vUnitOf(g)), 1) : "", p.v != null ? vUnitOf(g) : ""]);
     });
   }
   return { head, rows };
@@ -12710,6 +13215,130 @@ async function refreshArchiveInfo() {
 async function clearArchive() {
   if (!confirm(_t("Svuotare l'archivio delle sessioni? I file già salvati sul disco non vengono toccati."))) return;
   try { await idb("archive", "readwrite", st => st.clear()); await gcImages(); refreshArchiveInfo(); toast(_t("Archivio svuotato")); } catch (e) { dbFailed(e); }
+}
+
+/* ------------------------------ SPAZIO DI ARCHIVIAZIONE LOCALE (1.23.0) ------------------------------
+   «Verifica e misura» legge tutto IndexedDB (non modifica nulla): spazio di foto e sessioni, stima del browser
+   (navigator.storage.estimate, se disponibile), controlli di integrità (sessioni leggibili, foto presenti e decodificabili,
+   dimensioni coerenti, foto non più usate). «Ripara» toglie solo foto orfane e voci illeggibili. Le sessioni archiviate
+   si eliminano una per una o per età. «Ottimizza le foto» le ricomprime in JPEG 0,9 alla STESSA risoluzione (le coordinate
+   dei punti restano valide) e tiene la nuova versione solo se risparmia almeno il 20%; i metadati EXIF vanno persi. */
+const STO = { last: null };
+const fmtBytes = b => b >= 1073741824 ? `${fmt(b / 1073741824, 2)} GB` : b >= 1048576 ? `${fmt(b / 1048576, 1)} MB` : b >= 1024 ? `${fmt(b / 1024, 0)} kB` : `${fmt(b, 0)} B`;
+const jsonBytes = o => { try { return new Blob([JSON.stringify(o)]).size; } catch { return 0; } };
+const sesOk = s => !!(s && typeof s === "object" && Array.isArray(s.groups));
+async function storageScan(decode = true) {
+  const [auto, arch, keys] = await Promise.all([idb("kv", "readonly", st => st.get("autosave")), idb("archive", "readonly", st => st.getAll()),
+    idb("images", "readonly", st => st.getAllKeys())]);
+  const imgs = new Map();
+  for (const k of keys) imgs.set(k, await idb("images", "readonly", st => st.get(k)));
+  const problems = [], used = new Set(), badImg = new Set();
+  for (const [k, r] of imgs) {
+    if (!r || !(r.blob instanceof Blob) || !r.blob.size) { problems.push({ kind: "img", key: k, text: _T`Foto «${(r && r.name) || k}»: dati mancanti` }); badImg.add(k); continue; }
+    if (decode) {
+      try {
+        const bm = await createImageBitmap(r.blob);
+        if (r.w && r.h && (bm.width !== r.w || bm.height !== r.h)) problems.push({ kind: "info", text: _T`Foto «${r.name}»: ${bm.width} × ${bm.height} px invece di ${r.w} × ${r.h}` });
+        if (bm.close) bm.close();
+      } catch { problems.push({ kind: "img", key: k, text: _T`Foto «${r.name}»: non decodificabile` }); badImg.add(k); }
+    }
+  }
+  const ref = (k, who) => { if (!k) return; used.add(k); if (!imgs.has(k)) problems.push({ kind: "info", text: _T`${who}: la foto non è più nel browser (nello ZIP mancherà)` }); };
+  if (auto) { ref(auto.imageKey, _t("Salvataggio automatico")); if (!sesOk(auto.session)) problems.push({ kind: "auto", text: _t("Salvataggio automatico: sessione illeggibile") }); }
+  for (const e of arch) { ref(e.imageKey, _T`Archivio «${e.name}»`); if (!sesOk(e.session)) problems.push({ kind: "arch", id: e.id, text: _T`Archivio «${e.name}»: sessione illeggibile` }); }
+  const orphans = keys.filter(k => !used.has(k));
+  const imgSize = k => { const r = imgs.get(k); return r && r.blob ? r.blob.size : 0; };
+  const photos = keys.reduce((a, k) => a + imgSize(k), 0), sessions = (auto ? jsonBytes(auto) : 0) + arch.reduce((a, e) => a + jsonBytes(e), 0);
+  let est = null;
+  try { if (navigator.storage && navigator.storage.estimate) est = await navigator.storage.estimate(); } catch { est = null; }
+  const list = arch.map(e => ({ id: e.id, name: e.name, savedAt: e.savedAt, groups: e.groups, shots: e.shots, bytes: jsonBytes(e) + (e.imageKey ? imgSize(e.imageKey) : 0),
+    photo: e.imageKey ? imgSize(e.imageKey) : 0, shared: e.imageKey && (arch.filter(x => x.imageKey === e.imageKey).length > 1 || (auto && auto.imageKey === e.imageKey)) }))
+    .sort((a, b) => String(b.savedAt).localeCompare(String(a.savedAt)));
+  return { auto: !!auto, autoBytes: auto ? jsonBytes(auto) + (auto.imageKey ? imgSize(auto.imageKey) : 0) : 0, nImg: keys.length, photos, sessions, total: photos + sessions,
+    est, problems, orphans, badImg: [...badImg], list, at: new Date() };
+}
+function renderStorage(S) {
+  const box = $("stoOut"); if (!S) { box.innerHTML = ""; return; }
+  const est = S.est && S.est.usage != null ? _T` · il browser stima ${fmtBytes(S.est.usage)} usati per questo sito${S.est.quota ? _T` su ${fmtBytes(S.est.quota)} disponibili` : ""}` : "";
+  $("stoInfo").innerHTML = _T`Occupati <b>${fmtBytes(S.total)}</b>: foto ${fmtBytes(S.photos)} (${S.nImg}), sessioni ${fmtBytes(S.sessions)} (archiviate: ${S.list.length}${S.auto ? _t(" + salvataggio automatico") : ""})${est}.`;
+  const errs = S.problems.filter(p => p.kind !== "info"), infos = S.problems.filter(p => p.kind === "info");
+  const fixable = S.orphans.length + errs.length;
+  let h = errs.length ? `<div class="status warn">⚠ ${_T`${errs.length} problemi di integrità`}:<br>${errs.map(p => esc(p.text)).join("<br>")}</div>`
+    : `<div class="status ok">✓ ${_t("Integrità: tutte le sessioni e le foto sono leggibili.")}</div>`;
+  if (infos.length) h += `<div class="muted" style="font-size:12px;margin-top:4px">${infos.map(p => "ℹ " + esc(p.text)).join("<br>")}</div>`;
+  if (S.orphans.length) h += `<div class="muted" style="font-size:12px;margin-top:4px">${_T`${S.orphans.length} foto non più usate da nessuna sessione.`}</div>`;
+  if (fixable) h += `<div class="btns"><button class="btn" id="bStoFix" title="${_t("Elimina le foto non più usate, le foto illeggibili e le voci d'archivio illeggibili (il salvataggio automatico illeggibile viene azzerato)")}">🧹 ${_t("Ripara")}</button></div>`;
+  if (S.list.length) {
+    h += `<table class="sto-tab"><tbody>${S.list.map(e => `<tr><td>${esc(e.name)}<div class="muted">${e.savedAt ? new Date(e.savedAt).toLocaleString(I18N.locale()) : "—"} · ${_T`gruppi: ${e.groups} · fori: ${e.shots}`}</div></td>
+      <td class="v" title="${e.shared ? _t("La foto è condivisa con altre sessioni: si libera solo quando non la usa più nessuna") : ""}">${fmtBytes(e.bytes)}${e.shared ? " *" : ""}</td>
+      <td><button class="btn" data-sto-del="${esc(e.id)}" title="${_t("Elimina questa sessione dall'archivio del browser (i file sul disco non vengono toccati)")}" aria-label="${_t("Elimina")}">✕</button></td></tr>`).join("")}</tbody></table>`;
+    if (S.list.some(e => e.shared)) h += `<div class="muted" style="font-size:11.5px">${_t("* foto condivisa con altre sessioni o con il salvataggio automatico.")}</div>`;
+  }
+  box.innerHTML = h;
+  if ($("bStoFix")) $("bStoFix").onclick = storageRepair;
+  box.querySelectorAll("button[data-sto-del]").forEach(b => b.onclick = () => storageDelete([b.dataset.stoDel]));
+}
+async function storageCheck() {
+  if (DB.broken) { $("stoInfo").textContent = _t("Archivio non disponibile in questo browser."); return null; }
+  $("stoInfo").textContent = _t("Verifica in corso…");
+  try { STO.last = await storageScan(true); renderStorage(STO.last); return STO.last; }
+  catch (e) { dbFailed(e); return null; }
+}
+async function storageDelete(ids, ask = true) {
+  if (!ids.length) return 0;
+  if (ask && !confirm(ids.length === 1 ? _t("Eliminare questa sessione dall'archivio del browser? I file già salvati sul disco non vengono toccati.")
+    : _T`Eliminare ${ids.length} sessioni dall'archivio del browser? I file già salvati sul disco non vengono toccati.`)) return 0;
+  try {
+    await idb("archive", "readwrite", st => { ids.forEach(id => st.delete(id)); });
+    await gcImages(); refreshArchiveInfo();
+    toast(ids.length === 1 ? _t("Sessione eliminata dall'archivio") : _T`${ids.length} sessioni eliminate dall'archivio`);
+    await storageCheck();
+    return ids.length;
+  } catch (e) { dbFailed(e); return 0; }
+}
+async function storageDeleteOlder(days = parseFloat($("stoDays").value)) {
+  if (!(days > 0)) { toast(_t("Indica un numero di giorni maggiore di zero.")); return 0; }
+  let arch; try { arch = await idb("archive", "readonly", st => st.getAll()); } catch (e) { dbFailed(e); return 0; }
+  const lim = Date.now() - days * 86400000, ids = arch.filter(e => { const t = Date.parse(e.savedAt); return isFinite(t) && t < lim; }).map(e => e.id);
+  if (!ids.length) { toast(_T`Nessuna sessione archiviata più vecchia di ${fmt(days, 0)} giorni.`); return 0; }
+  return storageDelete(ids);
+}
+async function storageRepair() {
+  const S = STO.last || await storageScan(true);
+  try {
+    const dropImg = [...new Set([...S.orphans, ...S.badImg])], dropArch = S.problems.filter(p => p.kind === "arch").map(p => p.id);
+    if (dropImg.length) { await idb("images", "readwrite", st => { dropImg.forEach(k => st.delete(k)); }); dropImg.forEach(k => DB.storedKeys.delete(k)); }
+    if (dropArch.length) await idb("archive", "readwrite", st => { dropArch.forEach(id => st.delete(id)); });
+    if (S.problems.some(p => p.kind === "auto")) await idb("kv", "readwrite", st => st.delete("autosave"));
+    refreshArchiveInfo();
+    toast(_T`Riparato: ${dropImg.length} foto e ${dropArch.length} sessioni eliminate.`);
+  } catch (e) { dbFailed(e); }
+  return storageCheck();
+}
+/** Ricomprime le foto del browser in JPEG alla stessa risoluzione; tiene il risultato solo se risparmia almeno il 20%. */
+async function storageOptimize(ask = true, quality = 0.9) {
+  if (DB.broken) return null;
+  if (ask && !confirm(_t("Ricomprimere in JPEG (qualità 0,9, stessa risoluzione) le foto salvate nel browser? Le coordinate dei punti restano valide e la perdita è trascurabile per la misura, ma la foto nel browser non sarà più identica all'originale (cambia anche la sua impronta SHA-256 e si perdono i dati EXIF). I file già salvati sul disco non cambiano."))) return null;
+  toast(_t("Ottimizzazione delle foto…"));
+  let n = 0, before = 0, after = 0, tried = 0;
+  try {
+    const keys = await idb("images", "readonly", st => st.getAllKeys());
+    for (const k of keys) {
+      const r = await idb("images", "readonly", st => st.get(k));
+      if (!r || !(r.blob instanceof Blob)) continue;
+      tried++;
+      let bm; try { bm = await createImageBitmap(r.blob); } catch { continue; }
+      const c = document.createElement("canvas"); c.width = bm.width; c.height = bm.height;
+      const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(bm, 0, 0); if (bm.close) bm.close();
+      const nb = await new Promise(res => c.toBlob(res, "image/jpeg", quality)); c.width = c.height = 1;
+      if (!nb || nb.size > r.blob.size * 0.8) continue;
+      before += r.blob.size; after += nb.size; n++;
+      await idb("images", "readwrite", st => st.put({ ...r, blob: nb, optimized: { at: new Date().toISOString(), from: r.blob.type, bytes: r.blob.size, quality } }, k));
+    }
+  } catch (e) { dbFailed(e); return null; }
+  toast(n ? _T`Foto ottimizzate: ${n} di ${tried}, da ${fmtBytes(before)} a ${fmtBytes(after)}.` : _t("Nessuna foto da ottimizzare: già compatte."));
+  await storageCheck();
+  return { n, tried, before, after };
 }
 
 /* ------------------------------ ZIP ------------------------------
@@ -13460,6 +14089,21 @@ $("bwUnit").addEventListener("focus", e => { e.target.dataset.prev = e.target.va
 document.querySelectorAll("#bcWiz input").forEach(el => el.addEventListener("input", bwRun));
 $("bcWiz").addEventListener("click", e => { if (e.target.id === "bcWiz") closeBcWiz(); });
 $("bLayout").onclick = toggleLayoutPop;
+// 1.23.0: tour guidato, velocità per foro, provenienza, spazio di archiviazione, distanza nota della scala
+$("bTour").onclick = () => (tourOpen() ? endTour() : startTour());
+$("bTourX").onclick = endTour; $("bTourPrev").onclick = () => tourStep(-1); $("bTourNext").onclick = () => tourStep(1);
+$("bTourAskGo").onclick = startTour; $("bTourAskNo").onclick = tourMarkSeen;
+window.addEventListener("resize", tourPlace);
+$("sideScroll").addEventListener("scroll", () => { if (tourOpen()) tourPlace(); }, { passive: true });
+$("vPerShot").addEventListener("change", () => { refreshLists(); scheduleAutosave(); });
+$("vLabelOn").addEventListener("change", () => { requestDraw(); scheduleAutosave(); });
+$("provAuthor").addEventListener("change", () => { $("provAuthor").value = $("provAuthor").value.trim().slice(0, 80); provSet({ author: $("provAuthor").value }); });
+$("provWm").addEventListener("change", () => provSet({ wm: $("provWm").checked }));
+$("bStoCheck").onclick = storageCheck;
+$("bStoOpt").onclick = () => storageOptimize(true);
+$("bStoOld").onclick = () => storageDeleteOlder();
+for (const ev of ["change", "blur"]) $("calDist").addEventListener(ev, () => calAttn(false));
+$("calDist").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("calDist").blur(); } });
 canvas.addEventListener("dblclick", e => { if (!state.image) return; const { x, y } = localXY(e); const h = hitTest(x, y); if (h && h.kind === "shot") { e.preventDefault(); focusPointRow(h); } });
 $("gridOn").addEventListener("change", () => { syncGridButton(); requestDraw(); if ($("gridOn").checked && !gridSpec(calcContext())) toast(_t("Griglia: servono scala calibrata e distanza di tiro.")); });
 $("bTheme").onclick = toggleTheme;
@@ -13536,7 +14180,7 @@ $("bTgtReset").onclick = () => setTgt({ dx: 0, dy: 0, rot: 0 });
 $("bTgtMove").onclick = () => setMode(state.mode === "tgt" ? state.prevMode : "tgt");
 $("chPerShot").addEventListener("change", () => { refreshLists(); scheduleAutosave(); });
 $("scoreDec").addEventListener("change", () => { refreshResults(); refreshLists(); refreshScoreUI(); requestDraw(); scheduleAutosave(); });
-document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg), #side select:not([data-k]):not(#ldProfile):not(#densSel):not(#uiModeSel), #anaView select:not(#anaGroup), #anaView input[type=number]")
+document.querySelectorAll("#side input[type=number]:not([data-k]):not(#rotDeg):not(#stoDays), #side select:not([data-k]):not(#ldProfile):not(#densSel):not(#uiModeSel), #anaView select:not(#anaGroup), #anaView input[type=number]")
   .forEach(el => el.addEventListener("input", () => { refreshResults(); refreshLists(); refreshScoreUI(); requestDraw(); scheduleAutosave(); }));
 
 // drag & drop
@@ -14689,6 +15333,7 @@ function groupSumLine(g) {
     const S = qiSet(); if (S.gqiOn && !uiBasic()) { const q = qiOf(g, gcc, S); if (q.ok) parts.push(`GQI <b>${qiNum(q.gqi, S)}</b>`); }
   } else if (r.n >= 2) parts.push(_t("scala non calibrata"));
   else parts.push(_t("servono almeno 2 fori"));
+  const VS = velStats(g); if (VS) parts.push(_T`V media <b>${velTxt(VS.mean, VS.u, 1)}</b>`);   // 1.23.0
   return parts.join(" · ");
 }
 function setGroupCollapsed(gid, on) {
@@ -15259,7 +15904,7 @@ async function exportReticlePng() {
   k.font = F(400, 11); k.fillStyle = "#6b7280";
   k.fillText(_T`Torrette: alzo ${sgn(+$("rtDialV").value || 0, 0)} · brand. ${sgn(+$("rtDialH").value || 0, 0)} click · ${new Date().toLocaleDateString(I18N.locale())}`, 16, y + 6, S - 32);
   k.fillText(_t("Solo distanze tirate. Il brandeggio vale per il vento di quel giorno."), 16, y + 22, S - 32);
-  const blob = await new Promise(res => out.toBlob(res, "image/png"));
+  const blob = await exportPng(out);   // filigrana e metadati (1.23.0)
   if (await FileStore.saveBlob(fileName("Reticle", "png"), blob)) toast(_t("Reticolo esportato (PNG)"));
 }
 
@@ -15318,7 +15963,7 @@ async function exportTestTarget() {
   await new Promise(r => setTimeout(r, 30));
   const c = testTargetCanvas(code, n);
   const blob = await new Promise(res => c.toBlob(res, "image/jpeg", 0.95));
-  const pdf = makePdf([{ jpeg: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height }], { title: `Shoot Analyzer SA-${code}` });
+  const pdf = makePdf([{ jpeg: new Uint8Array(await blob.arrayBuffer()), w: c.width, h: c.height }], { title: `Shoot Analyzer SA-${code}`, author: provGet().author });
   if (await FileStore.saveBlob(fileName("TestTarget", "pdf", null), pdf)) toast(_T`Bersaglio SA-${code} salvato: stampalo al 100%`);
   scheduleAutosave();
 }
@@ -15462,7 +16107,7 @@ window.addEventListener("resize", resizeCanvas);
 // avvio
 applyStaticI18n();
 $("langSel").onchange = e => setLang(e.target.value);
-initTheme(); initDensity(); initLayout(); initUiMode(); refreshSecFold(); initSnap();
+initTheme(); initDensity(); initLayout(); initUiMode(); refreshSecFold(); initSnap(); initProv(); initTour();
 buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
@@ -15477,7 +16122,9 @@ window.__SA = { loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, 
   flyerTest, holeScaleCheck, refScaleCheck, measInfo, diagInfo, diagMemo, RT_VIEW, calibQuality,
   correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getProfiles, saveProfile, applyProfile, stabInfo, moveShot, setParams, deleteProfile, importProfilesText, profileAutoName, setWindDir, refreshWindDial, exportReportPdf, applyCrop, undoCrop, cropRectNorm, cropOutside, readZip, sessionsFromZip, buildSessionZip, saveSessionZip, openSessionFile, CARD_OPEN, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap ,
   isLocked, setLock, toggleLock, lockable, toggleGroupVisible, noteMarkers, addNoteAt, rulerInfo, setZoomPct, zoomStep, detail, openDetail, setDetailZoom, drawScaleMark, photoSizeMm, configDiff, analysisCfg, drawCompare, refreshLists, deleteRef, hitTest, clearAll, deleteLast, fixColor, GROUP_COLORS, allPoints ,
-  qiSet, qiOf, qiSnapshot, qiSessionData, qiCenters, qiRow, qiOriginal };
+  qiSet, qiOf, qiSnapshot, qiSessionData, qiCenters, qiRow, qiOriginal,
+  velStats, useVelAsV0, calAttn, provGet, provSet, provInfo, photoSha, pngWithMeta, exportPng, storageScan, storageCheck, storageDelete, storageDeleteOlder, storageRepair, storageOptimize, STO,
+  startTour, endTour, tourStep, tourOpen, tourSteps, TOUR, initTour };
 </script>
 </body>
 </html>

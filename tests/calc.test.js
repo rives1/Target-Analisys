@@ -773,4 +773,18 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.estimateBC({ ...ob, v0: 0 }, [{ d: 600, mil: 5.6, sig: 0.05 }]), null, "senza V0 → null");
 }
 
+// --- SHA-256 (1.23.0): vettori FIPS 180-2 e confronto con il modulo crypto di Node su lunghezze ai bordi del blocco
+{
+  const crypto = require("crypto"), te = s => new TextEncoder().encode(s);
+  eq(Calc.sha256(te("")), "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "SHA-256 vuoto");
+  eq(Calc.sha256(te("abc")), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "SHA-256 abc");
+  eq(Calc.sha256(te("abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq")), "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1", "SHA-256 448 bit");
+  eq(Calc.sha256(new Uint8Array(1000000).fill(97)), "cdc76e5c9914fb9281a1c7e284d73e67f1809a48a497200e046d39ccc7112cd0", "SHA-256 un milione di «a»");
+  let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) >>> 0) & 255;
+  for (const n of [1, 55, 56, 57, 63, 64, 65, 119, 120, 128, 1000, 70001]) {
+    const u = Uint8Array.from({ length: n }, rnd);
+    eq(Calc.sha256(u), crypto.createHash("sha256").update(u).digest("hex"), `SHA-256 di ${n} byte = crypto di Node`);
+  }
+}
+
 console.log(`OK — ${passed} verifiche superate`);

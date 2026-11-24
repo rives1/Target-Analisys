@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.22.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.23.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -74,6 +74,10 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Modalità Base / Esperto** (1.22): in Base restano group size, correzione e punteggio; Qualità, Probabilità e Confronto sono nascosti. Cambia solo la visualizzazione: report, CSV e Result Card restano completi.
 - **Stima guidata del BC** (1.22, pulsante 🧮 accanto al BC): dalle correzioni di alzo osservate a due distanze (anche dalla Dope Card) ricava il BC con la V0 fissa, con incertezza, coerenza tra le distanze e confronto col BC inserito.
 - **⊟ in cima al pannello** (1.22): comprime o espande tutti i blocchi. CSV con nomi distinti: `CSVShots` e `CSVGroups`.
+- **Velocità per foro** (1.23): colonna V0 nella tabella dei punti (velocità del cronografo per ogni colpo, Invio = foro successivo), velocità accanto ai fori sulla foto, media nell'etichetta e nel riepilogo del gruppo, media/SD/ES sotto la tabella e «Usa come V0/SD del gruppo»; nel CSV dei fori e nel report.
+- **Tour guidato** (1.23, pulsante 🎓): 5 passi sul flusso di lavoro con il comando evidenziato; proposto una volta al primo avvio.
+- **Provenienza** (1.23): autore e filigrana facoltativa; PNG e PDF esportati portano sempre nei metadati app, versione, data, autore, nome e impronta SHA-256 della foto.
+- **Spazio di archiviazione locale** (1.23, sezione Dati): spazio occupato nel browser, verifica d'integrità e riparazione, eliminazione delle sessioni archiviate (una per una o per età), ricompressione JPEG delle foto alla stessa risoluzione. Dopo il secondo punto della scala il campo della distanza nota si evidenzia.
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.
