@@ -3385,6 +3385,102 @@ test("1.24.0: variabilità dentro e tra i gruppi — REML, intervalli, giudizio,
   for (const l of ["en", "ru"]) { await page.evaluate(l => { window.__SA.setLang(l); window.__SA.openAnalysis("cmp"); window.__SA.drawHier(); }, l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
 });
 
+/* ------------------------------ 1.25.0 ------------------------------ */
+test("1.25.0: quote della cartuccia e report ricetta — campi, profili, CSV, sessione, confronto, PDF, lingue", async page => {
+  // campi nel riquadro Munizione, con il pulsante del report
+  const ids = ["cbto", "coal", "caseLen", "shoulder", "neck"];
+  for (const k of ids) ok2(await page.$(`#ss-ammo #ld-${k}[data-k="${k}"]`), "campo " + k);
+  ok2(await page.isVisible("#ss-ammo #bRecipe"), "pulsante Report ricetta nel riquadro Munizione");
+  assert.deepStrictEqual(await page.$$eval("#ss-ammo label", L => L.slice(-5).map(l => l.textContent)), ["CBTO", "COAL", "Lungh. bossolo", "Spalla", "Colletto Ø"]);
+  // report anche senza foto e senza quote
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const fs = require("fs");
+  const dlBuf = async () => { const [dl] = await Promise.all([page.waitForEvent("download", { timeout: 30000 }), page.click("#bRecipe")]); return { name: dl.suggestedFilename(), buf: fs.readFileSync(await dl.path()) }; };
+  { const E = await dlBuf(); assert.match(E.name, /^ShAn-Recipe- - -\d{8}-\d{4}\.pdf$/); assert.strictEqual(checkPdf(E.buf), 1, "una pagina");
+    ok2(/Nessuna quota inserita/.test(pdfText(E.buf)), "invito a compilare le quote"); }
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100);
+  await setField(page, "#ld-weapon", "Victrix Gladio X"); await setField(page, "#ld-powder", "VihtaVuori N550"); await setField(page, "#ld-charge", "37.2");
+  await setField(page, "#ld-bullet", "Lapua Scenar 139 gr"); await setField(page, "#ld-primer", "CCI 200"); await setField(page, "#ld-case", "Hornady");
+  const V = { cbto: "55.76", coal: "71.76", caseLen: "48.51", shoulder: "39.47", neck: "7.40" };
+  for (const k of ids) await setField(page, `#ld-${k}`, V[k]);
+  let g = (await S(page)).g;
+  assert.deepStrictEqual(ids.map(k => g.load[k]), ids.map(k => V[k]), "valori salvati nel gruppo");
+  await key(page, "Control+z");
+  assert.strictEqual((await S(page)).g.load.neck, "", "Ctrl+Z annulla l'ultimo campo");
+  await key(page, "Control+y");
+  assert.strictEqual(await page.inputValue("#ld-neck"), "7.40", "ripristinato anche nel campo");
+  // riga compatta in Result Card, report e testo
+  const LL = await page.evaluate(() => window.__SA.loadLines(window.__SA.state.groups[0]));
+  assert.deepStrictEqual(LL.find(r => r[0] === "Quote della cartuccia"), ["Quote della cartuccia", "CBTO 55,76 · COAL 71,76 · lunghezza bossolo 48,51 · spalla 39,47 · colletto Ø 7,40 mm"]);
+  // profilo: le quote ne fanno parte
+  await page.fill("#ldProfName", "Scenar N550"); await page.click("#bProfSave");
+  const P = await page.evaluate(() => window.__SA.getProfiles());
+  assert.strictEqual(P[0].cbto, "55.76", "CBTO nel profilo"); assert.strictEqual(P[0].neck, "7.40", "colletto nel profilo");
+  await setField(page, "#ld-cbto", "55.90"); await page.evaluate(() => document.activeElement.blur());   // come un clic sul menu dei profili
+  assert.strictEqual(await page.inputValue("#ldProfile"), "", "CBTO cambiato: il profilo non coincide più");
+  await page.selectOption("#ldProfile", "Scenar N550");
+  assert.strictEqual((await S(page)).g.load.cbto, "55.76", "profilo applicato: CBTO ripristinato");
+  // nuovo gruppo: copia le quote; un CBTO diverso compare tra le differenze di configurazione
+  await page.click("#bAddGroup");
+  assert.strictEqual((await S(page)).g.load.coal, "71.76", "quote copiate nel nuovo gruppo");
+  await setField(page, "#ld-cbto", "56.26"); await page.evaluate(() => document.activeElement.blur());
+  await page.evaluate(() => { const st = window.__SA.state; st.groups[1].shots = st.groups[0].shots.map((q, i) => ({ ...q, id: 900 + i, x: q.x + 2 })); st.groups[1].poa = st.groups[0].poa; window.__SA.commit(); });
+  const D = await page.evaluate(() => { const d = window.__SA.configDiff(); return { diff: d.diff, cb: d.cells.get("cbto") }; });
+  ok2(D.diff.includes("cbto") && !D.diff.includes("coal"), "solo il CBTO è diverso: " + JSON.stringify(D.diff));
+  assert.deepStrictEqual(D.cb, ["55,76 mm", "56,26 mm"]);
+  await page.evaluate(() => { const st = window.__SA.state; st.activeGroupId = st.groups[0].id; window.__SA.commit(); });
+  // CSV dei gruppi: cinque colonne in fondo
+  const C = await download(page, "#bCsvGroups"), R = parseCsv(C.text.slice(1));
+  assert.deepStrictEqual(R[0].slice(-5), ["CBTO (mm)", "COAL (mm)", "Lunghezza bossolo (mm)", "Spalla (mm)", "Colletto Ø (mm)"]);
+  assert.deepStrictEqual(R[1].slice(-5), ["55,76", "71,76", "48,51", "39,47", "7,40"]);
+  ok2(R.every(r => r.length === R[0].length), "stesso numero di colonne");
+  // sessione: salvate e riaperte
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  assert.strictEqual(JSON.parse(sess).groups[0].load.shoulder, "39.47");
+  await page.reload(); await page.waitForFunction(() => window.__SA); await expandAll(page);
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  await page.evaluate(() => { const st = window.__SA.state; st.activeGroupId = st.groups[0].id; window.__SA.commit(); });
+  assert.strictEqual(await page.inputValue("#ld-shoulder"), "39.47", "campo ricompilato dalla sessione");
+  // velocità per foro → prestazioni misurate
+  await page.evaluate(() => { const g = window.__SA.state.groups[0]; [749, 752, 745, 755, 748].forEach((v, i) => { g.shots[i].v = v; }); window.__SA.commit(); });
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const F = await dlBuf();
+  assert.match(F.name, /^ShAn-Recipe-Victrix Gladio X-Scenar N550-\d{8}-\d{4}\.pdf$/);
+  assert.strictEqual(checkPdf(F.buf), 1, "una pagina A4");
+  const T = pdfText(F.buf);
+  for (const t of ["SHOOT ANALYZER · RICETTA", "Scenar N550", "Ricetta di lavoro per Victrix Gladio X. Quote in millimetri, dal fondello.", "RICETTA", "PREPARAZIONE BOSSOLO", "PRESTAZIONI MISURATE", "CONDIZIONI",
+    "37,20 gr VihtaVuori N550", "55,76 mm", "governa la seduta", "71,76 mm", "39,47 mm", "48,51 mm", "7,40 mm", "Ø 7,40", "colletto con la palla", "749,8 m/s", "cronografo, 5 colpi", "10,0 m/s", "100 m"])
+    ok2(T.includes(t), "nel PDF: " + t);
+  const es = (await analyzeActive(page)).mm.es;
+  ok2(T.includes(`${es.toFixed(1).replace(".", ",")} mm · `), "group size del gruppo nel PDF");
+  const sd = Math.sqrt([749, 752, 745, 755, 748].reduce((a, v) => a + (v - 749.8) ** 2, 0) / 4);
+  ok2(T.includes(`${sd.toFixed(1).replace(".", ",")} m/s`), "SD delle velocità");
+  // disegno vettoriale: tracciati riempiti e contornati, tratteggi, nessuna immagine
+  const zlib = require("zlib"), raw = F.buf.toString("latin1"), mm = raw.match(/<< \/Length (\d+) \/Filter \/FlateDecode >>\nstream\n/);
+  const ops = zlib.inflateSync(F.buf.subarray(mm.index + mm[0].length, mm.index + mm[0].length + +mm[1])).toString("latin1");
+  ok2((ops.match(/ B Q/g) || []).length >= 2 && / d .* S Q/.test(ops) && !/DCTDecode/.test(raw), "bossolo e palla vettoriali, linee tratteggiate");
+  ok2(/\/Title <FEFF/.test(raw) && raw.includes("ShootAnalyzerRecipe"), "metadati della ricetta");
+  // quote incoerenti: avviso nel report e niente quote nel disegno
+  await setField(page, "#ld-cbto", "45");
+  assert.deepStrictEqual(await page.evaluate(() => window.__SA.recipeWarnings(window.__SA.state.groups[0].load)), ["lunghezza bossolo (48,51) dovrebbe essere minore di CBTO (45,00)"]);
+  const T2 = pdfText((await dlBuf()).buf);
+  ok2(T2.includes("dovrebbe essere minore di CBTO"), "avviso di coerenza"); ok2(T2.includes("Il disegno riporterà le quote"), "disegno senza quote");
+  ok2(T.includes("CBTO · governa la seduta") && !T2.includes("CBTO · governa la seduta"), "niente quota CBTO nel disegno");
+  // inglese e russo: nessun testo mancante, PDF in russo con i font incorporati
+  await page.evaluate(() => window.__SA.setLang("en"));
+  assert.strictEqual((await page.textContent("#bRecipe")).trim(), "📐 Load recipe report");
+  assert.strictEqual(await page.getAttribute("#ld-caseLen", "placeholder"), "e.g. 48.51");
+  ok2(/LOAD RECIPE/.test(pdfText((await dlBuf()).buf)), "PDF in inglese");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "en");
+  await page.evaluate(() => window.__SA.setLang("ru"));
+  assert.strictEqual(await page.textContent("label[for=ld-shoulder]"), "Плечо");
+  const U = pdfTextU((await dlBuf()).buf);
+  ok2(/РЕЦЕПТ/.test(U) && /Подготовка гильзы/i.test(U) && /мм/.test(U), "PDF in russo");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "ru");
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };

@@ -824,4 +824,41 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   eq(Calc.hierBoot(F, 50).sw, Calc.hierBoot(F, 50).sw, "bootstrap a seme fisso");
 }
 
+// --- 1.25.0: quote della cartuccia (report ricetta): coerenza e posizioni nel disegno
+{
+  const Q = { shoulder: 39.47, caseLen: 48.51, cbto: 55.76, coal: 71.76, neck: 7.40 };
+  eq(Calc.cartridgeCheck(Q), [], "quote coerenti: nessun avviso");
+  const L0 = Calc.cartridgeLayout(Q);
+  eq(L0.pos, { shoulder: 39.47, caseLen: 48.51, cbto: 55.76, coal: 71.76 }, "quote inserite: posizioni uguali ai valori");
+  ok(L0.consistent && Object.values(L0.known).every(Boolean), "tutte note e coerenti");
+  eq(Calc.cartridgeCheck({ caseLen: 48.51, cbto: 45 }), [{ code: "order", a: "caseLen", b: "cbto" }], "CBTO minore della lunghezza del bossolo");
+  eq(Calc.cartridgeCheck({ cbto: 55, coal: 55 }), [{ code: "order", a: "cbto", b: "coal" }], "quote uguali: incoerenti");
+  eq(Calc.cartridgeCheck({ shoulder: 50, coal: 40 }), [{ code: "order", a: "shoulder", b: "coal" }], "confronto anche tra quote non vicine");
+  eq(Calc.cartridgeCheck({ neck: 74 }), [{ code: "range", k: "neck" }], "colletto oltre 20 mm: è un diametro");
+  eq(Calc.cartridgeCheck({ coal: 720 }), [{ code: "range", k: "coal" }], "lunghezza oltre 200 mm");
+  eq(Calc.cartridgeCheck({ cbto: null, coal: NaN, neck: 0 }), [], "valori assenti, non numerici o nulli ignorati");
+  ok(Calc.cartridgeLayout({ ...Q, neck: 74 }).consistent, "il colletto fuori scala non blocca le quote longitudinali");
+  // quote mancanti: interpolate con i rapporti della cartuccia tipo, o proporzionali all'ultima nota
+  const P1 = Calc.cartridgeLayout({ caseLen: 51.18, cbto: 57.4, coal: 78.1 }).pos;
+  near(P1.shoulder, 39.47 / 48.51 * 51.18, 1e-9, "spalla interpolata tra fondello e bossolo");
+  const P2 = Calc.cartridgeLayout({ cbto: 55 }).pos;
+  near(P2.coal, 71.76 / 55.76 * 55, 1e-9, "COAL proporzionale al CBTO"); near(P2.caseLen, 48.51 / 55.76 * 55, 1e-9, "bossolo proporzionale al CBTO");
+  const P3 = Calc.cartridgeLayout({ shoulder: 30, coal: 80 }).pos;
+  near(P3.caseLen, 30 + (48.51 - 39.47) / (71.76 - 39.47) * 50, 1e-9, "bossolo interpolato tra spalla e COAL");
+  eq(Calc.cartridgeLayout({}).pos, { shoulder: 39.47, caseLen: 48.51, cbto: 55.76, coal: 71.76 }, "nessuna quota: cartuccia tipo");
+  const P4 = Calc.cartridgeLayout({ caseLen: 48.51, cbto: 45 });
+  ok(!P4.consistent && !Object.values(P4.known).some(Boolean), "quote incoerenti: nessuna quota usata");
+  eq(P4.pos, Calc.cartridgeLayout({}).pos, "quote incoerenti: cartuccia tipo");
+  // proprietà: qualunque sottoinsieme di quote coerenti dà posizioni strettamente crescenti
+  const r = Calc.rng(125), K = ["shoulder", "caseLen", "cbto", "coal"];
+  let mono = true;
+  for (let i = 0; i < 400; i++) {
+    const v = [20 + 40 * r.u()]; for (let j = 1; j < 4; j++) v.push(v[j - 1] + 0.2 + 25 * r.u());
+    const q = {}; K.forEach((k, j) => { if (r.u() < 0.5) q[k] = v[j]; });
+    const P = Calc.cartridgeLayout(q).pos;
+    if (!(0 < P.shoulder && P.shoulder < P.caseLen && P.caseLen < P.cbto && P.cbto < P.coal) || K.some(k => q[k] != null && P[k] !== q[k])) mono = false;
+  }
+  ok(mono, "posizioni crescenti e quote note rispettate su 400 casi casuali");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.25.0] - 2026-11-24
+### Aggiunto
+- **Quote della cartuccia** nel riquadro Munizione (Ricarica e condizioni), in mm, per gruppo: **CBTO** (fondello →
+  ogiva, al comparatore), **COAL**, **lunghezza del bossolo**, **spalla** (fondello → spalla, al comparatore) e
+  **Ø esterno del colletto** con la palla montata. Salvate nella sessione, copiate nel nuovo gruppo, parte dei profili
+  di ricarica, riga «Quote della cartuccia» nei dati di ricarica (Result Card, report PDF, testo), cinque colonne in
+  fondo al CSV dei gruppi, righe nelle differenze di configurazione del confronto.
+- **Report ricetta** (pulsante «📐 Report ricetta» nel riquadro Munizione): PDF A4 chiaro di una pagina per il gruppo
+  attivo, anche senza foto. Intestazione (profilo o palla · polvere, arma, gruppo, data), **disegno schematico
+  vettoriale** della cartuccia con le quote dal fondello (CBTO evidenziato, punti del comparatore sulla spalla, Ø del
+  colletto), tabelle **Ricetta**, **Preparazione bossolo**, **Prestazioni misurate** (velocità media/SD/ES dalle
+  velocità per foro, altrimenti V0/SD della munizione; group size e raggio medio in mm, MOA e MIL; colpi) e
+  **Condizioni**, note del gruppo. Testo vero, font incorporati in russo; nome `ShAn-Recipe-<arma>-<profilo>-…pdf`.
+- Motore: `Calc.cartridgeCheck` (quote longitudinali crescenti, colletto ≤ 20 mm, lunghezze ≤ 200 mm) e
+  `Calc.cartridgeLayout` (posizioni nel disegno: quote inserite come sono, mancanti con i rapporti di una cartuccia
+  tipo; con quote incoerenti il disegno resta senza quote e il report mostra gli avvisi).
+- `ReportDoc.path` / `ReportDoc.line`: tracciati vettoriali (riempimento, contorno, tratteggio) nei PDF.
+- Help tecnico: voce «CBTO / COAL» nel glossario, paragrafo «Report ricetta» in «Report PDF».
+- Test: 18 verifiche del motore sulle quote, test UI end-to-end (campi, Ctrl+Z, profili, nuovo gruppo, confronto, CSV,
+  sessione, PDF con testo e disegno vettoriale, avvisi, inglese e russo).
+
 ## [1.24.0] - 2026-11-24
 ### Aggiunto
 - **Analisi di sensibilità delle conclusioni** (pannello nella pagina «📊 Grafici del gruppo», card «Robustezza delle

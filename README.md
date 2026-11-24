@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.24.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.25.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -43,7 +43,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Verifica incrociata della scala**: diametro mediano dei fori contro il calibro e riferimento di controllo di lunghezza nota.
 - **Incertezza di misura** per simulazione (marcatura per foro, fori «difficili», errore di scala) accanto agli IC statistici; **diagnostica del modello** (QQ-plot Rayleigh, test di adattamento, stringing e due centri); **ES equivalente** a 5 e 10 colpi.
 - **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
-- **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, meteo, temperatura, umidità, pressione, vento, colpi sparati, scaldacanna, note.
+- **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, quote della cartuccia (CBTO, COAL, lunghezza del bossolo, spalla, colletto, in mm), meteo, temperatura, umidità, pressione, vento, colpi sparati, scaldacanna, note.
 - **Orientamento**: rotazione della foto (raddrizza con 2 punti, angolo libero, ±90°); punti e direzioni seguono il bersaglio raddrizzato.
 - **Correzione prospettica** a 4 punti (omografia) per le foto di sbieco, con scala automatica dal rettangolo di riferimento.
 - **Grafici** (vista a schermo intero): dispersione senza immagine, istogramma delle distanze dal centro, orologio delle direzioni.
@@ -70,7 +70,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Calcolatore balistico** (1.21): modello a massa puntiforme con funzioni G1/G7 standard, atmosfera dai dati del gruppo, vento laterale; caduta e deriva a una distanza qualsiasi e confronto con la dope card misurata. Dati in **Ricarica e condizioni**: arma (nome, altezza ottica, azzeramento), BC con modello, velocità iniziale e SD (anche nei profili).
 - **Monte Carlo della velocità** (1.21): group size atteso per distanza (totale, solo angolo, solo velocità) e rosata simulata.
 - **Ruota degli errori per pistola** (1.21, indicativa): sulla foto e come grafico interattivo, destrorso/mancino.
-- **Nomi dei file** (1.21): `ShAn-<tipo>-<arma>-<profilo>-AAAAMMGG-hhmm` (Session, SessionDB, ResCar, PDFReport, CSVShots, CSVGroups, Profiles, ResTxt, DopeCard, Reticle, TestTarget); campi vuoti = spazio. Il cono di dispersione è stato tolto (codice commentato).
+- **Nomi dei file** (1.21): `ShAn-<tipo>-<arma>-<profilo>-AAAAMMGG-hhmm` (Session, SessionDB, ResCar, PDFReport, Recipe, CSVShots, CSVGroups, Profiles, ResTxt, DopeCard, Reticle, TestTarget); campi vuoti = spazio. Il cono di dispersione è stato tolto (codice commentato).
 - **Modalità Base / Esperto** (1.22): in Base restano group size, correzione e punteggio; Qualità, Probabilità e Confronto sono nascosti. Cambia solo la visualizzazione: report, CSV e Result Card restano completi.
 - **Stima guidata del BC** (1.22, pulsante 🧮 accanto al BC): dalle correzioni di alzo osservate a due distanze (anche dalla Dope Card) ricava il BC con la V0 fissa, con incertezza, coerenza tra le distanze e confronto col BC inserito.
 - **⊟ in cima al pannello** (1.22): comprime o espande tutti i blocchi. CSV con nomi distinti: `CSVShots` e `CSVGroups`.
@@ -80,6 +80,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Analisi di sensibilità** (1.24, pagina «Grafici del gruppo» e card «Robustezza delle conclusioni»): le stesse osservazioni rianalizzate cambiando un'ipotesi alla volta (normale circolare, ML, ellittica, empirico; marcatura e scala; un foro alla volta, esclusi, flyer; livello di confidenza) per correzione in click, CEP e classe GQI, probabilità di colpire e confronto con gli altri gruppi; giudizio robusta / abbastanza robusta / dipende dalle ipotesi, scenario che pesa di più, grafico a tornado.
 - **Variabilità dentro e tra i gruppi** (1.24, pagina «Confronto tra gruppi» e card nei Risultati): modello gerarchico REML che separa la dispersione dentro le rosate (σ_w) dallo spostamento dei centri tra rosate (σ_b), con quota tra gruppi (ICC), σ complessiva, intervalli (profilo della verosimiglianza e bootstrap), test, GQI con e senza gli spostamenti, scelta dei gruppi e grafico dei centri.
 - **Spazio di archiviazione locale** (1.23, sezione Dati): spazio occupato nel browser, verifica d'integrità e riparazione, eliminazione delle sessioni archiviate (una per una o per età), ricompressione JPEG delle foto alla stessa risoluzione. Dopo il secondo punto della scala il campo della distanza nota si evidenzia.
+- **Report ricetta** (1.25, pulsante 📐 nel riquadro Munizione): PDF A4 chiaro di una pagina per il gruppo attivo, anche senza foto: disegno schematico vettoriale della cartuccia con le quote inserite (CBTO evidenziato, spalla con i punti del comparatore, Ø del colletto), tabelle Ricetta, Preparazione bossolo, Prestazioni misurate (velocità media/SD/ES dal cronografo o dalla V0, group size e raggio medio) e Condizioni, note e avvisi se le quote non sono coerenti. Nome del file `ShAn-Recipe-…`.
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.

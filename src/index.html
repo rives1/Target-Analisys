@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.24.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.25.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -484,6 +484,7 @@
   .ld-grid .pair > * { min-width: 0; }
   .ld-grid input, .ld-grid select, .ld-grid textarea { width: 100%; padding: 4px 6px; }
   .ld-grid textarea { grid-column: 1 / -1; resize: vertical; min-height: 54px; }
+  .ld-grid .ld-sep { grid-column: 1 / -1; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
   /* Modalità Base (1.22.0): restano group size, correzione e punteggio; le esportazioni non cambiano */
   html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] #bAnaSwitch, html[data-ui="basic"] #qiTop { display: none !important; }
   details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
@@ -879,7 +880,19 @@
           <div class="pair"><input id="ld-v0" data-k="v0" type="number" min="0" step="any" placeholder="media del cronografo" title="Velocità iniziale media (V0)" style="flex:2"><select id="ld-v0Unit" data-k="v0Unit" style="flex:1"><option value="m/s">m/s</option><option value="fps">fps</option></select></div>
           <label for="ld-v0sd" title="Deviazione standard della velocità misurata col cronografo, nella stessa unità della velocità: serve alla simulazione Monte Carlo">SD velocità</label>
           <div class="pair"><input id="ld-v0sd" data-k="v0sd" type="number" min="0" step="any" placeholder="dal cronografo" title="Deviazione standard della velocità (SD)" style="flex:2"><span class="muted" style="align-self:center" id="ldV0sdU">m/s</span></div>
+          <span class="ld-sep">Quote della cartuccia</span>
+          <label for="ld-cbto" title="Cartridge Base To Ogive: dal fondello all'ogiva della palla, misurata con il comparatore sull'ogiva. È la quota che governa la seduta">CBTO</label>
+          <div class="pair"><input id="ld-cbto" data-k="cbto" type="number" min="0" step="any" placeholder="es. 55,76" title="CBTO: dal fondello all'ogiva della palla (comparatore), in mm" style="flex:2"><span class="muted" style="align-self:center">mm</span></div>
+          <label for="ld-coal" title="Cartridge Overall Length: dal fondello alla punta della palla. Varia con la punta: è una quota di controllo">COAL</label>
+          <div class="pair"><input id="ld-coal" data-k="coal" type="number" min="0" step="any" placeholder="es. 71,76" title="COAL: lunghezza totale della cartuccia, in mm" style="flex:2"><span class="muted" style="align-self:center">mm</span></div>
+          <label for="ld-caseLen" title="Lunghezza del bossolo dal fondello alla bocca, dopo la rifilatura">Lungh. bossolo</label>
+          <div class="pair"><input id="ld-caseLen" data-k="caseLen" type="number" min="0" step="any" placeholder="es. 48,51" title="Lunghezza del bossolo, in mm" style="flex:2"><span class="muted" style="align-self:center">mm</span></div>
+          <label for="ld-shoulder" title="Quota dal fondello alla spalla, misurata con il comparatore sulla spalla (headspace): dice di quanto il ridimensionamento arretra la spalla">Spalla</label>
+          <div class="pair"><input id="ld-shoulder" data-k="shoulder" type="number" min="0" step="any" placeholder="es. 39,47" title="Spalla: dal fondello alla spalla (comparatore), in mm" style="flex:2"><span class="muted" style="align-self:center">mm</span></div>
+          <label for="ld-neck" title="Diametro esterno del colletto con la palla montata">Colletto Ø</label>
+          <div class="pair"><input id="ld-neck" data-k="neck" type="number" min="0" step="any" placeholder="es. 7,40" title="Colletto: diametro esterno con la palla montata, in mm" style="flex:2"><span class="muted" style="align-self:center">mm</span></div>
         </div>
+        <div class="btns"><button type="button" class="btn" id="bRecipe" title="Report PDF della ricetta del gruppo attivo: componenti, quote della cartuccia con il disegno quotato, velocità e dispersione misurate">📐 Report ricetta</button></div>
         </div>
         <div class="subsec" id="ss-cond">
         <div class="subsec-h"><span class="ssi">☁</span>Condizioni</div>
@@ -1548,6 +1561,7 @@
 <tr id="gl-asse"><td>Asse maggiore</td><td>Direzione lungo cui il gruppo è più allungato, in gradi dalla verticale (senso orario) e in «ore».</td><td>Forma del gruppo</td></tr>
 <tr id="gl-bordo"><td>Bordo-bordo</td><td>Group size misurato fra i bordi esterni dei due fori più lontani = c-c + calibro.</td><td>Risultati</td></tr>
 <tr id="gl-cc"><td>c-c (centro-centro)</td><td>Distanza misurata tra i centri dei fori. È la misura standard del group size.</td><td>Risultati, card</td></tr>
+<tr id="gl-cbto"><td>CBTO / COAL</td><td><i>Cartridge Base To Ogive</i>: dal fondello all'ogiva della palla, misurata con un comparatore che appoggia sull'ogiva; è la quota che governa la seduta (e quindi il salto dalle righe). <i>Cartridge Overall Length</i>: dal fondello alla punta; varia con la punta della palla, quindi serve solo di controllo.</td><td>Munizione, report ricetta</td></tr>
 <tr id="gl-cep"><td>CEP</td><td><i>Circular Error Probable</i>: raggio del cerchio, centrato sul centro gruppo, che contiene il 50% dei colpi previsti dal modello.</td><td>Statistiche, grafici, confronto</td></tr>
 <tr id="gl-centro"><td>Centro gruppo (POI)</td><td>Media delle posizioni dei fori inclusi: dove l'arma «manda» mediamente i colpi.</td><td>Tabella punti, correzione</td></tr>
 <tr id="gl-chi2"><td>χ² (chi quadrato)</td><td>Distribuzione statistica usata per l'incertezza di una deviazione standard stimata da pochi colpi.</td><td>IC di σ, CEP, R95, R99</td></tr>
@@ -2081,6 +2095,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <h3>Report PDF</h3>
 <p>Dalla 1.14 il report è un PDF con <b>testo vero</b>: si seleziona, si copia e si cerca, è nitido in stampa e pesa molto meno. Usa i font standard Helvetica e Helvetica-Bold che ogni lettore PDF possiede (nessun font incorporato): la codifica WinAnsi contiene lettere accentate, «», ±, °, ², ×, ma non σ, √, ≈, ≤: nel PDF diventano «sigma», «radice», «~», «&lt;=». Foto e grafici sono immagini JPEG; i titoli dei gruppi e delle sezioni sono anche segnalibri.</p>
 <p>Contenuto: intestazione con distanza, calibro, click e colpi analizzati; foto ritagliata; <b>Calibrazione</b> (metodo e coordinate dei punti, distanza nota, scala in px/mm e mm/px, incertezza e semaforo, inquadratura, verifiche dei fori e del riferimento di controllo, rotazione, prospettiva, distorsione, incertezza di marcatura); per ogni gruppo <b>Colpi analizzati</b> (marcati, inclusi, esclusi, possibili flyer, marcatura), misure e correzione, <b>Modello statistico e incertezza</b> (modello, σ con il suo intervallo e i gradi di libertà, coefficienti di CEP/R95/R99, metodo degli intervalli, test dei flyer, diagnostica, incertezza di misura, stabilità, livello di confidenza), ricarica, grafici (dispersione, istogramma, orologio, polare, densità 3D, QQ-plot, stabilità e centro colpo dopo colpo) e tabella dei fori; poi, se hanno dati, confronto, dope card, ricarica, correlazioni, cono, confronto visivo e reticolo. I metadati del documento (Titolo, Soggetto, Parole chiave e le voci ShootAnalyzerCalibration e ShootAnalyzerModel) riassumono calibrazione e modello.</p>
+<p><b>Report ricetta</b> (1.25, «📐 Report ricetta» nel riquadro Munizione): una pagina A4 chiara per il gruppo attivo, anche senza foto, pensata per il banco di ricarica. Contiene un <b>disegno schematico vettoriale</b> della cartuccia con le quote inserite dal fondello (COAL, CBTO in arancio, lunghezza del bossolo, spalla con i due punti di contatto del comparatore) e il Ø del colletto; le tabelle <b>Ricetta</b> (polvere e carica, palla, innesco, bossolo, CBTO, COAL, salto dalle righe), <b>Preparazione bossolo</b> (spalla, lunghezza, Ø del colletto), <b>Prestazioni misurate</b> (velocità media, SD ed ES dalle velocità per foro, altrimenti V0 e SD della munizione; group size e raggio medio del gruppo con MOA e MIL) e <b>Condizioni</b>; poi le note del gruppo. Il profilo del disegno ha le proporzioni di una 6,5 Creedmoor scalate sulla COAL: le quote stanno dove dicono i valori, quelle non inserite sono collocate con i rapporti della cartuccia tipo (interpolate tra due quote note o proporzionali all'ultima). Le quote longitudinali devono essere crescenti (spalla &lt; bossolo &lt; CBTO &lt; COAL) e il colletto, che è un diametro, non oltre 20 mm: altrimenti il report mostra un avviso e il disegno resta senza quote, perché una quota nel punto sbagliato confonderebbe. CBTO e spalla dipendono da comparatore e inserto: vanno confrontate solo con letture fatte con lo stesso strumento.</p>
 </section>
 
 <section id="h-file">
@@ -2089,7 +2104,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <dt>Ritaglio della foto</dt>
 <dd>«✂ Ritaglia» (Orientamento) e un rettangolo trascinato sulla foto; «✓ Applica ritaglio» o Invio. Il ritaglio è <b>definitivo</b>: la nuova foto è ciò che si vede (rotazione, prospettiva e distorsione corrette vengono incorporate) limitato al rettangolo, a 1 pixel = 1 pixel, quindi la <b>scala non cambia</b> e i punti vengono solo traslati: group size, statistiche e correzione restano identici. Mire e fori devono stare nel rettangolo; i punti della scala possono restare fuori (la scala resta valida). Se la scala veniva dal rettangolo della prospettiva diventa una scala a 2 punti sul lato superiore del rettangolo. Le foto JPEG vengono ricodificate in JPEG al 95% (perdita minima), le altre in PNG. La storia (Annulla) riparte dalla foto ritagliata; «↶ Annulla ritaglio» rimette foto e punti di prima finché non carichi un'altra foto. Per conservare il ritaglio salva la sessione con la foto (ZIP, o JSON con l'immagine incorporata): un JSON senza foto non si riapre sulla foto originale.</dd>
 <dt>Profili di ricarica</dt>
-<dd>Un profilo è un nome con bossolo, polvere, carica, palla, salto dalle righe, innesco e calibro. «💾 Salva profilo» li prende dal gruppo attivo e dai parametri (stesso nome = aggiornato, nome vuoto = calibro · palla · polvere carica); sceglierlo nel menu li ricopia nel gruppo attivo e imposta il calibro. Data, meteo, vento e note non fanno parte del profilo. I profili stanno nel browser (localStorage): «⇩ Esporta profili» e «⇧ Importa profili» li portano su un altro browser o PC.</dd>
+<dd>Un profilo è un nome con bossolo, polvere, carica, palla, salto dalle righe, innesco, quote della cartuccia (dalla 1.25) e calibro. «💾 Salva profilo» li prende dal gruppo attivo e dai parametri (stesso nome = aggiornato, nome vuoto = calibro · palla · polvere carica); sceglierlo nel menu li ricopia nel gruppo attivo e imposta il calibro. Data, meteo, vento e note non fanno parte del profilo. I profili stanno nel browser (localStorage): «⇩ Esporta profili» e «⇧ Importa profili» li portano su un altro browser o PC.</dd>
 <dt>Quadrante del vento</dt>
 <dd>Ore da cui soffia il vento (ore 12 = dal bersaglio verso il tiratore, ore 3 = da destra). Componente laterale = v·sin(ore·30°), positiva da destra; frontale = v·cos(ore·30°), positiva contro, negativa in coda. La card «Vento» mette accanto lo scostamento orizzontale misurato del centro gruppo: la deriva teorica non è calcolata (servirebbero coefficiente balistico, velocità e atmosfera) e lo scostamento misurato comprende anche la taratura.</dd>
 <dt>File ZIP di sessione</dt>
@@ -3933,7 +3948,41 @@ const Calc = (() => {
     return [...H].map(x => x.toString(16).padStart(8, "0")).join("");
   }
 
-  return { sha256, covFull, ellipseRadius, spatialMedian, radialQuantile, hitProbCov, hierFit, hierBoot, chi1cdf, chi1inv, LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
+  /* ---------- Quote della cartuccia (1.25.0): coerenza e posizioni per il disegno del report ricetta ----------
+     Quote longitudinali dal fondello, in mm: spalla (al comparatore) < lunghezza del bossolo < CBTO < COAL. Il colletto
+     è un diametro. CART_REF = cartuccia tipo (6,5 Creedmoor) per collocare nel disegno le quote non inserite. */
+  const CART_CHAIN = ["shoulder", "caseLen", "cbto", "coal"];
+  const CART_REF = { shoulder: 39.47, caseLen: 48.51, cbto: 55.76, coal: 71.76 };
+  const cartOk = v => v != null && isFinite(v) && v > 0;
+  /** Problemi delle quote q = { shoulder, caseLen, cbto, coal, neck } (mm o null):
+      [{ code: "order", a, b }] (a dovrebbe essere minore di b) e [{ code: "range", k }] (valore fuori scala). */
+  function cartridgeCheck(q) {
+    const out = [];
+    for (const k of [...CART_CHAIN, "neck"]) if (cartOk(q[k]) && q[k] > (k === "neck" ? 20 : 200)) out.push({ code: "range", k });
+    const present = CART_CHAIN.filter(k => cartOk(q[k]));
+    for (let i = 0; i < present.length; i++)
+      for (let j = i + 1; j < present.length; j++) if (!(q[present[i]] < q[present[j]])) out.push({ code: "order", a: present[i], b: present[j] });
+    return out;
+  }
+  /** Posizioni (mm dal fondello) delle quote longitudinali per il disegno: le quote inserite come sono; le mancanti con i
+      rapporti della cartuccia tipo, interpolate tra due quote note o proporzionali all'ultima nota. Con quote incoerenti
+      si disegna la cartuccia tipo (il colletto, che è un diametro, non conta). → { pos: { shoulder, caseLen, cbto, coal },
+      known: { k: bool }, consistent } */
+  function cartridgeLayout(q) {
+    const consistent = !cartridgeCheck(q).some(w => w.k !== "neck");
+    const known = Object.fromEntries(CART_CHAIN.map(k => [k, consistent && cartOk(q[k])]));
+    const R = k => CART_REF[k] / CART_REF.coal;
+    const anchors = [{ r: 0, p: 0 }, ...CART_CHAIN.filter(k => known[k]).map(k => ({ r: R(k), p: q[k] }))];
+    const pos = {};
+    for (const k of CART_CHAIN) {
+      if (known[k]) { pos[k] = q[k]; continue; }
+      const r = R(k), a = anchors.filter(x => x.r < r).pop(), b = anchors.find(x => x.r > r);
+      pos[k] = b ? a.p + (r - a.r) / (b.r - a.r) * (b.p - a.p) : r * (a.r > 0 ? a.p / a.r : CART_REF.coal);
+    }
+    return { pos, known, consistent };
+  }
+
+  return { cartridgeCheck, cartridgeLayout, sha256,covFull, ellipseRadius, spatialMedian, radialQuantile, hitProbCov, hierFit, hierBoot, chi1cdf, chi1inv, LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
     solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
@@ -6057,7 +6106,75 @@ const I18N = (() => {
    "Gruppi della sessione: togli la spunta per escluderne uno dall'analisi.": "Session groups: untick one to leave it out of the analysis.",
    "Centri dei gruppi rispetto al punto medio di impatto": "Group centres relative to the mean point of impact",
    "Centri dei gruppi con il CEP interno, il CEP dei centri e il CEP complessivo": "Group centres with the internal CEP, the CEP of the centres and the overall CEP",
-   "Analisi di sensibilità": "Sensitivity analysis"
+   "Analisi di sensibilità": "Sensitivity analysis",
+   "CBTO (mm)": "CBTO (mm)",
+   "COAL (mm)": "COAL (mm)",
+   "Lunghezza bossolo (mm)": "Case length (mm)",
+   "Spalla (mm)": "Shoulder (mm)",
+   "Colletto Ø (mm)": "Neck Ø (mm)",
+   "Colletto Ø esterno": "Neck OD",
+   "Deviazione standard": "Standard deviation",
+   "Disegno schematico: proporzioni approssimate, le quote sono le tue misure. CBTO e spalla dipendono da comparatore e inserto: confrontale solo con letture fatte con lo stesso strumento. In arancio la quota che governa la seduta.": "Schematic drawing: proportions are approximate, the dimensions are your measurements. CBTO and shoulder depend on the comparator and insert: compare them only with readings taken with the same tool. In orange, the dimension that sets seating depth.",
+   "Dispersione": "Dispersion",
+   "Escursione (ES)": "Extreme spread (ES)",
+   "Lunghezza bossolo": "Case length",
+   "Nessuna quota inserita: compila CBTO, COAL, lunghezza del bossolo, spalla e colletto nel riquadro Munizione.": "No dimensions entered: fill in CBTO, COAL, case length, shoulder and neck in the Ammunition box.",
+   "Preparazione bossolo": "Case prep",
+   "Preparazione del report ricetta…": "Preparing the load recipe report…",
+   "Prestazioni misurate": "Measured performance",
+   "Quote della cartuccia": "Cartridge dimensions",
+   "Report ricetta salvato.": "Load recipe report saved.",
+   "Ricetta di lavoro per {0}. Quote in millimetri, dal fondello.": "Working load for {0}. Dimensions in millimetres, from the case head.",
+   "Ricetta di lavoro. Quote in millimetri, dal fondello.": "Working load. Dimensions in millimetres, from the case head.",
+   "Ricetta di ricarica: {0}": "Load recipe: {0}",
+   "Ricetta {0}": "Load recipe {0}",
+   "Ricetta": "Load",
+   "SHOOT ANALYZER · RICETTA": "SHOOT ANALYZER · LOAD RECIPE",
+   "Shoot Analyzer {0} · ricetta · {1} · {2}": "Shoot Analyzer {0} · load recipe · {1} · {2}",
+   "Spalla": "Shoulder",
+   "Velocità media": "Average velocity",
+   "al comparatore": "with comparator",
+   "bossolo": "case",
+   "colletto con la palla": "neck, bullet seated",
+   "colletto Ø": "neck Ø",
+   "con la palla montata": "with the bullet seated",
+   "controllo: varia con la punta": "check only: varies with the tip",
+   "cronografo, {0} colpi": "chronograph, {0} shots",
+   "dal fondello, al comparatore": "from the case head, with comparator",
+   "dati della munizione": "from the ammunition data",
+   "governa la seduta": "sets seating depth",
+   "lunghezza bossolo": "case length",
+   "palla": "bullet",
+   "ricetta": "load recipe",
+   "servono almeno 2 fori marcati": "at least 2 marked holes needed",
+   "solo controllo": "check only",
+   "spalla": "shoulder",
+   "{0} ({1}) dovrebbe essere minore di {2} ({3})": "{0} ({1}) should be less than {2} ({3})",
+   "{0} nel gruppo": "{0} in the group",
+   "{0} oltre 20 mm: è un diametro, controlla il valore": "{0} over 20 mm: it is a diameter, check the value",
+   "{0} oltre 200 mm: controlla il valore": "{0} over 200 mm: check the value",
+   "CBTO": "CBTO",
+   "COAL": "COAL",
+   "Lungh. bossolo": "Case length",
+   "Colletto Ø": "Neck Ø",
+   "Cartridge Base To Ogive: dal fondello all'ogiva della palla, misurata con il comparatore sull'ogiva. È la quota che governa la seduta": "Cartridge Base To Ogive: from the case head to the bullet ogive, measured with a comparator on the ogive. It is the dimension that sets seating depth",
+   "Cartridge Overall Length: dal fondello alla punta della palla. Varia con la punta: è una quota di controllo": "Cartridge Overall Length: from the case head to the bullet tip. It varies with the tip: a check dimension",
+   "Lunghezza del bossolo dal fondello alla bocca, dopo la rifilatura": "Case length from the head to the mouth, after trimming",
+   "Quota dal fondello alla spalla, misurata con il comparatore sulla spalla (headspace): dice di quanto il ridimensionamento arretra la spalla": "Base-to-shoulder length measured with a shoulder comparator (headspace): shows how far sizing pushes the shoulder back",
+   "Diametro esterno del colletto con la palla montata": "Outside neck diameter with the bullet seated",
+   "CBTO: dal fondello all'ogiva della palla (comparatore), in mm": "CBTO: case head to bullet ogive (comparator), in mm",
+   "COAL: lunghezza totale della cartuccia, in mm": "COAL: overall cartridge length, in mm",
+   "Lunghezza del bossolo, in mm": "Case length, in mm",
+   "Spalla: dal fondello alla spalla (comparatore), in mm": "Shoulder: case head to shoulder (comparator), in mm",
+   "Colletto: diametro esterno con la palla montata, in mm": "Neck: outside diameter with the bullet seated, in mm",
+   "es. 55,76": "e.g. 55.76",
+   "es. 71,76": "e.g. 71.76",
+   "es. 48,51": "e.g. 48.51",
+   "es. 39,47": "e.g. 39.47",
+   "es. 7,40": "e.g. 7.40",
+   "📐 Report ricetta": "📐 Load recipe report",
+   "Report PDF della ricetta del gruppo attivo: componenti, quote della cartuccia con il disegno quotato, velocità e dispersione misurate": "PDF load recipe report for the active group: components, cartridge dimensions with a dimensioned drawing, measured velocity and dispersion",
+   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "The drawing will show the dimensions from the case head once they are consistent."
   }/*END-EN-DICT*/;
   /* Dizionario russo (dalla 1.19.0): stesse chiavi italiane. Una chiave assente in russo finisce in «missing» e
      ripiega sull'inglese (meglio dell'italiano per chi legge il russo). Unità angolari lasciate in caratteri latini
@@ -8157,7 +8274,75 @@ const I18N = (() => {
    "Gruppi della sessione: togli la spunta per escluderne uno dall'analisi.": "Группы сессии: снимите флажок, чтобы исключить группу из анализа.",
    "Centri dei gruppi rispetto al punto medio di impatto": "Центры групп относительно средней точки попадания",
    "Centri dei gruppi con il CEP interno, il CEP dei centri e il CEP complessivo": "Центры групп с внутренним CEP, CEP центров и общим CEP",
-   "Analisi di sensibilità": "Анализ чувствительности"
+   "Analisi di sensibilità": "Анализ чувствительности",
+   "CBTO (mm)": "CBTO (мм)",
+   "COAL (mm)": "COAL (мм)",
+   "Lunghezza bossolo (mm)": "Длина гильзы (мм)",
+   "Spalla (mm)": "Плечо (мм)",
+   "Colletto Ø (mm)": "Ø дульца (мм)",
+   "Colletto Ø esterno": "Наружный Ø дульца",
+   "Deviazione standard": "Стандартное отклонение",
+   "Disegno schematico: proporzioni approssimate, le quote sono le tue misure. CBTO e spalla dipendono da comparatore e inserto: confrontale solo con letture fatte con lo stesso strumento. In arancio la quota che governa la seduta.": "Схематичный чертёж: пропорции приблизительные, размеры — ваши измерения. CBTO и плечо зависят от компаратора и вставки: сравнивайте их только с замерами тем же инструментом. Оранжевым выделен размер, задающий посадку пули.",
+   "Dispersione": "Рассеивание",
+   "Escursione (ES)": "Разброс (ES)",
+   "Lunghezza bossolo": "Длина гильзы",
+   "Nessuna quota inserita: compila CBTO, COAL, lunghezza del bossolo, spalla e colletto nel riquadro Munizione.": "Размеры не введены: заполните CBTO, COAL, длину гильзы, плечо и дульце в блоке «Патрон».",
+   "Preparazione bossolo": "Подготовка гильзы",
+   "Preparazione del report ricetta…": "Подготовка отчёта по рецепту…",
+   "Prestazioni misurate": "Измеренные показатели",
+   "Quote della cartuccia": "Размеры патрона",
+   "Report ricetta salvato.": "Отчёт по рецепту сохранён.",
+   "Ricetta di lavoro per {0}. Quote in millimetri, dal fondello.": "Рабочий рецепт для {0}. Размеры в миллиметрах, от донца.",
+   "Ricetta di lavoro. Quote in millimetri, dal fondello.": "Рабочий рецепт. Размеры в миллиметрах, от донца.",
+   "Ricetta di ricarica: {0}": "Рецепт снаряжения: {0}",
+   "Ricetta {0}": "Рецепт {0}",
+   "Ricetta": "Рецепт",
+   "SHOOT ANALYZER · RICETTA": "SHOOT ANALYZER · РЕЦЕПТ",
+   "Shoot Analyzer {0} · ricetta · {1} · {2}": "Shoot Analyzer {0} · рецепт · {1} · {2}",
+   "Spalla": "Плечо",
+   "Velocità media": "Средняя скорость",
+   "al comparatore": "по компаратору",
+   "bossolo": "гильза",
+   "colletto con la palla": "дульце с пулей",
+   "colletto Ø": "Ø дульца",
+   "con la palla montata": "с посаженной пулей",
+   "controllo: varia con la punta": "контроль: зависит от носика пули",
+   "cronografo, {0} colpi": "хронограф, выстрелов: {0}",
+   "dal fondello, al comparatore": "от донца, по компаратору",
+   "dati della munizione": "из данных патрона",
+   "governa la seduta": "задаёт посадку пули",
+   "lunghezza bossolo": "длина гильзы",
+   "palla": "пуля",
+   "ricetta": "рецепт",
+   "servono almeno 2 fori marcati": "нужны минимум 2 отмеченные пробоины",
+   "solo controllo": "только контроль",
+   "spalla": "плечо",
+   "{0} ({1}) dovrebbe essere minore di {2} ({3})": "{0} ({1}) должно быть меньше, чем {2} ({3})",
+   "{0} nel gruppo": "в группе: {0}",
+   "{0} oltre 20 mm: è un diametro, controlla il valore": "{0} больше 20 мм: это диаметр, проверьте значение",
+   "{0} oltre 200 mm: controlla il valore": "{0} больше 200 мм: проверьте значение",
+   "CBTO": "CBTO",
+   "COAL": "COAL",
+   "Lungh. bossolo": "Длина гильзы",
+   "Colletto Ø": "Ø дульца",
+   "Cartridge Base To Ogive: dal fondello all'ogiva della palla, misurata con il comparatore sull'ogiva. È la quota che governa la seduta": "Cartridge Base To Ogive: от донца до оживала пули, измеряется компаратором по оживалу. Это размер, задающий посадку пули",
+   "Cartridge Overall Length: dal fondello alla punta della palla. Varia con la punta: è una quota di controllo": "Cartridge Overall Length: от донца до носика пули. Зависит от носика: контрольный размер",
+   "Lunghezza del bossolo dal fondello alla bocca, dopo la rifilatura": "Длина гильзы от донца до дульца после подрезки",
+   "Quota dal fondello alla spalla, misurata con il comparatore sulla spalla (headspace): dice di quanto il ridimensionamento arretra la spalla": "Расстояние от донца до плеча, измеренное компаратором по плечу (хедспейс): показывает, насколько калибровка сдвигает плечо назад",
+   "Diametro esterno del colletto con la palla montata": "Наружный диаметр дульца с посаженной пулей",
+   "CBTO: dal fondello all'ogiva della palla (comparatore), in mm": "CBTO: от донца до оживала пули (компаратор), в мм",
+   "COAL: lunghezza totale della cartuccia, in mm": "COAL: общая длина патрона, в мм",
+   "Lunghezza del bossolo, in mm": "Длина гильзы, в мм",
+   "Spalla: dal fondello alla spalla (comparatore), in mm": "Плечо: от донца до плеча (компаратор), в мм",
+   "Colletto: diametro esterno con la palla montata, in mm": "Дульце: наружный диаметр с посаженной пулей, в мм",
+   "es. 55,76": "напр. 55,76",
+   "es. 71,76": "напр. 71,76",
+   "es. 48,51": "напр. 48,51",
+   "es. 39,47": "напр. 39,47",
+   "es. 7,40": "напр. 7,40",
+   "📐 Report ricetta": "📐 Отчёт по рецепту",
+   "Report PDF della ricetta del gruppo attivo: componenti, quote della cartuccia con il disegno quotato, velocità e dispersione misurate": "PDF-отчёт по рецепту активной группы: компоненты, размеры патрона с чертежом, измеренные скорость и рассеивание",
+   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "Размеры от донца появятся на чертеже, когда станут согласованными."
   }/*END-RU-DICT*/;
   const DICT = { en: EN, ru: RU };
   const LANGS = ["it", "en", "ru"];
@@ -8223,7 +8408,7 @@ const PDF_FONTS = {"R":{"name":"SAReportSans-Regular","b64":"AAEAAAALAIAAAwAwT1M
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.24.0";
+const APP_VERSION = "1.25.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -8297,7 +8482,7 @@ function makeGroup() {
   return { id: newId(), name: _T`Gruppo ${Math.max(0, ...nums) + 1}`, color, dist, poa: null, shots: [], load };
 }
 /* Dati di ricarica e condizioni (per gruppo). Tutti stringhe: come scritti dall'utente. */
-const LOAD_KEYS = ["date", "weapon", "sightH", "sightHUnit", "zero", "zeroUnit", "case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer", "bc", "bcModel", "v0", "v0Unit", "v0sd", "profile", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
+const LOAD_KEYS = ["date", "weapon", "sightH", "sightHUnit", "zero", "zeroUnit", "case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer", "bc", "bcModel", "v0", "v0Unit", "v0sd", "cbto", "coal", "caseLen", "shoulder", "neck", "profile", "weather", "temp", "humidity", "pressure", "wind", "windUnit", "windDir", "shotsTotal", "foulers", "notes"];
 // Dalla 1.6.0 un nuovo gruppo copia TUTTI i dati del gruppo attivo (richiesta utente), anche colpi, scaldacanna e note.
 const LOAD_INHERIT = LOAD_KEYS;
 function todayISO() { const d = new Date(), z = n => String(n).padStart(2, "0"); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
@@ -10759,7 +10944,7 @@ function setWindDir(v) {
 }
 
 /* --- profili di ricarica (componenti + calibro), salvati nel browser --- */
-const PROFILE_KEY = "shootAnalyzer.loadProfiles", PROFILE_FIELDS = ["weapon", "sightH", "sightHUnit", "zero", "zeroUnit", "case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer", "bc", "bcModel", "v0", "v0Unit", "v0sd"];
+const PROFILE_KEY = "shootAnalyzer.loadProfiles", PROFILE_FIELDS = ["weapon", "sightH", "sightHUnit", "zero", "zeroUnit", "case", "powder", "charge", "bullet", "jump", "jumpUnit", "primer", "bc", "bcModel", "v0", "v0Unit", "v0sd", "cbto", "coal", "caseLen", "shoulder", "neck"];
 function getProfiles() { try { const a = JSON.parse(localStorage.getItem(PROFILE_KEY) || "[]"); return Array.isArray(a) ? a.filter(p => p && p.name) : []; } catch { return []; } }
 function putProfiles(a) { try { localStorage.setItem(PROFILE_KEY, JSON.stringify(a)); return true; } catch { toast(_t("Impossibile salvare i profili nel browser.")); return false; } }
 /** Profilo dai dati del gruppo attivo e dal calibro dei parametri. */
@@ -11252,7 +11437,8 @@ function loadLines(g) {
   if (v("jump")) { const d = v("jumpUnit") === "mm" ? 2 : 3, x = parseFloat(v("jump"));
     out.push([_t("Salto dalle righe"), `${isFinite(x) ? x.toLocaleString(I18N.locale(), { minimumFractionDigits: d, maximumFractionDigits: d }) : v("jump")} ${v("jumpUnit") || "in"}`]); }
   if (v("primer")) out.push([_t("Innesco"), v("primer")]);
-  const bal = [v("bc") ? `BC ${num("bc", 3)} ${loadV(L, "bcModel")}` : "", v("v0") ? `V0 ${num("v0", 0)} ${uL(loadV(L, "v0Unit"))}` : "", v("v0sd") ? _T`SD ${num("v0sd", 1)} ${uL(loadV(L, "v0Unit"))}` : ""].filter(Boolean).join(" · ");
+  { const q = recipeQuotesText(L); if (q) out.push([_t("Quote della cartuccia"), q]); }   // 1.25.0
+  const bal =[v("bc") ? `BC ${num("bc", 3)} ${loadV(L, "bcModel")}` : "", v("v0") ? `V0 ${num("v0", 0)} ${uL(loadV(L, "v0Unit"))}` : "", v("v0sd") ? _T`SD ${num("v0sd", 1)} ${uL(loadV(L, "v0Unit"))}` : ""].filter(Boolean).join(" · ");
   if (bal) out.push([_t("Balistica"), bal]);
   { const VS = velStats(g); if (VS) out.push([_t("Velocità per foro"), velSummary(VS)]); }   // 1.23.0
   const met = [v("weather"), v("temp") ? `${num("temp", 1)} °C` : "", v("humidity") ? _T`UR ${num("humidity", 0)}%` : "",
@@ -11780,6 +11966,14 @@ class ReportDoc {
   }
   rect(x, y, w, h, color) { this.cur.ops.push(`${pdfRGB(color)} rg ${this.P(x, y + h)} ${(w * this.F).toFixed(2)} ${(h * this.F).toFixed(2)} re f`); }
   frame(x, y, w, h, color) { this.cur.ops.push(`${pdfRGB(color)} RG 0.5 w ${this.P(x, y + h)} ${(w * this.F).toFixed(2)} ${(h * this.F).toFixed(2)} re S`); }
+  /** Tracciato vettoriale (1.25.0): cmds = [["M", x, y], ["L", x, y], …, ["Z"]] in px della pagina; riempimento e/o
+      contorno (spessore in px, tratteggio [pieno, vuoto] in px). */
+  path(cmds, { fill = null, stroke = null, width = 1.5, dash = null } = {}) {
+    const d = cmds.map(c => c[0] === "Z" ? "h" : `${this.P(c[1], c[2])} ${c[0] === "M" ? "m" : "l"}`).join(" ");
+    const st = `${fill ? pdfRGB(fill) + " rg " : ""}${stroke ? `${pdfRGB(stroke)} RG ${(width * this.F).toFixed(2)} w 1 j ${dash ? 0 : 1} J ` : ""}${dash ? `[${dash.map(v => (v * this.F).toFixed(2)).join(" ")}] 0 d ` : ""}`;
+    this.cur.ops.push(`q ${st}${d} ${fill && stroke ? "B" : fill ? "f" : "S"} Q`);
+  }
+  line(x1, y1, x2, y2, o = {}) { this.path([["M", x1, y1], ["L", x2, y2]], { stroke: "#1d2330", ...o }); }
   /** Righe con a capo entro maxW. */
   wrap(t, maxW, size, bold) {
     const out = [];
@@ -11924,6 +12118,207 @@ async function exportReportPdf(scope = "active") {
     blob = await R.finish(reportMeta(groups, cc, base));
   } finally { PDF_EMB = null; }
   if (await FileStore.saveBlob(fileName("PDFReport", "pdf"), blob)) toast(_T`Report PDF salvato: ${R.pages.length} pagine`);
+  return blob;
+}
+/* ------------------------------ REPORT RICETTA (1.25.0) ------------------------------
+   Una pagina A4 chiara e stampabile per il gruppo attivo, anche senza foto: intestazione, disegno schematico della
+   cartuccia con le quote inserite (vettoriale), Ricetta, Preparazione bossolo, Prestazioni misurate (velocità +
+   dispersione), Condizioni e Note. Quote nel gruppo: load.cbto, coal, caseLen, shoulder, neck (stringhe, mm). */
+const RECIPE_KEYS = ["cbto", "coal", "caseLen", "shoulder", "neck"];
+const RECIPE_C = { ink: "#1d2330", mut: "#6b7280", lab: "#4b5563", none: "#9ca3af", acc: "#c2410c", dim: "#4f6a9a", warn: "#9a3412",
+  brass: "#f1e4c0", brassE: "#8a6d1f", cu: "#ecc9b3", cuE: "#7c3f22", box: "#f8f9fb", rule: "#d1d5db", row: "#eef0f3" };
+/** Quota in mm (> 0) o null. */
+const recipeMm = (L, k) => { const t = String((L || {})[k] ?? "").trim().replace(",", "."), x = parseFloat(t); return t !== "" && isFinite(x) && x > 0 ? x : null; };
+/** Quota formattata con i decimali scritti (da 2 a 3) e il separatore della lingua; "" se manca. */
+const recipeFmt = (L, k) => { const x = recipeMm(L, k); if (x == null) return ""; const d = (String(L[k]).trim().split(/[.,]/)[1] || "").length; return fmt(x, Math.min(3, Math.max(2, d))); };
+const recipeQ = L => Object.fromEntries(RECIPE_KEYS.map(k => [k, recipeMm(L, k)]));
+const recipeName = k => ({ cbto: "CBTO", coal: "COAL", caseLen: _t("lunghezza bossolo"), shoulder: _t("spalla"), neck: _t("colletto Ø") })[k];
+/** Riga compatta delle quote compilate (per loadLines: Result Card, report PDF, testo). */
+function recipeQuotesText(L) {
+  const parts = RECIPE_KEYS.filter(k => recipeMm(L, k) != null).map(k => `${recipeName(k)} ${recipeFmt(L, k)}`);
+  return parts.length ? `${parts.join(" · ")} ${uL("mm")}` : "";
+}
+/** Avvisi sulla coerenza delle quote (Calc.cartridgeCheck) come testi. */
+function recipeWarnings(L) {
+  return Calc.cartridgeCheck(recipeQ(L)).map(w => w.code === "range"
+    ? (w.k === "neck" ? _T`${recipeName(w.k)} oltre 20 mm: è un diametro, controlla il valore` : _T`${recipeName(w.k)} oltre 200 mm: controlla il valore`)
+    : _T`${recipeName(w.a)} (${recipeFmt(L, w.a)}) dovrebbe essere minore di ${recipeName(w.b)} (${recipeFmt(L, w.b)})`);
+}
+/** Testo troncato con «…» entro maxW px. */
+function recipeFit(R, t, maxW, size, bold) {
+  let s = String(t || ""); if (R.measure(s, size, bold) <= maxW) return s;
+  while (s.length > 1 && R.measure(s + "…", size, bold) > maxW) s = s.slice(0, -1);
+  return s.trim() + "…";
+}
+/** Punta di freccia piena in (x, y) orientata come (dx, dy). */
+function recipeArrow(R, x, y, dx, dy, color, a = 11) {
+  const n = Math.hypot(dx, dy) || 1, ux = dx / n, uy = dy / n;
+  R.path([["M", x, y], ["L", x - a * ux - a * 0.38 * uy, y - a * uy + a * 0.38 * ux], ["L", x - a * ux + a * 0.38 * uy, y - a * uy - a * 0.38 * ux], ["Z"]], { fill: color });
+}
+/**
+ * Disegno schematico quotato della cartuccia nel riquadro che parte da (X, Y), largo W; → y del bordo inferiore.
+ * Profilo di una cartuccia a collo di bottiglia con le proporzioni della 6,5 Creedmoor scalate sulla COAL; le quote
+ * longitudinali sono collocate dove dicono i valori inseriti (Calc.cartridgeLayout).
+ */
+function recipeDrawing(R, X, Y, W, L) {
+  const C = RECIPE_C, q = recipeQ(L), lay = Calc.cartridgeLayout(q), P = lay.pos, len = P.coal, s = len / 71.76;
+  // con quote incoerenti il disegno resta senza quote longitudinali (una quota nel punto sbagliato confonderebbe)
+  const dims = lay.consistent ? [["coal", _t("controllo: varia con la punta")], ["cbto", _t("governa la seduta")], ["caseLen", ""], ["shoulder", _t("al comparatore")]].filter(d => q[d[0]] != null) : [];
+  const neckOk = q.neck != null && q.neck <= 20;
+  const x0 = X + 40, k = (W - 130) / len, xp = mm => x0 + mm * k;
+  const Rr = 5.975 * s, Rg = 5.2 * s, Rb = 5.95 * s, Rs = 5.87 * s, Rd = 4.76 * s, Rn = 3.7 * s, Rbul = 3.36 * s, Rtip = 0.45 * s;
+  const rowH = 54, top = Y + 26, cy = top + dims.length * rowH + 34 + Rr * k;
+  // spalla a 30°: il punto di riferimento (Ø del comparatore) cade circa a metà della spalla
+  const dx = (Rs - Rn) / Math.tan(Math.PI / 6), f = (Rs - Rd) / (Rs - Rn);
+  const xs2 = Math.min(P.shoulder + (1 - f) * dx, P.caseLen - 0.8 * s), xs1 = Math.min(P.shoulder - f * dx, xs2 - 0.5 * s);
+  const xog = Math.min(Math.max(P.caseLen + 0.6 * s, P.cbto - 1.2 * s), len - 4 * s), Lo = len - xog, Ro = (Rbul * Rbul + Lo * Lo) / (2 * Rbul);
+  const bulR = x => x <= xog ? Rbul : Math.max(Rtip, Math.sqrt(Math.max(0, Ro * Ro - (x - xog) ** 2)) + Rbul - Ro);
+  const shape = top => { const pts = [...top, ...top.slice().reverse().map(([x, r]) => [x, -r])]; return pts.map(([x, r], i) => [i ? "L" : "M", xp(x), cy - r * k]).concat([["Z"]]); };
+  // asse
+  R.line(x0 - 24, cy, xp(len) + 30, cy, { stroke: "#b8c0cc", width: 1, dash: [14, 5, 3, 5] });
+  // bossolo
+  R.path(shape([[0, Rr - 0.4 * s], [0.4 * s, Rr], [1.4 * s, Rr], [1.4 * s, Rg], [2.6 * s, Rg], [3.6 * s, Rb], [xs1, Rs], [xs2, Rn], [P.caseLen, Rn]]), { fill: C.brass, stroke: C.brassE, width: 2 });
+  // palla: parte dentro il colletto (tratteggiata, indicativa) e parte esterna
+  const xb = Math.max(P.caseLen - 7.4 * s, xs1 + 0.5 * s), xbt = Math.min(xb + 1.8 * s, P.caseLen);
+  R.path(shape([[P.caseLen, Rbul], [xbt, Rbul], [xb, 2.55 * s]]).slice(0, -1), { stroke: C.cuE, width: 1.2, dash: [6, 4] });
+  const og = []; for (let i = 0; i <= 24; i++) { const x = xog + Lo * i / 24; og.push([x, bulR(x)]); }
+  R.path(shape([[P.caseLen, Rbul], ...og]), { fill: C.cu, stroke: C.cuE, width: 2 });
+  // nomi su bossolo e palla
+  const lab = (t, xa, xb2, color) => {   // carattere da 17 a 12 px per farlo stare, poi troncato
+    const w = (xb2 - xa) * k - 20, u = String(t).toUpperCase(); if (w < 40) return;
+    let fs = 17; while (fs > 12 && R.measure(u, fs, true) > w) fs--;
+    R.put(recipeFit(R, u, w, fs, true), xp((xa + xb2) / 2), cy - fs * 0.45, { size: fs, bold: true, color, align: "center" });
+  };
+  lab(String(L.case || "").trim() || _t("bossolo"), 3.6 * s, xs1, C.brassE);
+  lab(String(L.bullet || "").trim() || _t("palla"), (dims.some(d => d[0] === "cbto") ? Math.max(P.caseLen, P.cbto) : P.caseLen) + 0.5 * s, len - 0.1 * Lo, C.cuE);   // dopo la linea del CBTO
+  // quote longitudinali dal fondello: linea con frecce, valore e didascalia sopra, linea di richiamo fino al profilo
+  const yBot = cy + Rr * k;
+  R.line(x0, top - 6, x0, yBot + 16, { stroke: C.dim, width: 1 });
+  dims.forEach(([key, cap], i) => {
+    const y = top + i * rowH + 30, x = xp(P[key]), col = key === "cbto" ? C.acc : C.dim;
+    const yr = key === "coal" ? cy - Rtip * k : key === "cbto" ? cy - bulR(P.cbto) * k : key === "caseLen" ? cy - Rn * k : cy - Rd * k;
+    R.line(x0 + 2, y, x - 2, y, { stroke: col, width: key === "cbto" ? 2.2 : 1.4 });
+    recipeArrow(R, x0, y, -1, 0, col); recipeArrow(R, x, y, 1, 0, col);
+    R.line(x, y - 8, x, yr, { stroke: col, width: 1 });
+    const v = recipeFmt(L, key), vw = R.measure(v, 26, true);
+    R.put(v, x0 + 14, y - 32, { size: 26, bold: true, color: key === "cbto" ? C.acc : C.ink });
+    R.put(recipeName(key) + (cap ? ` · ${cap}` : ""), x0 + 26 + vw, y - 24, { size: 16, color: C.mut });
+  });
+  if (dims.some(d => d[0] === "cbto")) { const r = bulR(P.cbto) * k; R.line(xp(P.cbto), cy - r, xp(P.cbto), cy + r, { stroke: C.acc, width: 1.8, dash: [7, 5] }); }
+  if (dims.some(d => d[0] === "shoulder")) for (const sg of [-1, 1]) {   // punti di contatto del comparatore sulla spalla
+    const cx = xp(P.shoulder), cyy = cy + sg * Rd * k, rr = 5;
+    R.path(Array.from({ length: 16 }, (_, i) => [i ? "L" : "M", cx + rr * Math.cos(i * Math.PI / 8), cyy + rr * Math.sin(i * Math.PI / 8)]).concat([["Z"]]), { stroke: C.dim, fill: "#ffffff", width: 1.4 });
+  }
+  let yEnd = yBot + 24;
+  if (neckOk) {   // diametro del colletto
+    const xn = xp((xs2 + P.caseLen) / 2), r = Rn * k;
+    R.line(xn, cy - r + 9, xn, cy + r - 9, { stroke: C.dim, width: 1.4 });
+    recipeArrow(R, xn, cy - r, 0, -1, C.dim, 9); recipeArrow(R, xn, cy + r, 0, 1, C.dim, 9);
+    R.line(xn, cy + r, xn, yBot + 30, { stroke: C.dim, width: 1 });
+    R.put(`Ø ${recipeFmt(L, "neck")}`, xn - 6, yBot + 36, { size: 24, bold: true, color: C.ink });
+    R.put(_t("colletto con la palla"), xn - 6, yBot + 66, { size: 16, color: C.mut });
+    yEnd = yBot + 96;
+  }
+  return yEnd;
+}
+/** Contenuto del report ricetta del gruppo g. */
+function buildRecipe(R, g) {
+  const C = RECIPE_C, L = g.load || {}, v = k => String(L[k] ?? "").trim(), mm = uL("mm");
+  const num = (k, d) => { const x = parseFloat(v(k).replace(",", ".")); return isFinite(x) ? fmt(x, d) : v(k); };
+  const LL = new Map(loadLines(g));
+  const title = groupProfileName(g) || [v("bullet"), v("powder")].filter(Boolean).join(" · ") || g.name;
+  const date = v("date") ? (([y, m, d]) => d && m && y ? `${d}/${m}/${y}` : v("date"))(v("date").split("-")) : "";
+  // intestazione: titolo a sinistra, gruppo e data a destra
+  const y0 = R.y;
+  R.put(_t("SHOOT ANALYZER · RICETTA"), R.M, y0, { size: 17, bold: true, color: C.mut });
+  R.put(recipeFit(R, g.name, 300, 18, true), R.W - R.M, y0, { size: 18, bold: true, color: g.color || C.ink, align: "right" });
+  { const bw = R.measure(date || "—", 18, true);
+    R.put(date || "—", R.W - R.M, y0 + 28, { size: 18, bold: true, align: "right" }); R.put(_t("Data"), R.W - R.M - bw - 12, y0 + 28, { size: 18, color: C.mut, align: "right" }); }
+  R.y = y0 + 30;
+  for (const l of R.wrap(title, R.cw - 330, 40, true)) { R.put(l, R.M, R.y, { size: 40, bold: true }); R.y += 50; }
+  R.text(v("weapon") ? _T`Ricetta di lavoro per ${v("weapon")}. Quote in millimetri, dal fondello.` : _t("Ricetta di lavoro. Quote in millimetri, dal fondello."), { size: 19, color: C.mut, gap: 14, maxW: R.cw - 330 });
+  // disegno su un fondo chiaro (il fondo va sotto: la sua istruzione è spostata prima del disegno)
+  const yd = R.y, at = R.cur.ops.length, yEnd = recipeDrawing(R, R.M, yd, R.cw, L);
+  R.rect(R.M, yd, R.cw, yEnd - yd, C.box); R.cur.ops.splice(at, 0, R.cur.ops.pop());
+  R.frame(R.M, yd, R.cw, yEnd - yd, "#e3e6eb");
+  R.y = yEnd + 12;
+  const nq = RECIPE_KEYS.filter(k => recipeMm(L, k) != null).length;
+  R.text(nq ? _t("Disegno schematico: proporzioni approssimate, le quote sono le tue misure. CBTO e spalla dipendono da comparatore e inserto: confrontale solo con letture fatte con lo stesso strumento. In arancio la quota che governa la seduta.")
+    : _t("Nessuna quota inserita: compila CBTO, COAL, lunghezza del bossolo, spalla e colletto nel riquadro Munizione."), { size: 15, color: C.mut, gap: 6 });
+  for (const w of recipeWarnings(L)) R.text("⚠ " + w, { size: 17, color: C.warn, gap: 4 });
+  if (!Calc.cartridgeLayout(recipeQ(L)).consistent) R.text(_t("Il disegno riporterà le quote dal fondello quando saranno coerenti."), { size: 15, color: C.warn, gap: 4 });
+  R.y += 14;
+  // tabelle a due colonne
+  const gap = 44, colW = (R.cw - gap) / 2, xR = R.M + colW + gap;
+  const table = (head, rows, lw, x, y, dry) => {
+    if (!dry) { R.put(head.toUpperCase(), x, y, { size: 16, bold: true, color: C.mut }); R.rect(x, y + 28, colW, 1.5, C.rule); }
+    y += 40;
+    for (const [lab, val, o = {}] of rows) {
+      const vw = colW - lw - 6, vl = R.wrap(val || "—", vw, 19, true), ll = R.wrap(lab, lw - 12, 19, false);
+      let nl = o.note ? R.wrap(o.note, vw, 15, false) : [], inl = false;
+      if (o.note && vl.length === 1 && R.measure(vl[0], 19, true) + 10 + R.measure(o.note, 15, false) <= vw) { inl = true; nl = []; }
+      const h = Math.max(ll.length * 25, vl.length * 25 + nl.length * 20) + 12;
+      if (!dry) {
+        ll.forEach((t, i) => R.put(t, x, y + i * 25, { size: 19, color: C.lab }));
+        vl.forEach((t, i) => R.put(t, x + lw, y + i * 25, { size: 19, bold: true, color: !val ? C.none : o.acc ? C.acc : C.ink }));
+        if (inl) R.put(o.note, x + lw + R.measure(vl[0], 19, true) + 10, y + 3, { size: 15, color: C.mut });
+        nl.forEach((t, i) => R.put(t, x + lw, y + vl.length * 25 + i * 20, { size: 15, color: C.mut }));
+        R.rect(x, y + h - 7, colW, 1, C.row);
+      }
+      y += h;
+    }
+    return y;
+  };
+  const pair = (A, B) => {   // due tabelle affiancate; pagina nuova se non ci stanno
+    let y = R.y;
+    if (y + Math.max(table(...A, R.M, 0, true), table(...B, xR, 0, true)) > R.bottom) { R.page(); y = R.y; }
+    R.y = Math.max(table(...A, R.M, y), table(...B, xR, y)) + 22;
+  };
+  const q = k => recipeMm(L, k) != null ? `${recipeFmt(L, k)} ${mm}` : "";
+  const jm = jumpMm(L), jump = jm == null ? "" : loadV(L, "jumpUnit") === "mm" ? `${num("jump", 2)} ${mm}` : `${num("jump", 3)} ${uL("in")} · ${fmt(jm, 2)} ${mm}`;
+  pair([_t("Ricetta"), [
+    [_t("Polvere"), [v("charge") ? `${num("charge", 2)} gr` : "", v("powder")].filter(Boolean).join(" "), { acc: true }],
+    [_t("Palla"), v("bullet")], [_t("Innesco"), v("primer")], [_t("Bossolo"), v("case")],
+    ["CBTO", q("cbto"), { acc: true, note: _t("governa la seduta") }], ["COAL", q("coal"), { note: _t("solo controllo") }],
+    [_t("Salto dalle righe"), jump]], 190],
+  [_t("Preparazione bossolo"), [
+    [_t("Spalla"), q("shoulder"), { acc: true, note: _t("dal fondello, al comparatore") }],
+    [_t("Lunghezza bossolo"), q("caseLen")],
+    [_t("Colletto Ø esterno"), q("neck"), { note: _t("con la palla montata") }]], 200]);
+  // prestazioni: velocità (per foro, altrimenti V0/SD della munizione) e dispersione del gruppo
+  const VS = velStats(g), vu = loadV(L, "v0Unit"), perf = [];
+  if (VS) perf.push([_t("Velocità media"), velTxt(VS.mean, VS.u, 1), { note: _T`cronografo, ${VS.n} colpi` }],
+    [_t("Deviazione standard"), VS.sd != null ? velTxt(VS.sd, VS.u, 1) : "", { acc: true }], [_t("Escursione (ES)"), VS.n >= 2 ? velTxt(VS.es, VS.u, 1) : ""]);
+  else perf.push([_t("Velocità media"), v("v0") ? `${num("v0", 1)} ${uL(vu)}` : "", { note: v("v0") ? _t("dati della munizione") : "" }],
+    [_t("Deviazione standard"), v("v0sd") ? `${num("v0sd", 1)} ${uL(vu)}` : "", { acc: true }], [_t("Escursione (ES)"), ""]);
+  const gcc = ccG(calcContext(g), g), r = g.shots.length ? Calc.analyze(inc(g), g.poa, gcc) : null;
+  const ang = a => a ? ` · ${fmt(a.MOA, 2)} MOA · ${fmt(a.MIL, 2)} MIL` : "";
+  if (r && r.mm && r.n >= 2) perf.push([_t("Group size (c-c)"), `${fmt(r.mm.es, 1)} ${mm}${ang(r.ang && r.ang.es)}`], [_t("Raggio medio"), `${fmt(r.mm.mr, 1)} ${mm}${ang(r.ang && r.ang.mr)}`]);
+  else perf.push([_t("Dispersione"), "", { note: !r || r.n < 2 ? _t("servono almeno 2 fori marcati") : _t("scala non calibrata") }]);
+  perf.push([_t("Colpi"), LL.get(_t("Colpi")) || (r && r.n ? _T`${r.n} nel gruppo` : "")]);
+  pair([_t("Prestazioni misurate"), perf, 220],
+    [_t("Condizioni"), [[_t("Distanza"), g.shots.length || g.dist > 0 ? distText([g]) || "" : ""], [_t("Arma"), LL.get(_t("Arma")) || ""],
+      [_t("Meteo"), LL.get(_t("Meteo")) || ""], [_t("Vento"), LL.get(_t("Vento")) || ""]], 150]);
+  if (v("notes")) { R.sub(_t("Note")); R.text(v("notes"), { size: 18, gap: 4 }); }
+}
+async function exportRecipePdf() {
+  const g = activeGroup(); if (!g) { toast(_t("Nessun gruppo attivo.")); return; }
+  toast(_t("Preparazione del report ricetta…"));
+  await new Promise(r => setTimeout(r, 30));
+  const now = new Date().toLocaleString(I18N.locale()), L = g.load || {};
+  const title = groupProfileName(g) || [L.bullet, L.powder].map(x => String(x || "").trim()).filter(Boolean).join(" · ") || g.name;
+  const build = () => { const D = new ReportDoc(_T`Shoot Analyzer ${APP_VERSION} · ricetta · ${g.name} · ${now}`); buildRecipe(D, g); return D; };
+  PDF_EMB = I18N.lang === "ru" ? pdfEmbFonts() : null; PDF_MISS = 0;   // come il report: font incorporati in russo o se servono
+  let R, blob;
+  try {
+    R = build();
+    if (!PDF_EMB && PDF_MISS) { PDF_EMB = pdfEmbFonts(); R = build(); }
+    const PI = provInfo();
+    blob = await R.finish({ title: _T`Ricetta ${title}`, lang: I18N.locale(), author: PI.author, prov: PI, subject: _T`Ricetta di ricarica: ${title}`,
+      keywords: ["Shoot Analyzer", _t("ricetta"), "CBTO", "COAL", L.bullet, L.powder].map(x => String(x || "").trim()).filter(Boolean).join(", "),
+      extra: { ShootAnalyzerRecipe: recipeQuotesText(L) } });
+  } finally { PDF_EMB = null; }
+  if (await FileStore.saveBlob(fileName("Recipe", "pdf", g), blob)) toast(_t("Report ricetta salvato."));
   return blob;
 }
 /** Metadati del documento PDF (Info): titolo, soggetto, parole chiave e la calibrazione in una riga. */
@@ -13357,7 +13752,8 @@ function csvGroupsTable(src) {
     _t("Dope alzo (click)"), _t("Dope alzo IC ± (click)"), _t("Dope alzo (MIL)"), _t("Dope brandeggio (click)"), _t("Dope brandeggio IC ± (click)"), _t("Dope brandeggio (MIL)"),
     _t("Convex hull area (mm²)"), _t("Convex hull perimetro (mm)"), _t("Salto dalle righe"), _t("Unità salto"), ...QI_CSV_HEAD,
     _t("Arma"), _t("Altezza ottica"), _t("Unità altezza ottica"), _t("Azzeramento"), _t("Unità azzeramento"), _t("Coefficiente balistico"), _t("Modello BC"),
-    _t("Velocità iniziale"), _t("SD velocità"), _t("Unità velocità"), _t("Profilo di ricarica")];
+    _t("Velocità iniziale"), _t("SD velocità"), _t("Unità velocità"), _t("Profilo di ricarica"),
+    _t("CBTO (mm)"), _t("COAL (mm)"), _t("Lunghezza bossolo (mm)"), _t("Spalla (mm)"), _t("Colletto Ø (mm)")];
   const rows = [], QS = src.qs || qiSet();
   for (const g of src.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
@@ -13383,7 +13779,8 @@ function csvGroupsTable(src) {
       mm && mm.hullArea != null ? csvNum(mm.hullArea, 1) : "", mm && mm.hullArea != null ? csvNum(mm.hullPerim, 2) : "", csvLoadVal(L.jump), L.jump ? L.jumpUnit || "in" : "",
       ...qiCsv(g, gcc, QS),
       L.weapon || "", csvLoadVal(L.sightH), L.sightH ? loadV(L, "sightHUnit") : "", csvLoadVal(L.zero), L.zero ? loadV(L, "zeroUnit") : "", csvLoadVal(L.bc), L.bc ? loadV(L, "bcModel") : "",
-      csvLoadVal(L.v0), csvLoadVal(L.v0sd), L.v0 || L.v0sd ? loadV(L, "v0Unit") : "", groupProfileName(g)]);
+      csvLoadVal(L.v0), csvLoadVal(L.v0sd), L.v0 || L.v0sd ? loadV(L, "v0Unit") : "", groupProfileName(g),
+      ...RECIPE_KEYS.map(k => csvLoadVal(L[k]))]);   // 1.25.0: quote della cartuccia
   }
   return { head, rows };
 }
@@ -14881,6 +15278,7 @@ document.querySelectorAll("#ldForm [data-k]").forEach(el => el.addEventListener(
 $("bCardTxt").onclick = copyText;
 $("bCsvShots").onclick = () => exportCsv("shots");
 $("bCsvGroups").onclick = () => exportCsv("groups");
+$("bRecipe").onclick = exportRecipePdf;   // 1.25.0
 // help tecnico
 $("bHelp").onclick = openHelp;
 // autosave e archivio
@@ -15456,6 +15854,11 @@ const DIFF_FIELDS = [
   ["comp", "charge", "Carica", r => (r.load || {}).charge, v => v === "" ? "" : `${numTxt(v)} gr`],
   ["comp", "primer", "Innesco", r => (r.load || {}).primer],
   ["comp", "jump", "Salto dalle righe", r => (r.load || {}).jump ? `${numTxt(r.load.jump)} ${r.load.jumpUnit || ""}`.trim() : ""],
+  ["comp", "cbto", "CBTO", r => (r.load || {}).cbto, v => v === "" || v == null ? "" : `${numTxt(v)} ${uL("mm")}`],   // 1.25.0: quote della cartuccia
+  ["comp", "coal", "COAL", r => (r.load || {}).coal, v => v === "" || v == null ? "" : `${numTxt(v)} ${uL("mm")}`],
+  ["comp", "caseLen", "Lunghezza bossolo", r => (r.load || {}).caseLen, v => v === "" || v == null ? "" : `${numTxt(v)} ${uL("mm")}`],
+  ["comp", "shoulder", "Spalla", r => (r.load || {}).shoulder, v => v === "" || v == null ? "" : `${numTxt(v)} ${uL("mm")}`],
+  ["comp", "neck", "Colletto Ø", r => (r.load || {}).neck, v => v === "" || v == null ? "" : `${numTxt(v)} ${uL("mm")}`],
   ["dist", "dist", "Distanza", r => r.distM > 0 ? +r.distM.toFixed(1) : "", v => v === "" ? "" : `${fmt(+v, +v % 1 ? 1 : 0)} ${uL("m")}`],
   ["cond", "weather", "Meteo", r => (r.load || {}).weather],
   ["cond", "temp", "Temperatura", r => (r.load || {}).temp, v => v === "" ? "" : `${numTxt(v)} °C`],
@@ -16870,7 +17273,7 @@ setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); else { checkAutosave(); refreshArchiveInfo(); }
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, drawDiag, toggleAllSections, refreshSecFold, setUiMode, uiBasic, openBcWiz, bwRun, bwFromDope, fileName, groupProfileName, find, findRun, findStep, findClear, findCollect, pdfEmbFonts, resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { exportRecipePdf, buildRecipe, recipeQuotesText, recipeWarnings, loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, drawDiag, toggleAllSections, refreshSecFold, setUiMode, uiBasic, openBcWiz, bwRun, bwFromDope, fileName, groupProfileName, find, findRun, findStep, findClear, findCollect, pdfEmbFonts, resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, openCompare, setAnaPage, anaPage, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
   corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
