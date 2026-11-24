@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.24.0] - 2026-11-24
+### Aggiunto
+- **Analisi di sensibilità delle conclusioni** (pannello nella pagina «📊 Grafici del gruppo», card «Robustezza delle
+  conclusioni» nei Risultati in Modalità Esperto, sezione nel report PDF): le osservazioni non cambiano, si cambia
+  un'ipotesi alla volta rispetto al caso base. Modello: σ senza correzione per pochi colpi (ML), normale ellittica
+  (`Calc.ellipseRadius` per CEP/R95, `Calc.hitProbCov` quasi-Monte Carlo deterministico), empirico
+  (`Calc.spatialMedian`, `Calc.radialQuantile`; CEP da 5 colpi, R95 da 20, probabilità da 10). Marcatura e scala:
+  varianza di marcatura tolta (u, 2u), scala ± 2 incertezze. Campione: un foro alla volta, esclusi rimessi, flyer tolti.
+  Livello di confidenza 90/99% per i confronti. Conclusioni: correzione in click, CEP e classe GQI, probabilità di
+  colpire (cerchio/rettangolo), confronto con ciascun altro gruppo (test F in angolo). Giudizio robusta / abbastanza
+  robusta / dipende dalle ipotesi con soglie dichiarate, scenario e famiglia che pesano di più, tabella degli scenari
+  con i valori fuori soglia evidenziati, grafico a tornado (CEP, probabilità, click di alzo e brandeggio).
+- **Variabilità dentro e tra i gruppi** (pannello nella pagina «📈 Confronto tra gruppi», card nei Risultati, sezione
+  nel report): modello a effetti casuali 2D (`Calc.hierFit`, REML con profilo in forma chiusa su σ_w²), angoli dalla
+  mira di ogni gruppo al netto dei click impostati foro per foro; σ_w, σ_b, quota tra gruppi (ICC), σ_tot, CEP di una
+  rosata e su più rosate, GQI con σ_w e con σ_tot, test σ_b = 0 (½χ²₀ + ½χ²₁); intervalli di σ_b e ICC dal profilo
+  della verosimiglianza (copertura ≈ 95% verificata in simulazione, corretti anche con σ_b stimato a zero), di σ_w e
+  σ_tot da bootstrap parametrico a seme fisso (`Calc.hierBoot`). Giudizio, z dei centri, avvisi per munizioni, armi
+  o distanze diverse, scelta dei gruppi con caselle, unità MIL/MOA, grafico dei centri con CEP interni, dei centri e
+  complessivo.
+- Help tecnico: sezioni «Analisi di sensibilità» e «Variabilità dentro e tra i gruppi».
+### Corretto
+- `Calc.ellipseRadius` esatta anche per ellissi degeneri (2 colpi) o molto allungate (integrazione a una variabile).
+
 ## [1.23.0] - 2026-11-24
 ### Aggiunto
 - **Velocità per foro** («Velocità per foro (cronografo)» in «Punti del gruppo attivo»): colonna V0 nella tabella dei

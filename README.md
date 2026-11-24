@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.23.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.24.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -77,6 +77,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Velocità per foro** (1.23): colonna V0 nella tabella dei punti (velocità del cronografo per ogni colpo, Invio = foro successivo), velocità accanto ai fori sulla foto, media nell'etichetta e nel riepilogo del gruppo, media/SD/ES sotto la tabella e «Usa come V0/SD del gruppo»; nel CSV dei fori e nel report.
 - **Tour guidato** (1.23, pulsante 🎓): 5 passi sul flusso di lavoro con il comando evidenziato; proposto una volta al primo avvio.
 - **Provenienza** (1.23): autore e filigrana facoltativa; PNG e PDF esportati portano sempre nei metadati app, versione, data, autore, nome e impronta SHA-256 della foto.
+- **Analisi di sensibilità** (1.24, pagina «Grafici del gruppo» e card «Robustezza delle conclusioni»): le stesse osservazioni rianalizzate cambiando un'ipotesi alla volta (normale circolare, ML, ellittica, empirico; marcatura e scala; un foro alla volta, esclusi, flyer; livello di confidenza) per correzione in click, CEP e classe GQI, probabilità di colpire e confronto con gli altri gruppi; giudizio robusta / abbastanza robusta / dipende dalle ipotesi, scenario che pesa di più, grafico a tornado.
+- **Variabilità dentro e tra i gruppi** (1.24, pagina «Confronto tra gruppi» e card nei Risultati): modello gerarchico REML che separa la dispersione dentro le rosate (σ_w) dallo spostamento dei centri tra rosate (σ_b), con quota tra gruppi (ICC), σ complessiva, intervalli (profilo della verosimiglianza e bootstrap), test, GQI con e senza gli spostamenti, scelta dei gruppi e grafico dei centri.
 - **Spazio di archiviazione locale** (1.23, sezione Dati): spazio occupato nel browser, verifica d'integrità e riparazione, eliminazione delle sessioni archiviate (una per una o per età), ricompressione JPEG delle foto alla stessa risoluzione. Dopo il secondo punto della scala il campo della distanza nota si evidenzia.
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.

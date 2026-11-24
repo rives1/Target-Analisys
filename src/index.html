@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.23.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.24.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -487,6 +487,20 @@
   /* Modalità Base (1.22.0): restano group size, correzione e punteggio; le esportazioni non cambiano */
   html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] #bAnaSwitch, html[data-ui="basic"] #qiTop { display: none !important; }
   details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
+  /* 1.24.0: analisi di sensibilità e modello gerarchico */
+  .sens-b { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 0 6px; white-space: nowrap; }
+  .sens-ok { --sc: #15803d; } .sens-mid { --sc: #b45309; } .sens-bad { --sc: #b91c1c; }
+  .sens-b.sens-ok { background: #dcfce7; color: #14532d; } .sens-b.sens-mid { background: #fef3c7; color: #78350f; } .sens-b.sens-bad { background: #fee2e2; color: #7f1d1d; }
+  .sens-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; margin-bottom: 8px; }
+  .sens-c { border: 1px solid var(--line); border-left: 4px solid var(--sc); border-radius: 7px; padding: 6px 8px; font-size: 12.5px; }
+  .sens-ch { display: flex; justify-content: space-between; gap: 6px; align-items: center; margin-bottom: 2px; }
+  td.sens-d, .sens-d { background: rgba(234,88,12,.14); }
+  .sens-cmp { margin: 6px 0; font-size: 12.5px; } .sens-cmp summary { cursor: pointer; }
+  .sens-more { font-size: 12px; margin: 2px 0; }
+  .hier-v { display: block; font-size: 12.5px; border-radius: 6px; padding: 5px 8px; margin: 4px 0; }
+  .hier-ok { background: var(--ok-bg); color: var(--ok-ink); } .hier-warn, .hier-bad { background: var(--warn-bg); color: var(--warn-ink); } .hier-bad { font-weight: 600; }
+  .hier-gs { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 4px 0 6px; font-size: 12.5px; }
+  .hier-g { display: inline-flex; align-items: center; gap: 4px; } .hier-g.off { opacity: .55; }
   /* 1.23.0: campo della distanza nota evidenziato dopo il secondo punto della scala */
   #calDist.attn { outline: 3px solid #f59e0b; outline-offset: 1px; background: rgba(245,158,11,.16); animation: attnPulse 1.1s ease-in-out 4; }
   .row.attn-row > label { color: #b45309; font-weight: 700; }
@@ -1217,6 +1231,13 @@
             <canvas id="chStabC" aria-label="Traiettoria del centro gruppo colpo dopo colpo"></canvas><div class="cnote" id="chStabCNote"></div></div>
         </div>
     </section>
+    <section class="ana-panel pg-group" id="sensBox">
+      <h3>Analisi di sensibilità · quanto le conclusioni dipendono dalle ipotesi</h3>
+        <div id="sensBody"></div>
+        <div class="chart" id="sensChartWrap"><div class="ctitle">Scostamento dal caso base per scenario ·
+            <select id="sensMetric" title="Grandezza del grafico a tornado" aria-label="Grandezza del grafico a tornado"><option value="cep">CEP</option></select></div>
+          <canvas id="chSens" aria-label="Grafico a tornado: scostamento di ogni scenario dal caso base"></canvas><div class="cnote" id="sensNote"></div></div>
+    </section>
     <section class="ana-panel pg-group" id="diagBox">
       <h3>Ruota degli errori (pistola) · indicativa</h3>
         <div class="row" style="flex-wrap:wrap">
@@ -1338,6 +1359,17 @@
         </div>
         <div id="visList"></div>
         <div class="chart" id="visChartWrap"><canvas id="chVis" aria-label="Rosate dei gruppi scelti, sovrapposte o affiancate"></canvas><div class="cnote" id="visNote"></div></div>
+    </section>
+    <section class="ana-panel pg-cmp" id="hierBox">
+      <h3>Variabilità dentro e tra i gruppi · modello gerarchico</h3>
+        <div class="row" style="flex-wrap:wrap">
+          <label for="hierUnit" style="flex:0 0 auto">Unità</label>
+          <select id="hierUnit"><option value="MIL" selected>MIL</option><option value="MOA">MOA</option></select>
+          <span class="muted" style="font-size:12px">Gruppi della sessione: togli la spunta per escluderne uno dall'analisi.</span>
+        </div>
+        <div id="hierBody"></div>
+        <div class="chart" id="hierChartWrap"><div class="ctitle">Centri dei gruppi rispetto al punto medio di impatto</div>
+          <canvas id="chHier" aria-label="Centri dei gruppi con il CEP interno, il CEP dei centri e il CEP complessivo"></canvas><div class="cnote" id="hierNote"></div></div>
     </section>
     <section class="ana-panel pg-cmp" id="mcBox">
       <h3>Simulazione Monte Carlo · dalla varianza di velocità alla dispersione</h3>
@@ -1478,6 +1510,8 @@
       <a data-to="h-balistica">Calcolatore balistico</a>
       <a data-to="h-stimabc">Stima del BC</a>
       <a data-to="h-montecarlo">Monte Carlo della velocità</a>
+      <a data-to="h-sensibilita">Analisi di sensibilità</a>
+      <a data-to="h-gerarchico">Variabilità dentro e tra i gruppi</a>
       <a data-to="h-ruota">Ruota degli errori (pistola)</a>
       <a data-to="h-distorsione">Distorsione dell'obiettivo</a>
       <a data-to="h-verifica-scala">Verifica incrociata della scala</a>
@@ -1914,6 +1948,31 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
   <li><b>Distanze</b>: la caduta dipende dal BC tanto più quanto più la palla ha rallentato. Vicino all'azzeramento e sotto i 300–400 m la correzione dipende quasi solo da V0 e altezza dell'ottica: il BC stimato lì è poco determinato. La seconda distanza dovrebbe essere la più lunga a cui si tira con sicurezza ancora in regime supersonico (Mach &gt; 1,2).</li>
   <li><b>Dalla Dope Card</b>: prende le due distanze più lontane della munizione del gruppo attivo (palla · polvere · carica), sessione e storico; a parità di distanza la dope con l'intervallo più stretto. Il «±» è l'intervallo di confidenza del centro gruppo riportato a circa 2σ, non meno di mezzo click.</li>
   <li><b>Limiti</b>: se la V0 reale differisce da quella inserita, o la torretta non dà esattamente i click dichiarati, l'errore finisce nel BC: il risultato vale per questa arma, munizione e ottica. Il BC si scrive nel campo solo con «Usa questo BC» (annullabile).</li>
+</ul>
+</section>
+
+<section id="h-sensibilita">
+<h3>Analisi di sensibilità</h3>
+<p>Nella pagina «📊 Grafici del gruppo» (e in breve nella card «Robustezza delle conclusioni» dei Risultati) le stesse osservazioni sono rianalizzate cambiando <b>una sola ipotesi alla volta</b> rispetto al caso base (normale circolare, σ corretto per pochi colpi, centro = centroide, marcatura e scala come misurate, colpi inclusi). Nessun punto viene spostato o salvato.</p>
+<ul>
+  <li><b>Modello</b>: σ senza la correzione per pochi colpi (stimatore di massima verosimiglianza, √(Σr²/2n)); <b>normale ellittica</b> con la covarianza piena dei fori (CEP e R95 integrati numericamente sull'ellisse, probabilità con 40 000 punti quasi-Monte Carlo deterministici); <b>empirico</b>: centro = mediana spaziale, CEP = mediana delle distanze (da 5 colpi), R95 = 95° percentile (da 20), probabilità = frazione dei colpi che, dopo la correzione, cadono nel bersaglio (da 10).</li>
+  <li><b>Marcatura e scala</b>: dalla varianza per asse si toglie la varianza di marcatura (u² e 4u², con u dalle impostazioni «Incertezza di marcatura»: a mano, snap, ×3 sui fori difficili); scala più e meno due volte la sua incertezza.</li>
+  <li><b>Composizione del campione</b>: un foro tolto alla volta (jackknife), i fori esclusi rimessi, i possibili flyer tolti.</li>
+  <li><b>Livello di confidenza</b> 90% e 99%: solo per la significatività dei confronti.</li>
+  <li><b>Conclusioni</b> e giudizio: correzione in click (robusta se nessuno scenario la sposta di più di 1 click, abbastanza robusta fino a 2, senza cambi di verso); CEP e classe GQI (10% e 25%; un cambio di classe non è mai «robusto»); probabilità di colpire con cerchio o rettangolo (5 e 15 punti percentuali; con le sagome non è calcolata); confronto con ciascun altro gruppo della sessione, in angolo («più preciso» solo se il test F su σ² è significativo; robusto se il verdetto non cambia in nessuno scenario, abbastanza robusto fino al 25% degli scenari, mai se il vincitore si inverte).</li>
+  <li><b>Lettura</b>: il tornado ordina gli scenari per scostamento dal caso base; la fascia verde è la soglia di «robusta». Una conclusione che dipende da un solo foro o dal modello va presa come indicativa: servono più colpi. Con pochi colpi il modello empirico è molto instabile per costruzione: la sua distanza dal caso base dice quanto il risultato poggia sull'ipotesi di normalità.</li>
+</ul>
+</section>
+
+<section id="h-gerarchico">
+<h3>Variabilità dentro e tra i gruppi</h3>
+<p>Nella pagina «📈 Confronto tra gruppi» (e nella card dei Risultati) i gruppi della sessione con mira e scala sono analizzati insieme con un <b>modello a effetti casuali</b>: colpo = punto medio di impatto + spostamento del gruppo (σ<sub>b</sub>, uguale in tutte le direzioni) + dispersione dentro il gruppo (σ<sub>w</sub>). Le posizioni sono angoli dalla mira di ciascun gruppo, al netto dei click impostati foro per foro, quindi gruppi a distanze diverse sono confrontabili.</p>
+<ul>
+  <li><b>Stima</b>: massima verosimiglianza ristretta (REML), che gestisce numeri di colpi diversi; con t = σ<sub>b</sub>²/σ<sub>w</sub>² la verosimiglianza si profila in forma chiusa su σ<sub>w</sub>² e si massimizza su t ≥ 0 (t = 0 è ammesso: nessuno spostamento dei centri).</li>
+  <li><b>Intervalli</b>: per σ<sub>b</sub> e per la quota tra gruppi (ICC = σ<sub>b</sub>²/(σ<sub>b</sub>² + σ<sub>w</sub>²)) dal profilo della verosimiglianza, validi anche quando σ<sub>b</sub> stimato è zero (copertura verificata in simulazione); per σ<sub>w</sub> e σ<sub>tot</sub> = √(σ<sub>w</sub>² + σ<sub>b</sub>²) da 400 repliche bootstrap parametriche a seme fisso.</li>
+  <li><b>Test</b> «i centri non si spostano» (σ<sub>b</sub> = 0): rapporto di verosimiglianza ristretta con distribuzione ½χ²₀ + ½χ²₁ (il parametro è al bordo).</li>
+  <li><b>Lettura</b>: il GQI misura la compattezza di ogni rosata (σ<sub>w</sub>); σ<sub>tot</sub> è la dispersione di un colpo qualsiasi della sessione attorno al punto medio, quella che conta quando non si corregge tra una serie e l'altra. «GQI con σ<sub>tot</sub>» mostra quanto peggiora il giudizio. Gruppi compatti con ICC alta (intervallo sopra il 50%) indicano che il problema non è la precisione dell'arma ma ciò che cambia tra le serie. La colonna z segnala un gruppo il cui centro è anomalo rispetto agli altri (oltre 2).</li>
+  <li><b>Limiti</b>: mescolare munizioni, armi o condizioni diverse gonfia σ<sub>b</sub> (l'app lo segnala); con meno di 4–5 gruppi σ<sub>b</sub> resta molto incerto; i gruppi esclusi con la spunta valgono solo per la vista. È diversa dalla «ripetibilità tra gruppi» della card GQI della sessione, che usa le formule dei momenti e un test F.</li>
 </ul>
 </section>
 
@@ -3705,6 +3764,140 @@ const Calc = (() => {
     return { inner, sectors, total: pts.length };
   }
 
+  /* ---------------- 1.24.0: modelli alternativi (analisi di sensibilità) e modello gerarchico ---------------- */
+  /** χ² con 1 grado di libertà (= z²): ripartizione e quantile. */
+  const chi1cdf = x => (x <= 0 ? 0 : 2 * normcdf(Math.sqrt(x)) - 1);
+  function chi1inv(p) { let lo = 0, hi = 50; for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; if (chi1cdf(m) < p) lo = m; else hi = m; } return (lo + hi) / 2; }
+  /** Covarianza campionaria (divisore n − 1) dei punti e centroide (formato {c, sxx, syy, sxy}). */
+  function covFull(pts) {
+    const n = pts.length; if (n < 2) return null;
+    const c = centroid(pts);
+    let sxx = 0, syy = 0, sxy = 0;
+    for (const p of pts) { const dx = p.x - c.x, dy = p.y - c.y; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+    return { c, sxx: sxx / (n - 1), syy: syy / (n - 1), sxy: sxy / (n - 1) };
+  }
+  /**
+   * Raggio r con P(|X − μ| ≤ r) = p per una normale bivariata con covarianza C (μ = centro della distribuzione):
+   * P(r) integrata sugli assi principali (vedi sotto), poi bisezione su r.
+   * Con s₁ = s₂ = σ coincide con σ·√(−2 ln(1 − p)) (CEP, R95 del modello circolare).
+   */
+  function ellipseRadius(C, p) {
+    const [l1, l2] = eig2(C), s1 = Math.sqrt(l1), s2 = Math.sqrt(Math.max(0, l2));
+    if (!(s1 > 0) || !(p > 0 && p < 1)) return 0;
+    // assi principali indipendenti: P(r) = ∫ φ(x/s₁)/s₁ · (2Φ(√(r² − x²)/s₂) − 1) dx su |x| ≤ r, con x = r·sin u (integranda liscia,
+    // punto medio su 400 nodi): esatta anche per ellissi molto allungate o degeneri (s₂ = 0 → normale su una retta)
+    const M = 400, P = r => { let a = 0; for (let i = 0; i < M; i++) { const u = -Math.PI / 2 + (i + 0.5) * Math.PI / M, x = r * Math.sin(u), w = r * Math.cos(u);
+      a += w / s1 * Math.exp(-x * x / (2 * l1)) / Math.sqrt(2 * Math.PI) * (s2 > 0 ? 2 * normcdf(w / s2) - 1 : 1); } return a * Math.PI / M; };
+    let lo = 0, hi = s1 * Math.sqrt(-2 * Math.log(1 - p)) * 1.01 + 1e-12;
+    for (let i = 0; i < 60 && P(hi) < p; i++) hi *= 2;
+    for (let it = 0; it < 80; it++) { const m = (lo + hi) / 2; if (P(m) < p) lo = m; else hi = m; }
+    return (lo + hi) / 2;
+  }
+  /** Mediana spaziale (punto che minimizza la somma delle distanze; Weiszfeld con protezione sui punti coincidenti). */
+  function spatialMedian(pts) {
+    if (!pts.length) return null;
+    let m = centroid(pts);
+    for (let it = 0; it < 200; it++) {
+      let sx = 0, sy = 0, sw = 0;
+      for (const p of pts) { const d = Math.max(dist(p, m), 1e-9); sx += p.x / d; sy += p.y / d; sw += 1 / d; }
+      const nm = { x: sx / sw, y: sy / sw }, mv = dist(nm, m); m = nm;
+      if (mv < 1e-10) break;
+    }
+    return m;
+  }
+  /** Quantile p (interpolazione lineare, «tipo 7») delle distanze dei punti da c. */
+  function radialQuantile(pts, c, p) {
+    const r = pts.map(q => dist(q, c)).sort((a, b) => a - b), n = r.length; if (!n) return null;
+    const h = (n - 1) * p, i = Math.floor(h);
+    return i + 1 < n ? r[i] + (h - i) * (r[i + 1] - r[i]) : r[n - 1];
+  }
+  /**
+   * Probabilità che un colpo cada nel cerchio (o.R) o nel rettangolo (o.W × o.H) centrato nell'origine quando i colpi
+   * seguono una normale bivariata di centro (o.dx, o.dy) e covarianza o.C. Quasi-Monte Carlo deterministico
+   * (sequenza di Halton in basi 2 e 3, Box–Muller, Cholesky): stesso risultato a ogni chiamata, errore ≈ 0,2 punti
+   * percentuali con o.n = 40 000 punti.
+   */
+  function hitProbCov(o) {
+    const C = o.C, a = Math.sqrt(Math.max(0, C.sxx)), b = a > 0 ? C.sxy / a : 0, c = Math.sqrt(Math.max(0, C.syy - b * b));
+    const inside = o.shape === "rect" ? (x, y) => Math.abs(x) <= o.W / 2 && Math.abs(y) <= o.H / 2 : (x, y) => x * x + y * y <= o.R * o.R;
+    const halton = (i, base) => { let f = 1, r = 0; while (i > 0) { f /= base; r += f * (i % base); i = Math.floor(i / base); } return r; };
+    const N = o.n || 40000; let hit = 0;
+    for (let i = 1; i <= N; i++) {
+      const u1 = halton(i, 2), u2 = halton(i, 3), rr = Math.sqrt(-2 * Math.log(u1)), z1 = rr * Math.cos(2 * Math.PI * u2), z2 = rr * Math.sin(2 * Math.PI * u2);
+      if (inside(o.dx + a * z1, o.dy + b * z1 + c * z2)) hit++;
+    }
+    return hit / N;
+  }
+  /**
+   * Modello gerarchico (effetti casuali, 2D isotropo) per più gruppi:  colpo = μ + bᵢ + e,  bᵢ ~ N(0, σ_b²·I),
+   * e ~ N(0, σ_w²·I). groups: [{ pts: [{x, y}] }] in un'unità angolare comune (numeri di colpi anche diversi).
+   * Stima REML: con t = σ_b²/σ_w² la verosimiglianza ristretta si profila in forma chiusa su σ_w²:
+   *   S(t) = SSW + Σ uᵢ|m̄ᵢ − μ̂|²,  uᵢ = 1/(t + 1/nᵢ),  μ̂ = Σ uᵢ m̄ᵢ / Σ uᵢ,  σ_w² = S / (2(N − 1)),
+   *   ℓ(t) = −(N − 1)·ln σ_w² − Σ ln(t + 1/nᵢ) − ln Σ uᵢ   (+ costante),
+   * massimizzata su t ≥ 0 (griglia logaritmica + sezione aurea; t = 0 ammesso: «nessuno spostamento dei centri»).
+   * Test σ_b = 0: rapporto di verosimiglianza ristretta, distribuito come ½χ²₀ + ½χ²₁ (parametro al bordo).
+   * Intervalli di t (quindi di ICC = t/(1+t) e di σ_b) dal profilo della verosimiglianza (ℓ_max − ℓ(t) ≤ χ²₁(level)/2),
+   * che resta corretto anche con σ_b stimato a zero. Servono k ≥ 2 gruppi e N − k ≥ 1 colpi oltre i centri.
+   * → { k, N, mu, sw, sb, t, icc, stot, ll, lrt, p, ci: { t, icc, sb } , means }
+   */
+  function hierFit(groups, level = 0.95) {
+    const G = groups.filter(g => g.pts && g.pts.length >= 1), k = G.length, N = G.reduce((a, g) => a + g.pts.length, 0);
+    if (k < 2 || N - k < 1) return null;
+    const ns = G.map(g => g.pts.length), means = G.map(g => centroid(g.pts));
+    let SSW = 0; G.forEach((g, i) => { for (const p of g.pts) SSW += (p.x - means[i].x) ** 2 + (p.y - means[i].y) ** 2; });
+    const prof = t => {
+      const u = ns.map(n => 1 / (t + 1 / n)), su = u.reduce((a, b) => a + b, 0);
+      const mu = { x: u.reduce((a, w, i) => a + w * means[i].x, 0) / su, y: u.reduce((a, w, i) => a + w * means[i].y, 0) / su };
+      const S = SSW + u.reduce((a, w, i) => a + w * ((means[i].x - mu.x) ** 2 + (means[i].y - mu.y) ** 2), 0);
+      const sw2 = S / (2 * (N - 1));
+      if (!(sw2 > 0)) return { ll: Infinity, sw2: 0, mu };
+      return { ll: -(N - 1) * Math.log(sw2) - ns.reduce((a, n) => a + Math.log(t + 1 / n), 0) - Math.log(su), sw2, mu };
+    };
+    // griglia su t (0 e 10^-4 … 10^4), poi sezione aurea su log t attorno al massimo
+    const grid = [0]; for (let e = -4; e <= 4.0001; e += 0.25) grid.push(10 ** e);
+    let bi = 0, best = prof(0).ll;
+    grid.forEach((t, i) => { const v = prof(t).ll; if (v > best) { best = v; bi = i; } });
+    let tHat = grid[bi];
+    if (bi > 0) {
+      let a = Math.log10(grid[Math.max(1, bi - 1)]), b = Math.log10(grid[Math.min(grid.length - 1, bi + 1)]);
+      const gr = (Math.sqrt(5) - 1) / 2, f = x => prof(10 ** x).ll;
+      let c = b - gr * (b - a), d = a + gr * (b - a), fc = f(c), fd = f(d);
+      for (let it = 0; it < 60; it++) { if (fc > fd) { b = d; d = c; fd = fc; c = b - gr * (b - a); fc = f(c); } else { a = c; c = d; fc = fd; d = a + gr * (b - a); fd = f(d); } }
+      const tm = 10 ** ((a + b) / 2); if (prof(tm).ll > best) { tHat = tm; best = prof(tm).ll; }
+      if (bi === 1 && prof(0).ll >= best) { tHat = 0; best = prof(0).ll; }
+    }
+    const P = prof(tHat), sw2 = P.sw2, sb2 = tHat * sw2, l0 = prof(0).ll;
+    const lrt = Math.max(0, 2 * (best - l0)), p = lrt > 0 ? 0.5 * (1 - chi1cdf(lrt)) : 1;
+    // intervallo di profilo per t
+    const crit = chi1inv(level) / 2, drop = t => best - prof(t).ll - crit;
+    const solve = (lo, hi) => { for (let it = 0; it < 80; it++) { const m = (lo + hi) / 2; if (drop(10 ** m) > 0) hi = m; else lo = m; } return 10 ** ((lo + hi) / 2); };
+    let tLo = 0;
+    if (tHat > 0 && drop(0) > 0) { const inn = Math.log10(tHat); let out = inn; while (drop(10 ** out) <= 0 && out > -12) out -= 1; tLo = drop(10 ** out) > 0 ? solve(inn, out) : 0; }   // solve(interno, esterno)
+    let tHi;
+    { let a = Math.log10(Math.max(tHat, 1e-6)), b = a; while (drop(10 ** b) <= 0 && b < 8) b += 1; tHi = drop(10 ** b) > 0 ? solve(a, b) : Infinity; }
+    const sbOf = t => (t === Infinity ? Infinity : Math.sqrt(t * prof(t).sw2));
+    return { k, N, ns, mu: P.mu, means, sw: Math.sqrt(sw2), sb: Math.sqrt(sb2), t: tHat, icc: tHat / (1 + tHat), stot: Math.sqrt(sw2 + sb2), ll: best, lrt, p,
+      ci: { level, t: { lo: tLo, hi: tHi }, icc: { lo: tLo / (1 + tLo), hi: tHi === Infinity ? 1 : tHi / (1 + tHi) }, sb: { lo: sbOf(tLo), hi: sbOf(tHi) } } };
+  }
+  /**
+   * Intervalli bootstrap parametrici (percentili) di σ_w e σ_tot: B repliche simulate dal modello stimato con gli stessi
+   * numeri di colpi, ristimate con hierFit; seme fisso (stessi numeri a ogni ridisegno).
+   */
+  function hierBoot(fit, B = 400, level = 0.95, seed = 20261124) {
+    if (!fit) return null;
+    const g = rng(seed), sw = [], st = [];
+    for (let b = 0; b < B; b++) {
+      const groups = fit.ns.map(n => {
+        const bx = fit.sb * g.gauss(), by = fit.sb * g.gauss();
+        return { pts: Array.from({ length: n }, () => ({ x: fit.mu.x + bx + fit.sw * g.gauss(), y: fit.mu.y + by + fit.sw * g.gauss() })) };
+      });
+      const f = hierFit(groups, level); if (!f) continue;
+      sw.push(f.sw); st.push(f.stot);
+    }
+    const q = (v, f) => { v.sort((a, b) => a - b); return v[Math.min(v.length - 1, Math.max(0, Math.round(f * (v.length - 1))))]; }, a = (1 - level) / 2;
+    return { B: sw.length, sw: { lo: q(sw, a), hi: q(sw, 1 - a) }, stot: { lo: q(st, a), hi: q(st, 1 - a) }, level };
+  }
+
   /* ---------------- SHA-256 (dalla 1.23.0): impronta della foto per la provenienza dei file esportati ----------------
      Implementazione FIPS 180-4 su byte (Uint8Array) → esadecimale minuscolo; senza crypto.subtle (che da file:// può mancare). */
   const SHA_K = new Uint32Array([0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -3740,7 +3933,7 @@ const Calc = (() => {
     return [...H].map(x => x.toString(16).padStart(8, "0")).join("");
   }
 
-  return { sha256, LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
+  return { sha256, covFull, ellipseRadius, spatialMedian, radialQuantile, hitProbCov, hierFit, hierBoot, chi1cdf, chi1inv, LEN, DIST, dist, centroid, extremeSpread, meanRadius, extent, angleOfSize, angleOfOffset, fromRad, correction, scale, analyze,
     lgamma, sigmaCorrection, sampleSD, dispersion, flyers, compass, clockHour, principalAxis, ellipse, axisWords,
     chi2cdfEven, chi2inv, ibeta, tcdf, tinv, confidence, correctionCI,
     solveLinear, invertH, homography, applyH, polyArea, orderQuad, rectify,
@@ -5763,7 +5956,108 @@ const I18N = (() => {
    "SD {0}": "SD {0}",
    "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Type</th><th title=\"Exclude from the group (key X on the selected shot)\">Excl.</th><th class=\"x\" title=\"Elevation clicks set on the turret for this shot (+ = up). A new shot takes the values of the previous one; correcting a shot also updates the following ones that had the same value.\">Elev.</th><th class=\"x\" title=\"Windage clicks set on the turret for this shot (+ = right)\">Wind.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distance from the point of aim (mm)\">From aim</th><th class=\"x\" title=\"Distance from the group centre (mm)\">From centre</th>\n    <th class=\"x\" title=\"Direction from the group centre: degrees clockwise from «up» (N) and compass abbreviation\">Dir.</th>\n    <th class=\"x\" title=\"Vertical clicks to bring the point onto the aim\">Clicks ↕</th><th class=\"x\" title=\"Horizontal clicks to bring the point onto the aim\">Clicks ↔</th>{1}<th></th></tr>",
    "Occupati <b>{0}</b>: foto {1} ({2}), sessioni {3} (archiviate: {4}{5}){6}.": "Used <b>{0}</b>: photos {1} ({2}), sessions {3} (archived: {4}{5}){6}.",
-   "gruppi: {0} · fori: {1}": "groups: {0} · holes: {1}"
+   "gruppi: {0} · fori: {1}": "groups: {0} · holes: {1}",
+   "Robustezza delle conclusioni": "Robustness of the conclusions",
+   "Variabilità dentro e tra i gruppi": "Within- and between-group variability",
+   "Marcatura e scala": "Marking and scale",
+   "Composizione del campione": "Sample composition",
+   "robusta": "robust",
+   "abbastanza robusta": "fairly robust",
+   "dipende dalle ipotesi": "depends on the assumptions",
+   "Servono almeno 3 colpi inclusi nel gruppo.": "At least 3 included shots are needed in the group.",
+   "Calibra la scala: la sensibilità si valuta su misure in mm e in angolo.": "Calibrate the scale: sensitivity is assessed on measurements in mm and angle.",
+   "Normale circolare (base)": "Circular normal (baseline)",
+   "σ senza correzione per pochi colpi (ML)": "σ without small-sample correction (ML)",
+   "Normale ellittica (covarianza piena)": "Elliptical normal (full covariance)",
+   "Empirico (mediana spaziale, quantili dei colpi)": "Empirical (spatial median, shot quantiles)",
+   "Con il foro escluso": "With the excluded hole",
+   "Senza il possibile flyer": "Without the possible flyer",
+   "Correzione in click": "Correction in clicks",
+   "Dispersione (CEP) e classe GQI": "Dispersion (CEP) and GQI class",
+   "Senza la varianza di marcatura (u)": "Without the marking variance (u)",
+   "Senza il doppio della marcatura (2u)": "Without twice the marking (2u)",
+   "nessuna dipende dalle ipotesi provate": "none depends on the assumptions tried",
+   "Scenario": "Scenario",
+   "Famiglia": "Family",
+   "Click di alzo": "Elevation clicks",
+   "Click di brandeggio": "Windage clicks",
+   "punti %": "% points",
+   "Fascia verde: entro la soglia di «robusta». Barre arancio: scenari che la superano.": "Green band: within the «robust» threshold. Orange bars: scenarios that exceed it.",
+   "Nessuno scenario cambia questa grandezza.": "No scenario changes this quantity.",
+   "meno di 2 colpi": "fewer than 2 shots",
+   "senza punto di mira": "no point of aim",
+   "distanza mancante": "distance missing",
+   "I gruppi scelti hanno munizioni (palla, polvere o carica) diverse: le differenze tra le configurazioni finiscono nella variabilità tra gruppi.": "The selected groups have different ammunition (bullet, powder or charge): the differences between configurations end up in the between-group variability.",
+   "I gruppi scelti hanno armi diverse.": "The selected groups have different firearms.",
+   "Distanze diverse: il confronto è in angolo; vento e balistica che cambiano con la distanza contano come variabilità tra gruppi.": "Different distances: the comparison is angular; wind and ballistics that change with distance count as between-group variability.",
+   "Nessuno spostamento dei centri oltre a quello atteso per caso: i gruppi si comportano come un'unica rosata (σ tra i gruppi compatibile con zero).": "No shift of the centres beyond what chance explains: the groups behave like a single group (between-group σ compatible with zero).",
+   "Gruppi singolarmente compatti ma i centri si spostano più della dispersione interna: la variabilità tra i gruppi domina. Cause tipiche: appoggio o posizione diversi tra le serie, ottica o torrette che non tornano, canna che si scalda, vento cambiato, lotti di munizioni diversi.": "Each group is tight but the centres move more than the internal dispersion: between-group variability dominates. Typical causes: different rest or position between strings, scope or turrets that do not return, barrel heating up, changed wind, different ammunition lots.",
+   "Lo spostamento dei centri è probabilmente la parte maggiore della dispersione (quota tra gruppi ≥ 50%), ma l'intervallo è ancora largo: servono più gruppi per esserne sicuri.": "The shift of the centres is probably the larger part of the dispersion (between-group share ≥ 50%), but the interval is still wide: more groups are needed to be sure.",
+   "I centri si spostano più di quanto spieghi il caso, ma meno della dispersione dentro i gruppi.": "The centres move more than chance explains, but less than the dispersion within the groups.",
+   "Dispersione dentro i gruppi σ_w (per asse)": "Within-group dispersion σ_w (per axis)",
+   "Spostamento dei centri tra i gruppi σ_b": "Between-group shift of centres σ_b",
+   "Quota della varianza tra i gruppi (ICC)": "Between-group share of variance (ICC)",
+   "Dispersione complessiva σ_tot = √(σ_w² + σ_b²)": "Overall dispersion σ_tot = √(σ_w² + σ_b²)",
+   "CEP di una rosata (solo σ_w)": "CEP of one group (σ_w only)",
+   "CEP su più rosate (σ_tot)": "CEP across groups (σ_tot)",
+   "Test «i centri non si spostano» (σ_b = 0)": "Test «the centres do not move» (σ_b = 0)",
+   "GQI con la sola σ_w → con σ_tot": "GQI with σ_w only → with σ_tot",
+   "Servono almeno 2 gruppi con punto di mira, scala e almeno 2 colpi ciascuno (e più colpi che gruppi).": "At least 2 groups with point of aim, scale and at least 2 shots each are needed (and more shots than groups).",
+   "Scostamento del centro dalla media pesata dei centri diviso per l'incertezza attesa del centro (√(σ_b² + σ_w²/n)): oltre 2 il gruppo è anomalo rispetto agli altri": "Offset of the centre from the weighted mean of the centres divided by the expected uncertainty of the centre (√(σ_b² + σ_w²/n)): above 2 the group is anomalous compared with the others",
+   "quadretto": "square",
+   " · pesa di più: {0}": " · weighs most: {0}",
+   "{0} scenari: modello (normale circolare, ML, ellittica, empirico), marcatura e scala, composizione del campione (un foro alla volta, esclusi, flyer), livello di confidenza per i confronti.": "{0} scenarios: model (circular normal, ML, elliptical, empirical), marking and scale, sample composition (one hole at a time, excluded, flyers), confidence level for the comparisons.",
+   "{0} gruppi ({1}), {2} colpi; angoli dalla mira di ogni gruppo al netto dei click impostati. Stima REML, intervalli di σ_b e ICC dal profilo della verosimiglianza, di σ_w e σ_tot da bootstrap parametrico.": "{0} groups ({1}), {2} shots; angles from the point of aim of each group, net of the clicks dialled. REML estimate, intervals of σ_b and ICC from the likelihood profile, of σ_w and σ_tot from parametric bootstrap.",
+   "{0} a {1} {2}": "{0} at {1} {2}",
+   "Senza la varianza di marcatura (±{0} mm)": "Without the marking variance (±{0} mm)",
+   "Senza il doppio della marcatura (±{0} mm)": "Without twice the marking (±{0} mm)",
+   "Scala +{0}% (2 incertezze)": "Scale +{0}% (2 uncertainties)",
+   "Scala −{0}%": "Scale −{0}%",
+   "Senza il foro {0}": "Without hole {0}",
+   "Con i {0} fori esclusi": "With the {0} excluded holes",
+   "Senza i {0} possibili flyer": "Without the {0} possible flyers",
+   "alzo da {0} a {1}, brandeggio da {2} a {3} click (+ = alto / destra)": "elevation from {0} to {1}, windage from {2} to {3} clicks (+ = up / right)",
+   " · GQI «{0}»": " · GQI «{0}»",
+   "CEP da {0} a {1} mm (fino a {2}% dal base)": "CEP from {0} to {1} mm (up to {2}% from the baseline)",
+   "; classi GQI: {0}": "; GQI classes: {0}",
+   "{0} · {1}": "{0} · {1}",
+   "da {0} a {1} ({2} punti percentuali)": "from {0} to {1} ({2} percentage points)",
+   "«{0}» senza il foro {1}": "«{0}» without hole {1}",
+   "Livello di confidenza {0}%": "Confidence level {0}%",
+   "«{0}» più preciso di «{1}»": "«{0}» more precise than «{1}»",
+   "nessuna differenza dimostrata con «{0}»": "no difference shown with «{0}»",
+   "Confronto con «{0}»": "Comparison with «{0}»",
+   "verdetto diverso in {0} scenari su {1}": "different verdict in {0} of {1} scenarios",
+   "stesso verdetto in tutti i {0} scenari": "same verdict in all {0} scenarios",
+   "{0} / {1} robuste": "{0} / {1} robust",
+   "{0} dipendono dalle ipotesi": "{0} depend on the assumptions",
+   "{0} abbastanza robuste": "{0} fairly robust",
+   "<div class=\"muted\" style=\"font-size:11.5px\">{0} scenari (modello, marcatura e scala, composizione del campione). Dettagli e grafico in «📊 Grafici del gruppo».</div>": "<div class=\"muted\" style=\"font-size:11.5px\">{0} scenarios (model, marking and scale, sample composition). Details and chart in «📊 Group charts».</div>",
+   " · pesa di più: <b>{0}</b>": " · weighs most: <b>{0}</b>",
+   " ({0})": " ({0})",
+   "Le osservazioni non cambiano: ogni riga cambia una sola ipotesi rispetto al caso base. In arancio i valori che si allontanano dal base oltre la soglia di «robusta» (1 click, 10% del CEP, 5 punti percentuali, un verdetto diverso). Robusta = nessuno scenario la cambia; abbastanza robusta = cambia poco (≤ 2 click, ≤ 25%, ≤ 15 punti, ≤ 25% degli scenari); altrimenti dipende dalle ipotesi.": "The observations do not change: each row changes a single assumption with respect to the baseline. In orange the values that move away from the baseline beyond the «robust» threshold (1 click, 10% of the CEP, 5 percentage points, a different verdict). Robust = no scenario changes it; fairly robust = it changes little (≤ 2 clicks, ≤ 25%, ≤ 15 points, ≤ 25% of the scenarios); otherwise it depends on the assumptions.",
+   "scostamento dal caso base ({0})": "deviation from the baseline ({0})",
+   "IC {0}% {1} (bootstrap)": "CI {0}% {1} (bootstrap)",
+   "IC {0}% {1} (profilo)": "CI {0}% {1} (profile)",
+   "+{0}% rispetto alla singola rosata": "+{0}% compared with a single group",
+   "p {0}": "p {0}",
+   "rapporto di verosimiglianza {0}": "likelihood ratio {0}",
+   "{0} → {1}": "{0} → {1}",
+   "tra i gruppi {0}%": "between groups {0}%",
+   "<div class=\"muted\" style=\"font-size:11.5px\">{0} gruppi, {1} colpi, in angolo dalla mira di ogni gruppo al netto dei click impostati. Grafico, scelta dei gruppi e dettagli nella pagina «📈 Confronto tra gruppi».</div>": "<div class=\"muted\" style=\"font-size:11.5px\">{0} groups, {1} shots, as angles from the point of aim of each group net of the clicks dialled. Chart, choice of groups and details on the «📈 Group comparison» page.</div>",
+   "Centro − media ({0})": "Centre − mean ({0})",
+   "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Modello a effetti casuali: colpo = punto medio + spostamento del gruppo (σ_b) + dispersione dentro il gruppo (σ_w), uguale in tutte le direzioni. Stima REML; intervalli di σ_b e della quota tra gruppi dal profilo della verosimiglianza (validi anche quando σ_b stimato è zero), di σ_w e σ_tot da {0} repliche bootstrap a seme fisso. Con meno di 4–5 gruppi σ_b resta molto incerto.</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Random-effects model: shot = mean point + group shift (σ_b) + dispersion within the group (σ_w), the same in all directions. REML estimate; intervals of σ_b and of the between-group share from the likelihood profile (valid even when the estimated σ_b is zero), of σ_w and σ_tot from {0} fixed-seed bootstrap replicates. With fewer than 4–5 groups σ_b remains very uncertain.</div>",
+   "{0}: centro {1} ; {2} {3} dalla media, {4} colpi": "{0}: centre {1} ; {2} {3} from the mean, {4} shots",
+   "Cerchi colorati: CEP dentro ogni gruppo attorno al suo centro ({0} {1}). Tratteggio: CEP dei centri (σ_b, {2}). Cerchio pieno: CEP di un colpo qualsiasi della sessione (σ_tot, {3}). Croce: punto medio di impatto.": "Coloured circles: CEP within each group around its centre ({0} {1}). Dashed: CEP of the centres (σ_b, {2}). Solid circle: CEP of any shot of the session (σ_tot, {3}). Cross: mean point of impact.",
+   "Analisi di sensibilità · quanto le conclusioni dipendono dalle ipotesi": "Sensitivity analysis · how much the conclusions depend on the assumptions",
+   "Scostamento dal caso base per scenario ·": "Deviation from the baseline per scenario ·",
+   "Grandezza del grafico a tornado": "Quantity of the tornado chart",
+   "Grafico a tornado: scostamento di ogni scenario dal caso base": "Tornado chart: deviation of each scenario from the baseline",
+   "Variabilità dentro e tra i gruppi · modello gerarchico": "Within- and between-group variability · hierarchical model",
+   "Gruppi della sessione: togli la spunta per escluderne uno dall'analisi.": "Session groups: untick one to leave it out of the analysis.",
+   "Centri dei gruppi rispetto al punto medio di impatto": "Group centres relative to the mean point of impact",
+   "Centri dei gruppi con il CEP interno, il CEP dei centri e il CEP complessivo": "Group centres with the internal CEP, the CEP of the centres and the overall CEP",
+   "Analisi di sensibilità": "Sensitivity analysis"
   }/*END-EN-DICT*/;
   /* Dizionario russo (dalla 1.19.0): stesse chiavi italiane. Una chiave assente in russo finisce in «missing» e
      ripiega sull'inglese (meglio dell'italiano per chi legge il russo). Unità angolari lasciate in caratteri latini
@@ -7762,7 +8056,108 @@ const I18N = (() => {
    "SD {0}": "СКО {0}",
    "<tr><th>Tipo</th><th title=\"Escludi dal gruppo (tasto X sul foro selezionato)\">Escl.</th><th class=\"x\" title=\"Click di alzo impostati sulla torretta per questo foro (+ = in alto). Un nuovo foro riprende i valori del precedente; correggendo un foro si aggiornano anche i successivi che avevano lo stesso valore.\">Alzo</th><th class=\"x\" title=\"Click di brandeggio impostati sulla torretta per questo foro (+ = a destra)\">Brand.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Distanza dal punto di mira (mm)\">Da mira</th><th class=\"x\" title=\"Distanza dal centro gruppo (mm)\">Da centro</th>\n    <th class=\"x\" title=\"Direzione dal centro gruppo: gradi in senso orario da «in alto» (N) e sigla cardinale\">Direz.</th>\n    <th class=\"x\" title=\"Click verticali per portare il punto sulla mira\">Click ↕</th><th class=\"x\" title=\"Click orizzontali per portare il punto sulla mira\">Click ↔</th>{1}<th></th></tr>": "<tr><th>Тип</th><th title=\"Исключить из группы (клавиша X на выбранном выстреле)\">Искл.</th><th class=\"x\" title=\"Клики по вертикали, выставленные на барабанчике для этого выстрела (+ = вверх). Новый выстрел берёт значения предыдущего; исправление выстрела обновляет и следующие с тем же значением.\">Верт.</th><th class=\"x\" title=\"Клики по горизонтали, выставленные на барабанчике для этого выстрела (+ = вправо)\">Гор.</th>{0}<th class=\"x\">X</th><th class=\"x\">Y</th>\n    <th class=\"x\" title=\"Расстояние от точки прицеливания (мм)\">От ТП</th><th class=\"x\" title=\"Расстояние от центра группы (мм)\">От центра</th>\n    <th class=\"x\" title=\"Направление от центра группы: градусы по часовой стрелке от «верха» (С) и румб\">Напр.</th>\n    <th class=\"x\" title=\"Клики по вертикали, чтобы привести точку в точку прицеливания\">Клики ↕</th><th class=\"x\" title=\"Клики по горизонтали, чтобы привести точку в точку прицеливания\">Клики ↔</th>{1}<th></th></tr>",
    "Occupati <b>{0}</b>: foto {1} ({2}), sessioni {3} (archiviate: {4}{5}){6}.": "Занято <b>{0}</b>: фото {1} ({2}), сессии {3} (в архиве: {4}{5}){6}.",
-   "gruppi: {0} · fori: {1}": "групп: {0} · пробоин: {1}"
+   "gruppi: {0} · fori: {1}": "групп: {0} · пробоин: {1}",
+   "Robustezza delle conclusioni": "Устойчивость выводов",
+   "Variabilità dentro e tra i gruppi": "Изменчивость внутри групп и между ними",
+   "Marcatura e scala": "Разметка и масштаб",
+   "Composizione del campione": "Состав выборки",
+   "robusta": "устойчив",
+   "abbastanza robusta": "достаточно устойчив",
+   "dipende dalle ipotesi": "зависит от допущений",
+   "Servono almeno 3 colpi inclusi nel gruppo.": "Нужно не менее 3 учтённых выстрелов в группе.",
+   "Calibra la scala: la sensibilità si valuta su misure in mm e in angolo.": "Откалибруйте масштаб: чувствительность оценивается по измерениям в мм и угловых единицах.",
+   "Normale circolare (base)": "Круговое нормальное (базовое)",
+   "σ senza correzione per pochi colpi (ML)": "σ без поправки на малое число выстрелов (МП)",
+   "Normale ellittica (covarianza piena)": "Эллиптическое нормальное (полная ковариация)",
+   "Empirico (mediana spaziale, quantili dei colpi)": "Эмпирическое (пространственная медиана, квантили выстрелов)",
+   "Con il foro escluso": "С исключённой пробоиной",
+   "Senza il possibile flyer": "Без возможного отрыва",
+   "Correzione in click": "Поправка в кликах",
+   "Dispersione (CEP) e classe GQI": "Рассеивание (CEP) и класс GQI",
+   "Senza la varianza di marcatura (u)": "Без дисперсии разметки (u)",
+   "Senza il doppio della marcatura (2u)": "Без удвоенной разметки (2u)",
+   "nessuna dipende dalle ipotesi provate": "ни один не зависит от проверенных допущений",
+   "Scenario": "Сценарий",
+   "Famiglia": "Группа допущений",
+   "Click di alzo": "Клики по вертикали",
+   "Click di brandeggio": "Клики по горизонтали",
+   "punti %": "п. п.",
+   "Fascia verde: entro la soglia di «robusta». Barre arancio: scenari che la superano.": "Зелёная полоса: в пределах порога «устойчив». Оранжевые полосы: сценарии, которые его превышают.",
+   "Nessuno scenario cambia questa grandezza.": "Ни один сценарий не меняет эту величину.",
+   "meno di 2 colpi": "меньше 2 выстрелов",
+   "senza punto di mira": "нет точки прицеливания",
+   "distanza mancante": "нет дистанции",
+   "I gruppi scelti hanno munizioni (palla, polvere o carica) diverse: le differenze tra le configurazioni finiscono nella variabilità tra gruppi.": "У выбранных групп разные патроны (пуля, порох или навеска): различия конфигураций попадают в изменчивость между группами.",
+   "I gruppi scelti hanno armi diverse.": "У выбранных групп разное оружие.",
+   "Distanze diverse: il confronto è in angolo; vento e balistica che cambiano con la distanza contano come variabilità tra gruppi.": "Разные дистанции: сравнение в угловых единицах; ветер и баллистика, меняющиеся с дистанцией, считаются изменчивостью между группами.",
+   "Nessuno spostamento dei centri oltre a quello atteso per caso: i gruppi si comportano come un'unica rosata (σ tra i gruppi compatibile con zero).": "Смещение центров не больше случайного: группы ведут себя как одна (σ между группами совместима с нулём).",
+   "Gruppi singolarmente compatti ma i centri si spostano più della dispersione interna: la variabilità tra i gruppi domina. Cause tipiche: appoggio o posizione diversi tra le serie, ottica o torrette che non tornano, canna che si scalda, vento cambiato, lotti di munizioni diversi.": "Каждая группа кучная, но центры смещаются сильнее внутреннего рассеивания: преобладает изменчивость между группами. Типичные причины: разный упор или положение между сериями, прицел или барабанчики не возвращаются, нагрев ствола, сменившийся ветер, разные партии патронов.",
+   "Lo spostamento dei centri è probabilmente la parte maggiore della dispersione (quota tra gruppi ≥ 50%), ma l'intervallo è ancora largo: servono più gruppi per esserne sicuri.": "Смещение центров, вероятно, основная часть рассеивания (доля между группами ≥ 50%), но интервал ещё широк: для уверенности нужно больше групп.",
+   "I centri si spostano più di quanto spieghi il caso, ma meno della dispersione dentro i gruppi.": "Центры смещаются сильнее, чем объясняет случай, но меньше рассеивания внутри групп.",
+   "Dispersione dentro i gruppi σ_w (per asse)": "Рассеивание внутри групп σ_w (по оси)",
+   "Spostamento dei centri tra i gruppi σ_b": "Смещение центров между группами σ_b",
+   "Quota della varianza tra i gruppi (ICC)": "Доля дисперсии между группами (ICC)",
+   "Dispersione complessiva σ_tot = √(σ_w² + σ_b²)": "Общее рассеивание σ_tot = √(σ_w² + σ_b²)",
+   "CEP di una rosata (solo σ_w)": "CEP одной группы (только σ_w)",
+   "CEP su più rosate (σ_tot)": "CEP по нескольким группам (σ_tot)",
+   "Test «i centri non si spostano» (σ_b = 0)": "Тест «центры не смещаются» (σ_b = 0)",
+   "GQI con la sola σ_w → con σ_tot": "GQI только по σ_w → по σ_tot",
+   "Servono almeno 2 gruppi con punto di mira, scala e almeno 2 colpi ciascuno (e più colpi che gruppi).": "Нужны не менее 2 групп с точкой прицеливания, масштабом и минимум 2 выстрелами в каждой (и выстрелов больше, чем групп).",
+   "Scostamento del centro dalla media pesata dei centri diviso per l'incertezza attesa del centro (√(σ_b² + σ_w²/n)): oltre 2 il gruppo è anomalo rispetto agli altri": "Смещение центра от взвешенного среднего центров, делённое на ожидаемую неопределённость центра (√(σ_b² + σ_w²/n)): больше 2 — группа аномальна относительно остальных",
+   "quadretto": "клетка",
+   " · pesa di più: {0}": " · сильнее всего влияет: {0}",
+   "{0} scenari: modello (normale circolare, ML, ellittica, empirico), marcatura e scala, composizione del campione (un foro alla volta, esclusi, flyer), livello di confidenza per i confronti.": "Сценариев: {0}: модель (круговая нормальная, МП, эллиптическая, эмпирическая), разметка и масштаб, состав выборки (по одной пробоине, исключённые, отрывы), доверительный уровень для сравнений.",
+   "{0} gruppi ({1}), {2} colpi; angoli dalla mira di ogni gruppo al netto dei click impostati. Stima REML, intervalli di σ_b e ICC dal profilo della verosimiglianza, di σ_w e σ_tot da bootstrap parametrico.": "Групп: {0} ({1}), выстрелов: {2}; углы от точки прицеливания каждой группы за вычетом выставленных кликов. Оценка REML, интервалы σ_b и ICC по профилю правдоподобия, σ_w и σ_tot — параметрическим бутстрепом.",
+   "{0} a {1} {2}": "{0} на {1} {2}",
+   "Senza la varianza di marcatura (±{0} mm)": "Без дисперсии разметки (±{0} мм)",
+   "Senza il doppio della marcatura (±{0} mm)": "Без удвоенной разметки (±{0} мм)",
+   "Scala +{0}% (2 incertezze)": "Масштаб +{0}% (2 неопределённости)",
+   "Scala −{0}%": "Масштаб −{0}%",
+   "Senza il foro {0}": "Без пробоины {0}",
+   "Con i {0} fori esclusi": "С {0} исключёнными пробоинами",
+   "Senza i {0} possibili flyer": "Без {0} возможных отрывов",
+   "alzo da {0} a {1}, brandeggio da {2} a {3} click (+ = alto / destra)": "вертикаль от {0} до {1}, горизонталь от {2} до {3} кликов (+ = вверх / вправо)",
+   " · GQI «{0}»": " · GQI «{0}»",
+   "CEP da {0} a {1} mm (fino a {2}% dal base)": "CEP от {0} до {1} мм (до {2}% от базового)",
+   "; classi GQI: {0}": "; классы GQI: {0}",
+   "{0} · {1}": "{0} · {1}",
+   "da {0} a {1} ({2} punti percentuali)": "от {0} до {1} ({2} п. п.)",
+   "«{0}» senza il foro {1}": "«{0}» без пробоины {1}",
+   "Livello di confidenza {0}%": "Доверительный уровень {0}%",
+   "«{0}» più preciso di «{1}»": "«{0}» кучнее, чем «{1}»",
+   "nessuna differenza dimostrata con «{0}»": "разница с «{0}» не доказана",
+   "Confronto con «{0}»": "Сравнение с «{0}»",
+   "verdetto diverso in {0} scenari su {1}": "другой вывод в {0} сценариях из {1}",
+   "stesso verdetto in tutti i {0} scenari": "тот же вывод во всех {0} сценариях",
+   "{0} / {1} robuste": "устойчивых: {0} / {1}",
+   "{0} dipendono dalle ipotesi": "зависят от допущений: {0}",
+   "{0} abbastanza robuste": "достаточно устойчивых: {0}",
+   "<div class=\"muted\" style=\"font-size:11.5px\">{0} scenari (modello, marcatura e scala, composizione del campione). Dettagli e grafico in «📊 Grafici del gruppo».</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Сценариев: {0} (модель, разметка и масштаб, состав выборки). Подробности и график — в «📊 Графики группы».</div>",
+   " · pesa di più: <b>{0}</b>": " · сильнее всего влияет: <b>{0}</b>",
+   " ({0})": " ({0})",
+   "Le osservazioni non cambiano: ogni riga cambia una sola ipotesi rispetto al caso base. In arancio i valori che si allontanano dal base oltre la soglia di «robusta» (1 click, 10% del CEP, 5 punti percentuali, un verdetto diverso). Robusta = nessuno scenario la cambia; abbastanza robusta = cambia poco (≤ 2 click, ≤ 25%, ≤ 15 punti, ≤ 25% degli scenari); altrimenti dipende dalle ipotesi.": "Наблюдения не меняются: каждая строка меняет одно допущение относительно базового случая. Оранжевым — значения, отклоняющиеся от базового сильнее порога «устойчив» (1 клик, 10% CEP, 5 п. п., другой вывод). Устойчив — ни один сценарий не меняет вывод; достаточно устойчив — меняет мало (≤ 2 кликов, ≤ 25%, ≤ 15 п. п., ≤ 25% сценариев); иначе зависит от допущений.",
+   "scostamento dal caso base ({0})": "отклонение от базового случая ({0})",
+   "IC {0}% {1} (bootstrap)": "ДИ {0}% {1} (бутстреп)",
+   "IC {0}% {1} (profilo)": "ДИ {0}% {1} (профиль)",
+   "+{0}% rispetto alla singola rosata": "+{0}% по сравнению с одной группой",
+   "p {0}": "p {0}",
+   "rapporto di verosimiglianza {0}": "отношение правдоподобия {0}",
+   "{0} → {1}": "{0} → {1}",
+   "tra i gruppi {0}%": "между группами {0}%",
+   "<div class=\"muted\" style=\"font-size:11.5px\">{0} gruppi, {1} colpi, in angolo dalla mira di ogni gruppo al netto dei click impostati. Grafico, scelta dei gruppi e dettagli nella pagina «📈 Confronto tra gruppi».</div>": "<div class=\"muted\" style=\"font-size:11.5px\">Групп: {0}, выстрелов: {1}, в угловых единицах от точки прицеливания каждой группы за вычетом выставленных кликов. График, выбор групп и подробности — на странице «📈 Сравнение групп».</div>",
+   "Centro − media ({0})": "Центр − среднее ({0})",
+   "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Modello a effetti casuali: colpo = punto medio + spostamento del gruppo (σ_b) + dispersione dentro il gruppo (σ_w), uguale in tutte le direzioni. Stima REML; intervalli di σ_b e della quota tra gruppi dal profilo della verosimiglianza (validi anche quando σ_b stimato è zero), di σ_w e σ_tot da {0} repliche bootstrap a seme fisso. Con meno di 4–5 gruppi σ_b resta molto incerto.</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">Модель со случайными эффектами: выстрел = средняя точка + смещение группы (σ_b) + рассеивание внутри группы (σ_w), одинаковое во всех направлениях. Оценка REML; интервалы σ_b и доли между группами — по профилю правдоподобия (верны и при оценке σ_b, равной нулю), σ_w и σ_tot — по {0} бутстреп-репликам с фиксированным зерном. При менее чем 4–5 группах σ_b остаётся очень неопределённой.</div>",
+   "{0}: centro {1} ; {2} {3} dalla media, {4} colpi": "{0}: центр {1} ; {2} {3} от среднего, выстрелов: {4}",
+   "Cerchi colorati: CEP dentro ogni gruppo attorno al suo centro ({0} {1}). Tratteggio: CEP dei centri (σ_b, {2}). Cerchio pieno: CEP di un colpo qualsiasi della sessione (σ_tot, {3}). Croce: punto medio di impatto.": "Цветные круги: CEP внутри каждой группы вокруг её центра ({0} {1}). Пунктир: CEP центров (σ_b, {2}). Сплошной круг: CEP любого выстрела сессии (σ_tot, {3}). Крест: средняя точка попадания.",
+   "Analisi di sensibilità · quanto le conclusioni dipendono dalle ipotesi": "Анализ чувствительности · насколько выводы зависят от допущений",
+   "Scostamento dal caso base per scenario ·": "Отклонение от базового случая по сценариям ·",
+   "Grandezza del grafico a tornado": "Величина торнадо-диаграммы",
+   "Grafico a tornado: scostamento di ogni scenario dal caso base": "Торнадо-диаграмма: отклонение каждого сценария от базового случая",
+   "Variabilità dentro e tra i gruppi · modello gerarchico": "Изменчивость внутри групп и между ними · иерархическая модель",
+   "Gruppi della sessione: togli la spunta per escluderne uno dall'analisi.": "Группы сессии: снимите флажок, чтобы исключить группу из анализа.",
+   "Centri dei gruppi rispetto al punto medio di impatto": "Центры групп относительно средней точки попадания",
+   "Centri dei gruppi con il CEP interno, il CEP dei centri e il CEP complessivo": "Центры групп с внутренним CEP, CEP центров и общим CEP",
+   "Analisi di sensibilità": "Анализ чувствительности"
   }/*END-RU-DICT*/;
   const DICT = { en: EN, ru: RU };
   const LANGS = ["it", "en", "ru"];
@@ -7828,7 +8223,7 @@ const PDF_FONTS = {"R":{"name":"SAReportSans-Regular","b64":"AAEAAAALAIAAAwAwT1M
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.23.0";
+const APP_VERSION = "1.24.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -8042,6 +8437,7 @@ function params() {
     // dalla 1.21.0: ruota degli errori, calcolatore balistico, Monte Carlo
     diagOn: $("diagOn").checked, diagHand: $("diagHand").value, diagRef: $("diagRef").value, balDist: $("balDist").value, balWind: $("balWind").checked,
     mcMax: $("mcMax").value, mcN: $("mcN").value, mcUnit: $("mcUnit").value, mcAt: $("mcAt").value,
+    hierUnit: $("hierUnit").value,   // dalla 1.24.0
   };
 }
 function setParams(p) {
@@ -8054,7 +8450,7 @@ function setParams(p) {
     rtPlane: "rtPlane", rtCal: "rtCal", rtMag: "rtMag", rtSrc: "rtSrc", corPair: "corPair",
     smKind: "smKind", smLen: "smLen", smUnit: "smUnit", smPos: "smPos",
     qiMrRef: "qiMrRef", qiMrUnit: "qiMrUnit", qiDRef: "qiDRef", qiDUnit: "qiDUnit", qiWP: "qiWP", qiDec: "qiDec", qiClasses: "qiClasses",
-    diagHand: "diagHand", diagRef: "diagRef", balDist: "balDist", mcMax: "mcMax", mcN: "mcN", mcUnit: "mcUnit", mcAt: "mcAt" }))
+    diagHand: "diagHand", diagRef: "diagRef", balDist: "balDist", mcMax: "mcMax", mcN: "mcN", mcUnit: "mcUnit", mcAt: "mcAt", hierUnit: "hierUnit" }))
     if (p[k] !== undefined) $(id).value = p[k];
   if (p.gridOn !== undefined) $("gridOn").checked = !!p.gridOn;
   if (p.ellipseOn !== undefined) $("ellipseOn").checked = !!p.ellipseOn;
@@ -10073,7 +10469,8 @@ function refreshResults() {
     else if (r.n < 2 || !r.mm) html += resultCards(g, gcc, r, true);
     box.innerHTML = html; out.appendChild(box);
   }
-  if (!uiBasic()) out.insertAdjacentHTML("beforeend", qiSessionHTML());   // GQI/TQI della sessione e ripetibilità (dalla 1.16.0)
+  if (!uiBasic()) out.insertAdjacentHTML("beforeend", qiSessionHTML());
+  if (!uiBasic()) { const hc = hierCardHTML(); if (hc) out.insertAdjacentHTML("beforeend", `<div class="rcards">${hc}</div>`); }   // variabilità dentro e tra i gruppi (1.24.0)   // GQI/TQI della sessione e ripetibilità (dalla 1.16.0)
   refreshQiTop();
   decorateGroupToggles(out);   // gruppi richiudibili (dalla 1.18.0)
   out.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
@@ -10574,6 +10971,7 @@ function resultCards(g, gcc, r, onlyAside = false) {
   if (!onlyAside && r.n >= 5) C.push(stabCard(g, gcc));
   const w = windCard(g, r);
   if (w) C.push(w);
+  if (!onlyAside && r.n >= 3) { const sc = sensCardHTML(g); if (sc) C.push(sc); }   // robustezza delle conclusioni (1.24.0)
   return C.length ? `<div class="rcards">${C.join("")}</div>` : "";
 }
 /** Modalità Base: solo group size (valore e angolo), correzione e punteggio. */
@@ -11641,6 +12039,10 @@ function buildReport(R, groups, p, cc, now) {
     { const h = hitInfo(g, gcc), ht = h ? hitText(h) : null; if (ht) rows.push([_t("Probabilità di colpire"), ht]); }
     R.sub(_t("Misure e correzione")); R.kv(rows);
     R.sub(_t("Modello statistico e incertezza")); R.kv(modelReportRows(g, gcc, r), 330);
+    { const SI2 = sensInfo(g);   // 1.24.0: robustezza delle conclusioni
+      if (SI2 && !SI2.msg && SI2.C.length) { R.sub(_t("Robustezza delle conclusioni"));
+        R.kv(SI2.C.map(c => [`${c.title}: ${SENS_ST()[c.st]}`, plainTxt(`${c.base} · ${c.range}${c.driver ? _T` · pesa di più: ${c.driver}` : ""}`)]), 330);
+        R.text(_T`${SI2.SC.length} scenari: modello (normale circolare, ML, ellittica, empirico), marcatura e scala, composizione del campione (un foro alla volta, esclusi, flyer), livello di confidenza per i confronti.`, { size: 15, color: "#6b7280" }); } }
     { const Q = qiReportRows(g, gcc); if (Q.length) { R.sub(_t("Indice di qualità")); R.kv(Q, 330); } }   // dalla 1.16.0
     const ll = loadLines(g);
     if (ll.length) { R.sub(_t("Ricarica e condizioni")); R.kv(ll.map(([a, b]) => [a, b])); }
@@ -11677,6 +12079,11 @@ function buildReport(R, groups, p, cc, now) {
   }
   // sezioni d'insieme (se ci sono dati)
   { const QS = qiReportSession(); if (QS) { R.heading(_t("Indice di qualità della sessione")); R.kv(QS, 330); } }   // dalla 1.16.0
+  { const H = hierData();   // 1.24.0: modello gerarchico
+    if (H.fit) { R.heading(_t("Variabilità dentro e tra i gruppi")); R.text(hierVerdict(H.fit, H.level).text, { size: 18, weight: 600 });
+      for (const w of H.warn) R.text("⚠ " + w, { size: 16, color: "#b45309" });
+      R.kv(hierRows(H, hierU()).map(([a, b, c]) => [a, plainTxt(c ? `${b} · ${c}` : b)]), 430);
+      R.text(_T`${H.fit.k} gruppi (${H.used.map(d => d.g.name).join(", ")}), ${H.fit.N} colpi; angoli dalla mira di ogni gruppo al netto dei click impostati. Stima REML, intervalli di σ_b e ICC dal profilo della verosimiglianza, di σ_w e σ_tot da bootstrap parametrico.`, { size: 15, color: "#6b7280" }); } }
   const rows = compareRows();
   if (rows.length >= 2) {
     R.heading(_t("Confronto tra gruppi"));
@@ -12196,7 +12603,7 @@ function movingAverage(vals, N) {
 const fmtA = v => fmt(v, Math.abs(v) < 0.1 ? 3 : 2);
 const dIT = d => { if (!d) return "–"; const [y, m, g] = d.split("-"); return g ? `${g}/${m}/${y.slice(2)}` : d; };
 /** Pannelli della vista grafici che dipendono da tutti i gruppi: confronto, dope card, carica e precisione. */
-function drawCompare() { if (anaOpen() && anaPage() !== "cmp") return; drawCompareTable(); drawDope(); drawCharge(); drawCorr(); drawVisual(); drawBallistic(); drawMC(); /* drawHold(): nella pagina del gruppo dalla 1.21.0 · drawCone(): cono rimosso nella 1.21.0 */ }
+function drawCompare() { if (anaOpen() && anaPage() !== "cmp") return; drawCompareTable(); drawDope(); drawCharge(); drawCorr(); drawVisual(); drawBallistic(); drawMC(); drawHier(); /* drawHold(): nella pagina del gruppo dalla 1.21.0 · drawCone(): cono rimosso nella 1.21.0 */ }
 function drawCompareTable() {
   const box = $("cmpBody"); if (!box || !anaOpen()) return;
   const rows = compareRows();
@@ -13008,8 +13415,354 @@ function refreshAnaHeader() {
    «cmp» (confronto tra gruppi, dope card e calcolatore balistico, carica, correlazioni, confronto visivo, Monte Carlo).
    La pagina è in data-page; i pannelli dell'altra pagina sono nascosti via CSS e non vengono ridisegnati. */
 const anaPage = () => $("anaView").dataset.page || "group";
+/* ------------------------------ 1.24.0: ANALISI DI SENSIBILITÀ DELLE CONCLUSIONI ------------------------------
+   Le osservazioni non cambiano: cambiano le ipotesi di calcolo, una alla volta rispetto al caso base (normale circolare,
+   σ corretto per pochi colpi, centro = centroide, marcatura e scala come misurate, colpi inclusi):
+   - modello: σ senza correzione (stimatore ML), normale ellittica (covarianza piena: CEP/R95 numerici, probabilità
+     quasi-Monte Carlo), empirico (centro = mediana spaziale, CEP = mediana delle distanze da 5 colpi, R95 = quantile
+     da 20, probabilità = frazione dei colpi da 10);
+   - marcatura e scala: tolta dalla varianza l'incertezza di marcatura (u e 2u), scala ± 2 incertezze;
+   - campione: senza un foro alla volta (jackknife), con i fori esclusi, senza i possibili flyer;
+   - livello di confidenza 90% e 99% (solo per la significatività dei confronti).
+   Per ogni conclusione: valore base, intervallo, scenario e famiglia che la spostano di più e giudizio robusta /
+   abbastanza robusta / dipende dalle ipotesi, con le soglie di SENS_TH (click, variazione relativa del CEP, punti
+   percentuali di probabilità, quota di scenari con un verdetto diverso). */
+const SENS_TH = { click: [1, 2], cep: [0.10, 0.25], pp: [0.05, 0.15], share: [0, 0.25] };
+const SENS_FAM = () => ({ model: _t("Modello"), mark: _t("Marcatura e scala"), sample: _t("Composizione del campione"), level: _t("Livello di confidenza") });
+const SENS_ST = () => ({ ok: _t("robusta"), mid: _t("abbastanza robusta"), bad: _t("dipende dalle ipotesi") });
+const sensMemo = new Map();
+/** Bersaglio della probabilità di colpire (cerchio o rettangolo) riportato alla distanza del gruppo; null con le sagome. */
+function sensHitGeo(gcc) {
+  const p = params(); if (p.hitShape === "target" || !(gcc.distMm > 0)) return null;
+  const u = HIT_UNITS[p.hitUnit] || 10, D2 = p.hitDist > 0 ? p.hitDist * Calc.DIST[p.hitDistUnit] : gcc.distMm, f = gcc.distMm / D2;
+  const shape = p.hitShape === "rect" ? "rect" : "circle", R = p.hitD * u / 2 * f, W = p.hitW * u * f, H = p.hitH * u * f;
+  if (shape === "circle" ? !(R > 0) : !(W > 0 && H > 0)) return null;
+  const size = shape === "rect" ? _T`rettangolo ${fmt(p.hitW, 1)} × ${fmt(p.hitH, 1)} ${uL(p.hitUnit)}` : _T`cerchio ⌀ ${fmt(p.hitD, 1)} ${uL(p.hitUnit)}`;
+  return { shape, R, W, H, sameDist: Math.abs(D2 - gcc.distMm) <= 1e-6 * gcc.distMm, text: _T`${size} a ${fmt(D2 / Calc.DIST[p.hitDistUnit], 0)} ${uL(p.hitDistUnit)}` };
+}
+/** Click con segno (+ = alto / destra) della correzione per un centro (mm dal punto di mira, Y↑). */
+function sensClicks(dx, dy, gcc) {
+  const c = Calc.correction(dx, dy, gcc); if (!c) return null;
+  return { v: (c.vDir === "SU" ? c.vClicks : -c.vClicks) || 0, h: (c.hDir === "DESTRA" ? c.hClicks : -c.hClicks) || 0, c };
+}
+/**
+ * Valori di uno scenario. pts = fori (px), o = { model: "circ" | "ml" | "ell" | "emp", ks (fattore di scala), dec (mm² da
+ * togliere alla varianza per asse) }. → { n, c (mm dal riferimento), sig (σ circolare equivalente, mm), cep, r95, gqi, cls, v, h, p }
+ */
+function sensEval(pts, g, gcc, o, geo, S) {
+  const n = pts.length; if (n < 2) return null;
+  const k = o.ks / gcc.pxPerMm, ref = g.poa || Calc.centroid(pts), D = gcc.distMm, model = o.model || "circ";
+  const P = pts.map(s => ({ x: (s.x - ref.x) * k, y: (ref.y - s.y) * k })), dec = o.dec || 0;
+  const out = { n, model };
+  if (model === "emp") {
+    out.c = Calc.spatialMedian(P);
+    out.cep = n >= 5 ? Calc.radialQuantile(P, out.c, 0.5) : null;
+    out.r95 = n >= 20 ? Calc.radialQuantile(P, out.c, 0.95) : null;
+    out.sig = out.cep != null ? out.cep / Math.sqrt(2 * Math.LN2) : null;
+  } else if (model === "ell") {
+    const C = Calc.covFull(P); out.c = C.c;
+    out.C = { sxx: Math.max(C.sxx - dec, C.sxx * 0.01), syy: Math.max(C.syy - dec, C.syy * 0.01), sxy: C.sxy };
+    out.cep = Calc.ellipseRadius(out.C, 0.5); out.r95 = Calc.ellipseRadius(out.C, 0.95); out.sig = out.cep / Math.sqrt(2 * Math.LN2);
+  } else {
+    const d = Calc.dispersion(P); out.c = Calc.centroid(P);
+    let s2 = model === "ml" ? P.reduce((a, q) => a + (q.x - out.c.x) ** 2 + (q.y - out.c.y) ** 2, 0) / (2 * n) : d.sigma * d.sigma;
+    s2 = Math.max(s2 - dec, s2 * 0.01);
+    out.sig = Math.sqrt(s2); out.cep = out.sig * Math.sqrt(2 * Math.LN2); out.r95 = out.sig * Math.sqrt(-2 * Math.log(0.05));
+  }
+  if (out.sig != null && S && S.gqiOn && D > 0) { out.gqi = Calc.qiScore(Math.atan(out.sig * Math.sqrt(Math.PI / 2) / D), S.mrRef); const q = Calc.qiClass(out.gqi, S.classes); out.cls = q ? q.key : null; }
+  if (g.poa && gcc.clickValue > 0 && D > 0) { const c = sensClicks(out.c.x, out.c.y, gcc); if (c) { out.v = c.v; out.h = c.h; out.corr = c.c; } }
+  if (geo && D > 0) {
+    // centro dopo la correzione arrotondata al click (alla distanza del gruppo); altra distanza: centrato (come la sezione Probabilità)
+    let rx = 0, ry = 0;
+    if (geo.sameDist && out.corr) {
+      const res = (q, clicks) => { const a = Math.atan(Math.abs(q) / D) - Calc.toRad(clicks * gcc.clickValue, gcc.clickUnit); return Math.sign(q) * D * Math.tan(a); };
+      rx = res(out.c.x, out.corr.hClicks); ry = res(out.c.y, out.corr.vClicks);
+    } else if (geo.sameDist && g.poa) { rx = out.c.x; ry = out.c.y; }
+    if (model === "ell") out.p = Calc.hitProbCov({ dx: rx, dy: ry, C: out.C, shape: geo.shape, R: geo.R, W: geo.W, H: geo.H });
+    else if (model === "emp") out.p = n >= 10 ? P.filter(q => { const x = q.x - out.c.x + rx, y = q.y - out.c.y + ry; return geo.shape === "rect" ? Math.abs(x) <= geo.W / 2 && Math.abs(y) <= geo.H / 2 : x * x + y * y <= geo.R * geo.R; }).length / n : null;
+    else out.p = geo.shape === "rect" ? Calc.hitRect(rx, ry, geo.W, geo.H, out.sig) : Calc.hitCircle(Math.hypot(rx, ry), geo.R, out.sig);
+  }
+  return out;
+}
+/** Incertezza di marcatura media per asse (mm²) dei fori, dalle impostazioni (a mano / snap, ×3 sui difficili). */
+function sensMarkU2(pts, gcc) {
+  const p = params(), uH = +p.markHand > 0 ? +p.markHand : 0, uS = +p.markSnap >= 0 ? +p.markSnap : 0, k = 1 / gcc.pxPerMm;
+  return pts.reduce((a, s) => a + ((s.snap ? uS : uH) * (s.hard ? 3 : 1) * k) ** 2, 0) / Math.max(1, pts.length);
+}
+function sensInfo(g) {
+  if (!g) return null;
+  const cc = calcContext(), gcc = ccG(cc, g), pts = inc(g), n = pts.length, P = params(), S = qiSet(), level = cc.ciLevel || 0.95;
+  if (n < 3) return { msg: _t("Servono almeno 3 colpi inclusi nel gruppo.") };
+  if (!gcc.pxPerMm) return { msg: _t("Calibra la scala: la sensibilità si valuta su misure in mm e in angolo.") };
+  const others = state.groups.filter(h => h !== g && inc(h).length >= 2 && ccG(cc, h).distMm > 0).slice(0, 6);
+  const key = JSON.stringify([g.id, pts.map(s => [s.x, s.y, s.snap, s.hard]), g.shots.filter(s => s.excluded).map(s => [s.x, s.y]), g.poa, gcc.pxPerMm, gcc.distMm, gcc.clickValue, gcc.clickUnit,
+    level, P.markHand, P.markSnap, P.hitShape, P.hitD, P.hitW, P.hitH, P.hitUnit, P.hitDist, P.hitDistUnit, S.gqiOn, S.mrRef, others.map(h => [h.id, h.name, inc(h).map(s => [s.x, s.y]), ccG(cc, h).distMm]), I18N.lang]);
+  if (sensMemo.has(key)) return sensMemo.get(key);
+  const geo = sensHitGeo(gcc), q = calibQuality(gcc), u2 = sensMarkU2(pts, gcc), fam = SENS_FAM();
+  const SC = [], add = (id, f, label, set, o = {}) => { const R = sensEval(set, g, gcc, { ks: 1, ...o }, geo, S); if (R) SC.push({ id, fam: f, label, set, o: { ks: 1, ...o }, R }); };
+  add("base", "model", _t("Normale circolare (base)"), pts);
+  add("ml", "model", _t("σ senza correzione per pochi colpi (ML)"), pts, { model: "ml" });
+  add("ell", "model", _t("Normale ellittica (covarianza piena)"), pts, { model: "ell" });
+  add("emp", "model", _t("Empirico (mediana spaziale, quantili dei colpi)"), pts, { model: "emp" });
+  if (u2 > 0) {
+    add("u1", "mark", _T`Senza la varianza di marcatura (±${fmt(Math.sqrt(u2), 2)} mm)`, pts, { dec: u2 });
+    add("u2", "mark", _T`Senza il doppio della marcatura (±${fmt(2 * Math.sqrt(u2), 2)} mm)`, pts, { dec: 4 * u2 });
+  }
+  if (q && q.relErr > 0) {
+    add("kp", "mark", _T`Scala +${fmt(2 * q.relErr * 100, 1)}% (2 incertezze)`, pts, { ks: 1 + 2 * q.relErr });
+    add("km", "mark", _T`Scala −${fmt(2 * q.relErr * 100, 1)}%`, pts, { ks: 1 - 2 * q.relErr });
+  }
+  pts.forEach(s => add("j" + s.id, "sample", _T`Senza il foro ${g.shots.indexOf(s) + 1}`, pts.filter(x => x !== s)));
+  const ex = g.shots.filter(s => s.excluded);
+  if (ex.length) add("withEx", "sample", ex.length === 1 ? _t("Con il foro escluso") : _T`Con i ${ex.length} fori esclusi`, [...pts, ...ex]);
+  const fl = flyerMap(g), fly = pts.filter(s => fl.get(s.id) && fl.get(s.id).flagged);
+  if (fly.length && n - fly.length >= 2) add("noFly", "sample", fly.length === 1 ? _t("Senza il possibile flyer") : _T`Senza i ${fly.length} possibili flyer`, pts.filter(s => !fly.includes(s)));
+  const base = SC[0].R, C = [], ST = SENS_ST();
+  const worst = (list, dev) => { let b = null; for (const s of list) { const d = dev(s); if (d != null && (!b || d > b.d)) b = { s, d }; } return b; };
+  const famOf = (list, dev) => { const m = {}; for (const s of list) { const d = dev(s); if (d != null && s.id !== "base") m[s.fam] = Math.max(m[s.fam] || 0, d); } const e = Object.entries(m).sort((a, b) => b[1] - a[1])[0]; return e && e[1] > 0 ? fam[e[0]] : null; };
+  const stOf = (x, th) => x <= th[0] + 1e-12 ? "ok" : x <= th[1] + 1e-12 ? "mid" : "bad";
+  // 1. correzione in click
+  if (base.v != null) {
+    const L = SC.filter(s => s.R.v != null), vs = L.map(s => s.R.v), hs = L.map(s => s.R.h);
+    const flip = L.some(s => (s.R.v * base.v < 0) || (s.R.h * base.h < 0));
+    const sp = Math.max(Math.max(...vs) - Math.min(...vs), Math.max(...hs) - Math.min(...hs));
+    const dev = s => s.R.v == null ? null : Math.max(Math.abs(s.R.v - base.v), Math.abs(s.R.h - base.h)), w = worst(L, dev);
+    const ct = (v, h) => `${clickTxt(Math.abs(v), v >= 0 ? "SU" : "GIÙ")} · ${clickTxt(Math.abs(h), h >= 0 ? "DESTRA" : "SINISTRA")}`;
+    C.push({ key: "corr", title: _t("Correzione in click"), base: ct(base.v, base.h), st: flip && sp > 1 ? "bad" : stOf(sp, SENS_TH.click),
+      range: _T`alzo da ${sgn(Math.min(...vs), 0)} a ${sgn(Math.max(...vs), 0)}, brandeggio da ${sgn(Math.min(...hs), 0)} a ${sgn(Math.max(...hs), 0)} click (+ = alto / destra)`,
+      driver: w && w.d > 0 ? w.s.label : null, family: famOf(L, dev), vals: L.map(s => ({ id: s.id, txt: ct(s.R.v, s.R.h), diff: dev(s) > 0 })) });
+  }
+  // 2. dispersione (CEP) e classe GQI
+  {
+    const L = SC.filter(s => s.R.cep != null), cs = L.map(s => s.R.cep), rel = s => s.R.cep == null ? null : Math.abs(s.R.cep / base.cep - 1);
+    const sp = Math.max(...L.map(rel)), w = worst(L, rel), classes = [...new Set(L.map(s => s.R.cls).filter(Boolean))];
+    const QC = Calc.QI_CLASSES, cl = key => { const c = QC.find(x => x.key === key); return c ? _t(c.label) : ""; };
+    let st = stOf(sp, SENS_TH.cep); if (classes.length > 1 && st === "ok") st = "mid";
+    C.push({ key: "disp", title: _t("Dispersione (CEP) e classe GQI"), base: `CEP ${fmt(base.cep, 1)} ${uL("mm")}${base.cls ? _T` · GQI «${cl(base.cls)}»` : ""}`, st,
+      range: _T`CEP da ${fmt(Math.min(...cs), 1)} a ${fmt(Math.max(...cs), 1)} mm (fino a ${fmt(sp * 100, 0)}% dal base)` + (classes.length > 1 ? _T`; classi GQI: ${classes.map(cl).join(", ")}` : ""),
+      driver: w && w.d > 0 ? w.s.label : null, family: famOf(L, rel), vals: SC.map(s => ({ id: s.id, txt: s.R.cep == null ? "–" : `${fmt(s.R.cep, 1)}${s.R.cls && s.R.cls !== base.cls ? " · " + cl(s.R.cls) : ""}`, diff: rel(s) > SENS_TH.cep[0] || (s.R.cls && s.R.cls !== base.cls) })) });
+  }
+  // 3. probabilità di colpire
+  if (geo && base.p != null) {
+    const L = SC.filter(s => s.R.p != null), ps = L.map(s => s.R.p), dev = s => s.R.p == null ? null : Math.abs(s.R.p - base.p), w = worst(L, dev), sp = Math.max(...ps) - Math.min(...ps);
+    C.push({ key: "hit", title: _t("Probabilità di colpire"), base: _T`${fmtP(base.p)} · ${geo.text}`, st: stOf(sp, SENS_TH.pp),
+      range: _T`da ${fmtP(Math.min(...ps))} a ${fmtP(Math.max(...ps))} (${fmt(sp * 100, 0)} punti percentuali)`, driver: w && w.d > 0 ? w.s.label : null, family: famOf(L, dev),
+      vals: SC.map(s => ({ id: s.id, txt: s.R.p == null ? "–" : fmtP(s.R.p), diff: dev(s) > SENS_TH.pp[0] })) });
+  }
+  // 4. confronto con gli altri gruppi (in angolo; F su σ², ν = 2(n − 1))
+  const cmp = [];
+  for (const h of others) {
+    const hcc = ccG(cc, h), hp = inc(h), sameScale = !!hcc.pxPerMm; if (!sameScale) continue;
+    const angSig = (R, gc) => R && R.sig != null ? Math.atan(R.sig / gc.distMm) : null;
+    const hEval = (set, o) => sensEval(set, h, hcc, { ks: 1, ...o }, null, null);
+    const verdict = (sa, na, sb, nb, lv) => {
+      if (sa == null || sb == null || !(sa > 0) || !(sb > 0)) return null;
+      const F = sa * sa / (sb * sb), c = Calc.fcdf(F, 2 * (na - 1), 2 * (nb - 1)), p = Math.min(1, 2 * Math.min(c, 1 - c));
+      return { win: sa < sb ? "a" : "b", sig: p < 1 - lv, p };
+    };
+    const hU2 = sensMarkU2(hp, hcc), hb = hEval(hp, {});
+    const rows = [];
+    const push = (id, f, label, ra, rb, lv = level) => { const v = verdict(angSig(ra, gcc), ra && ra.n, angSig(rb, hcc), rb && rb.n, lv); if (v) rows.push({ id, fam: f, label, v }); };
+    push("base", "model", _t("Normale circolare (base)"), base, hb);
+    for (const m of ["ml", "ell", "emp"]) { const s = SC.find(x => x.id === m); if (s) push(m, "model", s.label, s.R, hEval(hp, { model: m })); }
+    if (u2 > 0 || hU2 > 0) { push("u1", "mark", _t("Senza la varianza di marcatura (u)"), sensEval(pts, g, gcc, { ks: 1, dec: u2 }, null, null), hEval(hp, { dec: hU2 })); push("u2", "mark", _t("Senza il doppio della marcatura (2u)"), sensEval(pts, g, gcc, { ks: 1, dec: 4 * u2 }, null, null), hEval(hp, { dec: 4 * hU2 })); }
+    for (const s of SC.filter(x => x.fam === "sample")) push(s.id, "sample", s.label, s.R, hb);
+    if (hp.length >= 3) hp.forEach(s => push("hj" + s.id, "sample", _T`«${h.name}» senza il foro ${h.shots.indexOf(s) + 1}`, base, hEval(hp.filter(x => x !== s), {})));
+    for (const lv of [0.9, 0.99]) if (Math.abs(lv - level) > 1e-9) push("lv" + lv, "level", _T`Livello di confidenza ${fmt(lv * 100, 0)}%`, base, hb, lv);
+    const b0 = rows[0] && rows[0].v; if (!b0) continue;
+    const said = v => v.sig ? (v.win === "a" ? "a" : "b") : "=";
+    const diff = rows.filter(r => said(r.v) !== said(b0)), share = diff.length / rows.length;
+    const flip = diff.some(r => r.v.sig && b0.sig && r.v.win !== b0.win);
+    const A = esc(g.name), B = esc(h.name), stmt = v => v.sig ? (v.win === "a" ? _T`«${A}» più preciso di «${B}»` : _T`«${B}» più preciso di «${A}»`) : _T`nessuna differenza dimostrata con «${B}»`;
+    const fcount = {}; diff.forEach(r => { fcount[r.fam] = (fcount[r.fam] || 0) + 1; });
+    const topFam = Object.entries(fcount).sort((a, b) => b[1] - a[1])[0];
+    cmp.push({ key: "cmp" + h.id, title: _T`Confronto con «${h.name}»`, base: `${stmt(b0)} (p ${pTxt(b0.p)})`, st: flip ? "bad" : share <= SENS_TH.share[0] ? "ok" : share <= SENS_TH.share[1] ? "mid" : "bad",
+      range: diff.length ? _T`verdetto diverso in ${diff.length} scenari su ${rows.length}` : _T`stesso verdetto in tutti i ${rows.length} scenari`,
+      driver: diff[0] ? diff[0].label : null, family: topFam ? fam[topFam[0]] : null, rows: rows.map(r => ({ ...r, txt: stmt(r.v) + ` (p ${pTxt(r.v.p)})`, diff: said(r.v) !== said(b0) })) });
+  }
+  for (const c of [...C, ...cmp]) if (c.st === "ok") { c.driver = null; c.family = null; }   // «pesa di più» solo se qualcosa cambia davvero
+  const out = { g, gcc, SC, C: [...C, ...cmp], geo, n, u2, level };
+  out.count = { ok: out.C.filter(c => c.st === "ok").length, mid: out.C.filter(c => c.st === "mid").length, bad: out.C.filter(c => c.st === "bad").length };
+  if (sensMemo.size > 40) sensMemo.delete(sensMemo.keys().next().value);
+  sensMemo.set(key, out);
+  return out;
+}
+const sensBadge = st => `<span class="sens-b sens-${st}">${esc(SENS_ST()[st])}</span>`;
+/** Righe compatte (card dei Risultati e report): conclusione, valore base, giudizio. */
+function sensCardHTML(g) {
+  const I = sensInfo(g); if (!I || I.msg || !I.C.length) return "";
+  const rows = I.C.map(c => `<tr><td>${esc(c.title)}<br><span class="civ">${c.base}</span></td><td class="v">${sensBadge(c.st)}</td></tr>`).join("");
+  const main = _T`${I.count.ok} / ${I.C.length} robuste`;
+  const sub = I.count.bad ? _T`${I.count.bad} dipendono dalle ipotesi` : I.count.mid ? _T`${I.count.mid} abbastanza robuste` : _t("nessuna dipende dalle ipotesi provate");
+  const more = I.C.map(c => `<div class="sens-more"><b>${esc(c.title)}</b>: ${c.range}${c.driver ? _T` · pesa di più: ${esc(c.driver)}` : ""}</div>`).join("")
+    + _T`<div class="muted" style="font-size:11.5px">${I.SC.length} scenari (modello, marcatura e scala, composizione del campione). Dettagli e grafico in «📊 Grafici del gruppo».</div>`;
+  return rcard("sens", _t("Robustezza delle conclusioni"), main, sub, rows, more, "wide");
+}
+/** Pannello della pagina del gruppo: conclusioni, tabella degli scenari, grafico a tornado della grandezza scelta. */
+function drawSens() {
+  const box = $("sensBody"); if (!box || !anaOpen() || anaPage() !== "group") return;
+  CH.hits.sens = [];
+  const g = activeGroup(), I = sensInfo(g);
+  if (!I || I.msg) { box.innerHTML = `<div class="muted">${I ? I.msg : _t("Nessun gruppo attivo.")}</div>`; $("sensChartWrap").style.display = "none"; return; }
+  const cards = I.C.map(c => `<div class="sens-c sens-${c.st}"><div class="sens-ch"><b>${esc(c.title)}</b> ${sensBadge(c.st)}</div><div>${c.base}</div>
+    <div class="muted">${c.range}${c.driver ? _T` · pesa di più: <b>${esc(c.driver)}</b>` : ""}${c.family ? _T` (${esc(c.family)})` : ""}</div></div>`).join("");
+  const fam = SENS_FAM(), cols = I.C.filter(c => c.vals);
+  const trs = I.SC.map(s => `<tr${s.id === "base" ? ' class="active"' : ""}><td>${esc(s.label)}</td><td class="muted">${esc(fam[s.fam])}</td>${cols.map(c => { const v = c.vals.find(x => x.id === s.id); return `<td class="x${v && v.diff ? " sens-d" : ""}">${v ? v.txt : "–"}</td>`; }).join("")}</tr>`).join("");
+  const cmpT = I.C.filter(c => c.rows).map(c => `<details class="sens-cmp"><summary>${esc(c.title)}: ${c.base} ${sensBadge(c.st)}</summary><table class="cmp"><tbody>${c.rows.map(r => `<tr><td>${esc(r.label)}</td><td class="muted">${esc(fam[r.fam])}</td><td class="${r.diff ? "sens-d" : ""}">${r.txt}</td></tr>`).join("")}</tbody></table></details>`).join("");
+  box.innerHTML = `<div class="sens-grid">${cards}</div>
+    <div class="tscroll"><table class="cmp sens-t"><thead><tr><th>${_t("Scenario")}</th><th>${_t("Famiglia")}</th>${cols.map(c => `<th class="x">${esc(c.title)}</th>`).join("")}</tr></thead><tbody>${trs}</tbody></table></div>${cmpT}
+    <div class="muted" style="font-size:11.5px;margin-top:4px">${_T`Le osservazioni non cambiano: ogni riga cambia una sola ipotesi rispetto al caso base. In arancio i valori che si allontanano dal base oltre la soglia di «robusta» (1 click, 10% del CEP, 5 punti percentuali, un verdetto diverso). Robusta = nessuno scenario la cambia; abbastanza robusta = cambia poco (≤ 2 click, ≤ 25%, ≤ 15 punti, ≤ 25% degli scenari); altrimenti dipende dalle ipotesi.`}</div>`;
+  $("sensChartWrap").style.display = "";
+  const sel = $("sensMetric"), opts = [["cep", _t("CEP")], ...(I.C.some(c => c.key === "hit") ? [["p", _t("Probabilità di colpire")]] : []), ...(I.C.some(c => c.key === "corr") ? [["v", _t("Click di alzo")], ["h", _t("Click di brandeggio")]] : [])];
+  const cur = opts.some(o => o[0] === sel.value) ? sel.value : "cep";
+  sel.innerHTML = opts.map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join(""); sel.value = cur;
+  drawSensTornado($("chSens"), Math.max(260, Math.floor($("chSens").parentElement.clientWidth)), I, cur);
+}
+/** Tornado: scostamento di ogni scenario dal caso base per la grandezza scelta, ordinati per ampiezza. */
+function drawSensTornado(cv, W, I, m) {
+  const val = s => m === "cep" ? s.R.cep : m === "p" ? (s.R.p == null ? null : s.R.p * 100) : m === "v" ? s.R.v : s.R.h;
+  const b = val(I.SC[0]), L = I.SC.slice(1).map(s => ({ s, d: val(s) == null || b == null ? null : val(s) - b })).filter(x => x.d != null).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 14);
+  const rowH = 20, padT = 10, padB = 34, H = padT + padB + Math.max(1, L.length) * rowH, g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), acc = cssVar("--accent");
+  const hits = CH.hits.sens = [], labW = Math.min(240, W * 0.42), x0 = labW + 8, pw = W - x0 - 14;
+  const unit = m === "cep" ? uL("mm") : m === "p" ? _t("punti %") : _t("click");
+  const mx0 = Math.max(...L.map(x => Math.abs(x.d)), m === "cep" ? (b || 1) * 0.1 : 1), mx = isFinite(mx0) && mx0 > 0 ? mx0 : 1, st = niceStep(mx / 2), lim = Math.ceil(mx / st) * st, X = v => x0 + pw / 2 + v / lim * pw / 2;
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  for (let v = -lim; v <= lim + 1e-9; v += st) { g.strokeStyle = Math.abs(v) < 1e-9 ? muted : grid; g.beginPath(); g.moveTo(X(v), padT); g.lineTo(X(v), H - padB); g.stroke();
+    g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "top"; g.fillText((v > 0 ? "+" : "") + nfmt(v, 2), X(v), H - padB + 4); }
+  g.fillText(_T`scostamento dal caso base (${unit})`, x0 + pw / 2, H - 14);
+  const th = m === "cep" ? (b || 0) * SENS_TH.cep[0] : m === "p" ? SENS_TH.pp[0] * 100 : SENS_TH.click[0];
+  g.fillStyle = "rgba(22,163,74,.10)"; g.fillRect(X(-th), padT, X(th) - X(-th), H - padB - padT);
+  L.forEach((x, i) => {
+    const y = padT + i * rowH, bad = Math.abs(x.d) > th + 1e-9;
+    g.fillStyle = bad ? "#ea580c" : acc; g.globalAlpha = 0.85; const xa = X(Math.min(0, x.d)), xb = X(Math.max(0, x.d)); g.fillRect(xa, y + 4, Math.max(1.5, xb - xa), rowH - 8); g.globalAlpha = 1;
+    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(x.s.label, labW, y + rowH / 2, labW - 4);
+    hits.push({ x0: 0, x1: W, y0: y, y1: y + rowH, tip: `${x.s.label}: ${x.d > 0 ? "+" : ""}${nfmt(x.d, 2)} ${unit}` });
+  });
+  $("sensNote").textContent = L.length ? _t("Fascia verde: entro la soglia di «robusta». Barre arancio: scenari che la superano.") : _t("Nessuno scenario cambia questa grandezza.");
+}
+/* ------------------------------ 1.24.0: VARIABILITÀ DENTRO E TRA I GRUPPI (modello gerarchico) ------------------------------
+   Separa la dispersione dei colpi dentro ogni rosata (σ_w) dallo spostamento dei centri tra rosate della sessione (σ_b),
+   in angolo rispetto alla mira di ciascun gruppo e al netto dei click impostati foro per foro (Calc.hierFit: REML 2D,
+   intervalli di σ_b e della quota tra gruppi dal profilo della verosimiglianza, di σ_w e σ_tot da bootstrap parametrico).
+   Completa il GQI (che misura la sola compattezza interna): σ_tot = √(σ_w² + σ_b²) è la dispersione attesa di un colpo
+   qualsiasi della sessione attorno al punto medio di impatto. I gruppi esclusi dall'utente restano solo nella vista. */
+const HIER = { off: new Set(), memo: new Map() };
+/** Colpo in mrad rispetto alla mira del gruppo (+ = destra / alto), al netto dei click impostati su quel foro. */
+function hierShot(s, g, gcc) {
+  const k = 1 / gcc.pxPerMm, D = gcc.distMm, cv = gcc.clickValue > 0 ? gcc.clickValue : 0;
+  const x = Math.atan((s.x - g.poa.x) * k / D) - (cv ? Calc.toRad((+s.dh || 0) * cv, gcc.clickUnit) : 0);
+  const y = Math.atan((g.poa.y - s.y) * k / D) - (cv ? Calc.toRad((+s.dv || 0) * cv, gcc.clickUnit) : 0);
+  return { x: x * 1000, y: y * 1000 };
+}
+function hierData() {
+  const cc = calcContext(), level = cc.ciLevel || 0.95;
+  const all = state.groups.map(g => {
+    const gcc = ccG(cc, g), n = inc(g).length;
+    const why = n < 2 ? _t("meno di 2 colpi") : !g.poa ? _t("senza punto di mira") : !gcc.pxPerMm ? _t("scala non calibrata") : !(gcc.distMm > 0) ? _t("distanza mancante") : null;
+    return { g, gcc, n, why, on: !why && !HIER.off.has(g.id) };
+  });
+  const used = all.filter(d => d.on), groups = used.map(d => ({ pts: inc(d.g).map(s => hierShot(s, d.g, d.gcc)) }));
+  const key = JSON.stringify([groups, level]);
+  let R = HIER.memo.get(key);
+  if (!R) {
+    const fit = used.length >= 2 ? Calc.hierFit(groups, level) : null;
+    R = { fit, boot: fit ? Calc.hierBoot(fit, 400, level) : null };
+    if (HIER.memo.size > 20) HIER.memo.delete(HIER.memo.keys().next().value);
+    HIER.memo.set(key, R);
+  }
+  const warn = [];
+  const ammo = new Set(used.map(d => loadKey(d.g.load || {}, true))), arms = new Set(used.map(d => String((d.g.load || {}).weapon || "").trim().toLowerCase()));
+  if (ammo.size > 1) warn.push(_t("I gruppi scelti hanno munizioni (palla, polvere o carica) diverse: le differenze tra le configurazioni finiscono nella variabilità tra gruppi."));
+  if (arms.size > 1) warn.push(_t("I gruppi scelti hanno armi diverse."));
+  if (new Set(used.map(d => Math.round(d.gcc.distMm))).size > 1) warn.push(_t("Distanze diverse: il confronto è in angolo; vento e balistica che cambiano con la distanza contano come variabilità tra gruppi."));
+  return { all, used, groups, ...R, warn, level };
+}
+/** Giudizio sulla parte tra gruppi. */
+function hierVerdict(F, level) {
+  if (F.p >= 1 - level) return { cls: "ok", text: _t("Nessuno spostamento dei centri oltre a quello atteso per caso: i gruppi si comportano come un'unica rosata (σ tra i gruppi compatibile con zero).") };
+  if (F.ci.icc.lo >= 0.5) return { cls: "bad", text: _t("Gruppi singolarmente compatti ma i centri si spostano più della dispersione interna: la variabilità tra i gruppi domina. Cause tipiche: appoggio o posizione diversi tra le serie, ottica o torrette che non tornano, canna che si scalda, vento cambiato, lotti di munizioni diversi.") };
+  if (F.icc >= 0.5) return { cls: "bad", text: _t("Lo spostamento dei centri è probabilmente la parte maggiore della dispersione (quota tra gruppi ≥ 50%), ma l'intervallo è ancora largo: servono più gruppi per esserne sicuri.") };
+  return { cls: "warn", text: _t("I centri si spostano più di quanto spieghi il caso, ma meno della dispersione dentro i gruppi.") };
+}
+const hierU = () => ($("hierUnit") && $("hierUnit").value === "MOA" ? "MOA" : "MIL");
+const hierA = (mrad, U, d = 3) => mrad == null || !isFinite(mrad) ? "–" : `${fmt(Calc.fromRad(mrad / 1000, U), d)} ${uL(U)}`;
+const hierCI = (o, U) => o ? `${hierA(o.lo, U)} – ${o.hi === Infinity ? "∞" : hierA(o.hi, U)}` : "–";
+const pctI = o => `${fmt(o.lo * 100, 0)}–${fmt(o.hi * 100, 0)}%`;
+/** Righe dei risultati (HTML) del modello gerarchico; usate dal pannello, dalla card e (in testo) dal report. */
+function hierRows(H, U) {
+  const F = H.fit, B = H.boot, K = Math.sqrt(2 * Math.LN2), lv = fmt(H.level * 100, 0), S = qiSet();
+  const rows = [
+    [_t("Dispersione dentro i gruppi σ_w (per asse)"), hierA(F.sw, U), B ? _T`IC ${lv}% ${hierCI(B.sw, U)} (bootstrap)` : ""],
+    [_t("Spostamento dei centri tra i gruppi σ_b"), hierA(F.sb, U), _T`IC ${lv}% ${hierCI(F.ci.sb, U)} (profilo)`],
+    [_t("Quota della varianza tra i gruppi (ICC)"), `${fmt(F.icc * 100, 0)}%`, _T`IC ${lv}% ${pctI(F.ci.icc)}`],
+    [_t("Dispersione complessiva σ_tot = √(σ_w² + σ_b²)"), hierA(F.stot, U), B ? _T`IC ${lv}% ${hierCI(B.stot, U)}` : ""],
+    [_t("CEP di una rosata (solo σ_w)"), hierA(F.sw * K, U), ""],
+    [_t("CEP su più rosate (σ_tot)"), hierA(F.stot * K, U), F.sw > 0 ? _T`+${fmt((F.stot / F.sw - 1) * 100, 0)}% rispetto alla singola rosata` : ""],
+    [_t("Test «i centri non si spostano» (σ_b = 0)"), _T`p ${pTxt(F.p)}`, _T`rapporto di verosimiglianza ${fmt(F.lrt, 2)}`],
+  ];
+  if (S.gqiOn && isFinite(S.mrRef)) {
+    const q = s => Calc.qiScore(s / 1000 * Math.sqrt(Math.PI / 2), S.mrRef);
+    rows.push([_t("GQI con la sola σ_w → con σ_tot"), `${qiNum(q(F.sw), S)} → ${qiNum(q(F.stot), S)}`, _T`${qiClassL(q(F.sw))} → ${qiClassL(q(F.stot))}`]);
+  }
+  return rows;
+}
+function hierCardHTML() {
+  const H = hierData(); if (!H.fit) return "";
+  const U = hierU(), F = H.fit, V = hierVerdict(F, H.level);
+  const rows = hierRows(H, U).slice(0, 4).map(([a, b, c]) => `<tr><td>${esc(a)}</td><td class="v">${b}${c ? `<br><span class="civ">${c}</span>` : ""}</td></tr>`).join("");
+  return rcard("hier", _t("Variabilità dentro e tra i gruppi"), _T`tra i gruppi ${fmt(F.icc * 100, 0)}%`, `<span class="hier-v hier-${V.cls}">${esc(V.text)}</span>`, rows,
+    _T`<div class="muted" style="font-size:11.5px">${F.k} gruppi, ${F.N} colpi, in angolo dalla mira di ogni gruppo al netto dei click impostati. Grafico, scelta dei gruppi e dettagli nella pagina «📈 Confronto tra gruppi».</div>`, "wide qi");
+}
+function drawHier() {
+  const box = $("hierBody"); if (!box || !anaOpen() || anaPage() !== "cmp") return;
+  CH.hits.hier = [];
+  const H = hierData(), U = hierU();
+  const chips = H.all.map(d => `<label class="hier-g${d.why ? " off" : ""}" title="${esc(d.why || "")}"><input type="checkbox" data-hg="${d.g.id}" ${d.on ? "checked" : ""} ${d.why ? "disabled" : ""}><span class="dot" style="background:${d.g.color}"></span>${esc(d.g.name)} <span class="muted">(${d.n})</span></label>`).join("");
+  let html = `<div class="hier-gs">${chips}</div>`;
+  if (!H.fit) {
+    box.innerHTML = html + `<div class="muted">${_t("Servono almeno 2 gruppi con punto di mira, scala e almeno 2 colpi ciascuno (e più colpi che gruppi).")}</div>`;
+    $("hierChartWrap").style.display = "none"; hierBind(); return;
+  }
+  const F = H.fit, V = hierVerdict(F, H.level);
+  html += H.warn.map(w => `<div class="qwarn">⚠ ${esc(w)}</div>`).join("");
+  html += `<div class="hier-v hier-${V.cls}">${esc(V.text)}</div>`;
+  html += `<div class="tscroll"><table class="cmp"><tbody>${hierRows(H, U).map(([a, b, c]) => `<tr><td>${esc(a)}</td><td class="x"><b>${b}</b></td><td class="muted">${c}</td></tr>`).join("")}</tbody></table></div>`;
+  const gr = H.used.map((d, i) => ({ d, m: F.means[i], n: F.ns[i] }));
+  html += `<div class="tscroll"><table class="cmp"><thead><tr><th>${_t("Gruppo")}</th><th class="x">${_t("Colpi")}</th><th class="x">${_T`Centro − media (${uL(U)})`}</th><th class="x" title="${esc(_t("Scostamento del centro dalla media pesata dei centri diviso per l'incertezza attesa del centro (√(σ_b² + σ_w²/n)): oltre 2 il gruppo è anomalo rispetto agli altri"))}">z</th></tr></thead><tbody>${gr.map(x => {
+    const dx = x.m.x - F.mu.x, dy = x.m.y - F.mu.y, z = Math.hypot(dx, dy) / Math.sqrt(F.sb * F.sb + F.sw * F.sw / x.n);
+    return `<tr><td><span class="dot" style="background:${x.d.g.color}"></span>${esc(x.d.g.name)}</td><td class="x">${x.n}</td><td class="x">${sgn(Calc.fromRad(dx / 1000, U), 2)} ; ${sgn(Calc.fromRad(dy / 1000, U), 2)}</td><td class="x${z > 2 ? " sens-d" : ""}">${fmt(z, 1)}</td></tr>`; }).join("")}</tbody></table></div>`;
+  html += _T`<div class="muted" style="font-size:11.5px;margin-top:4px">Modello a effetti casuali: colpo = punto medio + spostamento del gruppo (σ_b) + dispersione dentro il gruppo (σ_w), uguale in tutte le direzioni. Stima REML; intervalli di σ_b e della quota tra gruppi dal profilo della verosimiglianza (validi anche quando σ_b stimato è zero), di σ_w e σ_tot da ${H.boot ? H.boot.B : 0} repliche bootstrap a seme fisso. Con meno di 4–5 gruppi σ_b resta molto incerto.</div>`;
+  box.innerHTML = html; hierBind();
+  $("hierChartWrap").style.display = "";
+  const w = Math.min(460, Math.max(240, Math.floor($("chHier").parentElement.clientWidth)));
+  drawHierChart($("chHier"), w, w, H, U);
+}
+function hierBind() {
+  $("hierBody").querySelectorAll("input[data-hg]").forEach(cb => cb.addEventListener("change", () => { const id = +cb.dataset.hg; if (cb.checked) HIER.off.delete(id); else HIER.off.add(id); drawHier(); refreshResults(); }));
+}
+/** Centri dei gruppi rispetto al punto medio, con il CEP interno di ciascuno, il CEP dei centri e quello complessivo. */
+function drawHierChart(cv, W, H0, H, U) {
+  const g = setupCanvas(cv, W, H0), muted = cssVar("--muted"), grid = cssVar("--line"), acc = cssVar("--accent"), hits = CH.hits.hier = [];
+  const F = H.fit, K = Math.sqrt(2 * Math.LN2), cv1 = m => Calc.fromRad(m / 1000, U);
+  const C = F.means.map(m => ({ x: cv1(m.x - F.mu.x), y: cv1(m.y - F.mu.y) })), rW = cv1(F.sw * K), rB = cv1(F.sb * K), rT = cv1(F.stot * K);
+  const ext0 = Math.max(rT, ...C.map(c => Math.max(Math.abs(c.x), Math.abs(c.y)) + rW)) * 1.12, ext = isFinite(ext0) && ext0 > 0 ? ext0 : 1, step = niceStep(ext / 3), R = Math.ceil(ext / step) * step;
+  const pad = 26, sz = Math.min(W, H0) - 2 * pad, cx = W / 2, cy = H0 / 2, k = sz / 2 / R, X = v => cx + v * k, Y = v => cy - v * k;
+  g.font = "10px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  for (let v = -R; v <= R + 1e-9; v += step) { g.strokeStyle = Math.abs(v) < 1e-9 ? muted : grid; g.beginPath(); g.moveTo(X(v), Y(-R)); g.lineTo(X(v), Y(R)); g.moveTo(X(-R), Y(v)); g.lineTo(X(R), Y(v)); g.stroke(); }
+  g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "top"; g.fillText(`${nfmt(step, 3)} ${uL(U)} / ${_t("quadretto")}`, W - 4, H0 - 14);
+  g.strokeStyle = acc; g.lineWidth = 2.2; g.beginPath(); g.arc(cx, cy, rT * k, 0, 2 * Math.PI); g.stroke();
+  if (rB > 0) { g.setLineDash([5, 4]); g.lineWidth = 1.5; g.beginPath(); g.arc(cx, cy, rB * k, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]); }
+  H.used.forEach((d, i) => {
+    const c = C[i]; g.strokeStyle = d.g.color; g.fillStyle = hexA(d.g.color, 0.12); g.lineWidth = 1.4;
+    g.beginPath(); g.arc(X(c.x), Y(c.y), rW * k, 0, 2 * Math.PI); g.fill(); g.stroke();
+    g.fillStyle = d.g.color; g.beginPath(); g.arc(X(c.x), Y(c.y), 4, 0, 2 * Math.PI); g.fill();
+    hits.push({ x: X(c.x), y: Y(c.y), r: 9, tip: _T`${d.g.name}: centro ${sgn(c.x, 2)} ; ${sgn(c.y, 2)} ${uL(U)} dalla media, ${F.ns[i]} colpi` });
+  });
+  g.strokeStyle = muted; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx - 6, cy); g.lineTo(cx + 6, cy); g.moveTo(cx, cy - 6); g.lineTo(cx, cy + 6); g.stroke();
+  $("hierNote").textContent = _T`Cerchi colorati: CEP dentro ogni gruppo attorno al suo centro (${nfmt(rW, 3)} ${uL(U)}). Tratteggio: CEP dei centri (σ_b, ${nfmt(rB, 3)}). Cerchio pieno: CEP di un colpo qualsiasi della sessione (σ_tot, ${nfmt(rT, 3)}). Croce: punto medio di impatto.`;
+}
 function drawAnaPage() {
-  if (anaPage() === "group") { drawCharts(); drawDiag(); drawHold(); }
+  if (anaPage() === "group") { drawCharts(); drawSens(); drawDiag(); drawHold(); }
   else drawCompare();
 }
 function setAnaPage(pg) {
@@ -16075,6 +16828,9 @@ function rtZoom(f, mx, my) {
   cv.addEventListener("dblclick", () => rtZoom(0)); }
 $("bRtIn").onclick = () => rtZoom(1.5); $("bRtOut").onclick = () => rtZoom(1 / 1.5); $("bRtReset").onclick = () => rtZoom(0);
 chartHover("vis", $("chVis")); chartHover("reticle", $("chReticle"));
+chartHover("sens", $("chSens")); chartHover("hier", $("chHier"));   // 1.24.0
+$("sensMetric").addEventListener("change", () => { drawSens(); scheduleAutosave(); });
+$("hierUnit").addEventListener("change", () => { drawHier(); refreshResults(); scheduleAutosave(); });
 { let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w && w !== w0) { w0 = w; drawVisual(); } }).observe($("visBox")); }
 { let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w && w !== w0) { w0 = w; drawHold(); drawDiag(); } }).observe($("holdBox")); }
 // 1.15.0: zoom, righello, note, dettaglio, blocco, scala sulla foto, alone, differenze
@@ -16124,7 +16880,8 @@ window.__SA = { loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, 
   isLocked, setLock, toggleLock, lockable, toggleGroupVisible, noteMarkers, addNoteAt, rulerInfo, setZoomPct, zoomStep, detail, openDetail, setDetailZoom, drawScaleMark, photoSizeMm, configDiff, analysisCfg, drawCompare, refreshLists, deleteRef, hitTest, clearAll, deleteLast, fixColor, GROUP_COLORS, allPoints ,
   qiSet, qiOf, qiSnapshot, qiSessionData, qiCenters, qiRow, qiOriginal,
   velStats, useVelAsV0, calAttn, provGet, provSet, provInfo, photoSha, pngWithMeta, exportPng, storageScan, storageCheck, storageDelete, storageDeleteOlder, storageRepair, storageOptimize, STO,
-  startTour, endTour, tourStep, tourOpen, tourSteps, TOUR, initTour };
+  startTour, endTour, tourStep, tourOpen, tourSteps, TOUR, initTour,
+  sensInfo, sensEval, sensMemo, drawSens, sensCardHTML, hierData, hierVerdict, hierRows, drawHier, HIER, hierShot };
 </script>
 </body>
 </html>

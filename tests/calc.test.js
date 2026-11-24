@@ -787,4 +787,41 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   }
 }
 
+// --- 1.24.0: modelli alternativi e modello gerarchico
+{
+  const g = Calc.rng(11);
+  near(Calc.ellipseRadius({ sxx: 4, syy: 4, sxy: 0 }, 0.5), 2 * Math.sqrt(2 * Math.LN2), 1e-9, "ellisse circolare = CEP");
+  near(Calc.ellipseRadius({ sxx: 1, syy: 1, sxy: 0 }, 0.95), Math.sqrt(-2 * Math.log(0.05)), 1e-9, "ellisse circolare = R95");
+  for (const C of [{ sxx: 9, syy: 1, sxy: 0 }, { sxx: 2, syy: 1, sxy: 0.8 }]) {
+    const r = Calc.ellipseRadius(C, 0.5), a = Math.sqrt(C.sxx), b = C.sxy / a, c = Math.sqrt(C.syy - b * b); let h = 0; const N = 200000;
+    for (let i = 0; i < N; i++) { const z1 = g.gauss(), z2 = g.gauss(), x = a * z1, y = b * z1 + c * z2; if (x * x + y * y <= r * r) h++; }
+    near(h / N, 0.5, 0.004, "CEP ellittico: metà dei colpi simulati");
+  }
+  near(Calc.ellipseRadius(Calc.covFull([{ x: 0, y: 0 }, { x: 3, y: 4 }]), 0.5), 0.6744897501960817 * Math.sqrt(12.5), 1e-4, "ellisse degenere (2 colpi): normale su una retta");
+  near(Calc.ellipseRadius({ sxx: 100, syy: 1e-3, sxy: 0 }, 0.5), 6.7449, 2e-3, "ellisse molto allungata");
+  near(Calc.hitProbCov({ dx: 1, dy: 0, C: { sxx: 1, syy: 1, sxy: 0 }, shape: "circle", R: 2 }), Calc.hitCircle(1, 2, 1), 0.003, "probabilità con covarianza = cerchio esatto");
+  near(Calc.hitProbCov({ dx: 0.5, dy: -0.3, C: { sxx: 1, syy: 1, sxy: 0 }, shape: "rect", W: 3, H: 2 }), Calc.hitRect(0.5, -0.3, 3, 2, 1), 0.003, "probabilità con covarianza = rettangolo esatto");
+  eq(Calc.hitProbCov({ dx: 0, dy: 0, C: { sxx: 2, syy: 1, sxy: 0.3 }, shape: "circle", R: 1 }), Calc.hitProbCov({ dx: 0, dy: 0, C: { sxx: 2, syy: 1, sxy: 0.3 }, shape: "circle", R: 1 }), "quasi-Monte Carlo deterministico");
+  const m = Calc.spatialMedian([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 50, y: 50 }]);
+  ok(m.x < 1.1 && m.y < 1.1, "mediana spaziale robusta a un punto lontano");
+  near(Calc.radialQuantile([{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }, { x: 4, y: 0 }], { x: 0, y: 0 }, 0.5), 2.5, 1e-12, "quantile delle distanze");
+  // REML bilanciato con stima interna = ANOVA dei momenti
+  const sim = (k, n, sw, sb, seed) => { const r = Calc.rng(seed); return Array.from({ length: k }, () => { const bx = sb * r.gauss(), by = sb * r.gauss(); return { pts: Array.from({ length: n }, () => ({ x: bx + sw * r.gauss(), y: by + sw * r.gauss() })) }; }); };
+  const G = sim(6, 5, 1, 1.5, 21), F = Calc.hierFit(G), k = 6, n = 5, N = 30;
+  const ms = G.map(q => Calc.centroid(q.pts)), M = Calc.centroid(ms);
+  const SSW = G.reduce((a, q, i) => a + q.pts.reduce((b, p) => b + (p.x - ms[i].x) ** 2 + (p.y - ms[i].y) ** 2, 0), 0), MSW = SSW / (2 * (N - k));
+  const MSB = n * ms.reduce((a, c) => a + (c.x - M.x) ** 2 + (c.y - M.y) ** 2, 0) / (2 * (k - 1));
+  near(F.sw * F.sw, MSW, 1e-6 * MSW, "REML bilanciato: σ_w² = ANOVA"); near(F.sb * F.sb, (MSB - MSW) / n, 1e-5 * MSW, "REML bilanciato: σ_b² = ANOVA");
+  ok(F.p < 0.01 && F.ci.sb.lo > 0, "spostamento dei centri rilevato");
+  const F0 = Calc.hierFit([{ pts: [{ x: 0, y: 0 }, { x: 1, y: 1 }, { x: -1, y: 1 }] }, { pts: [{ x: 0.1, y: 0.6 }, { x: 1.1, y: -0.4 }, { x: -0.9, y: 1.6 }] }]);
+  ok(F0.sb === 0 && F0.p === 1 && F0.ci.t.lo === 0 && F0.ci.t.hi > 0, "centri vicini: σ_b = 0, p = 1, intervallo da 0");
+  eq(Calc.hierFit([{ pts: [{ x: 0, y: 0 }] }, { pts: [{ x: 1, y: 0 }] }]), null, "nessun colpo oltre i centri → null");
+  let cov = 0; const R = 300;
+  for (let i = 0; i < R; i++) { const f = Calc.hierFit(sim(5, 5, 1, 0.7, 500 + i)); if (f.ci.t.lo <= 0.49 && 0.49 <= f.ci.t.hi) cov++; }
+  ok(cov / R > 0.91 && cov / R < 0.99, "copertura dell'intervallo di profilo ≈ 95%: " + cov / R);
+  const B = Calc.hierBoot(F, 200);
+  ok(B.B === 200 && B.sw.lo < F.sw && F.sw < B.sw.hi && B.stot.lo < F.stot && F.stot < B.stot.hi, "bootstrap: intervalli attorno alla stima");
+  eq(Calc.hierBoot(F, 50).sw, Calc.hierBoot(F, 50).sw, "bootstrap a seme fisso");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

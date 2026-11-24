@@ -3298,6 +3298,93 @@ test("1.23.0: tour guidato — invito al primo avvio, 5 passi, frecce, Esc, ling
   ok2(/Step 1 of 5|Шаг/.test(await page.evaluate(() => { window.__SA.setLang("en"); window.__SA.startTour(); return document.getElementById("tourStep").textContent; })), "passo tradotto");
 });
 
+/* ------------------------------ 1.24.0 ------------------------------ */
+/** Tre gruppi con mira propria, scala 4 px/mm, a 100 m: colpi generati con seme fisso attorno a centri spostati. */
+async function threeGroups(page, offs = [{ x: 30, y: -10 }, { x: -25, y: 20 }, { x: 5, y: 35 }], spread = 8) {
+  if (!(await page.evaluate(() => !!window.__SA.state.image))) await loadTarget(page);   // una sola foto: ricaricarla azzererebbe i gruppi in modo asincrono
+  await page.evaluate(([offs, spread]) => {
+    const SA = window.__SA, st = SA.state, r = SA.Calc.rng(3), poas = [{ x: 200, y: 150 }, { x: 550, y: 150 }, { x: 250, y: 420 }];
+    st.calib = { p1: { x: 100, y: 500 }, p2: { x: 300, y: 500 } }; document.getElementById("calDist").value = 50; document.getElementById("calUnit").value = "mm";
+    st.groups = offs.map((o, gi) => ({ id: gi + 1, name: "G" + (gi + 1), color: ["#2563eb", "#16a34a", "#dc2626"][gi], dist: 0, poa: poas[gi], load: null,
+      shots: Array.from({ length: gi ? 5 : 6 }, (_, i) => ({ id: (gi + 1) * 100 + i, x: poas[gi].x + o.x + spread * r.gauss(), y: poas[gi].y + o.y + spread * r.gauss() })) }));
+    st.activeGroupId = 1; SA.commit();
+  }, [offs, spread]);
+}
+test("1.24.0: analisi di sensibilità — scenari, conclusioni, giudizi, tornado, card, report, lingue", async page => {
+  await loadTarget(page);
+  await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  let I = await page.evaluate(() => { const I = window.__SA.sensInfo(window.__SA.state.groups[0]); return JSON.parse(JSON.stringify({ ids: I.SC.map(s => s.id), C: I.C.map(c => ({ key: c.key, st: c.st, driver: c.driver })), base: I.SC[0].R })); });
+  ok2(I.ids.slice(0, 4).join() === "base,ml,ell,emp" && I.ids.filter(x => /^j/.test(x)).length === 5, "scenari: " + I.ids.join());
+  assert.deepStrictEqual(I.C.map(c => c.key).slice(0, 3), ["corr", "disp", "hit"]);
+  const r = await analyzeActive(page);
+  near(I.base.cep, r.mm.cep, 1e-6, "caso base = CEP dei Risultati");
+  ok2(I.C.find(c => c.key === "corr").st === "ok", "correzione robusta con 5 colpi vicini e il gruppo lontano dalla mira");
+  // un flyer: la dispersione dipende dal campione (togliendolo il CEP cambia molto)
+  await key(page, "4"); await clickAt(page, { x: 500, y: 330 });
+  I = await page.evaluate(() => { const I = window.__SA.sensInfo(window.__SA.state.groups[0]); return JSON.parse(JSON.stringify(I.C.map(c => ({ key: c.key, st: c.st, driver: c.driver, family: c.family })))); });
+  const disp = I.find(c => c.key === "disp");
+  ok2(disp.st === "bad" && /Senza il foro 6|Empirico/.test(disp.driver), "dispersione dipendente dalle ipotesi: " + JSON.stringify(disp));
+  // pagina del gruppo: schede, tabella, tornado
+  await key(page, "a");
+  await page.waitForFunction(() => document.querySelectorAll("#sensBody .sens-c").length >= 3);
+  const nRows = await page.evaluate(() => document.querySelectorAll("#sensBody table.sens-t tbody tr").length);
+  assert.strictEqual(nRows, await page.evaluate(() => window.__SA.sensInfo(window.__SA.state.groups[0]).SC.length));
+  ok2(await page.evaluate(() => document.querySelectorAll("#sensBody td.sens-d").length) > 0, "valori fuori soglia evidenziati");
+  ok2(await page.isVisible("#chSens"), "tornado visibile");
+  const opts = await page.evaluate(() => [...document.getElementById("sensMetric").options].map(o => o.value));
+  assert.deepStrictEqual(opts, ["cep", "p", "v", "h"]);
+  await page.selectOption("#sensMetric", "v");
+  ok2(await page.evaluate(() => window.__SA.CH.hits.sens.length) > 0, "barre del tornado");
+  await key(page, "Escape");
+  // card dei Risultati (Esperto) e non in Base
+  ok2(await page.$('#results .rcard[data-key="sens"]'), "card «Robustezza delle conclusioni»");
+  await page.evaluate(() => window.__SA.setUiMode("basic"));
+  ok2(!(await page.$('#results .rcard[data-key="sens"]')), "nessuna card in Modalità Base");
+  await page.evaluate(() => window.__SA.setUiMode("expert"));
+  // confronto con un secondo gruppo
+  await page.click("#bAddGroup"); await clickAt(page, { x: 300, y: 400 });
+  for (const q of [{ x: 330, y: 380 }, { x: 345, y: 395 }, { x: 320, y: 402 }, { x: 338, y: 371 }]) await clickAt(page, q);
+  const cmp = await page.evaluate(() => { const I = window.__SA.sensInfo(window.__SA.state.groups[0]); const c = I.C.find(x => /^cmp/.test(x.key)); return c && { st: c.st, n: c.rows.length, base: c.base }; });
+  ok2(cmp && cmp.n >= 10 && /p /.test(cmp.base), "confronto con il secondo gruppo: " + JSON.stringify(cmp));
+  // report: nessun errore
+  ok2(await page.evaluate(async () => (await window.__SA.exportReportPdf("all")).size > 10000), "report PDF");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => { window.__SA.setLang(l); window.__SA.openAnalysis("group"); window.__SA.drawSens(); }, l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
+test("1.24.0: variabilità dentro e tra i gruppi — REML, intervalli, giudizio, scelta dei gruppi, grafico, card, lingue", async page => {
+  await threeGroups(page);
+  let H = await page.evaluate(() => { const H = window.__SA.hierData(); return JSON.parse(JSON.stringify({ k: H.fit.k, N: H.fit.N, icc: H.fit.icc, p: H.fit.p, ci: H.fit.ci, sw: H.fit.sw, sb: H.fit.sb, boot: H.boot.B })); });
+  ok2(H.k === 3 && H.N === 16 && H.boot === 400, JSON.stringify(H));
+  ok2(H.sb > H.sw && H.p < 0.01 && H.ci.icc.lo > 0.5, "centri molto spostati rispetto alla dispersione interna");
+  await key(page, "c");
+  await page.waitForFunction(() => /variabilità tra i gruppi domina/.test(document.getElementById("hierBody").textContent));
+  ok2(await page.isVisible("#chHier") && await page.evaluate(() => window.__SA.CH.hits.hier.length) === 3, "grafico con i 3 centri");
+  ok2(/GQI con la sola σ_w/.test(await page.textContent("#hierBody")), "GQI dentro → complessivo");
+  // unità MOA
+  await page.selectOption("#hierUnit", "MOA");
+  ok2(/MOA/.test(await page.textContent("#hierBody")), "unità MOA");
+  // escludo un gruppo: restano 2
+  await page.click('#hierBody input[data-hg="3"]');
+  H = await page.evaluate(() => window.__SA.hierData().fit.k);
+  assert.strictEqual(H, 2);
+  await page.click('#hierBody input[data-hg="3"]');
+  await key(page, "Escape");
+  ok2(await page.$('#results .rcard[data-key="hier"]'), "card nei Risultati");
+  // stessi centri: nessuno spostamento dimostrabile
+  await threeGroups(page, [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }], 10);
+  const H0 = await page.evaluate(() => { const H = window.__SA.hierData(); return { p: H.fit.p, txt: window.__SA.hierVerdict(H.fit, H.level).cls, lo: H.fit.ci.icc.lo }; });
+  ok2(H0.p > 0.05 && H0.txt === "ok" && H0.lo === 0, "centri compatibili: " + JSON.stringify(H0));
+  // un gruppo senza mira è elencato ma escluso
+  await page.evaluate(() => { window.__SA.state.groups[2].poa = null; window.__SA.commit(); });
+  assert.strictEqual(await page.evaluate(() => window.__SA.hierData().fit.k), 2);
+  // munizioni diverse: avviso
+  await page.evaluate(() => { const g = window.__SA.state.groups; g[0].load = { bullet: "A", powder: "X", charge: "40" }; g[1].load = { bullet: "B", powder: "X", charge: "40" }; window.__SA.commit(); });
+  ok2(await page.evaluate(() => window.__SA.hierData().warn.length) >= 1, "avviso per munizioni diverse");
+  ok2(await page.evaluate(async () => (await window.__SA.exportReportPdf("all")).size > 10000), "report PDF");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => { window.__SA.setLang(l); window.__SA.openAnalysis("cmp"); window.__SA.drawHier(); }, l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+});
+
 /* ------------------------------ esecuzione ------------------------------ */
 (async () => {
   const opts = { headless: true };
