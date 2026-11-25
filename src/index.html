@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.25.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.26.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -170,7 +170,7 @@
   [data-density=compact] .res td { padding: 0; }
   [data-density=compact] .res table, [data-density=compact] table.pts { font-size: 12px; }
   [data-density=compact] table.pts td, [data-density=compact] table.pts th { padding: 1px 3px; }
-  [data-density=compact] #results .rc-more, [data-density=compact] #results .civ,
+  [data-density=compact] .resroot .rc-more, [data-density=compact] .resroot .civ,
   [data-density=compact] #calStatus .qinfo { display: none; }
   [data-density=compact] .rcards { gap: 5px; } [data-density=compact] .rcard { padding: 4px 6px; } [data-density=compact] .rc-main { font-size: 15px; }
   [data-density=detail] section { padding: 14px 0 6px; }
@@ -485,6 +485,68 @@
   .ld-grid input, .ld-grid select, .ld-grid textarea { width: 100%; padding: 4px 6px; }
   .ld-grid textarea { grid-column: 1 / -1; resize: vertical; min-height: 54px; }
   .ld-grid .ld-sep { grid-column: 1 / -1; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+
+  /* ---------- 1.26.0: blocchi annidati, gruppi gerarchici, barra dei passi, barra strumenti a famiglie ---------- */
+  details.sub-d > summary.subsec-h, details.nest > summary, .gsub > summary { list-style: none; cursor: pointer; user-select: none; }
+  details.sub-d > summary::-webkit-details-marker, details.nest > summary::-webkit-details-marker, .gsub > summary::-webkit-details-marker { display: none; }
+  details.sub-d { padding-bottom: 6px; }
+  details.sub-d:not([open]) > summary.subsec-h { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+  details.sub-d > summary.subsec-h::after, details.nest > summary::after, .gsub > summary::after { content: "▸"; color: var(--muted); font-size: 11px; margin-left: 6px; }
+  details.sub-d[open] > summary.subsec-h::after, details.nest[open] > summary::after, .gsub[open] > summary::after { content: "▾"; }
+  .ss-st { margin-left: auto; font-weight: 400; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+  .ss-st.on { color: var(--ok-ink, #15803d); }
+  .cfg-note, .res-note { font-size: 11.5px; margin: -2px 0 6px; }
+  details.nest { border-top: 1px solid var(--line); padding: 2px 0 4px; }
+  details.nest > summary { display: flex; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink); margin: 0; padding: 7px 0 5px; }
+  details.nest > summary::after { margin-left: auto; }
+  details.box > summary .sumbtn { float: right; margin-top: -3px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--ink); border-radius: 6px; cursor: pointer; padding: 0 7px; font-size: 13px; line-height: 1.5; text-transform: none; letter-spacing: 0; }
+  details.box > summary .sumbtn:hover { border-color: var(--accent); }
+  .gitem { border: 1px solid var(--line); border-radius: 8px; padding: 2px 2px 2px; }
+  .gitem.active { border-color: var(--accent); }
+  .gitem > .g { border: 0; }
+  .gitem .gtog { width: 18px; padding: 0; font-size: 12px; color: var(--muted); }
+  .gitem .gtog:hover { color: var(--accent); }
+  .gitem .gsum { font-size: 12px; color: var(--muted); margin: -2px 6px 3px 30px; }
+  .gitem .gsum b { color: var(--ink); font-weight: 600; }
+  .gitem.open > .gsum, .gitem:not(.open) > .gbody { display: none; }
+  .gitem .gbody { padding: 0 6px 4px 8px; }
+  .gsub { margin: 4px 0; } .gsub > summary { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 6px 0 4px; display: flex; align-items: center; }
+  .gsub > summary::after { margin-left: 6px; }
+  .gres .res { border: 0; padding: 0; margin: 0; } .gres .res > h3 { font-size: 12.5px; margin-bottom: 4px; }
+  table.ldsum { font-size: 12.5px; border-collapse: collapse; width: 100%; margin: 2px 0 6px; } table.ldsum td { padding: 1px 0; vertical-align: top; } table.ldsum td:first-child { color: var(--muted); padding-right: 8px; white-space: nowrap; }
+  .gldsum .gedit { font-size: 12px; padding: 3px 8px; }
+  /* barra dei passi */
+  #workCol { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  #workCol > #work { flex: 1 1 auto; min-height: 0; }
+  #stepper { flex: none; display: flex; align-items: stretch; gap: 2px; padding: 4px 8px; background: var(--panel); border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: thin; }
+  #stepper .stp { display: flex; align-items: center; gap: 6px; border: 1px solid transparent; background: transparent; color: var(--ink); border-radius: 7px; padding: 3px 9px 3px 5px; cursor: pointer; font: inherit; font-size: 12.5px; white-space: nowrap; }
+  #stepper .stp:hover { background: var(--hover); border-color: var(--line); }
+  #stepper .stp .si { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex: none; border: 1.5px solid var(--muted); color: var(--muted); }
+  #stepper .stp .sx { display: flex; flex-direction: column; line-height: 1.15; text-align: left; }
+  #stepper .stp .sd { font-size: 10.5px; color: var(--muted); max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+  #stepper .stp.done .si { background: #16a34a; border-color: #16a34a; color: #fff; }
+  #stepper .stp.warn .si { background: #f59e0b; border-color: #f59e0b; color: #fff; }
+  #stepper .stp.opt .si { border-style: dashed; }
+  #stepper .stp.next { border-color: var(--accent); background: var(--hl); }
+  #stepper .stp.next .si { border-color: var(--accent); color: var(--accent); }
+  #stepper .stp[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+  #stepper .sarr { align-self: center; color: var(--muted); font-size: 12px; flex: none; }
+  /* barra strumenti a famiglie */
+  #toolbar { top: 16px; row-gap: 16px; }
+  #toolbar .grp.fam { position: relative; align-items: center; }
+  #toolbar .fam-l { position: absolute; top: -9px; left: 7px; font-size: 9px; line-height: 12px; padding: 0 4px; border-radius: 4px; background: var(--tb-bg); color: var(--muted); text-transform: uppercase; letter-spacing: .07em; pointer-events: none; user-select: none; box-shadow: 0 -1px 3px rgba(0,0,0,.12); white-space: nowrap; }
+  #toolbar .tbsep { width: 1px; align-self: stretch; background: var(--line); margin: 3px 2px; }
+  #toolbar button[aria-disabled="true"] { opacity: .35; cursor: not-allowed; }
+  #toolbar button[aria-disabled="true"]:hover { background: transparent; }
+  #toolbar button.inert { box-shadow: inset 0 0 0 2px #f59e0b; }
+  #toolbar button.inert::after { content: "!"; position: absolute; right: 1px; bottom: 0; font-size: 9px; font-weight: 800; color: #b45309; }
+  .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+  #moreWrap { position: relative; } #toolbar.menu-open { z-index: 20; }
+  #moreMenu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 8; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.25); padding: 4px; min-width: 250px; display: flex; flex-direction: column; gap: 1px; }
+  #moreMenu[hidden] { display: none; }
+  #toolbar #moreMenu button { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; font-size: 13px; padding: 6px 8px; }
+  #moreMenu .mi { width: 22px; text-align: center; font-size: 15px; flex: none; }
+  #moreMenu .mk { margin-left: auto; font-size: 11px; color: var(--muted); }
   /* Modalità Base (1.22.0): restano group size, correzione e punteggio; le esportazioni non cambiano */
   html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] #bAnaSwitch, html[data-ui="basic"] #qiTop { display: none !important; }
   details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
@@ -533,6 +595,8 @@
 <body>
 <div id="app">
   <!-- ======================= AREA DI LAVORO ======================= -->
+  <div id="workCol">
+  <nav id="stepper" aria-label="Passi del lavoro"></nav>
   <div id="work">
     <canvas id="canvas"></canvas>
     <div id="originBar" role="status" hidden><span class="obi">⌖</span><span id="originText"></span><button id="bOriginClose" title="Chiudi l'evidenziazione (Esc)" aria-label="Chiudi l'evidenziazione">✕</button></div>
@@ -548,24 +612,11 @@
       <div>Usa il pulsante «Carica foto» oppure trascina qui un file JPG/PNG (o una sessione .zip o .json).</div>
     </div>
     <div id="toolbar" role="toolbar" aria-label="Strumenti">
-      <div class="grp">
+      <div class="grp fam" data-fam="file"><span class="fam-l">foto</span>
         <button id="bLoad" title="Carica foto (Ctrl+O)" aria-label="Carica foto">📂</button>
       </div>
-      <div class="grp" id="modes">
+      <div class="grp fam" data-fam="view"><span class="fam-l">vista</span>
         <button data-mode="pan"   title="Mano: sposta e ingrandisci la vista (1)" aria-label="Mano">✋</button>
-        <button data-mode="calib" title="Scala: calibrazione con 2 punti a distanza nota (2)" aria-label="Scala"><span class="sw" style="background:var(--calib)"></span>↔</button>
-        <button data-mode="poa"   title="Mira: punto di mira del gruppo attivo (3)" aria-label="Mira"><span class="sw" style="background:var(--poa)"></span>⊕</button>
-        <button data-mode="shot"  title="Foro: aggiungi un foro al gruppo attivo (4)" aria-label="Foro"><span class="sw" id="shotSw"></span>◉</button>
-        <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)" aria-label="Raddrizza">📐</button>
-        <button data-mode="persp" title="Prospettiva: correzione con i 4 angoli di un rettangolo di dimensioni note (6)" aria-label="Prospettiva">⬚</button>
-      </div>
-      <div class="grp">
-        <button id="bUndo" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
-        <button id="bRedo" title="Ripristina (Ctrl+Y)" aria-label="Ripristina">↷</button>
-        <button id="bDelLast" title="Elimina l'ultimo punto del gruppo attivo (Backspace)" aria-label="Elimina ultimo">⌫</button>
-        <button id="bClear" title="Elimina tutti i punti (gli elementi bloccati restano)" aria-label="Elimina tutto">🗑</button>
-      </div>
-      <div class="grp">
         <button id="bFit" title="Adatta la foto allo schermo (F)" aria-label="Adatta">⤢</button>
         <span class="zoomctl" title="Zoom della vista (senza rotella): − / + o scrivi la percentuale e premi Invio. Tasti − e +.">
           <button id="bZoomOut" title="Riduci lo zoom (−)" aria-label="Riduci lo zoom">−</button><input id="zoomPct" type="number" min="1" max="6000" step="any" aria-label="Zoom in percentuale"><span class="pct">%</span><button id="bZoomIn" title="Aumenta lo zoom (+)" aria-label="Aumenta lo zoom">+</button>
@@ -574,15 +625,33 @@
         <select id="loupeZoom" title="Ingrandimento della lente rispetto alla vista (anche Shift+rotella sull'immagine con la lente attiva)">
           <option value="2">×2</option><option value="3">×3</option><option value="4" selected>×4</option><option value="6">×6</option><option value="8">×8</option><option value="12">×12</option>
         </select>
-        <button id="bGrid" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)" aria-label="Griglia">▦</button>
-        <button id="bSnap" title="Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap." aria-label="Snap">🧲</button>
       </div>
-      <div class="grp">
-        <button id="bRuler" title="Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)" aria-label="Righello">📏</button>
+      <div class="grp fam" data-fam="mark"><span class="fam-l">marcatura</span>
+        <button data-mode="poa"   title="Mira: punto di mira del gruppo attivo (3)" aria-label="Mira"><span class="sw" style="background:var(--poa)"></span>⊕</button>
+        <button data-mode="shot"  title="Foro: aggiungi un foro al gruppo attivo (4)" aria-label="Foro"><span class="sw" id="shotSw"></span>◉</button>
+        <button id="bSnap" title="Snap: il foro cliccato si aggancia al centro della macchia del foro (M). Serve la scala calibrata e il calibro. Alt+clic = senza snap." aria-label="Snap">🧲</button>
         <button id="bNote" title="Nota: clicca un foro o una zona del bersaglio per aggiungere un'annotazione numerata (N)" aria-label="Nota">✎</button>
-        <button id="bDetail" title="Finestra di dettaglio: ingrandimento fisso di una zona, spostabile e ridimensionabile, indipendente dalla vista (D)" aria-label="Dettaglio">🔎</button>
-        <button id="bLock" title="Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)" aria-label="Blocca">🔓</button>
         <button id="bReview" title="Colpi da rivedere: elenco dei fori difficili, sovrapposti o anomali, con centratura automatica (V)" aria-label="Colpi da rivedere">⚑<span class="tbadge" id="rvBadge" hidden></span></button>
+        <button id="bDelLast" title="Elimina l'ultimo punto del gruppo attivo (Backspace)" aria-label="Elimina ultimo">⌫</button>
+      </div>
+      <div class="grp fam" data-fam="geom"><span class="fam-l">geometria</span>
+        <button data-mode="calib" title="Scala: calibrazione con 2 punti a distanza nota (2)" aria-label="Scala"><span class="sw" style="background:var(--calib)"></span>↔</button>
+        <button data-mode="align" title="Raddrizza la foto: clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (5)" aria-label="Raddrizza">📐</button>
+        <button data-mode="persp" title="Prospettiva: correzione con i 4 angoli di un rettangolo di dimensioni note (6)" aria-label="Prospettiva">⬚</button>
+      </div>
+      <div class="grp fam" data-fam="hist"><span class="fam-l">storia</span>
+        <button id="bUndo" title="Annulla (Ctrl+Z)" aria-label="Annulla">↶</button>
+        <button id="bRedo" title="Ripristina (Ctrl+Y)" aria-label="Ripristina">↷</button>
+      </div>
+      <div class="grp fam" data-fam="more" id="moreWrap"><span class="fam-l">altro</span>
+        <button id="bMore" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenu" title="Altri strumenti: righello, finestra di dettaglio, blocco, griglia angolare, elimina tutto" aria-label="Altri strumenti">⋯</button>
+        <div id="moreMenu" role="menu" aria-label="Altri strumenti" hidden>
+          <button id="bRuler" role="menuitem" title="Righello: misura una distanza qualsiasi sulla foto in mm, pollici, MOA e MRAD con l'orientamento, senza creare fori né cambiare la scala (R)"><span class="mi">📏</span><span class="ml">Righello</span><span class="mk">R</span></button>
+          <button id="bDetail" role="menuitem" title="Finestra di dettaglio: ingrandimento fisso di una zona, spostabile e ridimensionabile, indipendente dalla vista (D)"><span class="mi">🔎</span><span class="ml">Finestra di dettaglio</span><span class="mk">D</span></button>
+          <button id="bGrid" role="menuitem" title="Griglia angolare MOA/MIL centrata sul punto di mira del gruppo attivo (G)"><span class="mi">▦</span><span class="ml">Griglia angolare</span><span class="mk">G</span></button>
+          <button id="bLock" role="menuitem" title="Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)"><span class="mi">🔓</span><span class="ml">Blocca / sblocca</span><span class="mk">K</span></button>
+          <button id="bClear" role="menuitem" title="Elimina tutti i punti (gli elementi bloccati restano)"><span class="mi">🗑</span><span class="ml">Elimina tutti i punti</span></button>
+        </div>
       </div>
     </div>
     <div id="hint"></div>
@@ -598,6 +667,7 @@
       <canvas id="dwCanvas" title="Trascina per spostare il punto osservato · rotella = ingrandimento"></canvas>
     </div>
     <div id="holeTip" hidden></div>
+  </div>
   </div>
 
   <div id="splitter" role="separator" aria-orientation="vertical" aria-label="Ridimensiona il pannello" tabindex="0"
@@ -640,8 +710,8 @@
     <section>
       <details class="box" id="sec-orient">
         <summary>Gestione immagine</summary>
-        <div class="subsec" id="ss-rot">
-        <div class="subsec-h"><span class="ssi">⟳</span>Rotazione</div>
+        <details class="subsec sub-d" id="ss-rot">
+        <summary class="subsec-h"><span class="ssi">⟳</span>Rotazione<span class="ss-st" id="ssSt-rot"></span></summary>
         <div id="rotStatus" class="status">Immagine non ruotata.</div>
         <div class="rotrow">
           <label for="rotDeg" style="flex:1 1 auto;font-size:13px" title="Angolo di rotazione della foto; positivo = senso orario. Ruotano anche tutti i punti già inseriti.">Rotazione (° , + = orario)</label>
@@ -653,18 +723,18 @@
           <button class="btn" id="bAlign" title="Clicca 2 punti su una linea del bersaglio che deve risultare orizzontale o verticale (tasto 5)">📐 Raddrizza con 2 punti</button>
           <button class="btn" id="bRot0" title="Riporta la foto all'orientamento originale">Azzera</button>
         </div>
-        </div>
-        <div class="subsec" id="ss-crop">
-        <div class="subsec-h"><span class="ssi">✂</span>Ritaglio della foto</div>
+        </details>
+        <details class="subsec sub-d" id="ss-crop">
+        <summary class="subsec-h"><span class="ssi">✂</span>Ritaglio della foto<span class="ss-st" id="ssSt-crop"></span></summary>
         <div id="cropStatus" class="status">Foto intera.</div>
         <div class="btns">
           <button class="btn" id="bCrop" title="Trascina un rettangolo sulla foto per tenere solo quella parte (Invio = applica, Esc = annulla)">✂ Ritaglia</button>
           <button class="btn" id="bCropApply" title="Taglia la foto al rettangolo: definitivo (rotazione, prospettiva e distorsione vengono incorporate nella nuova foto, la scala non cambia)" disabled>✓ Applica ritaglio</button>
           <button class="btn" id="bCropUndo" title="Ripristina la foto e i punti di prima del ritaglio (finché non carichi un'altra foto)" disabled>↶ Annulla ritaglio</button>
         </div>
-        </div>
-        <div class="subsec" id="ss-lens">
-        <div class="subsec-h"><span class="ssi">〰</span>Distorsione dell'obiettivo</div>
+        </details>
+        <details class="subsec sub-d" id="ss-lens">
+        <summary class="subsec-h"><span class="ssi">〰</span>Distorsione dell'obiettivo<span class="ss-st" id="ssSt-lens"></span></summary>
         <div id="lensStatus" class="status">Nessuna correzione della distorsione.</div>
         <div class="btns">
           <button class="btn" id="bLens" title="Clicca punti lungo 2 o più linee che nella realtà sono dritte (bordi del foglio, righe della griglia), vicino ai bordi della foto; Invio = linea successiva">〰 Calibra da linee</button>
@@ -683,9 +753,9 @@
           <button class="btn" id="bLensSave" title="Salva k1 e k2 correnti con un nome (es. modello del telefono)">Salva</button>
           <button class="btn" id="bLensDel" title="Elimina i coefficienti scelti" disabled>✕</button>
         </div>
-        </div>
-        <div class="subsec" id="ss-persp">
-        <div class="subsec-h"><span class="ssi">⬚</span>Correzione prospettica (foto di sbieco)</div>
+        </details>
+        <details class="subsec sub-d" id="ss-persp">
+        <summary class="subsec-h"><span class="ssi">⬚</span>Correzione prospettica (foto di sbieco)<span class="ss-st" id="ssSt-persp"></span></summary>
         <div id="perspStatus" class="status">Nessuna correzione prospettica.</div>
         <div class="rotrow">
           <label for="perspPreset" style="flex:1 1 auto;font-size:13px">Rettangolo di riferimento</label>
@@ -709,7 +779,7 @@
           <button class="btn" id="bPerspOff" title="Torna alla foto originale (i punti vengono riportati su di essa)" disabled>Rimuovi correzione</button>
         </div>
         <div class="muted" style="font-size:12px;margin-top:4px">Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».</div>
-        </div>
+        </details>
       </details>
     </section>
 
@@ -756,92 +826,185 @@
     </section>
 
     <section>
-      <details class="box" id="sec-params">
-        <summary>Parametri di tiro</summary>
-        <div class="subsec" id="ss-shot">
-        <div class="subsec-h"><span class="ssi">🎯</span>Distanza, calibro e mirino</div>
-        <div class="row">
-          <label for="shotDist" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">Distanza di tiro · gruppo attivo</label>
-          <input id="shotDist" type="number" min="0" step="any" value="100" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">
-          <select id="shotDistUnit"><option value="m">m</option><option value="yd">yd</option></select>
-        </div>
-        <div class="row">
-          <label for="caliber">Calibro (diametro proiettile)</label>
-          <input id="caliber" type="number" min="0" step="any" value="7.82">
-          <select id="caliberUnit"><option value="mm">mm</option><option value="in">in</option></select>
-        </div>
-        <div class="row">
-          <select id="caliberPreset" style="flex:1" title="Calibri comuni: imposta il diametro della palla. Per un calibro non in elenco scrivi il diametro nel campo sopra."></select>
-        </div>
-        <div class="row">
-          <label for="clickVal">Valore click mirino</label>
-          <input id="clickVal" type="number" min="0" step="any" value="0.1">
-          <select id="clickUnit">
-            <option value="MIL">MIL (mrad)</option>
-            <option value="MOA">MOA</option>
-            <option value="IPHY">in @100 yd (SMOA)</option>
-          </select>
-        </div>
-        </div>
-        <div class="subsec" id="ss-stat">
-        <div class="subsec-h"><span class="ssi">σ</span>Misura e statistica</div>
-        <div class="row">
-          <label for="markHand" title="Incertezza tipo (1σ per asse, in pixel della foto) del centro di un foro cliccato a mano e con lo snap; ×3 sui fori segnati come difficili (◐ nella tabella dei punti). Usata per l'incertezza di misura nei risultati.">Marcatura ± px (a mano · snap)</label>
-          <input id="markHand" type="number" min="0" step="0.1" value="1.5" style="width:60px"><input id="markSnap" type="number" min="0" step="0.1" value="0.5" style="width:60px" title="Con lo snap">
-        </div>
-        <div class="row">
-          <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
-          <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
-        </div>
-        </div>
-        <div class="subsec" id="ss-draw">
-        <div class="subsec-h"><span class="ssi">◎</span>Disegni sulla foto</div>
-        <div class="row">
-          <label for="ellipseOn" title="Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)"><input type="checkbox" id="ellipseOn" checked> Ellisse di dispersione al</label>
-          <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
-        </div>
-        <div class="row">
-          <label for="hullOn" title="Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)"><input type="checkbox" id="hullOn"> Convex hull (poligono attorno ai fori)</label>
-        </div>
-        <div class="row">
-          <label for="haloOn" title="Alone semitrasparente attorno al centro di ogni foro: il cerchio che contiene la posizione vera al 95% per l'incertezza di marcatura qui sopra (a mano, con lo snap, ×3 sui fori difficili ◐). Solo grafica: le coordinate e i calcoli non cambiano."><input type="checkbox" id="haloOn"> Alone di incertezza dei fori (95%)</label>
-        </div>
-        <div class="row">
-          <label for="esLabelOn" title="Scrive il group size (ES centro-centro, in mm e nell'unità dei click) sopra ogni gruppo, sull'immagine e nella Result Card"><input type="checkbox" id="esLabelOn" checked> Etichetta del group size</label>
-        </div>
-        <div class="row">
-          <label for="vLabelOn" title="Scrive accanto a ogni foro la velocità misurata col cronografo (colonna V0 della tabella dei punti) e la velocità media nell'etichetta del group size"><input type="checkbox" id="vLabelOn" checked> Velocità dei colpi sulla foto</label>
-        </div>
-        <div class="row">
-          <label for="corrArrowOn" title="Freccia dal centro del gruppo al punto in cui andrebbe dopo i click di correzione (arrotondati), con una crocetta; esatta alla distanza del gruppo"><input type="checkbox" id="corrArrowOn" checked> Freccia di correzione sulla foto</label>
-          <label for="livePanelOn" title="Piccolo pannello sull'immagine con fori, group size e raggio medio del gruppo attivo, aggiornati a ogni clic"><input type="checkbox" id="livePanelOn" checked> Pannello valori in tempo reale</label>
-          <label for="heatOn" title="Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati"><input type="checkbox" id="heatOn"> Heatmap della densità</label>
-        </div>
-        <div class="row">
-          <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
-          <input id="gridStep" type="number" min="0" step="any" value="0.1" title="Distanza tra due linee della griglia">
-          <select id="gridUnit"><option value="MIL">MIL</option><option value="MOA">MOA</option></select>
-        </div>
-        <div class="row">
-          <label for="diagOn" title="Ruota degli errori per pistola sovrapposta al gruppo attivo, centrata sul punto di mira: 8 settori con il numero di colpi fuori dalla zona centrale (CEP). Euristica indicativa, non una diagnosi: vedi la pagina Grafici del gruppo"><input type="checkbox" id="diagOn"> Ruota degli errori (pistola)</label>
-          <select id="diagHand" title="Mano del tiratore: per un mancino la ruota si specchia"><option value="R" selected>destrorso</option><option value="L">mancino</option></select>
-        </div>
-        </div>
+      <details class="box" id="sec-config">
+        <summary>Configurazione sessione</summary>
+        <div class="muted cfg-note">Valori validi per tutta la sessione: parametri di tiro, indice di qualità e zone di punteggio.</div>
+        <details class="nest" id="sec-params">
+          <summary>Parametri di tiro</summary>
+          <div class="subsec" id="ss-shot">
+          <div class="subsec-h"><span class="ssi">🎯</span>Distanza, calibro e mirino</div>
+          <div class="row">
+            <label for="shotDist" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">Distanza di tiro · gruppo attivo</label>
+            <input id="shotDist" type="number" min="0" step="any" value="100" title="Ogni gruppo ha la sua distanza: un nuovo gruppo parte da quella del gruppo attivo">
+            <select id="shotDistUnit"><option value="m">m</option><option value="yd">yd</option></select>
+          </div>
+          <div class="row">
+            <label for="caliber">Calibro (diametro proiettile)</label>
+            <input id="caliber" type="number" min="0" step="any" value="7.82">
+            <select id="caliberUnit"><option value="mm">mm</option><option value="in">in</option></select>
+          </div>
+          <div class="row">
+            <select id="caliberPreset" style="flex:1" title="Calibri comuni: imposta il diametro della palla. Per un calibro non in elenco scrivi il diametro nel campo sopra."></select>
+          </div>
+          <div class="row">
+            <label for="clickVal">Valore click mirino</label>
+            <input id="clickVal" type="number" min="0" step="any" value="0.1">
+            <select id="clickUnit">
+              <option value="MIL">MIL (mrad)</option>
+              <option value="MOA">MOA</option>
+              <option value="IPHY">in @100 yd (SMOA)</option>
+            </select>
+          </div>
+          </div>
+          <div class="subsec" id="ss-stat">
+          <div class="subsec-h"><span class="ssi">σ</span>Misura e statistica</div>
+          <div class="row">
+            <label for="markHand" title="Incertezza tipo (1σ per asse, in pixel della foto) del centro di un foro cliccato a mano e con lo snap; ×3 sui fori segnati come difficili (◐ nella tabella dei punti). Usata per l'incertezza di misura nei risultati.">Marcatura ± px (a mano · snap)</label>
+            <input id="markHand" type="number" min="0" step="0.1" value="1.5" style="width:60px"><input id="markSnap" type="number" min="0" step="0.1" value="0.5" style="width:60px" title="Con lo snap">
+          </div>
+          <div class="row">
+            <label for="ciLevel" title="Livello degli intervalli di confidenza (σ, CEP, R95, R99, raggio medio atteso, centro gruppo e correzione)">Intervalli di confidenza</label>
+            <select id="ciLevel"><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
+          </div>
+          </div>
+          <div class="subsec" id="ss-draw">
+          <div class="subsec-h"><span class="ssi">◎</span>Disegni sulla foto</div>
+          <div class="row">
+            <label for="ellipseOn" title="Ellisse di concentrazione: covarianza dei fori scalata con χ² a 2 gradi di libertà; contiene la percentuale scelta dei colpi se la dispersione è normale (servono almeno 3 fori)"><input type="checkbox" id="ellipseOn" checked> Ellisse di dispersione al</label>
+            <select id="ellipseP"><option value="50">50%</option><option value="90">90%</option><option value="95" selected>95%</option><option value="99">99%</option></select>
+          </div>
+          <div class="row">
+            <label for="hullOn" title="Convex hull: il poligono convesso più piccolo che racchiude tutti i fori inclusi (area e perimetro nei risultati; servono almeno 3 fori)"><input type="checkbox" id="hullOn"> Convex hull (poligono attorno ai fori)</label>
+          </div>
+          <div class="row">
+            <label for="haloOn" title="Alone semitrasparente attorno al centro di ogni foro: il cerchio che contiene la posizione vera al 95% per l'incertezza di marcatura qui sopra (a mano, con lo snap, ×3 sui fori difficili ◐). Solo grafica: le coordinate e i calcoli non cambiano."><input type="checkbox" id="haloOn"> Alone di incertezza dei fori (95%)</label>
+          </div>
+          <div class="row">
+            <label for="esLabelOn" title="Scrive il group size (ES centro-centro, in mm e nell'unità dei click) sopra ogni gruppo, sull'immagine e nella Result Card"><input type="checkbox" id="esLabelOn" checked> Etichetta del group size</label>
+          </div>
+          <div class="row">
+            <label for="vLabelOn" title="Scrive accanto a ogni foro la velocità misurata col cronografo (colonna V0 della tabella dei punti) e la velocità media nell'etichetta del group size"><input type="checkbox" id="vLabelOn" checked> Velocità dei colpi sulla foto</label>
+          </div>
+          <div class="row">
+            <label for="corrArrowOn" title="Freccia dal centro del gruppo al punto in cui andrebbe dopo i click di correzione (arrotondati), con una crocetta; esatta alla distanza del gruppo"><input type="checkbox" id="corrArrowOn" checked> Freccia di correzione sulla foto</label>
+            <label for="livePanelOn" title="Piccolo pannello sull'immagine con fori, group size e raggio medio del gruppo attivo, aggiornati a ogni clic"><input type="checkbox" id="livePanelOn" checked> Pannello valori in tempo reale</label>
+            <label for="heatOn" title="Mappa di calore della densità di probabilità degli impatti secondo il modello normale (lo stesso di ellisse, CEP e probabilità di colpire); servono almeno 3 fori non allineati"><input type="checkbox" id="heatOn"> Heatmap della densità</label>
+          </div>
+          <div class="row">
+            <label for="gridOn"><input type="checkbox" id="gridOn"> Griglia angolare, passo</label>
+            <input id="gridStep" type="number" min="0" step="any" value="0.1" title="Distanza tra due linee della griglia">
+            <select id="gridUnit"><option value="MIL">MIL</option><option value="MOA">MOA</option></select>
+          </div>
+          <div class="row">
+            <label for="diagOn" title="Ruota degli errori per pistola sovrapposta al gruppo attivo, centrata sul punto di mira: 8 settori con il numero di colpi fuori dalla zona centrale (CEP). Euristica indicativa, non una diagnosi: vedi la pagina Grafici del gruppo"><input type="checkbox" id="diagOn"> Ruota degli errori (pistola)</label>
+            <select id="diagHand" title="Mano del tiratore: per un mancino la ruota si specchia"><option value="R" selected>destrorso</option><option value="L">mancino</option></select>
+          </div>
+          </div>
+        </details>
+        <details class="nest" id="sec-quality">
+          <summary>Indice di qualità (GQI / TQI)</summary>
+          <div class="muted qi-note">Un punteggio 0–100 relativo ai riferimenti scelti qui: è un criterio dell'applicazione, non uno standard statistico. Il GQI misura solo la compattezza; il TQI aggiunge la centratura sulla mira.</div>
+          <div class="subsec" id="ss-gqi">
+          <div class="subsec-h"><span class="ssi">◉</span>Compattezza</div>
+          <div class="row"><label for="qiGqiOn" title="Group Quality Index: compattezza della rosata (precisione), indipendente da dove cade rispetto alla mira"><input type="checkbox" id="qiGqiOn" checked> GQI · compattezza</label></div>
+          <div class="row">
+            <label for="qiMrRef" title="Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.">MR di riferimento (GQI = 80)</label>
+            <input id="qiMrRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
+            <select id="qiMrUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
+          </div>
+          </div>
+          <div class="subsec" id="ss-tqi">
+          <div class="subsec-h"><span class="ssi">⊕</span>Centratura</div>
+          <div class="row"><label for="qiTqiOn" title="Target Quality Index: combina compattezza (GQI) e centratura del gruppo sulla mira (AQI). Serve il punto di mira."><input type="checkbox" id="qiTqiOn"> TQI · compattezza + centratura</label></div>
+          <div class="row">
+            <label for="qiDRef" title="Distanza angolare centro gruppo–mira a cui corrisponde AQI = 80">Centratura di riferimento (AQI = 80)</label>
+            <input id="qiDRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
+            <select id="qiDUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
+          </div>
+          <div class="row">
+            <label for="qiWP" title="Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%">Peso precisione · accuratezza</label>
+            <input id="qiWP" type="number" min="0" max="100" step="5" value="70" style="width:60px"><span class="muted">% · <span id="qiWA">30</span>%</span>
+          </div>
+          </div>
+          <div class="subsec" id="ss-qiview">
+          <div class="subsec-h"><span class="ssi">▤</span>Presentazione</div>
+          <div class="row">
+            <label for="qiDec">Punteggio</label>
+            <select id="qiDec"><option value="0" selected>intero 0–100</option><option value="1">con un decimale</option></select>
+          </div>
+          <div class="row"><label for="qiCiOn" title="Intervallo del punteggio dall'intervallo di confidenza del raggio medio (χ² del modello circolare normale)"><input type="checkbox" id="qiCiOn" checked> Intervalli di confidenza (se disponibili)</label></div>
+          <div class="row">
+            <label for="qiClasses">Classificazione</label>
+            <select id="qiClasses"><option value="5" selected>Cinque classi</option></select>
+          </div>
+          <div class="muted" id="qiClassInfo" style="font-size:11.5px"></div>
+          </div>
+          <div class="status warn" id="qiValid" hidden></div>
+        </details>
+        <details class="nest" id="sec-score">
+          <summary>Zone di punteggio</summary>
+          <div class="subsec" id="ss-target">
+          <div class="subsec-h"><span class="ssi">◎</span>Bersaglio</div>
+          <div class="row">
+            <label for="scoreTarget">Bersaglio da gara</label>
+            <select id="scoreTarget">
+              <option value="none">Nessuno</option>
+              <optgroup label="ISSF">
+              <option value="issf10ar">ISSF 10 m carabina ad aria</option>
+              <option value="issf10ap">ISSF 10 m pistola ad aria</option>
+              <option value="issf50r">ISSF 50 m carabina</option>
+              <option value="issf25p">ISSF 25 m precisione / 50 m pistola</option>
+              <option value="issf300r">ISSF 300 m carabina</option>
+              <option value="custom">Personalizzato</option>
+              </optgroup>
+              <optgroup label="Tiro dinamico">
+              <option value="ipsc">IPSC (zone A/C/D)</option>
+              <option value="ipscmini">IPSC Mini (zone A/C/D)</option>
+              <option value="idpa">IDPA (zone −0/−1/−3)</option>
+              </optgroup>
+              <optgroup label="Silhouette metalliche">
+              <option value="sil-chicken">Pollo</option>
+              <option value="sil-pig">Maiale</option>
+              <option value="sil-turkey">Tacchino</option>
+              <option value="sil-ram">Montone</option>
+              </optgroup>
+              <optgroup label="Caccia">
+              <option value="vital">Zona vitale (ellisse)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="row" id="scoreDecRow"><label for="scoreDec" title="Punteggio a decimi come nelle gare ISSF con bersagli elettronici: ogni anello è diviso in 10 fasce (massimo 10,9)"><input type="checkbox" id="scoreDec"> Punteggio decimale (fino a 10,9)</label></div>
+          <div class="row" id="scoreIpsc" hidden><label for="ipscPF">Fattore di potenza</label><select id="ipscPF"><option value="minor" selected>Minor (A 5 · C 3 · D 1)</option><option value="major">Major (A 5 · C 4 · D 2)</option></select></div>
+          <div class="row" id="scoreSil" hidden><label for="silScale">Scala</label><select id="silScale"><option value="1" selected>Pieno formato (carabina grosso calibro)</option><option value="0.5">1/2 (pistola da campo, mezza scala)</option><option value="0.2">1/5 (carabina piccolo calibro)</option></select></div>
+          <div id="scoreVital" hidden>
+            <div class="row"><label for="vitalPreset">Taglia</label><select id="vitalPreset" title="Diametri indicativi della zona cuore-polmoni per classi di taglia (Chuck Hawks): non misure della specie"><option value="small" selected>Piccola (es. capriolo, camoscio) · ⌀ 22 cm</option><option value="medium">Media · ⌀ 27 cm</option><option value="large">Grande (es. cervo) · ⌀ 29 cm</option><option value="custom">Personalizzata</option></select></div>
+            <div class="row"><label for="vitalW">Larghezza × altezza (cm)</label><input id="vitalW" type="number" min="0" step="any" value="22" style="width:70px"> × <input id="vitalH" type="number" min="0" step="any" value="22" style="width:70px" title="Altezza"></div>
+          </div>
+          </div>
+          <div class="subsec" id="scoreAdj" hidden>
+          <div class="subsec-h"><span class="ssi">✥</span>Posizione del bersaglio · gruppo attivo</div>
+            <div class="row"><label for="tgtDx" title="Spostamento del centro del bersaglio rispetto al punto di mira del gruppo attivo (+ = a destra / in alto)">Posizione · gruppo attivo (mm →, ↑)</label><input id="tgtDx" type="number" step="any" value="0" style="width:72px"><input id="tgtDy" type="number" step="any" value="0" style="width:72px" title="Spostamento verticale (+ = in alto)"></div>
+            <div class="row"><label for="tgtRot">Rotazione (°, + = oraria)</label><input id="tgtRot" type="number" step="any" value="0" style="width:72px"></div>
+            <div class="btns"><button class="btn" id="bTgtMove" title="Trascina sull'immagine per spostare il bersaglio del gruppo attivo; Shift+trascina per ruotarlo (Esc per finire)">✥ Sposta col mouse</button><button class="btn" id="bTgtReset">Azzera posizione</button></div>
+          </div>
+          <div class="subsec" id="scoreCustom" hidden>
+          <div class="subsec-h"><span class="ssi">⚙</span>Anelli personalizzati</div>
+            <div class="row"><label for="scoreD10">Diametro del 10 (mm)</label><input id="scoreD10" type="number" min="0" step="any" value="10"></div>
+            <div class="row"><label for="scoreStep" title="Di quanto cresce il DIAMETRO da un anello al successivo">Passo tra gli anelli (mm, sul diametro)</label><input id="scoreStep" type="number" min="0" step="any" value="10"></div>
+            <div class="row"><label for="scoreInner">10 interno ⌀ (mm, 0 = nessuno)</label><input id="scoreInner" type="number" min="0" step="any" value="0"></div>
+          </div>
+          <div class="muted" style="font-size:12px;margin-top:6px" id="scoreNote">Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).</div>
+        </details>
       </details>
     </section>
+
 
     <section>
       <details class="box" id="sec-groups">
-        <summary>Gruppi</summary>
+        <summary>Gruppi<button type="button" class="sumbtn" id="bGrpFold" title="Espandi tutti i gruppi; di nuovo per comprimerli" aria-label="Espandi o comprimi tutti i gruppi" aria-pressed="false">⊞</button></summary>
         <div class="groups" id="groups"></div>
         <div class="btns"><button class="btn" id="bAddGroup">＋ Nuovo gruppo</button></div>
-      </details>
-    </section>
-
-    <section>
-      <details class="box" id="sec-load">
-        <summary>Ricarica e condizioni · gruppo attivo</summary>
-        <div id="ldGroup" class="pgroup"></div>
+        <div id="ldHold" hidden><div id="ldWrap">
         <div class="subsec prof" id="ldProfBox">
         <div class="subsec-h"><span class="ssi">💾</span>Profili di ricarica</div>
           <div class="row"><select id="ldProfile" style="flex:1" title="Profili di ricarica salvati in questo browser: sceglierne uno compila bossolo, polvere, carica, palla, salto e innesco del gruppo attivo e imposta il calibro" aria-label="Profilo di ricarica"></select>
@@ -925,115 +1088,20 @@
         </div>
         <datalist id="weatherList"><option value="Sereno"><option value="Poco nuvoloso"><option value="Nuvoloso"><option value="Coperto"><option value="Pioggia"><option value="Nebbia"><option value="Neve"></datalist>
         <div class="muted" style="font-size:11.5px;margin-top:6px">Ogni gruppo ha i suoi dati. Un nuovo gruppo copia tutti i dati del gruppo attivo (anche colpi, scaldacanna e note): correggi quelli che cambiano. Tutto compare nella Result Card.</div>
+        </div></div>
       </details>
     </section>
+
 
     <section>
       <details class="box" id="sec-results">
-        <summary>Risultati</summary>
-        <div id="results"></div>
+        <summary>Risultati della sessione</summary>
+        <div class="muted res-note" id="resNote">I risultati di ogni gruppo sono nella sezione Gruppi (espandi il gruppo). Qui quelli che riguardano tutti i gruppi della foto.</div>
+        <div id="results" class="resroot"></div>
       </details>
     </section>
 
-    <section>
-      <details class="box" id="sec-quality">
-        <summary>Indice di qualità (GQI / TQI)</summary>
-        <div class="muted qi-note">Un punteggio 0–100 relativo ai riferimenti scelti qui: è un criterio dell'applicazione, non uno standard statistico. Il GQI misura solo la compattezza; il TQI aggiunge la centratura sulla mira.</div>
-        <div class="subsec" id="ss-gqi">
-        <div class="subsec-h"><span class="ssi">◉</span>Compattezza</div>
-        <div class="row"><label for="qiGqiOn" title="Group Quality Index: compattezza della rosata (precisione), indipendente da dove cade rispetto alla mira"><input type="checkbox" id="qiGqiOn" checked> GQI · compattezza</label></div>
-        <div class="row">
-          <label for="qiMrRef" title="Raggio medio angolare a cui corrisponde GQI = 80. Scegli il valore che per te è «una buona rosata» con quest'arma e questa munizione.">MR di riferimento (GQI = 80)</label>
-          <input id="qiMrRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
-          <select id="qiMrUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
-        </div>
-        </div>
-        <div class="subsec" id="ss-tqi">
-        <div class="subsec-h"><span class="ssi">⊕</span>Centratura</div>
-        <div class="row"><label for="qiTqiOn" title="Target Quality Index: combina compattezza (GQI) e centratura del gruppo sulla mira (AQI). Serve il punto di mira."><input type="checkbox" id="qiTqiOn"> TQI · compattezza + centratura</label></div>
-        <div class="row">
-          <label for="qiDRef" title="Distanza angolare centro gruppo–mira a cui corrisponde AQI = 80">Centratura di riferimento (AQI = 80)</label>
-          <input id="qiDRef" type="number" min="0" step="0.05" value="0.5" style="width:70px">
-          <select id="qiDUnit"><option value="MOA" selected>MOA</option><option value="MIL">MRAD (MIL)</option></select>
-        </div>
-        <div class="row">
-          <label for="qiWP" title="Peso della precisione nel TQI; l'accuratezza ha il resto, così la somma è sempre 100%">Peso precisione · accuratezza</label>
-          <input id="qiWP" type="number" min="0" max="100" step="5" value="70" style="width:60px"><span class="muted">% · <span id="qiWA">30</span>%</span>
-        </div>
-        </div>
-        <div class="subsec" id="ss-qiview">
-        <div class="subsec-h"><span class="ssi">▤</span>Presentazione</div>
-        <div class="row">
-          <label for="qiDec">Punteggio</label>
-          <select id="qiDec"><option value="0" selected>intero 0–100</option><option value="1">con un decimale</option></select>
-        </div>
-        <div class="row"><label for="qiCiOn" title="Intervallo del punteggio dall'intervallo di confidenza del raggio medio (χ² del modello circolare normale)"><input type="checkbox" id="qiCiOn" checked> Intervalli di confidenza (se disponibili)</label></div>
-        <div class="row">
-          <label for="qiClasses">Classificazione</label>
-          <select id="qiClasses"><option value="5" selected>Cinque classi</option></select>
-        </div>
-        <div class="muted" id="qiClassInfo" style="font-size:11.5px"></div>
-        </div>
-        <div class="status warn" id="qiValid" hidden></div>
-      </details>
-    </section>
 
-    <section>
-      <details class="box" id="sec-score">
-        <summary>Zone di punteggio</summary>
-        <div class="subsec" id="ss-target">
-        <div class="subsec-h"><span class="ssi">◎</span>Bersaglio</div>
-        <div class="row">
-          <label for="scoreTarget">Bersaglio da gara</label>
-          <select id="scoreTarget">
-            <option value="none">Nessuno</option>
-            <optgroup label="ISSF">
-            <option value="issf10ar">ISSF 10 m carabina ad aria</option>
-            <option value="issf10ap">ISSF 10 m pistola ad aria</option>
-            <option value="issf50r">ISSF 50 m carabina</option>
-            <option value="issf25p">ISSF 25 m precisione / 50 m pistola</option>
-            <option value="issf300r">ISSF 300 m carabina</option>
-            <option value="custom">Personalizzato</option>
-            </optgroup>
-            <optgroup label="Tiro dinamico">
-            <option value="ipsc">IPSC (zone A/C/D)</option>
-            <option value="ipscmini">IPSC Mini (zone A/C/D)</option>
-            <option value="idpa">IDPA (zone −0/−1/−3)</option>
-            </optgroup>
-            <optgroup label="Silhouette metalliche">
-            <option value="sil-chicken">Pollo</option>
-            <option value="sil-pig">Maiale</option>
-            <option value="sil-turkey">Tacchino</option>
-            <option value="sil-ram">Montone</option>
-            </optgroup>
-            <optgroup label="Caccia">
-            <option value="vital">Zona vitale (ellisse)</option>
-            </optgroup>
-          </select>
-        </div>
-        <div class="row" id="scoreDecRow"><label for="scoreDec" title="Punteggio a decimi come nelle gare ISSF con bersagli elettronici: ogni anello è diviso in 10 fasce (massimo 10,9)"><input type="checkbox" id="scoreDec"> Punteggio decimale (fino a 10,9)</label></div>
-        <div class="row" id="scoreIpsc" hidden><label for="ipscPF">Fattore di potenza</label><select id="ipscPF"><option value="minor" selected>Minor (A 5 · C 3 · D 1)</option><option value="major">Major (A 5 · C 4 · D 2)</option></select></div>
-        <div class="row" id="scoreSil" hidden><label for="silScale">Scala</label><select id="silScale"><option value="1" selected>Pieno formato (carabina grosso calibro)</option><option value="0.5">1/2 (pistola da campo, mezza scala)</option><option value="0.2">1/5 (carabina piccolo calibro)</option></select></div>
-        <div id="scoreVital" hidden>
-          <div class="row"><label for="vitalPreset">Taglia</label><select id="vitalPreset" title="Diametri indicativi della zona cuore-polmoni per classi di taglia (Chuck Hawks): non misure della specie"><option value="small" selected>Piccola (es. capriolo, camoscio) · ⌀ 22 cm</option><option value="medium">Media · ⌀ 27 cm</option><option value="large">Grande (es. cervo) · ⌀ 29 cm</option><option value="custom">Personalizzata</option></select></div>
-          <div class="row"><label for="vitalW">Larghezza × altezza (cm)</label><input id="vitalW" type="number" min="0" step="any" value="22" style="width:70px"> × <input id="vitalH" type="number" min="0" step="any" value="22" style="width:70px" title="Altezza"></div>
-        </div>
-        </div>
-        <div class="subsec" id="scoreAdj" hidden>
-        <div class="subsec-h"><span class="ssi">✥</span>Posizione del bersaglio · gruppo attivo</div>
-          <div class="row"><label for="tgtDx" title="Spostamento del centro del bersaglio rispetto al punto di mira del gruppo attivo (+ = a destra / in alto)">Posizione · gruppo attivo (mm →, ↑)</label><input id="tgtDx" type="number" step="any" value="0" style="width:72px"><input id="tgtDy" type="number" step="any" value="0" style="width:72px" title="Spostamento verticale (+ = in alto)"></div>
-          <div class="row"><label for="tgtRot">Rotazione (°, + = oraria)</label><input id="tgtRot" type="number" step="any" value="0" style="width:72px"></div>
-          <div class="btns"><button class="btn" id="bTgtMove" title="Trascina sull'immagine per spostare il bersaglio del gruppo attivo; Shift+trascina per ruotarlo (Esc per finire)">✥ Sposta col mouse</button><button class="btn" id="bTgtReset">Azzera posizione</button></div>
-        </div>
-        <div class="subsec" id="scoreCustom" hidden>
-        <div class="subsec-h"><span class="ssi">⚙</span>Anelli personalizzati</div>
-          <div class="row"><label for="scoreD10">Diametro del 10 (mm)</label><input id="scoreD10" type="number" min="0" step="any" value="10"></div>
-          <div class="row"><label for="scoreStep" title="Di quanto cresce il DIAMETRO da un anello al successivo">Passo tra gli anelli (mm, sul diametro)</label><input id="scoreStep" type="number" min="0" step="any" value="10"></div>
-          <div class="row"><label for="scoreInner">10 interno ⌀ (mm, 0 = nessuno)</label><input id="scoreInner" type="number" min="0" step="any" value="0"></div>
-        </div>
-        <div class="muted" style="font-size:12px;margin-top:6px" id="scoreNote">Anelli disegnati attorno al punto di mira di ogni gruppo. Punteggio secondo la regola dei bersagli di carta: vale l'anello toccato dal bordo del foro (con il calibro impostato).</div>
-      </details>
-    </section>
 
     <section>
       <details class="box" id="sec-hit">
@@ -1187,13 +1255,13 @@
           <p data-i18n><b>1. Carica la foto</b>: 📂 (<kbd>Ctrl+O</kbd>) o trascinala sull'immagine. Scattala il più possibile <b>perpendicolare</b> al bersaglio: la prospettiva altera le misure.</p>
           <p data-i18n><b>2. Sistema l'immagine</b> (Gestione immagine): <b>📐 Raddrizza</b> (<kbd>5</kbd>) con 2 punti su una linea che deve risultare orizzontale o verticale, «Rotazione» per la regolazione fine e ⟲/⟳ 90° per le foto girate; <b>ritaglio</b> per togliere lo sfondo; <b>distorsione dell'obiettivo</b> da punti lungo linee dritte vicino ai bordi; foto di sbieco: <b>⬚ Prospettiva</b> (<kbd>6</kbd>), dimensioni reali di un rettangolo visibile e i suoi 4 angoli (imposta anche la scala). I punti già inseriti seguono la foto.</p>
           <p data-i18n><b>3. Calibra la scala</b> (Calibrazione scala): <b>↔ Scala</b> (<kbd>2</kbd>), clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza. Il semaforo indica la qualità della scala; il riferimento di controllo e il diametro dei fori la verificano. Il cerchio tratteggiato sul cursore è grande quanto il calibro.</p>
-          <p data-i18n><b>4. Imposta il tiro</b> (Parametri di tiro, Gruppi): calibro, distanza, valore e unità del click. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b>; ogni gruppo ha la sua distanza.</p>
+          <p data-i18n><b>4. Imposta il tiro</b> (Configurazione sessione › Parametri di tiro): calibro, distanza, valore e unità del click; lì anche indice di qualità e zone di punteggio. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b> in Gruppi; ogni gruppo ha la sua distanza.</p>
           <p data-i18n><b>5. Segna mira e fori</b>: <b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. <b>🧲 Snap</b> (<kbd>M</kbd>) aggancia il punto al centro della macchia; <kbd>Alt</kbd>+clic = senza snap, anche per un foro sopra un altro. Trascina per spostare, tasto destro per eliminare, <kbd>K</kbd> per bloccare. Nella tabella dei punti: click di alzo e brandeggio impostati per ogni foro, ordine di sparo (↑/↓), «Escl.» (<kbd>X</kbd>) per i flyer (⚠). <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>) e <b>✎ note</b> (<kbd>N</kbd>).</p>
-          <p data-i18n><b>6. Registra ricarica e condizioni</b> (gruppo attivo): <b>Arma</b> (nome, altezza dell'ottica, azzeramento), <b>Munizione</b> (componenti, BC G1/G7, velocità iniziale e SD), <b>Condizioni</b> (meteo, vento con il quadrante). I <b>profili di ricarica</b> li riutilizzano. <b>🧮</b> accanto al BC: stima guidata del BC dalle correzioni di alzo osservate a due distanze.</p>
-          <p data-i18n><b>7. Leggi i risultati</b> (Risultati): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, e la <b>probabilità di colpire</b> un cerchio o un rettangolo. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; un clic sul titolo del gruppo lo riduce a una riga.</p>
+          <p data-i18n><b>6. Registra ricarica e condizioni</b> (Gruppi › espandi il gruppo ▸ › Ricarica e condizioni; il modulo sta nel gruppo attivo, gli altri ne mostrano il riepilogo): <b>Arma</b> (nome, altezza dell'ottica, azzeramento), <b>Munizione</b> (componenti, quote della cartuccia, BC G1/G7, velocità iniziale e SD), <b>Condizioni</b> (meteo, vento con il quadrante). I <b>profili di ricarica</b> li riutilizzano. <b>🧮</b> accanto al BC: stima guidata del BC dalle correzioni di alzo osservate a due distanze.</p>
+          <p data-i18n><b>7. Leggi i risultati</b> (Gruppi › Risultati del gruppo): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, e la <b>probabilità di colpire</b> un cerchio o un rettangolo; «Risultati della sessione» riunisce i valori di tutti i gruppi. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; ▾ nella riga del gruppo lo riduce a una riga con i valori principali, ⊞/⊟ nel titolo di Gruppi espande o comprime tutti i gruppi.</p>
           <p data-i18n><b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, dope card e calcolatore balistico, precisione per carica, correlazioni, confronto visivo e simulazione Monte Carlo. <kbd>Esc</kbd> torna all'immagine.</p>
           <p data-i18n><b>9. Salva ed esporta</b> (Dati): <b>Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) è il salvataggio principale (foto, punti e dati, si riapre con «Carica sessione»). Il salvataggio automatico nel browser propone «Ripristina» alla riapertura, ma non sostituisce il file. Poi Result Card PNG, report PDF, CSV dei fori e dei gruppi (separatore «;», virgola decimale), archivio ZIP di tutte le sessioni e bersaglio di autoverifica. Nomi dei file: <b>ShAn-tipo-arma-profilo-data-ora</b>.</p>
-          <p data-i18n><b>Pannello</b>: <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.</p>
+          <p data-i18n><b>Pannello</b>: <b>barra dei passi</b> sopra la foto (Foto → Geometria → Scala → Tiro → Fori → Risultati: ✓ fatto, ! da completare, – facoltativo; un clic porta al passo) · strumenti divisi per famiglie, i meno usati in <b>⋯</b> · un comando spento dice nel suggerimento e al clic che cosa manca · <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.</p>
           <p data-i18n><b>Scorciatoie – strumenti</b>: <kbd>1</kbd> mano · <kbd>2</kbd> scala · <kbd>3</kbd> mira · <kbd>4</kbd> foro · <kbd>5</kbd> raddrizza · <kbd>6</kbd> prospettiva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>Esc</kbd> annulla lo strumento.</p>
           <p data-i18n><b>Scorciatoie – modifica</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annulla / ripeti · <kbd>Canc</kbd> elimina il punto selezionato · <kbd>Backspace</kbd> elimina l'ultimo · <kbd>X</kbd> escludi / includi il foro · <kbd>K</kbd> blocca / sblocca · <kbd>M</kbd> snap.</p>
           <p data-i18n><b>Scorciatoie – vista</b>: rotella o <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>F</kbd> adatta · trascina lo sfondo o tasto centrale = sposta · <kbd>L</kbd> lente (<kbd>Maiusc</kbd>+rotella = ingrandimento) · <kbd>G</kbd> griglia · <kbd>D</kbd> finestra di dettaglio · <kbd>T</kbd> tema.</p>
@@ -2079,7 +2147,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <h3>Correzione sulla foto e correzione virtuale</h3>
 <p>Con mira, scala, distanza e valore click la <b>freccia verde acqua</b> (Visualizzazione → «Freccia di correzione sulla foto») parte dal centro del gruppo e arriva al punto in cui andrebbe il centro dopo aver dato i click indicati, arrotondati al click intero. Per ogni asse lo scostamento q che resta è:</p>
 <p class="formula">q′ = segno(q) · D · tan( atan(|q| / D) − click · valore click )</p>
-<p>quindi la crocetta non cade esattamente sulla mira: ne dista al massimo mezzo click per asse (0,05 MIL a 100 m = 5 mm). <b>⇢ Applica correzione virtuale</b> (nei Risultati) disegna in trasparenza tutti i fori spostati dello stesso vettore: mostra dove sarebbe finito il gruppo con la correzione. È solo una visualizzazione: fori, risultati ed esportazioni non cambiano e la scelta non viene salvata. Vale alla distanza del gruppo e suppone che la dispersione resti la stessa: il prossimo gruppo avrà comunque un suo centro casuale (vedi l'intervallo di confidenza della correzione).</p>
+<p>quindi la crocetta non cade esattamente sulla mira: ne dista al massimo mezzo click per asse (0,05 MIL a 100 m = 5 mm). <b>⇢ Applica correzione virtuale</b> (nei risultati del gruppo) disegna in trasparenza tutti i fori spostati dello stesso vettore: mostra dove sarebbe finito il gruppo con la correzione. È solo una visualizzazione: fori, risultati ed esportazioni non cambiano e la scelta non viene salvata. Vale alla distanza del gruppo e suppone che la dispersione resti la stessa: il prossimo gruppo avrà comunque un suo centro casuale (vedi l'intervallo di confidenza della correzione).</p>
 </section>
 
 <section id="h-stab">
@@ -6174,7 +6242,97 @@ const I18N = (() => {
    "es. 7,40": "e.g. 7.40",
    "📐 Report ricetta": "📐 Load recipe report",
    "Report PDF della ricetta del gruppo attivo: componenti, quote della cartuccia con il disegno quotato, velocità e dispersione misurate": "PDF load recipe report for the active group: components, cartridge dimensions with a dimensioned drawing, measured velocity and dispersion",
-   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "The drawing will show the dimensions from the case head once they are consistent."
+   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "The drawing will show the dimensions from the case head once they are consistent.",
+   "<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Configurazione sessione › Parametri di tiro».": "<b>⊕ Aim</b> (<kbd>3</kbd>) on the point you aimed at, then <b>◉ Shot</b> (<kbd>4</kbd>) on the centre of each hole. Drag a point to move it, right-click to delete it; <b>🧲 Snap</b> (<kbd>M</kbd>) locks it onto the centre of the hole. Calibre, distance and click value are in «Session setup › Shooting parameters».",
+   "<h3><span class=\"muted\" style=\"font-weight:400\">{0} colpi{1}</span></h3>": "<h3><span class=\"muted\" style=\"font-weight:400\">{0} shots{1}</span></h3>",
+   "Calcola prima la stima del BC (con un risultato non al bordo dell'intervallo).": "Run the BC estimate first (with a result not at the edge of the range).",
+   "Calibra la scala per avere misure e correzione. Clic: risultati del gruppo attivo.": "Calibrate the scale to get measurements and correction. Click: results of the active group.",
+   "Carica la foto del bersaglio (📂 o Ctrl+O, oppure trascinala sull'immagine). Clic: scegli il file.": "Load the target photo (📂 or Ctrl+O, or drag it onto the image area). Click: choose the file.",
+   "Carica prima una foto (📂 o Ctrl+O).": "Load a photo first (📂 or Ctrl+O).",
+   "Clic: gruppo attivo e strumento Mira o Foro.": "Click: active group and Aim or Shot tool.",
+   "Clicca due punti a distanza nota (strumento Scala, 2). Clic: Calibrazione scala e strumento Scala.": "Click two points at a known distance (Scale tool, 2). Click: Scale calibration and Scale tool.",
+   "Clicca il secondo punto della scala. Clic: Calibrazione scala.": "Click the second scale point. Click: Scale calibration.",
+   "Comprimi il gruppo": "Collapse the group",
+   "Comprimi tutti i gruppi": "Collapse all groups",
+   "Correzioni applicate: {0}. Clic: Gestione immagine.": "Corrections applied: {0}. Click: Image handling.",
+   "Distanza {0} {1}, calibro {2}, click {3} {4}. Clic: Configurazione sessione › Parametri di tiro.": "Distance {0} {1}, calibre {2}, click {3} {4}. Click: Session setup › Shooting parameters.",
+   "ES {0} mm": "ES {0} mm",
+   "Elimina gruppo": "Delete group",
+   "Espandi il gruppo: risultati e dati di ricarica": "Expand the group: results and load data",
+   "Espandi tutti i gruppi; di nuovo per comprimerli": "Expand all groups; again to collapse them",
+   "Facoltativo: raddrizza (5), correggi la prospettiva (6) o la distorsione, ritaglia. Clic: Gestione immagine.": "Optional: straighten (5), correct perspective (6) or lens distortion, crop. Click: Image handling.",
+   "Foto: {0}. Clic: adatta la foto allo schermo.": "Photo: {0}. Click: fit the photo to the screen.",
+   "Geometria": "Geometry",
+   "Il gruppo attivo non ha né fori né mira.": "The active group has neither shots nor aim point.",
+   "Il riferimento è bloccato: sbloccalo prima (🔒).": "The reference is locked: unlock it first (🔒).",
+   "Imposta larghezza e altezza del rettangolo di riferimento (Gestione immagine › Correzione prospettica).": "Set the width and height of the reference rectangle (Image handling › Perspective correction).",
+   "Imposta larghezza e altezza del rettangolo di riferimento.": "Set the width and height of the reference rectangle.",
+   "Imposta prima il riferimento di controllo.": "Set the check reference first.",
+   "Imposta prima la scala (2 punti).": "Set the scale first (2 points).",
+   "In modalità Base i risultati della sessione non sono mostrati: quelli di ogni gruppo sono nella sezione Gruppi.": "In Basic mode the session results are not shown: each group's results are in the Groups section.",
+   "In «Gruppi» espandi il gruppo (▸): in «Risultati del gruppo» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione. «Risultati della sessione» riunisce i valori di tutti i gruppi.": "In «Groups» expand the group (▸): «Group results» shows the <b>group size</b> and the <b>correction</b> in clicks to dial on the turrets (elevation and windage); the arrow on the photo shows where the group will land after the correction. «Session results» gathers the values of all groups.",
+   "L'archivio è vuoto: archivia prima almeno una sessione.": "The archive is empty: archive at least one session first.",
+   "Nessun dato di ricarica.": "No load data.",
+   "Nessun riferimento di controllo da eliminare.": "No check reference to delete.",
+   "Nessun risultato della sessione: servono gruppi con mira, scala calibrata e almeno 2 fori (con il GQI attivo nella Configurazione sessione).": "No session results: groups with an aim point, a calibrated scale and at least 2 shots are needed (with the GQI enabled in Session setup).",
+   "Nessun ritaglio da annullare (si può annullare finché non carichi un'altra foto).": "No crop to undo (it can be undone until you load another photo).",
+   "Nessuna correzione della distorsione da rimuovere.": "No distortion correction to remove.",
+   "Nessuna correzione prospettica da rimuovere.": "No perspective correction to remove.",
+   "Niente da annullare.": "Nothing to undo.",
+   "Niente da ripristinare.": "Nothing to redo.",
+   "Nome gruppo": "Group name",
+   "Non ci sono punti da eliminare.": "There are no points to delete.",
+   "Ora non ha effetto: serve il calibro (Configurazione sessione › Parametri di tiro).": "No effect for now: the calibre is needed (Session setup › Shooting parameters).",
+   "Ora non ha effetto: serve il passo della griglia.": "No effect for now: the grid step is needed.",
+   "Ora non ha effetto: serve la distanza di tiro.": "No effect for now: the shooting distance is needed.",
+   "Ora non ha effetto: serve la scala calibrata (Calibrazione scala).": "No effect for now: a calibrated scale is needed (Scale calibration).",
+   "Ora non ha effetto: serve la scala calibrata.": "No effect for now: a calibrated scale is needed.",
+   "Prima «✂ Ritaglia» e trascina sulla foto un rettangolo di almeno 16 × 16 px.": "First «✂ Crop» and drag a rectangle of at least 16 × 16 px on the photo.",
+   "Risultati del gruppo": "Group results",
+   "Scala {0} px/mm, incertezza ±{1}%, qualità {2}. Clic: Calibrazione scala.": "Scale {0} px/mm, uncertainty ±{1}%, quality {2}. Click: Scale calibration.",
+   "Scegli prima dei coefficienti salvati nel menu accanto.": "First choose saved coefficients in the menu beside it.",
+   "Scrivi la distanza nota tra i due punti. Clic: Calibrazione scala.": "Enter the known distance between the two points. Click: Scale calibration.",
+   "Segna la mira (3) e i fori (4) del gruppo attivo. Clic: strumento Mira o Foro.": "Mark the aim point (3) and the shots (4) of the active group. Click: Aim or Shot tool.",
+   "Seleziona prima un elemento da bloccare: clic su una mira, un foro o un punto della scala o del riferimento.": "First select an item to lock: click an aim point, a shot or a scale or reference point.",
+   "Servono almeno 2 fori nel gruppo attivo. Clic: risultati del gruppo attivo.": "At least 2 shots are needed in the active group. Click: results of the active group.",
+   "Servono almeno 2 linee con 3 punti ciascuna: «〰 Calibra da linee», Invio per passare alla linea successiva.": "At least 2 lines with 3 points each are needed: «〰 Calibrate from lines», Enter for the next line.",
+   "Servono distanza di tiro, calibro e valore del click. Clic: Configurazione sessione › Parametri di tiro.": "Shooting distance, calibre and click value are needed. Click: Session setup › Shooting parameters.",
+   "Tiro": "Shooting",
+   "da caricare": "to load",
+   "da completare": "incomplete",
+   "dopo i fori": "after the shots",
+   "facoltativo": "optional",
+   "manca il 2° punto": "2nd point missing",
+   "manca la distanza": "distance missing",
+   "mira e fori": "aim and shots",
+   "ritagliata": "cropped",
+   "scala mancante": "scale missing",
+   "servono 2 fori": "2 shots needed",
+   "{0} gr. · {1} fori": "{0} gr. · {1} shots",
+   "{0} px/mm · {1}": "{0} px/mm · {1}",
+   "{0} senza mira": "{0} without aim point",
+   "{0}: group size {1} mm. Clic: risultati del gruppo attivo.": "{0}: group size {1} mm. Click: results of the active group.",
+   "{0}: {1} colpi (meglio almeno 5)": "{0}: {1} shots (better at least 5)",
+   "{0}{1} colpi{2}": "{0}{1} shots{2}",
+   "✎ Modifica (rende attivo il gruppo)": "✎ Edit (makes the group active)",
+   "Configurazione sessione": "Session setup",
+   "Valori validi per tutta la sessione: parametri di tiro, indice di qualità e zone di punteggio.": "Values that apply to the whole session: shooting parameters, quality index and scoring zones.",
+   "Risultati della sessione": "Session results",
+   "I risultati di ogni gruppo sono nella sezione Gruppi (espandi il gruppo). Qui quelli che riguardano tutti i gruppi della foto.": "Each group's results are in the Groups section (expand the group). Here are those concerning all the groups on the photo.",
+   "Passi del lavoro": "Workflow steps",
+   "vista": "view",
+   "geometria": "geometry",
+   "storia": "history",
+   "altro": "more",
+   "Altri strumenti": "More tools",
+   "Altri strumenti: righello, finestra di dettaglio, blocco, griglia angolare, elimina tutto": "More tools: ruler, detail window, lock, angular grid, delete all",
+   "Griglia angolare": "Angular grid",
+   "Blocca / sblocca": "Lock / unlock",
+   "Espandi o comprimi tutti i gruppi": "Expand or collapse all groups",
+   "<b>4. Imposta il tiro</b> (Configurazione sessione › Parametri di tiro): calibro, distanza, valore e unità del click; lì anche indice di qualità e zone di punteggio. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b> in Gruppi; ogni gruppo ha la sua distanza.": "<b>4. Set up the shooting</b> (Session setup › Shooting parameters): calibre, distance, click value and unit; the quality index and scoring zones are there too. Several groups on the same photo: <b>＋ New group</b> in Groups; each group has its own distance.",
+   "<b>6. Registra ricarica e condizioni</b> (Gruppi › espandi il gruppo ▸ › Ricarica e condizioni; il modulo sta nel gruppo attivo, gli altri ne mostrano il riepilogo): <b>Arma</b> (nome, altezza dell'ottica, azzeramento), <b>Munizione</b> (componenti, quote della cartuccia, BC G1/G7, velocità iniziale e SD), <b>Condizioni</b> (meteo, vento con il quadrante). I <b>profili di ricarica</b> li riutilizzano. <b>🧮</b> accanto al BC: stima guidata del BC dalle correzioni di alzo osservate a due distanze.": "<b>6. Record load and conditions</b> (Groups › expand the group ▸ › Load and conditions; the form sits in the active group, the others show a summary): <b>Rifle</b> (name, sight height, zero), <b>Ammunition</b> (components, cartridge dimensions, G1/G7 BC, muzzle velocity and SD), <b>Conditions</b> (weather, wind with the dial). <b>Reload profiles</b> reuse them. <b>🧮</b> next to the BC: guided BC estimate from the elevation corrections observed at two distances.",
+   "<b>7. Leggi i risultati</b> (Gruppi › Risultati del gruppo): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, e la <b>probabilità di colpire</b> un cerchio o un rettangolo; «Risultati della sessione» riunisce i valori di tutti i gruppi. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; ▾ nella riga del gruppo lo riduce a una riga con i valori principali, ⊞/⊟ nel titolo di Gruppi espande o comprime tutti i gruppi.": "<b>7. Read the results</b> (Groups › Group results): for each group the <b>group size</b>, the <b>correction</b> in clicks (with the dope if you entered the clicks) and, with a target chosen in Scoring zones, the <b>score</b>. In Expert mode also mean radius, CEP/R95, shape, stability, quality indices (GQI/TQI), measurement uncertainty and model diagnostics, and the <b>hit probability</b> on a circle or a rectangle; «Session results» gathers the values of all groups. <b>⌖</b> shows on the photo where a value comes from; underlined terms open the glossary; ▾ in the group row reduces it to one line with the main values, ⊞/⊟ in the Groups title expands or collapses all groups.",
+   "<b>Pannello</b>: <b>barra dei passi</b> sopra la foto (Foto → Geometria → Scala → Tiro → Fori → Risultati: ✓ fatto, ! da completare, – facoltativo; un clic porta al passo) · strumenti divisi per famiglie, i meno usati in <b>⋯</b> · un comando spento dice nel suggerimento e al clic che cosa manca · <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Panel</b>: <b>step bar</b> above the photo (Photo → Geometry → Scale → Shooting → Holes → Results: ✓ done, ! to complete, – optional; a click takes you to the step) · tools grouped by family, the less used ones in <b>⋯</b> · a disabled command tells in its tooltip and on click what is missing · <b>🎓</b> 5-step guided tour · <b>🔍</b> search for a setting (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> and <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> to step, <kbd>Esc</kbd> clears) · <b>⊟</b> collapses or expands all blocks · <b>Expert / Basic</b>: Basic keeps group size, correction and score and hides Quality, Probability and Comparison (exports stay complete) · Compact / Standard / Detailed density · <b>⚙</b> order and visibility of the sections · theme · language."
   }/*END-EN-DICT*/;
   /* Dizionario russo (dalla 1.19.0): stesse chiavi italiane. Una chiave assente in russo finisce in «missing» e
      ripiega sull'inglese (meglio dell'italiano per chi legge il russo). Unità angolari lasciate in caratteri latini
@@ -8342,7 +8500,97 @@ const I18N = (() => {
    "es. 7,40": "напр. 7,40",
    "📐 Report ricetta": "📐 Отчёт по рецепту",
    "Report PDF della ricetta del gruppo attivo: componenti, quote della cartuccia con il disegno quotato, velocità e dispersione misurate": "PDF-отчёт по рецепту активной группы: компоненты, размеры патрона с чертежом, измеренные скорость и рассеивание",
-   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "Размеры от донца появятся на чертеже, когда станут согласованными."
+   "Il disegno riporterà le quote dal fondello quando saranno coerenti.": "Размеры от донца появятся на чертеже, когда станут согласованными.",
+   "<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Configurazione sessione › Parametri di tiro».": "<b>⊕ Прицел</b> (<kbd>3</kbd>) на точку прицеливания, затем <b>◉ Пробоина</b> (<kbd>4</kbd>) на центр каждой пробоины. Перетащите точку, чтобы сдвинуть, правая кнопка — удалить; <b>🧲 Привязка</b> (<kbd>M</kbd>) притягивает её к центру пробоины. Калибр, дистанция и цена клика — в «Настройка сессии › Параметры стрельбы».",
+   "<h3><span class=\"muted\" style=\"font-weight:400\">{0} colpi{1}</span></h3>": "<h3><span class=\"muted\" style=\"font-weight:400\">выстрелов: {0}{1}</span></h3>",
+   "Calcola prima la stima del BC (con un risultato non al bordo dell'intervallo).": "Сначала выполните оценку БК (с результатом не на границе диапазона).",
+   "Calibra la scala per avere misure e correzione. Clic: risultati del gruppo attivo.": "Откалибруйте масштаб, чтобы получить размеры и поправку. Клик: результаты активной группы.",
+   "Carica la foto del bersaglio (📂 o Ctrl+O, oppure trascinala sull'immagine). Clic: scegli il file.": "Загрузите фото мишени (📂 или Ctrl+O, либо перетащите его на область изображения). Клик: выбрать файл.",
+   "Carica prima una foto (📂 o Ctrl+O).": "Сначала загрузите фото (📂 или Ctrl+O).",
+   "Clic: gruppo attivo e strumento Mira o Foro.": "Клик: активная группа и инструмент «Прицел» или «Пробоина».",
+   "Clicca due punti a distanza nota (strumento Scala, 2). Clic: Calibrazione scala e strumento Scala.": "Щёлкните две точки на известном расстоянии (инструмент «Масштаб», 2). Клик: калибровка масштаба и инструмент «Масштаб».",
+   "Clicca il secondo punto della scala. Clic: Calibrazione scala.": "Щёлкните вторую точку масштаба. Клик: калибровка масштаба.",
+   "Comprimi il gruppo": "Свернуть группу",
+   "Comprimi tutti i gruppi": "Свернуть все группы",
+   "Correzioni applicate: {0}. Clic: Gestione immagine.": "Применённые коррекции: {0}. Клик: обработка изображения.",
+   "Distanza {0} {1}, calibro {2}, click {3} {4}. Clic: Configurazione sessione › Parametri di tiro.": "Дистанция {0} {1}, калибр {2}, клик {3} {4}. Клик: настройка сессии › параметры стрельбы.",
+   "ES {0} mm": "ES {0} мм",
+   "Elimina gruppo": "Удалить группу",
+   "Espandi il gruppo: risultati e dati di ricarica": "Развернуть группу: результаты и данные снаряжения",
+   "Espandi tutti i gruppi; di nuovo per comprimerli": "Развернуть все группы; повторно — свернуть",
+   "Facoltativo: raddrizza (5), correggi la prospettiva (6) o la distorsione, ritaglia. Clic: Gestione immagine.": "Необязательно: выровнять (5), исправить перспективу (6) или дисторсию, обрезать. Клик: обработка изображения.",
+   "Foto: {0}. Clic: adatta la foto allo schermo.": "Фото: {0}. Клик: вписать фото в экран.",
+   "Geometria": "Геометрия",
+   "Il gruppo attivo non ha né fori né mira.": "У активной группы нет ни пробоин, ни точки прицеливания.",
+   "Il riferimento è bloccato: sbloccalo prima (🔒).": "Эталон заблокирован: сначала разблокируйте его (🔒).",
+   "Imposta larghezza e altezza del rettangolo di riferimento (Gestione immagine › Correzione prospettica).": "Задайте ширину и высоту опорного прямоугольника (обработка изображения › коррекция перспективы).",
+   "Imposta larghezza e altezza del rettangolo di riferimento.": "Задайте ширину и высоту опорного прямоугольника.",
+   "Imposta prima il riferimento di controllo.": "Сначала задайте контрольный эталон.",
+   "Imposta prima la scala (2 punti).": "Сначала задайте масштаб (2 точки).",
+   "In modalità Base i risultati della sessione non sono mostrati: quelli di ogni gruppo sono nella sezione Gruppi.": "В базовом режиме результаты сессии не показываются: результаты каждой группы — в разделе «Группы».",
+   "In «Gruppi» espandi il gruppo (▸): in «Risultati del gruppo» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione. «Risultati della sessione» riunisce i valori di tutti i gruppi.": "В «Группы» разверните группу (▸): в «Результаты группы» — <b>размер группы</b> и <b>поправка</b> в кликах для барабанов (вертикаль и горизонталь); стрелка на фото показывает, куда сместится группа после поправки. «Результаты сессии» объединяют значения всех групп.",
+   "L'archivio è vuoto: archivia prima almeno una sessione.": "Архив пуст: сначала заархивируйте хотя бы одну сессию.",
+   "Nessun dato di ricarica.": "Нет данных снаряжения.",
+   "Nessun riferimento di controllo da eliminare.": "Нет контрольного эталона для удаления.",
+   "Nessun risultato della sessione: servono gruppi con mira, scala calibrata e almeno 2 fori (con il GQI attivo nella Configurazione sessione).": "Нет результатов сессии: нужны группы с точкой прицеливания, откалиброванный масштаб и минимум 2 пробоины (с включённым GQI в настройке сессии).",
+   "Nessun ritaglio da annullare (si può annullare finché non carichi un'altra foto).": "Нет обрезки для отмены (её можно отменить, пока не загружено другое фото).",
+   "Nessuna correzione della distorsione da rimuovere.": "Нет коррекции дисторсии для удаления.",
+   "Nessuna correzione prospettica da rimuovere.": "Нет коррекции перспективы для удаления.",
+   "Niente da annullare.": "Нечего отменять.",
+   "Niente da ripristinare.": "Нечего возвращать.",
+   "Nome gruppo": "Имя группы",
+   "Non ci sono punti da eliminare.": "Нет точек для удаления.",
+   "Ora non ha effetto: serve il calibro (Configurazione sessione › Parametri di tiro).": "Пока не действует: нужен калибр (настройка сессии › параметры стрельбы).",
+   "Ora non ha effetto: serve il passo della griglia.": "Пока не действует: нужен шаг сетки.",
+   "Ora non ha effetto: serve la distanza di tiro.": "Пока не действует: нужна дистанция стрельбы.",
+   "Ora non ha effetto: serve la scala calibrata (Calibrazione scala).": "Пока не действует: нужен откалиброванный масштаб (калибровка масштаба).",
+   "Ora non ha effetto: serve la scala calibrata.": "Пока не действует: нужен откалиброванный масштаб.",
+   "Prima «✂ Ritaglia» e trascina sulla foto un rettangolo di almeno 16 × 16 px.": "Сначала «✂ Обрезать» и растяните на фото прямоугольник не менее 16 × 16 пикс.",
+   "Risultati del gruppo": "Результаты группы",
+   "Scala {0} px/mm, incertezza ±{1}%, qualità {2}. Clic: Calibrazione scala.": "Масштаб {0} пикс/мм, погрешность ±{1}%, качество: {2}. Клик: калибровка масштаба.",
+   "Scegli prima dei coefficienti salvati nel menu accanto.": "Сначала выберите сохранённые коэффициенты в меню рядом.",
+   "Scrivi la distanza nota tra i due punti. Clic: Calibrazione scala.": "Введите известное расстояние между двумя точками. Клик: калибровка масштаба.",
+   "Segna la mira (3) e i fori (4) del gruppo attivo. Clic: strumento Mira o Foro.": "Отметьте точку прицеливания (3) и пробоины (4) активной группы. Клик: инструмент «Прицел» или «Пробоина».",
+   "Seleziona prima un elemento da bloccare: clic su una mira, un foro o un punto della scala o del riferimento.": "Сначала выберите элемент для блокировки: щёлкните точку прицеливания, пробоину или точку масштаба либо эталона.",
+   "Servono almeno 2 fori nel gruppo attivo. Clic: risultati del gruppo attivo.": "В активной группе нужно минимум 2 пробоины. Клик: результаты активной группы.",
+   "Servono almeno 2 linee con 3 punti ciascuna: «〰 Calibra da linee», Invio per passare alla linea successiva.": "Нужно минимум 2 линии по 3 точки: «〰 Калибровать по линиям», Enter — следующая линия.",
+   "Servono distanza di tiro, calibro e valore del click. Clic: Configurazione sessione › Parametri di tiro.": "Нужны дистанция стрельбы, калибр и цена клика. Клик: настройка сессии › параметры стрельбы.",
+   "Tiro": "Стрельба",
+   "da caricare": "не загружено",
+   "da completare": "не заполнено",
+   "dopo i fori": "после пробоин",
+   "facoltativo": "необязательно",
+   "manca il 2° punto": "нет 2-й точки",
+   "manca la distanza": "нет расстояния",
+   "mira e fori": "прицел и пробоины",
+   "ritagliata": "обрезано",
+   "scala mancante": "нет масштаба",
+   "servono 2 fori": "нужно 2 пробоины",
+   "{0} gr. · {1} fori": "гр.: {0} · пробоин: {1}",
+   "{0} px/mm · {1}": "{0} пикс/мм · {1}",
+   "{0} senza mira": "{0} без точки прицеливания",
+   "{0}: group size {1} mm. Clic: risultati del gruppo attivo.": "{0}: размер группы {1} мм. Клик: результаты активной группы.",
+   "{0}: {1} colpi (meglio almeno 5)": "{0}: выстрелов {1} (лучше не менее 5)",
+   "{0}{1} colpi{2}": "{0}{1} выстр.{2}",
+   "✎ Modifica (rende attivo il gruppo)": "✎ Изменить (делает группу активной)",
+   "Configurazione sessione": "Настройка сессии",
+   "Valori validi per tutta la sessione: parametri di tiro, indice di qualità e zone di punteggio.": "Значения для всей сессии: параметры стрельбы, индекс качества и зоны счёта.",
+   "Risultati della sessione": "Результаты сессии",
+   "I risultati di ogni gruppo sono nella sezione Gruppi (espandi il gruppo). Qui quelli che riguardano tutti i gruppi della foto.": "Результаты каждой группы — в разделе «Группы» (разверните группу). Здесь — относящиеся ко всем группам на фото.",
+   "Passi del lavoro": "Шаги работы",
+   "vista": "вид",
+   "geometria": "геометрия",
+   "storia": "история",
+   "altro": "ещё",
+   "Altri strumenti": "Другие инструменты",
+   "Altri strumenti: righello, finestra di dettaglio, blocco, griglia angolare, elimina tutto": "Другие инструменты: линейка, окно детализации, блокировка, угловая сетка, удалить всё",
+   "Griglia angolare": "Угловая сетка",
+   "Blocca / sblocca": "Заблокировать / разблокировать",
+   "Espandi o comprimi tutti i gruppi": "Развернуть или свернуть все группы",
+   "<b>4. Imposta il tiro</b> (Configurazione sessione › Parametri di tiro): calibro, distanza, valore e unità del click; lì anche indice di qualità e zone di punteggio. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b> in Gruppi; ogni gruppo ha la sua distanza.": "<b>4. Настройте стрельбу</b> (Настройка сессии › Параметры стрельбы): калибр, дистанция, цена и единица клика; там же индекс качества и зоны счёта. Несколько групп на одном фото: <b>＋ Новая группа</b> в «Группы»; у каждой группы своя дистанция.",
+   "<b>6. Registra ricarica e condizioni</b> (Gruppi › espandi il gruppo ▸ › Ricarica e condizioni; il modulo sta nel gruppo attivo, gli altri ne mostrano il riepilogo): <b>Arma</b> (nome, altezza dell'ottica, azzeramento), <b>Munizione</b> (componenti, quote della cartuccia, BC G1/G7, velocità iniziale e SD), <b>Condizioni</b> (meteo, vento con il quadrante). I <b>profili di ricarica</b> li riutilizzano. <b>🧮</b> accanto al BC: stima guidata del BC dalle correzioni di alzo osservate a due distanze.": "<b>6. Запишите снаряжение и условия</b> (Группы › разверните группу ▸ › Снаряжение и условия; форма находится в активной группе, остальные показывают сводку): <b>Оружие</b> (название, высота прицела, пристрелка), <b>Патрон</b> (компоненты, размеры патрона, БК G1/G7, начальная скорость и СКО), <b>Условия</b> (погода, ветер по циферблату). <b>Профили снаряжения</b> позволяют их переиспользовать. <b>🧮</b> рядом с БК: пошаговая оценка БК по поправкам вертикали, наблюдённым на двух дистанциях.",
+   "<b>7. Leggi i risultati</b> (Gruppi › Risultati del gruppo): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, e la <b>probabilità di colpire</b> un cerchio o un rettangolo; «Risultati della sessione» riunisce i valori di tutti i gruppi. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; ▾ nella riga del gruppo lo riduce a una riga con i valori principali, ⊞/⊟ nel titolo di Gruppi espande o comprime tutti i gruppi.": "<b>7. Читайте результаты</b> (Группы › Результаты группы): для каждой группы <b>размер группы</b>, <b>поправка</b> в кликах (с таблицей поправок, если указаны клики) и, при выбранной в «Зоны счёта» мишени, <b>очки</b>. В экспертном режиме также средний радиус, CEP/R95, форма, стабильность, индексы качества (GQI/TQI), погрешность измерения, диагностика модели и <b>вероятность попадания</b> в круг или прямоугольник; «Результаты сессии» объединяют значения всех групп. <b>⌖</b> показывает на фото, откуда взялось значение; подчёркнутые термины открывают глоссарий; ▾ в строке группы сворачивает её в строку с основными значениями, ⊞/⊟ в заголовке «Группы» разворачивает или сворачивает все группы.",
+   "<b>Pannello</b>: <b>barra dei passi</b> sopra la foto (Foto → Geometria → Scala → Tiro → Fori → Risultati: ✓ fatto, ! da completare, – facoltativo; un clic porta al passo) · strumenti divisi per famiglie, i meno usati in <b>⋯</b> · un comando spento dice nel suggerimento e al clic che cosa manca · <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.": "<b>Панель</b>: <b>строка шагов</b> над фото (Фото → Геометрия → Масштаб → Стрельба → Пробоины → Результаты: ✓ готово, ! нужно дополнить, – необязательно; щелчок переводит к шагу) · инструменты сгруппированы по назначению, редко используемые — в <b>⋯</b> · недоступная команда сообщает в подсказке и при щелчке, чего не хватает · <b>🎓</b> обзорный тур из 5 шагов · <b>🔍</b> поиск настройки (<kbd>/</kbd>; <kbd>Enter</kbd>/<kbd>↓</kbd> и <kbd>Shift</kbd>+<kbd>Enter</kbd>/<kbd>↑</kbd> для перехода, <kbd>Esc</kbd> сбрасывает) · <b>⊟</b> сворачивает или разворачивает все блоки · <b>Эксперт / Базовый</b>: в базовом режиме остаются размер группы, поправка и очки, а «Качество», «Вероятность» и «Сравнение» скрыты (экспорт остаётся полным) · плотность: компактная / стандартная / подробная · <b>⚙</b> порядок и видимость разделов · тема · язык."
   }/*END-RU-DICT*/;
   const DICT = { en: EN, ru: RU };
   const LANGS = ["it", "en", "ru"];
@@ -8408,7 +8656,8 @@ const PDF_FONTS = {"R":{"name":"SAReportSans-Regular","b64":"AAEAAAALAIAAAwAwT1M
 </script>
 <script id="app-main">
 "use strict";
-const APP_VERSION = "1.25.0";
+const DIS = new Map();   // 1.26.0: comandi con lo stato «spento» motivato (vedi disManage)
+const APP_VERSION = "1.26.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -8696,7 +8945,7 @@ function resizeCanvas() {
 function fitView() {
   if (!state.image) return;
   const r = work.getBoundingClientRect();
-  const top = 56; // spazio per la toolbar
+  const top = 66; // spazio per la toolbar (1.26.0: con le etichette delle famiglie)
   const b = worldBBox(), bw = b.x1 - b.x0, bh = b.y1 - b.y0;
   const s = Math.min(r.width / bw, (r.height - top) / bh) * 0.96;
   state.view.scale = s;
@@ -9210,7 +9459,7 @@ function drawGrid(g, T, scl, cc, bounds) {
     _T`Griglia ${val(1)} ${G.unit}/linea${showMinor ? "" : _T` (mostrate ogni ${val(G.major)})`} · centro: ${G.onPoa ? _t("punto di mira") : _t("centro gruppo")}`, "#0e7490", 11);
   g.restore();
 }
-function syncGridButton() { $("bGrid").classList.toggle("on", $("gridOn").checked); }
+function syncGridButton() { $("bGrid").classList.toggle("on", $("gridOn").checked); if (DIS.size) refreshInert(); }
 function toggleGrid() {
   $("gridOn").checked = !$("gridOn").checked; syncGridButton();
   const cc = calcContext();
@@ -9299,7 +9548,7 @@ function calAttn(on) {
   const row = el.closest(".row");
   el.classList.toggle("attn", on); if (row) row.classList.toggle("attn-row", on);
   if (!on) return;
-  const sec = $("sec-calib"); if (sec && !sec.open) sec.open = true;
+  openSec("sec-calib");
   setTimeout(() => { el.scrollIntoView({ block: "nearest" }); el.focus(); el.select(); }, 0);
   toast(_t("Scala: scrivi la distanza nota tra i due punti nel campo evidenziato."));
 }
@@ -9403,11 +9652,12 @@ function drawCaliberCursor(g, cx, cy, r) {
   }
   g.restore();
 }
-/** Al primo punto inserito su una foto (scala, mira o foro) apre le sezioni Gruppi e Risultati. */
+/** Al primo punto inserito su una foto (scala, mira o foro) apre la sezione Gruppi con il gruppo attivo espanso (1.26.0). */
 function openWorkSections() {
   if (state.autoOpened) return;
   state.autoOpened = true;
-  for (const id of ["sec-groups", "sec-results"]) $(id).open = true;
+  $("sec-groups").open = true;
+  if (state.activeGroupId != null) setGroupOpen(state.activeGroupId, true);
 }
 
 /* ------------------------- LENTE DI INGRANDIMENTO ------------------------- */
@@ -9966,8 +10216,8 @@ function setMode(m) {
   $("bTgtMove").classList.toggle("primary", m === "tgt");
   $("bRef").classList.toggle("primary", m === "ref");
   if ($("bLens")) $("bLens").classList.toggle("primary", m === "lens");
-  document.querySelectorAll("#modes button").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
-  updateHint(); refreshCrop();
+  document.querySelectorAll("#toolbar [data-mode]").forEach(b => b.classList.toggle("on", b.dataset.mode === m));
+  updateHint(); refreshCrop(); if (DIS.size) refreshInert();
   canvas.style.cursor = m === "pan" ? "grab" : m === "tgt" ? "move" : "crosshair";
 }
 function updateHint() {
@@ -10003,12 +10253,12 @@ const tourOpen = () => TOUR.i >= 0;
 const tourSteps = () => [
   { el: ["#bLoad"], sec: "sec-orient", t: _t("1 · Carica e raddrizza la foto"),
     b: _t("<b>📂 Carica foto</b> (<kbd>Ctrl+O</kbd>) o trascina la foto sull'immagine. Poi, in «Gestione immagine»: <b>📐 Raddrizza</b> (<kbd>5</kbd>) con due punti su una linea che deve risultare orizzontale o verticale, <b>⬚ Prospettiva</b> (<kbd>6</kbd>) se la foto è di sbieco; il ritaglio toglie lo sfondo.") },
-  { el: ['#modes [data-mode="calib"]'], sec: "sec-calib", t: _t("2 · Imposta la scala"),
+  { el: ['#toolbar [data-mode="calib"]'], sec: "sec-calib", t: _t("2 · Imposta la scala"),
     b: _t("<b>↔ Scala</b> (<kbd>2</kbd>): clicca due punti a distanza nota, per esempio due linee della griglia, poi scrivi la distanza nel campo che si evidenzia in «Calibrazione scala». Il semaforo indica la qualità della scala.") },
-  { el: ['#modes [data-mode="poa"]', '#modes [data-mode="shot"]'], sec: "sec-groups", t: _t("3 · Segna mira e colpi"),
-    b: _t("<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Parametri di tiro».") },
-  { el: ["#sec-results"], sec: "sec-results", t: _t("4 · Leggi la correzione"),
-    b: _t("In «Risultati» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione.") },
+  { el: ['#toolbar [data-mode="poa"]', '#toolbar [data-mode="shot"]'], sec: "sec-groups", t: _t("3 · Segna mira e colpi"),
+    b: _t("<b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, poi <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. Trascina un punto per spostarlo, tasto destro per eliminarlo; <b>🧲 Snap</b> (<kbd>M</kbd>) lo aggancia al centro del foro. Calibro, distanza e valore del click sono in «Configurazione sessione › Parametri di tiro».") },
+  { el: ["#groups .gitem.active .gres"], sec: "sec-groups", go: () => showGroupBlock(state.activeGroupId, "res"), t: _t("4 · Leggi la correzione"),
+    b: _t("In «Gruppi» espandi il gruppo (▸): in «Risultati del gruppo» trovi il <b>group size</b> e la <b>correzione</b> in click da dare alle torrette (alzo e brandeggio); la freccia sulla foto mostra dove andrà il gruppo dopo la correzione. «Risultati della sessione» riunisce i valori di tutti i gruppi.") },
   { el: ["#bSaveZip"], sec: "sec-data", t: _t("5 · Salva"),
     b: _t("<b>🗜 Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) conserva foto, punti e dati; nella stessa sezione Result Card, report PDF e CSV. Il tour si riapre quando vuoi con <b>🎓</b> in cima al pannello.") },
 ];
@@ -10036,7 +10286,8 @@ function tourStep(d) {
 }
 function tourShow() {
   const S = tourSteps(), s = S[TOUR.i];
-  if (s.sec) { const d = $(s.sec); if (d && !d.open) d.open = true; }
+  if (s.sec) openSec(s.sec);
+  if (s.go) s.go();
   const first = document.querySelector(s.el[0]);
   if (first && first.closest("#side")) first.scrollIntoView({ block: "center" });
   $("tourStep").textContent = _T`Passo ${TOUR.i + 1} di ${S.length}`;
@@ -10103,6 +10354,7 @@ document.addEventListener("keydown", e => {
     else if (L.length) { L[L.length - 1].pop(); if (!L[L.length - 1].length && L.length > 1) L.pop(); }
     refreshLens(); updateHint(); requestDraw(); return;
   }
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && keyBlocked(k)) { e.preventDefault(); return; }   // 1.26.0: comando spento → motivo
   if ((e.ctrlKey || e.metaKey) && k === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
   else if ((e.ctrlKey || e.metaKey) && (k === "y" || (k === "z" && e.shiftKey))) { e.preventDefault(); redo(); }
   else if (k === "delete") { if (state.selected) deleteRef(state.selected); }
@@ -10162,7 +10414,7 @@ async function loadImageFile(file) {
   await setImage(file.name, dataUrl);
   state.calib = { p1: null, p2: null };
   state.groups = []; const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id;
-  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null; state.origin = null; baseFile.b = null; resCollapsed.clear();
+  state.selected = null; state.notes = []; state.hiddenGroups = new Set(); state.ruler = null; detail.pt = null; state.origin = null; baseFile.b = null; GRP_RESET.on = true;
   state.sessionId = newSessionId();
   resetHistory();
   state.savedSig = workSignature();
@@ -10293,7 +10545,7 @@ async function loadSessionText(text, opts = {}) {
   state.activeGroupId = state.groups.some(g => g.id === s.activeGroupId) ? s.activeGroupId : state.groups[0].id;
   state.notes = Array.isArray(s.notes) ? s.notes.filter(n => n && n.id != null) : [];
   state.hiddenGroups = new Set(Array.isArray(s.hiddenGroups) ? s.hiddenGroups : []);
-  state.ruler = null; state.origin = null; resCollapsed.clear();
+  state.ruler = null; state.origin = null; GRP_RESET.on = true;
   uid = Math.max(...allIds()) + 1;
   state.selected = null;
   state.sessionId = s.sessionId || `${s.savedAt}|${s.image && s.image.name}`;   // sessioni < 1.5.0: stesso id dell'archivio
@@ -10466,10 +10718,11 @@ function updateButtons() {
   const g = activeGroup();
   $("bDelLast").disabled = !g || (!g.shots.length && !g.poa);
   $("shotSw").style.background = g ? g.color : GROUP_COLORS[0];
+  if (DIS.size) refreshDis();   // 1.26.0
+  refreshGeomStatus(); refreshStepper();
 }
 function refreshLoadForm() {
   const g = activeGroup();
-  $("ldGroup").innerHTML = g ? `<span class="dot" style="background:${g.color}"></span>${esc(g.name)}` : "";
   const L = g && g.load ? g.load : defaultLoad();
   // il campo «Distanza di tiro» mostra la distanza del gruppo attivo
   if (g && g.dist > 0 && document.activeElement !== $("shotDist") && parseFloat($("shotDist").value) !== g.dist) $("shotDist").value = g.dist;
@@ -10487,35 +10740,112 @@ function refreshLockUI() {
   const set = (id, on, has, lbl) => { const b = $(id); if (!b) return; b.disabled = !has; b.classList.toggle("on", !!on); b.textContent = (on ? "🔒 " : "🔓 ") + lbl; b.setAttribute("aria-pressed", String(!!on)); };
   set("bCalLock", c.lock, !!c.p1, _t("Scala")); set("bRefLock", c.refLock, !!c.r1, _t("Riferimento"));
   if ($("bRefDel")) $("bRefDel").disabled = !c.r1 || !!c.refLock;
-  const b = $("bLock"); if (b) { const can = lockable(sel), on = can && isLocked(sel); b.disabled = !can; b.classList.toggle("on", on); b.textContent = on ? "🔒" : "🔓";
-    b.title = (on ? _t("Bloccato: clic per sbloccare l'elemento selezionato (K)") : _t("Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)")); b.setAttribute("aria-label", on ? _t("Sblocca") : _t("Blocca")); }
+  const b = $("bLock"); if (b) { const can = lockable(sel), on = can && isLocked(sel); b.disabled = !can; b.classList.toggle("on", on); b.querySelector(".mi").textContent = on ? "🔒" : "🔓";
+    b.title = (on ? _t("Bloccato: clic per sbloccare l'elemento selezionato (K)") : _t("Blocca/sblocca l'elemento selezionato: mira, punto della scala o del riferimento, foro (K)")); b.setAttribute("aria-label", on ? _t("Sblocca") : _t("Blocca"));
+    if (DIS.has(b)) disApply(b); }   // 1.26.0: motivo se spento
+}
+/* ===================== 1.26.0: GRUPPI GERARCHICI =====================
+   Ogni gruppo è una voce espandibile: in testa nome, colpi, 👁 e ✕; espanso mostra «Risultati del gruppo» e «Ricarica e
+   condizioni». Il modulo della ricarica (#ldWrap, un solo esemplare con gli id di sempre) sta nel gruppo attivo e lo
+   segue; gli altri gruppi espansi mostrano un riepilogo. Le voci sono tenute per id (non ricostruite a ogni modifica:
+   il campo in cui si scrive non perde il fuoco). grpOpen: gruppi espansi, stato della vista (non nella storia né nel file). */
+const grpOpen = new Set(), GRP_RESET = { on: true };
+const GI = new Map();
+const grpOf = gid => state.groups.find(x => x.id === gid) || null;
+function makeGroupItem(gid) {
+  const item = document.createElement("div"); item.className = "gitem"; item.dataset.gid = gid;
+  item.innerHTML = `<div class="g"><button type="button" class="gtog" aria-expanded="false"></button><span class="dot"></span><input class="gname"><span class="n"></span><button type="button" class="eye"></button><button type="button" class="gdel">✕</button></div>
+    <div class="gsum"></div>
+    <div class="gbody">
+      <details class="gsub" data-gsub="res" open><summary></summary><div class="gres resroot"></div></details>
+      <details class="gsub" data-gsub="ld" open><summary></summary><div class="gldsum"></div><div class="gld"></div></details>
+    </div>`;
+  const q = sel => item.querySelector(sel);
+  const it = { item, row: q(".g"), tog: q(".gtog"), dot: q(".dot"), inp: q(".gname"), n: q(".n"), eye: q(".eye"), del: q(".gdel"), sum: q(".gsum"),
+    res: q(".gres"), ldsum: q(".gldsum"), ld: q(".gld"), sres: q('[data-gsub="res"] > summary'), sld: q('[data-gsub="ld"] > summary') };
+  it.row.addEventListener("click", ev => { if (ev.target.closest("button, input")) return; if (state.activeGroupId !== gid && grpOf(gid)) { state.activeGroupId = gid; commit(); } });
+  it.inp.addEventListener("focus", () => { if (state.activeGroupId !== gid && grpOf(gid)) { state.activeGroupId = gid; commit(); } });
+  it.inp.addEventListener("change", () => { const g = grpOf(gid); if (!g) return; g.name = it.inp.value.trim() || g.name; commit(); });
+  it.tog.addEventListener("click", () => setGroupOpen(gid, !grpOpen.has(gid)));
+  it.eye.dataset.eye = gid;
+  it.eye.addEventListener("click", () => toggleGroupVisible(gid));
+  it.del.addEventListener("click", () => {
+    const g = grpOf(gid); if (!g) return;
+    if ((g.shots.length || g.poa) && !confirm(_T`Eliminare «${g.name}» e i suoi punti?`)) return;
+    detachNotes(g.shots); state.hiddenGroups.delete(g.id);
+    state.groups = state.groups.filter(x => x.id !== g.id);
+    if (!state.groups.length) state.groups.push(makeGroup());
+    if (!activeGroup()) state.activeGroupId = state.groups[0].id;
+    commit();
+  });
+  item.querySelector('[data-gsub="ld"]').addEventListener("toggle", e => { if (e.target.open) refreshWindDial(); });
+  GI.set(gid, it);
+  return it;
+}
+/** Riepilogo dei dati di ricarica di un gruppo non attivo (il modulo modificabile sta nel gruppo attivo). */
+function groupLoadSummary(g) {
+  const L = loadLines(g);
+  return (L.length ? `<table class="ldsum">${L.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>` : `<div class="muted">${_t("Nessun dato di ricarica.")}</div>`)
+    + `<button type="button" class="btn gedit" data-gedit="${g.id}">${_t("✎ Modifica (rende attivo il gruppo)")}</button>`;
+}
+function syncGroupItems() {
+  const gl = $("groups"), wrap = $("ldWrap"); if (!gl || !wrap) return;
+  for (const [id, it] of [...GI]) if (!state.groups.some(g => g.id === id)) {
+    if (it.item.contains(wrap)) $("ldHold").appendChild(wrap);
+    it.item.remove(); GI.delete(id); grpOpen.delete(id);
+  }
+  if (GRP_RESET.on) { GRP_RESET.on = false; grpOpen.clear(); if (state.activeGroupId != null) grpOpen.add(state.activeGroupId); }   // all'avvio e dopo una nuova foto/sessione: aperto il gruppo attivo
+  const multiDist = !distText(state.groups);
+  state.groups.forEach((g, i) => {
+    const it = GI.get(g.id) || makeGroupItem(g.id);
+    if (gl.children[i] !== it.item) gl.insertBefore(it.item, gl.children[i] || null);
+    const act = g.id === state.activeGroupId, hid = state.hiddenGroups.has(g.id), open = grpOpen.has(g.id);
+    it.item.classList.toggle("open", open); it.item.classList.toggle("active", act);
+    it.row.className = "g" + (act ? " active" : "") + (hid ? " hiddeng" : "");
+    it.tog.textContent = open ? "▾" : "▸"; it.tog.setAttribute("aria-expanded", String(open));
+    it.tog.title = open ? _t("Comprimi il gruppo") : _t("Espandi il gruppo: risultati e dati di ricarica"); it.tog.setAttribute("aria-label", it.tog.title);
+    it.dot.style.background = g.color;
+    if (document.activeElement !== it.inp && it.inp.value !== g.name) it.inp.value = g.name;
+    it.inp.setAttribute("aria-label", _t("Nome gruppo"));
+    it.n.textContent = _T`${inc(g).length}${g.shots.length !== inc(g).length ? "/" + g.shots.length : ""} colpi${multiDist ? ` · ${distText([g])}` : ""}`;
+    it.eye.className = "eye" + (hid ? "" : " on"); it.eye.textContent = hid ? "◌" : "👁"; it.eye.setAttribute("aria-pressed", String(!hid));
+    it.eye.title = hid ? _t("Gruppo nascosto sull'immagine: clic per mostrarlo") : _t("Mostra/nascondi sull'immagine i fori, la mira e i disegni di questo gruppo (i calcoli, la Result Card e il report non cambiano)");
+    it.del.title = _t("Elimina gruppo");
+    it.sres.textContent = _t("Risultati del gruppo"); it.sld.textContent = _t("Ricarica e condizioni");
+    it.sum.innerHTML = open ? "" : groupSumLine(g);
+    if (act) { it.ldsum.innerHTML = ""; it.ldsum.hidden = true; if (wrap.parentElement !== it.ld) it.ld.appendChild(wrap); }
+    else { it.ldsum.hidden = false; if (open) it.ldsum.innerHTML = groupLoadSummary(g); }
+  });
+  refreshGrpFold();
+}
+function setGroupOpen(gid, on) {
+  if (on) grpOpen.add(gid); else grpOpen.delete(gid);
+  syncGroupItems();
+}
+/** Espande il gruppo e ne mostra il blocco richiesto ("res" o "ld"), aprendo la sezione Gruppi. */
+function showGroupBlock(gid, which) {
+  openSec("sec-groups"); setGroupOpen(gid, true);
+  const it = GI.get(gid); if (!it) return null;
+  const d = it.item.querySelector(`[data-gsub="${which}"]`); if (d) d.open = true;
+  return d;
+}
+function refreshGrpFold() {
+  const b = $("bGrpFold"); if (!b) return;
+  const all = state.groups.length > 0 && state.groups.every(g => grpOpen.has(g.id));
+  b.textContent = all ? "⊟" : "⊞"; b.setAttribute("aria-pressed", String(all));
+  b.title = all ? _t("Comprimi tutti i gruppi") : _t("Espandi tutti i gruppi; di nuovo per comprimerli");
+}
+function toggleAllGroups() {
+  if (!state.groups.length) return;
+  const all = state.groups.every(g => grpOpen.has(g.id));
+  grpOpen.clear();
+  if (!all) { for (const g of state.groups) grpOpen.add(g.id); $("sec-groups").open = true; }
+  syncGroupItems();
 }
 function refreshLists() {
   refreshLoadForm(); refreshNotes(); refreshLockUI(); refreshScaleMarkUI();
   if (anaOpen()) refreshAnaHeader();
-  // gruppi
-  const gl = $("groups"); gl.innerHTML = "";
-  const multiDist = !distText(state.groups);   // gruppi a distanze diverse: la distanza compare nell'elenco
-  for (const g of state.groups) {
-    const el = document.createElement("div");
-    const hid = state.hiddenGroups.has(g.id);
-    el.className = "g" + (g.id === state.activeGroupId ? " active" : "") + (hid ? " hiddeng" : "");
-    el.innerHTML = _T`<span class="dot" style="background:${g.color}"></span><input value="${esc(g.name)}" aria-label="Nome gruppo">
-      <span class="n">${inc(g).length}${g.shots.length !== inc(g).length ? "/" + g.shots.length : ""} colpi${multiDist ? ` · ${distText([g])}` : ""}</span><button class="eye${hid ? "" : " on"}" data-eye="${g.id}" aria-pressed="${!hid}" title="${hid ? _t("Gruppo nascosto sull'immagine: clic per mostrarlo") : _t("Mostra/nascondi sull'immagine i fori, la mira e i disegni di questo gruppo (i calcoli, la Result Card e il report non cambiano)")}">${hid ? "◌" : "👁"}</button><button class="gdel" title="Elimina gruppo">✕</button>`;
-    el.addEventListener("click", ev => { if (ev.target.tagName === "BUTTON") return; if (state.activeGroupId !== g.id) { state.activeGroupId = g.id; commit(); } });
-    const inp = el.querySelector("input");
-    inp.addEventListener("change", () => { g.name = inp.value.trim() || g.name; commit(); });
-    el.querySelector("button.eye").addEventListener("click", () => toggleGroupVisible(g.id));
-    el.querySelector("button.gdel").addEventListener("click", () => {
-      if ((g.shots.length || g.poa) && !confirm(_T`Eliminare «${g.name}» e i suoi punti?`)) return;
-      detachNotes(g.shots); state.hiddenGroups.delete(g.id);
-      state.groups = state.groups.filter(x => x.id !== g.id);
-      if (!state.groups.length) state.groups.push(makeGroup());
-      if (!activeGroup()) state.activeGroupId = state.groups[0].id;
-      commit();
-    });
-    gl.appendChild(el);
-  }
+  syncGroupItems();   // gruppi gerarchici (1.26.0)
   // punti del gruppo attivo
   const g = activeGroup(), cc = calcContext(), pts = $("points");
   $("pointsGroup").innerHTML = g ? _T`<span class="dot" style="background:${g.color}"></span>${esc(g.name)}<span class="muted" style="font-weight:400">· ${inc(g).length} colpi${g.shots.length > inc(g).length ? ` (${esclusi(g.shots.length - inc(g).length)})` : ""}</span>` : "";
@@ -10635,16 +10965,18 @@ function refreshResults() {
   else { cs.className = "status warn"; cs.textContent = _t("Non calibrato: seleziona «Scala» e clicca due punti a distanza nota."); }
 
   const out = $("results");
+  syncGroupItems();   // 1.26.0: i risultati di ogni gruppo stanno nella sua voce della sezione Gruppi; qui quelli della sessione
+  const roots = [...state.groups.map(g => GI.get(g.id)).filter(Boolean).map(it => it.res), out];
   // dettagli aperti o chiusi dall'utente dopo l'ultimo disegno (lo stato «open» cambia subito, l'evento toggle arriva dopo)
   if (document.documentElement.dataset.density !== "detail")
-    out.querySelectorAll("details[data-card], details.meas").forEach(d => { if (d.open !== !!d.dataset.o) { const k = d.dataset.card || "meas"; if (d.open) CARD_OPEN.add(k); else CARD_OPEN.delete(k); } });
-  out.innerHTML = "";
+    for (const root of roots) root.querySelectorAll("details[data-card], details.meas").forEach(d => { if (d.open !== !!d.dataset.o) { const k = d.dataset.card || "meas"; if (d.open) CARD_OPEN.add(k); else CARD_OPEN.delete(k); } });
+  for (const root of roots) root.innerHTML = "";
   for (const g of state.groups) {
     const gcc = ccG(cc, g);   // distanza del gruppo (dalla 1.7.0)
     const r = Calc.analyze(inc(g), g.poa, gcc);
     const box = document.createElement("div"); box.className = "res"; box.dataset.gid = g.id;
     const nEx = g.shots.length - r.n;
-    let html = _T`<h3><span class="dot" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${g.color}"></span>${esc(g.name)} <span class="muted" style="font-weight:400">· ${r.n} colpi${nEx ? ` (${esclusi(nEx)})` : ""}</span></h3>`;
+    let html = _T`<h3><span class="muted" style="font-weight:400">${r.n} colpi${nEx ? ` (${esclusi(nEx)})` : ""}</span></h3>`;
     const nw = shotsWarning(r.n);
     if (nw && r.n > 0) html += `<div class="nwarn">⚠ ${nw}</div>`;
     if (r.n < 2) html += _T`<div class="muted">Servono almeno 2 fori.</div>`;
@@ -10652,22 +10984,24 @@ function refreshResults() {
     else html += resultCards(g, gcc, r) + (uiBasic() ? "" : baselineCard(g, gcc));
     if (r.mm && r.n >= 2 && !uiBasic()) html += measHTML(g, gcc, r) + diagHTML(g);
     else if (r.n < 2 || !r.mm) html += resultCards(g, gcc, r, true);
-    box.innerHTML = html; out.appendChild(box);
+    box.innerHTML = html; const it = GI.get(g.id); if (it) it.res.appendChild(box);
   }
   if (!uiBasic()) out.insertAdjacentHTML("beforeend", qiSessionHTML());
   if (!uiBasic()) { const hc = hierCardHTML(); if (hc) out.insertAdjacentHTML("beforeend", `<div class="rcards">${hc}</div>`); }   // variabilità dentro e tra i gruppi (1.24.0)   // GQI/TQI della sessione e ripetibilità (dalla 1.16.0)
+  if (!out.children.length) out.innerHTML = `<div class="muted">${uiBasic() ? _t("In modalità Base i risultati della sessione non sono mostrati: quelli di ogni gruppo sono nella sezione Gruppi.") : _t("Nessun risultato della sessione: servono gruppi con mira, scala calibrata e almeno 2 fori (con il GQI attivo nella Configurazione sessione).")}</div>`;
   refreshQiTop();
-  decorateGroupToggles(out);   // gruppi richiudibili (dalla 1.18.0)
-  out.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
   // dettagli delle card: restano aperti/chiusi tra un aggiornamento e l'altro; con densità «Dettagliata» tutti aperti
   const det = document.documentElement.dataset.density === "detail";
-  out.querySelectorAll("details[data-card], details.meas").forEach(d => {
-    const k = d.dataset.card || "meas";
-    d.open = det || CARD_OPEN.has(k); d.dataset.o = d.open ? "1" : "";
-  });
+  for (const root of roots) {
+    root.querySelectorAll("button[data-vcorr]").forEach(b => b.addEventListener("click", () => toggleVirtCorr()));
+    root.querySelectorAll("details[data-card], details.meas").forEach(d => {
+      const k = d.dataset.card || "meas";
+      d.open = det || CARD_OPEN.has(k); d.dataset.o = d.open ? "1" : "";
+    });
+    linkTerms(root);
+    decorateOrigins(root);   // ⌖ e ☆ (dalla 1.17.0)
+  }
   refreshLive();
-  linkTerms(out);
-  decorateOrigins(out);   // ⌖ e ☆ (dalla 1.17.0)
   refreshReview(); refreshOriginUI();
   updateButtons();
   if (anaOpen()) drawAnaPage();
@@ -10720,7 +11054,7 @@ function refreshLive() {
   const el = $("livePanel"), I = liveInfo();
   if (!I || !I.nAll || !params().livePanelOn) { el.hidden = true; return; }
   el.hidden = false;
-  el.style.top = `${$("toolbar").offsetHeight + 16}px`;
+  el.style.top = `${$("toolbar").offsetTop + $("toolbar").offsetHeight + 10}px`;
   const u = I.ang && I.ang.es ? (I.ang.es[I.unit] != null ? I.unit : "MOA") : null;
   const v = (mm, key) => mm == null ? "–" : `${fmt(mm, 1)} ${uL("mm")}${u && I.ang[key] ? ` <span class="muted">· ${fmt(I.ang[key][u], 2)} ${uL(u)}</span>` : ""}`;
   el.innerHTML = `<div class="lp-h"><span class="dot" style="background:${I.g.color}"></span><b>${esc(I.g.name)}</b><button id="bLiveClose" title="${_t("Chiudi (si riattiva in Visualizzazione)")}" aria-label="${_t("Chiudi")}">✕</button></div>
@@ -10810,7 +11144,7 @@ const XP_SECTIONS = ["sec-quality", "sec-hit"];
 function applyUiMode(m) {
   m = m === "basic" ? "basic" : "expert";
   document.documentElement.dataset.ui = m; $("uiModeSel").value = m;
-  for (const id of XP_SECTIONS) { const el = $(id); if (el) el.closest("section").classList.add("xp-only"); }
+  for (const id of XP_SECTIONS) { const el = $(id); if (el) (el.parentElement.tagName === "SECTION" ? el.parentElement : el).classList.add("xp-only"); }   // annidati (1.26.0): solo il blocco
 }
 function setUiMode(m) {
   applyUiMode(m);
@@ -10827,7 +11161,7 @@ function initDensity() { let d = null; try { d = localStorage.getItem("shootAnal
 const LAYOUT_KEY = "shootAnalyzer.layout";
 const sideSections = () => [...$("sideScroll").children].filter(el => el.tagName === "SECTION" && el.querySelector(":scope > details[id]"));
 const secId = el => el.querySelector(":scope > details[id]").id;
-const secTitle = el => el.querySelector(":scope > details > summary").textContent.replace(/\s+/g, " ").trim();
+const secTitle = el => [...el.querySelector(":scope > details > summary").childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").replace(/\s+/g, " ").trim();   // senza i pulsanti nel titolo (1.26.0)
 let LAYOUT_DEFAULT = null;
 function getLayout() { return sideSections().map(el => ({ id: secId(el), hidden: el.hidden })); }
 function applyLayout(L) {
@@ -10838,11 +11172,24 @@ function applyLayout(L) {
   anchor.after(frag);
   refreshSecFold();
 }
+/** Layout salvati prima della 1.26.0: Parametri, Qualità e Punteggio diventano «Configurazione sessione» (al posto del
+    primo dei tre), «Ricarica e condizioni» è nella sezione Gruppi; le sezioni nuove vanno al loro posto predefinito. */
+function migrateLayout(L) {
+  const OLD = ["sec-params", "sec-quality", "sec-score"], out = [];
+  for (const it of L) {
+    if (!it || !it.id || it.id === "sec-load") continue;
+    if (OLD.includes(it.id)) { if (!out.some(x => x.id === "sec-config")) out.push({ id: "sec-config", hidden: false }); continue; }
+    out.push(it);
+  }
+  const def = (LAYOUT_DEFAULT || []).map(x => x.id);
+  def.forEach((id, i) => { if (out.some(x => x.id === id)) return; const prev = def.slice(0, i).reverse().find(p => out.some(x => x.id === p)); out.splice(prev ? out.findIndex(x => x.id === prev) + 1 : 0, 0, { id, hidden: false }); });
+  return out;
+}
 function saveLayout() { try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(getLayout())); } catch { /* ignora */ } }
 function initLayout() {
   LAYOUT_DEFAULT = getLayout();
   let L = null; try { L = JSON.parse(localStorage.getItem(LAYOUT_KEY) || "null"); } catch { L = null; }
-  if (Array.isArray(L)) applyLayout(L);
+  if (Array.isArray(L)) applyLayout(migrateLayout(L));
 }
 function resetLayout() { applyLayout(LAYOUT_DEFAULT); try { localStorage.removeItem(LAYOUT_KEY); } catch { /* ignora */ } renderLayoutPop(); }
 function moveSection(id, dir) {
@@ -14677,6 +15024,7 @@ function setLang(l, save = true) {
   if (anaOpen()) { refreshAnaHeader(); drawAnaPage(); }
   if (helpOpen()) fillHelp();
   if (find.q) findRun(find.q, true);   // i testi sono cambiati
+  disAll(); refreshInert();   // 1.26.0: motivi dei comandi spenti nella nuova lingua
 }
 let autosaveLast = null;
 function renderAutosaveInfo() {
@@ -15057,7 +15405,7 @@ function drawWheelOverlay(c2, T, scl) {
 // e suggerimenti (title/placeholder/aria-label). Non cerca nei contenuti calcolati (risultati, tabelle, elenchi).
 // Tutte le occorrenze sono evidenziate in giallo tenue, quella corrente in arancio; la sezione chiusa viene aperta,
 // quella nascosta dal layout mostrata finché è la corrente (classe find-show: il layout salvato non cambia).
-const FIND_SKIP = "#results, #points, #rvList, #notesList, #hitOut, #groups, #archiveInfo, #ttResult, #calStatus, #ldGroup, #hitGroup, #pointsGroup, #layoutPop, #findBar, #sec-guide .help, [data-nofind]";
+const FIND_SKIP = "#results, #points, #rvList, #notesList, #hitOut, #groups .gitem:not(.active), #groups .g, #groups .gsum, #groups .gres, #archiveInfo, #ttResult, #calStatus, #ldGroup, #hitGroup, #pointsGroup, #layoutPop, #findBar, #sec-guide .help, [data-nofind]";
 const FIND_SEL = "summary, .subsec-h, label, button, select";
 const find = { q: "", hits: [], i: -1, shown: null, t: 0 };
 function findNorm(t) { return String(t || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim(); }
@@ -15096,10 +15444,13 @@ function findCollect(q) {
   return out;
 }
 function findWhereText(h) {
-  const sec = h.el.closest("details"), sub = h.el.closest(".subsec");
-  const parts = [];
-  if (sec && h.el.tagName !== "SUMMARY") { const sm = sec.querySelector(":scope > summary"); if (sm) parts.push(sm.childNodes[0] ? sm.childNodes[0].textContent.trim() : sm.textContent.trim()); }
-  if (sub && !h.el.classList.contains("subsec-h")) { const hh = sub.querySelector(":scope > .subsec-h"); if (hh) parts.push([...hh.childNodes].filter(n => !(n.classList && n.classList.contains("ssi"))).map(n => n.textContent).join("").trim()); }
+  const sub = h.el.closest(".subsec"), parts = [];
+  // 1.26.0: tutti i blocchi che contengono la voce (sezione › blocco annidato › riquadro), testo del titolo senza pulsanti e stati
+  const own = h.el.tagName === "SUMMARY" ? h.el.parentElement : null, chain = [];
+  for (let e = h.el.parentElement; e && e.id !== "sideScroll"; e = e.parentElement)
+    if (e.tagName === "DETAILS" && e !== own && !e.classList.contains("subsec")) { const sm = e.querySelector(":scope > summary"); if (sm) chain.unshift([...sm.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()); }
+  parts.push(...chain.filter(Boolean));
+  if (sub && !h.el.classList.contains("subsec-h")) { const hh = sub.querySelector(":scope > .subsec-h"); if (hh) parts.push([...hh.childNodes].filter(n => !(n.classList && (n.classList.contains("ssi") || n.classList.contains("ss-st")))).map(n => n.textContent).join("").trim()); }
   return parts;
 }
 function findClearMarks() {
@@ -15121,8 +15472,7 @@ function findRender() {
   h.el.classList.remove("find-hit"); h.el.classList.add("find-cur");
   const sec = h.el.closest("section");
   if (sec && sec.hidden) { sec.classList.add("find-show"); find.shown = sec; }
-  const det = h.el.closest("details");
-  if (det && !det.open && h.el.tagName !== "SUMMARY") det.open = true;
+  openSec(h.el.tagName === "SUMMARY" ? h.el.parentElement.parentElement : h.el, true);   // 1.26.0: blocchi annidati e voce del gruppo (il layout non cambia: la sezione nascosta si mostra con find-show)
   const parts = findWhereText(h);
   let html = parts.length ? parts.map(p => "<b>" + escHtml(p) + "</b>").join(" › ") : "";
   if (sec && sec.classList.contains("find-show")) html += (html ? " · " : "") + escHtml(_t("sezione nascosta nel layout (⚙)"));
@@ -15177,7 +15527,15 @@ $("bSave").onclick = saveSession;
 $("bUndo").onclick = undo; $("bRedo").onclick = redo;
 $("bDelLast").onclick = deleteLast; $("bClear").onclick = clearAll;
 $("bFit").onclick = fitView;
-$("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; setMode(state.image ? "poa" : state.mode); commit(); };
+$("bAddGroup").onclick = () => { const g = makeGroup(); state.groups.push(g); state.activeGroupId = g.id; grpOpen.add(g.id); setMode(state.image ? "poa" : state.mode); commit(); };
+$("bGrpFold").addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); toggleAllGroups(); });   // 1.26.0: nella testata di Gruppi (non apre/chiude la sezione)
+$("groups").addEventListener("click", e => {   // riepilogo di un gruppo non attivo: «Modifica» lo rende attivo e ci porta il modulo
+  const b = e.target.closest("[data-gedit]"); if (!b) return;
+  const gid = +b.dataset.gedit; if (!grpOf(gid)) return;
+  state.activeGroupId = gid; commit();
+  const d = showGroupBlock(gid, "ld"); if (d) d.scrollIntoView({ block: "nearest" });
+});
+$("groups").addEventListener("click", e => { const a = e.target.closest("[data-gl]"); if (!a) return; e.preventDefault(); openHelpAt(a.dataset.gl); });
 $("bCardPng").onclick = () => exportCard($("cardScope").value);
 $("bLoupe").onclick = () => setLoupe(!state.loupe);
 $("bSnap").onclick = () => setSnap(!state.snap, true);
@@ -15309,7 +15667,7 @@ for (const id of ["perspW", "perspH"]) $(id).addEventListener("input", () => {
   $("perspPreset").value = [...$("perspPreset").options].some(o => o.value === key) ? key : "custom";
   updateHint();
 });
-document.querySelectorAll("#modes button").forEach(b => b.onclick = () => setMode(b.dataset.mode));
+document.querySelectorAll("#toolbar [data-mode]").forEach(b => b.onclick = () => setMode(b.dataset.mode));
 $("caliberPreset").addEventListener("change", () => {
   const id = $("caliberPreset").value;
   if (id === "custom") { $("caliber").focus(); $("caliber").select(); return; }
@@ -15586,7 +15944,18 @@ function focusNote(id) {
   const ta = row.querySelector("textarea"); if (ta && !ta.value) ta.focus();
 }
 /** Rende visibile una sezione nascosta dal layout del pannello (come per la tabella dei punti). */
-function secShow(id) { const sec = $(id) && $(id).closest("section"); if (sec && sec.hidden) { setSectionHidden(id, false); } }
+function secShow(id) { const sec = $(id) && $(id).closest("section"); if (sec && sec.hidden && sec.parentElement === $("sideScroll")) setSectionHidden(secId(sec), false); }
+/** 1.26.0: apre l'elemento e tutti i blocchi che lo contengono (sezione, blocchi annidati, voce del gruppo), mostrando la
+    sezione se il layout la nascondeva. */
+function openSec(id, keepLayout = false) {
+  const el = typeof id === "string" ? $(id) : id; if (!el) return null;
+  for (let e = el; e && e.id !== "sideScroll"; e = e.parentElement) {
+    if (e.tagName === "DETAILS" && !e.open) e.open = true;
+    if (e.classList && e.classList.contains("gitem") && !grpOpen.has(+e.dataset.gid)) setGroupOpen(+e.dataset.gid, true);
+  }
+  const sec = el.closest("section"); if (!keepLayout && sec && sec.parentElement === $("sideScroll")) secShow(secId(sec));
+  return el;
+}
 function refreshNotes() {
   const box = $("notesList"); if (!box) return;
   if (!state.notes.length) { box.innerHTML = _T`<div class="muted">Nessuna nota. «✎ Aggiungi nota», poi clicca un foro (la nota lo segue) o una zona del bersaglio.</div>`; return; }
@@ -15692,7 +16061,7 @@ function dwRestoreLayout() {
 }
 function openDetail(on = !detail.open) {
   if (on && !state.image) { toast(_t("Carica prima un'immagine.")); return; }
-  detail.open = on; $("detailWin").hidden = !on; $("bDetail").classList.toggle("on", on);
+  detail.open = on; $("detailWin").hidden = !on; $("bDetail").classList.toggle("on", on); if (DIS.size) refreshInert();
   if (on) {
     dwRestoreLayout();
     if (!detail.pt) { const c = toImage(canvas.width / dpr / 2, canvas.height / dpr / 2); detail.pt = clampToImage(c); }
@@ -16012,7 +16381,7 @@ function refreshQiTop() {
   if (S.tqiOn && T && T.k && T.tqi != null && !(S.errors.length && !(S.dRef > 0 && S.wP >= 0))) html += tile("stqi", _t("TQI della sessione"), T.tqi, null);
   box.innerHTML = html; box.hidden = false;
   box.querySelectorAll("button[data-qt]").forEach(b => b.addEventListener("click", () => {
-    const d = $("sec-results"); d.open = true; secShow("sec-results");
+    openSec("sec-results");
     const c = document.querySelector(`#results .rcard[data-key="${b.dataset.qt}"]`); if (c) c.scrollIntoView({ block: "center", behavior: "smooth" });
   }));
 }
@@ -16476,11 +16845,8 @@ function drawParamHi(cc) {
   }
 }
 
-/* ------------------- GRUPPI RICHIUDIBILI NEI RISULTATI (1.18.0) -------------------
-   Clic sul titolo del gruppo (o ▾/▸): il gruppo si chiude e mostra una riga con colpi, group size, raggio medio e
-   GQI. Lo stato vale per gruppo finché resta aperta la stessa foto/sessione (non è nella storia né nel file); i
-   gruppi nuovi si aprono. */
-const resCollapsed = new Set();
+/* ------------------- RIGA DI RIEPILOGO DEL GRUPPO (1.18.0; dalla 1.26.0 nella voce compressa della sezione Gruppi) -------------------
+   Colpi, group size, raggio medio, GQI e velocità media del gruppo in una riga. */
 function groupSumLine(g) {
   const cc = calcContext(), gcc = ccG(cc, g), pts = inc(g), r = Calc.analyze(pts, g.poa, gcc), parts = [];   // i colpi sono già nel titolo
   if (r.n >= 2 && r.mm) {
@@ -16491,15 +16857,6 @@ function groupSumLine(g) {
   else parts.push(_t("servono almeno 2 fori"));
   const VS = velStats(g); if (VS) parts.push(_T`V media <b>${velTxt(VS.mean, VS.u, 1)}</b>`);   // 1.23.0
   return parts.join(" · ");
-}
-function setGroupCollapsed(gid, on) {
-  if (on) resCollapsed.add(gid); else resCollapsed.delete(gid);
-  const box = document.querySelector(`#results .res[data-gid="${gid}"]`); if (box) applyGroupToggle(box, gid);
-}
-function applyGroupToggle(box, gid) {
-  const on = resCollapsed.has(gid), b = box.querySelector(".rtog");
-  box.classList.toggle("collapsed", on);
-  if (b) { b.textContent = on ? "▸" : "▾"; b.setAttribute("aria-expanded", String(!on)); b.title = on ? _t("Apri il gruppo") : _t("Chiudi il gruppo (resta una riga con i valori principali)"); b.setAttribute("aria-label", b.title); }
 }
 /** Pulsante ⊟ in cima al pannello: comprime tutti i blocchi visibili; se sono già tutti compressi li espande. */
 const secBoxes = () => sideSections().map(el => el.querySelector(":scope > details.box")).filter(d => d && !d.closest("section").hidden && getComputedStyle(d.closest("section")).display !== "none");
@@ -16514,16 +16871,6 @@ function toggleAllSections() {
   const close = ds.some(d => d.open);
   for (const d of ds) d.open = !close;
   refreshSecFold();
-}
-function decorateGroupToggles(out) {
-  for (const id of [...resCollapsed]) if (!state.groups.some(g => g.id === id)) resCollapsed.delete(id);
-  out.querySelectorAll(".res[data-gid]").forEach(box => {
-    const gid = +box.dataset.gid, g = state.groups.find(x => x.id === gid), h = box.querySelector("h3"); if (!g || !h) return;
-    const b = document.createElement("button"); b.type = "button"; b.className = "rtog"; h.prepend(b);
-    const sum = document.createElement("div"); sum.className = "resg-sum"; sum.innerHTML = groupSumLine(g); h.after(sum);
-    h.addEventListener("click", e => { if (e.target.closest("button:not(.rtog), a, input, select")) return; setGroupCollapsed(gid, !resCollapsed.has(gid)); });
-    applyGroupToggle(box, gid);
-  });
 }
 
 /* ------------------- ORIGINE DEI RISULTATI SULL'IMMAGINE -------------------
@@ -16625,7 +16972,7 @@ function refreshOriginUI() {
   const bar = $("originBar"), I = originInfo();
   if (!I) { bar.hidden = true; if (state.origin && !I) state.origin = null; return; }
   bar.hidden = false; $("originText").textContent = I.text || "";
-  document.querySelectorAll("#results .orgbtn").forEach(b => b.classList.remove("on"));
+  document.querySelectorAll(".resroot .orgbtn").forEach(b => b.classList.remove("on"));
 }
 
 function toggleHard(gid, id) {
@@ -17263,17 +17610,187 @@ initParamHi(); initTrendSelect();
 window.addEventListener("resize", () => { const w = $("side").getBoundingClientRect().width; if (w > window.innerWidth - 320) setSideWidth(w, false); });
 window.addEventListener("resize", resizeCanvas);
 
+/* ===================== 1.26.0: BARRA DEI PASSI, STATI DISABILITATI MOTIVATI, ALTRI STRUMENTI ===================== */
+/** Correzioni geometriche applicate alla foto, in breve (stato dei riquadri di Gestione immagine e passo «Geometria»). */
+function geomInfo() {
+  return { rot: state.rot ? `${fmt(state.rot, 1)}°` : "", crop: state.cropUndo ? _t("ritagliata") : "",
+    lens: state.lens ? `k1 ${fmt(state.lens.k1, 3)}` : "", persp: state.persp ? `${fmt(state.persp.wMm, 0)} × ${fmt(state.persp.hMm, 0)} mm` : "" };
+}
+function refreshGeomStatus() {
+  const G = geomInfo();
+  for (const k of Object.keys(G)) { const el = $("ssSt-" + k); if (el) { el.textContent = G[k] ? "✓ " + G[k] : ""; el.classList.toggle("on", !!G[k]); } }
+}
+const NOIMG = () => _t("Carica prima una foto (📂 o Ctrl+O).");
+/* --- barra dei passi: Foto → Geometria → Scala → Tiro → Fori → Risultati. Stato per passo: done (✓), warn (!),
+   todo (numero), opt (facoltativo, tratteggiato); «next» = primo passo obbligatorio non completo. Clic = vai al passo. */
+const STEP_DEF = () => [["photo", _t("Foto")], ["geom", _t("Geometria")], ["scale", _t("Scala")], ["shoot", _t("Tiro")], ["holes", _t("Fori")], ["res", _t("Risultati")]];
+function stepInfo() {
+  const img = !!state.image, cc = calcContext(), p = params(), g = activeGroup(), out = {};
+  out.photo = img ? { st: "done", d: `${state.image.w} × ${state.image.h} px`, tip: _T`Foto: ${state.image.name || ""}. Clic: adatta la foto allo schermo.` }
+    : { st: "todo", d: _t("da caricare"), tip: _t("Carica la foto del bersaglio (📂 o Ctrl+O, oppure trascinala sull'immagine). Clic: scegli il file.") };
+  const G = Object.values(geomInfo()).filter(Boolean);
+  out.geom = !img ? { st: "todo", d: _t("facoltativo"), why: NOIMG() } : G.length ? { st: "done", d: G.join(" · "), tip: _T`Correzioni applicate: ${G.join(", ")}. Clic: Gestione immagine.` }
+    : { st: "opt", d: _t("facoltativo"), tip: _t("Facoltativo: raddrizza (5), correggi la prospettiva (6) o la distorsione, ritaglia. Clic: Gestione immagine.") };
+  if (!img) out.scale = { st: "todo", d: _t("2 punti"), why: NOIMG() };
+  else if (cc.pxPerMm) {
+    const q = calibQuality(cc), L = calibLevel(cc, q), lv = { g: _t("buona"), y: _t("discreta"), r: _t("da verificare") }[L.lvl];
+    out.scale = { st: L.lvl === "r" ? "warn" : "done", d: _T`${fmt(cc.pxPerMm, 2)} px/mm · ${lv}`, tip: _T`Scala ${fmt(cc.pxPerMm, 3)} px/mm, incertezza ±${fmt(q.relErr * 100, 2)}%, qualità ${lv}. Clic: Calibrazione scala.` };
+  } else if (state.calib.p1 && !state.calib.p2) out.scale = { st: "warn", d: _t("manca il 2° punto"), tip: _t("Clicca il secondo punto della scala. Clic: Calibrazione scala.") };
+  else if (state.calib.p1 && state.calib.p2) out.scale = { st: "warn", d: _t("manca la distanza"), tip: _t("Scrivi la distanza nota tra i due punti. Clic: Calibrazione scala.") };
+  else out.scale = { st: "todo", d: _t("2 punti"), tip: _t("Clicca due punti a distanza nota (strumento Scala, 2). Clic: Calibrazione scala e strumento Scala.") };
+  const okT = cc.distMm > 0 && cc.caliberMm > 0 && cc.clickValue > 0;
+  out.shoot = { st: okT ? "done" : "warn", d: okT ? `${fmt(p.shotDist, 0)} ${uL(p.shotDistUnit)} · ${fmt(cc.caliberMm, 2)} ${uL("mm")}` : _t("da completare"),
+    tip: okT ? _T`Distanza ${fmt(p.shotDist, 0)} ${uL(p.shotDistUnit)}, calibro ${caliberLabel(p)}, click ${fmt(cc.clickValue, 3)} ${cc.clickUnit}. Clic: Configurazione sessione › Parametri di tiro.`
+      : _t("Servono distanza di tiro, calibro e valore del click. Clic: Configurazione sessione › Parametri di tiro.") };
+  if (!img) out.holes = { st: "todo", d: _t("mira e fori"), why: NOIMG() };
+  else {
+    const used = state.groups.filter(x => x.shots.length || x.poa), nS = used.reduce((a, x) => a + inc(x).length, 0);
+    const noPoa = used.filter(x => x.shots.length && !x.poa), few = used.filter(x => inc(x).length < 3), good = used.filter(x => x.poa && inc(x).length >= 3);
+    const pr = [...noPoa.map(x => _T`${x.name} senza mira`), ...few.filter(x => !noPoa.includes(x)).map(x => _T`${x.name}: ${inc(x).length} colpi (meglio almeno 5)`)];
+    out.holes = !used.length ? { st: "todo", d: _t("mira e fori"), tip: _t("Segna la mira (3) e i fori (4) del gruppo attivo. Clic: strumento Mira o Foro.") }
+      : { st: good.length && !noPoa.length ? (pr.length ? "warn" : "done") : "warn", d: _T`${used.length} gr. · ${nS} fori`,
+        tip: (pr.length ? pr.join("; ") + ". " : "") + _t("Clic: gruppo attivo e strumento Mira o Foro.") };
+  }
+  if (!img) out.res = { st: "todo", d: _t("dopo i fori"), why: NOIMG() };
+  else {
+    const r = g ? Calc.analyze(inc(g), g.poa, ccG(cc, g)) : null;
+    out.res = r && r.n >= 2 && r.mm ? { st: "done", d: _T`ES ${fmt(r.mm.es, 1)} mm`, tip: _T`${g.name}: group size ${fmt(r.mm.es, 1)} mm. Clic: risultati del gruppo attivo.` }
+      : r && r.n >= 2 ? { st: "warn", d: _t("scala mancante"), tip: _t("Calibra la scala per avere misure e correzione. Clic: risultati del gruppo attivo.") }
+      : { st: "todo", d: _t("servono 2 fori"), tip: _t("Servono almeno 2 fori nel gruppo attivo. Clic: risultati del gruppo attivo.") };
+  }
+  return out;
+}
+function refreshStepper() {
+  const bar = $("stepper"); if (!bar) return;
+  const I = stepInfo(), D = STEP_DEF();
+  const next = D.map(([id]) => id).find(id => id !== "geom" && I[id].st !== "done");
+  bar.innerHTML = D.map(([id, label], k) => {
+    const x = I[id], cls = ["stp", x.st, id === next && !x.why ? "next" : ""].filter(Boolean).join(" ");
+    const icon = x.st === "done" ? "✓" : x.st === "warn" ? "!" : x.st === "opt" ? "–" : String(k + 1);
+    const title = x.why ? `${label}: ${x.d}\n⛔ ${x.why}` : `${label}: ${x.tip}`;
+    return (k ? `<span class="sarr" aria-hidden="true">›</span>` : "") +
+      `<button type="button" class="${cls}" data-step="${id}" title="${esc(title)}"${x.why ? ` aria-disabled="true" data-why="${esc(x.why)}"` : ""}${id === next ? ` aria-current="step"` : ""}><span class="si">${icon}</span><span class="sx"><b>${esc(label)}</b><span class="sd">${esc(x.d)}</span></span></button>`;
+  }).join("");
+}
+function goStep(id) {
+  const g = activeGroup(), scrollTo = el => { if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); };
+  if (id === "photo") { if (state.image) fitView(); else $("fImg").click(); return; }
+  if (id === "geom") { scrollTo(openSec("sec-orient")); return; }
+  if (id === "scale") { scrollTo(openSec("sec-calib")); if (!calcContext().pxPerMm && !state.calib.lock && state.mode !== "calib") setMode("calib"); return; }
+  if (id === "shoot") { scrollTo(openSec("sec-params")); return; }
+  if (id === "holes") { if (!g) return; showGroupBlock(g.id, "res"); scrollTo(GI.get(g.id) && GI.get(g.id).item); setMode(g.poa ? "shot" : "poa"); return; }
+  if (id === "res") { if (!g) return; scrollTo(showGroupBlock(g.id, "res")); }
+}
+
+/* --- stati disabilitati motivati: el.disabled resta la proprietà che il codice scrive, ma il pulsante non usa
+   l'attributo nativo (un pulsante disattivato non mostra il tooltip e non riceve il clic): aria-disabled, stile
+   spento, riga «⛔ motivo» nel tooltip e avviso al clic o alla scorciatoia. */
+function disManage(el, why) {
+  if (!el || DIS.has(el)) return;
+  DIS.set(el, why);
+  let off = el.hasAttribute("disabled"); el.removeAttribute("disabled");
+  Object.defineProperty(el, "disabled", { configurable: true, get: () => off, set: v => { v = !!v; if (v !== off) { off = v; } disApply(el); } });
+  disApply(el);
+}
+function disApply(el) {
+  const off = el.disabled, why = off ? String(DIS.get(el)() || "") : "";
+  el.setAttribute("aria-disabled", off ? "true" : "false");
+  if (off) el.dataset.why = why; else delete el.dataset.why;
+  const cur = el.getAttribute("title") || "", base = cur.split("\n⛔ ")[0], t = off && why ? `${base}\n⛔ ${why}` : base;
+  if (t !== cur) { if (t) el.setAttribute("title", t); else el.removeAttribute("title"); }
+}
+const disAll = () => { for (const el of DIS.keys()) disApply(el); };
+function disToast(el) { const w = el.dataset.why; if (w) toast("⛔ " + w); }
+/** Strumento «a stato» acceso ma ora senza effetto (snap senza scala o calibro, griglia senza scala o distanza). */
+function inertWhy(id) {
+  const cc = calcContext(), p = params();
+  if (!state.image) return "";
+  if (id === "bSnap") return !state.snap ? "" : !cc.pxPerMm ? _t("Ora non ha effetto: serve la scala calibrata (Calibrazione scala).") : !(cc.caliberMm > 0) ? _t("Ora non ha effetto: serve il calibro (Configurazione sessione › Parametri di tiro).") : "";
+  if (id === "bGrid") return !p.gridOn ? "" : !cc.pxPerMm ? _t("Ora non ha effetto: serve la scala calibrata.") : !(cc.distMm > 0) ? _t("Ora non ha effetto: serve la distanza di tiro.") : !(p.gridStep > 0) ? _t("Ora non ha effetto: serve il passo della griglia.") : "";
+  return "";
+}
+function refreshInert() {
+  for (const id of ["bSnap", "bGrid"]) {
+    const el = $(id), w = inertWhy(id), cur = el.getAttribute("title") || "", base = cur.split("\n⚠ ")[0].split("\n⛔ ")[0];
+    el.classList.toggle("inert", !!w);
+    if (!el.disabled) { const t = w ? `${base}\n⚠ ${w}` : base; if (t !== cur) el.setAttribute("title", t); }
+  }
+  const more = ["bRuler", "bDetail", "bGrid"].some(id => $(id).classList.contains("on"));
+  $("bMore").classList.toggle("on", more);
+}
+/** Stato di tutti i comandi gestiti (chiamato da updateButtons a ogni aggiornamento). */
+function refreshDis() {
+  const img = !!state.image;
+  for (const b of document.querySelectorAll("#toolbar [data-mode]")) b.disabled = !img || (b.dataset.mode === "persp" && !perspDimsOk());
+  for (const id of ["bFit", "bZoomOut", "bZoomIn", "bLoupe", "bNote", "bRuler", "bDetail", "bSnap", "bGrid", "bAlign", "bPersp", "bCrop", "bLens"]) $(id).disabled = !img || (id === "bPersp" && !perspDimsOk());
+  $("bClear").disabled = !state.groups.some(g => g.shots.length || g.poa) && !state.calib.p1 && !state.calib.r1;
+  refreshInert();
+}
+const perspDimsOk = () => +$("perspW").value > 0 && +$("perspH").value > 0;
+function initDis() {
+  const W = (sel, f) => document.querySelectorAll(sel).forEach(el => disManage(el, f));
+  W("#toolbar [data-mode]", () => !state.image ? NOIMG() : _t("Imposta larghezza e altezza del rettangolo di riferimento (Gestione immagine › Correzione prospettica)."));
+  for (const id of ["bFit", "bZoomOut", "bZoomIn", "bLoupe", "bNote", "bRuler", "bDetail", "bSnap", "bGrid", "bAlign", "bCrop", "bLens"]) disManage($(id), NOIMG);
+  disManage($("bPersp"), () => !state.image ? NOIMG() : _t("Imposta larghezza e altezza del rettangolo di riferimento."));
+  disManage($("bUndo"), () => _t("Niente da annullare."));
+  disManage($("bRedo"), () => _t("Niente da ripristinare."));
+  disManage($("bDelLast"), () => !state.image ? NOIMG() : _t("Il gruppo attivo non ha né fori né mira."));
+  disManage($("bClear"), () => !state.image ? NOIMG() : _t("Non ci sono punti da eliminare."));
+  disManage($("bLock"), () => !state.image ? NOIMG() : _t("Seleziona prima un elemento da bloccare: clic su una mira, un foro o un punto della scala o del riferimento."));
+  disManage($("bCropApply"), () => _t("Prima «✂ Ritaglia» e trascina sulla foto un rettangolo di almeno 16 × 16 px."));
+  disManage($("bCropUndo"), () => _t("Nessun ritaglio da annullare (si può annullare finché non carichi un'altra foto)."));
+  disManage($("bLensFit"), () => _t("Servono almeno 2 linee con 3 punti ciascuna: «〰 Calibra da linee», Invio per passare alla linea successiva."));
+  disManage($("bLensOff"), () => _t("Nessuna correzione della distorsione da rimuovere."));
+  disManage($("bLensDel"), () => _t("Scegli prima dei coefficienti salvati nel menu accanto."));
+  disManage($("bPerspOff"), () => _t("Nessuna correzione prospettica da rimuovere."));
+  disManage($("bCalLock"), () => _t("Imposta prima la scala (2 punti)."));
+  disManage($("bRefLock"), () => _t("Imposta prima il riferimento di controllo."));
+  disManage($("bRefDel"), () => state.calib.r1 && state.calib.refLock ? _t("Il riferimento è bloccato: sbloccalo prima (🔒).") : _t("Nessun riferimento di controllo da eliminare."));
+  disManage($("bZip"), () => _t("L'archivio è vuoto: archivia prima almeno una sessione."));
+  disManage($("bBwUse"), () => _t("Calcola prima la stima del BC (con un risultato non al bordo dell'intervallo)."));
+  // clic su un comando spento: niente azione, solo il motivo
+  document.addEventListener("click", e => {
+    const el = e.target.closest && e.target.closest('[aria-disabled="true"]'); if (!el) return;
+    if (!DIS.has(el) && !el.classList.contains("stp")) return;
+    e.preventDefault(); e.stopImmediatePropagation(); disToast(el);
+  }, true);
+}
+/* --- menu «⋯ Altri strumenti» --- */
+function setMoreMenu(on) {
+  const m = $("moreMenu"), b = $("bMore"); m.hidden = !on; b.setAttribute("aria-expanded", String(on)); $("toolbar").classList.toggle("menu-open", on);
+  if (on) { const f = m.querySelector('button:not([aria-disabled="true"])'); if (f) f.focus({ preventScroll: true }); }
+}
+function initMoreMenu() {
+  $("bMore").addEventListener("click", e => { e.stopPropagation(); setMoreMenu($("moreMenu").hidden); });
+  $("moreMenu").addEventListener("click", () => setMoreMenu(false));   // dopo l'azione del comando (fase di risalita)
+  $("moreMenu").addEventListener("keydown", e => {
+    const B = [...$("moreMenu").querySelectorAll("button")], i = B.indexOf(document.activeElement);
+    if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setMoreMenu(false); $("bMore").focus(); }
+    else if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); B[(i + (e.key === "ArrowDown" ? 1 : -1) + B.length) % B.length].focus(); }
+  });
+  document.addEventListener("pointerdown", e => { if (!$("moreMenu").hidden && !e.target.closest("#moreWrap")) setMoreMenu(false); });
+  $("stepper").addEventListener("click", e => { const b = e.target.closest("[data-step]"); if (b) goStep(b.dataset.step); });
+}
+/** Tasto di una scorciatoia → comando della barra: se è spento, si mostra il motivo invece di agire. */
+const KEY_TOOL = { "1": '[data-mode="pan"]', "2": '[data-mode="calib"]', "3": '[data-mode="poa"]', "4": '[data-mode="shot"]', "5": '[data-mode="align"]', "6": '[data-mode="persp"]',
+  f: "#bFit", l: "#bLoupe", m: "#bSnap", g: "#bGrid", r: "#bRuler", n: "#bNote", d: "#bDetail", k: "#bLock", backspace: "#bDelLast", "+": "#bZoomIn", "=": "#bZoomIn", "-": "#bZoomOut", _: "#bZoomOut" };
+function keyBlocked(k) {
+  const sel = KEY_TOOL[k], el = sel && document.querySelector("#toolbar " + sel);
+  if (!el || el.getAttribute("aria-disabled") !== "true") return false;
+  disToast(el); return true;
+}
+
 // avvio
 applyStaticI18n();
 $("langSel").onchange = e => setLang(e.target.value);
-initTheme(); initDensity(); initLayout(); initUiMode(); refreshSecFold(); initSnap(); initProv(); initTour();
+initTheme(); initDensity(); initLayout(); initUiMode(); refreshSecFold(); initSnap(); initProv(); initTour(); initDis(); initMoreMenu();
 buildCaliberPreset(); syncCaliberPreset();
 state.groups.push(makeGroup()); state.activeGroupId = state.groups[0].id;
 setMode("pan"); setLoupe(true); initLoupeZoom(); resizeCanvas(); resetHistory();
 if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); else { checkAutosave(); refreshArchiveInfo(); }
 
 // Accesso per i test automatici (Playwright): espone lo stato, nessun effetto sull'uso normale.
-window.__SA = { exportRecipePdf, buildRecipe, recipeQuotesText, recipeWarnings, loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, drawDiag, toggleAllSections, refreshSecFold, setUiMode, uiBasic, openBcWiz, bwRun, bwFromDope, fileName, groupProfileName, find, findRun, findStep, findClear, findCollect, pdfEmbFonts, resCollapsed, setGroupCollapsed, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
+window.__SA = { exportRecipePdf, buildRecipe, recipeQuotesText, recipeWarnings, loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, drawDiag, toggleAllSections, refreshSecFold, setUiMode, uiBasic, openBcWiz, bwRun, bwFromDope, fileName, groupProfileName, find, findRun, findStep, findClear, findCollect, pdfEmbFonts, grpOpen, setGroupOpen, toggleAllGroups, syncGroupItems, GI, openSec, showGroupBlock, stepInfo, goStep, refreshStepper, setMoreMenu, migrateLayout, refreshLockUI, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, openCompare, setAnaPage, anaPage, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
   corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,

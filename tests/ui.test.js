@@ -78,6 +78,8 @@ const S = page => page.evaluate(() => {
   return JSON.parse(JSON.stringify({ rot: state.rot, mode: state.mode, calib: state.calib, g, ngroups: state.groups.length, loupeZoom: state.loupeZoom,
     ctxPx: Calc.scale(state.calib.p1, state.calib.p2, parseFloat(document.getElementById("calDist").value), document.getElementById("calUnit").value) }));
 });
+/** 1.26.0: testo di tutti i risultati (voci dei gruppi + sessione). */
+const resText = page => page.$$eval(".resroot", els => els.map(e => e.textContent).join("\n"));
 const analyzeActive = page => page.evaluate(() => {
   const { state, Calc } = window.__SA, g = state.groups.find(x => x.id === state.activeGroupId);
   const p = { pxPerMm: Calc.scale(state.calib.p1, state.calib.p2, parseFloat(document.getElementById("calDist").value), "mm"),
@@ -105,7 +107,7 @@ test("scala, mira e fori inseriti con il mouse", async page => {
   for (let i = 0; i < 5; i++) { near(s.g.shots[i].x, SHOTS[i].x, 1, "x foro"); near(s.g.shots[i].y, SHOTS[i].y, 1, "y foro"); }
   const r = await analyzeActive(page);
   assert.strictEqual(r.correction.hDir, "SINISTRA");   // gruppo a destra → correzione a sinistra
-  assert.match(await page.textContent("#results"), /Group size/);
+  assert.match(await resText(page), /Group size/);
 });
 
 test("trascinamento di un foro, annulla e ripristina", async page => {
@@ -548,7 +550,7 @@ test("zone di punteggio ISSF: anelli, punteggio per foro, totale, CSV e sessione
   const si = await page.evaluate(() => { const x = window.__SA.scoreHere(window.__SA.state.groups[0]); return { total: x.total, max: x.max, vals: [...x.byId.values()].map(v => v.value) }; });
   assert.deepStrictEqual(si.vals, exp); assert.strictEqual(si.total, exp.reduce((a, b) => a + b, 0)); assert.strictEqual(si.max, 50);
   assert.match(await page.textContent("#points thead"), /Punti/);
-  assert.match(await page.textContent("#results"), new RegExp(`Punteggio.*${si.total} / 50`));
+  assert.match(await resText(page), new RegExp(`Punteggio.*${si.total} / 50`));
   assert.match(await page.evaluate(() => window.__SA.resultText()), /Punteggio \(ISSF 10 m pistola ad aria\): \d+ \/ 50/);
   const csvF = await page.evaluate(() => window.__SA.csvShots()), csvG = await page.evaluate(() => window.__SA.csvGroups());
   assert.match(csvF.split("\r\n")[0], /;Punti;10 interno;Sulla linea;Alzo impostato \(click\);Brandeggio impostato \(click\);Carica del foro \(gr\);Velocità del foro;Unità velocità$/);
@@ -656,31 +658,34 @@ test("archivio delle sessioni ed esportazione ZIP", async page => {
 
 
 /* ------------------------------ 1.6.0 ------------------------------ */
-test("sezioni: all'apertura solo «Calibrazione scala» aperta; Gruppi e Risultati si aprono al primo punto", async page => {
+test("sezioni: all'apertura solo «Calibrazione scala» aperta; Gruppi (con il gruppo attivo espanso) si apre al primo punto", async page => {
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
-  const st = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#side details")].map(d => [d.id, d.open])));
+  const st = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#side details[id]")].map(d => [d.id, d.open])));
   const s0 = await st();
   for (const [id, open] of Object.entries(s0)) assert.strictEqual(open, id === "sec-calib", `${id} ${id === "sec-calib" ? "aperta" : "chiusa"} all'avvio`);
   ok2(await page.isHidden("#shotDist"), "campo nascosto con la sezione chiusa");
+  await page.click("#sec-config > summary");
+  ok2(await page.isHidden("#shotDist"), "Configurazione sessione aperta, Parametri di tiro ancora chiuso");
   await page.click("#sec-params > summary");
-  ok2(await page.isVisible("#shotDist"), "la sezione si apre col clic sul titolo");
+  ok2(await page.isVisible("#shotDist"), "il blocco annidato si apre col clic sul titolo");
   await page.click("#sec-calib > summary");
   ok2(await page.isHidden("#calDist"), "anche la sezione aperta si chiude");
   ok2(await page.evaluate(() => document.getElementById("bSnap").classList.contains("on")), "snap attivo all'apertura");
-  // primo punto sulla foto (scala): si aprono Gruppi e Risultati, il resto non cambia
+  // primo punto sulla foto (scala): si apre Gruppi con il gruppo attivo espanso, il resto non cambia
   await loadTarget(page);
   await clickAt(page, { x: 100, y: 500 });
   const s1 = await st();
-  ok2(s1["sec-groups"] && s1["sec-results"], "Gruppi e Risultati aperte al primo punto");
-  ok2(!s1["sec-hit"] && !s1["sec-score"] && !s1["sec-points"] && !s1["sec-load"], "le altre restano come prima");
-  // richiuse dall'utente, non si riaprono a ogni punto
-  await page.click("#sec-results > summary");
+  ok2(s1["sec-groups"] && !s1["sec-results"], "Gruppi aperta al primo punto, Risultati della sessione no");
+  ok2(await page.isVisible("#groups .gitem.active .gres"), "gruppo attivo espanso");
+  ok2(!s1["sec-hit"] && !s1["sec-score"] && !s1["sec-points"], "le altre restano come prima");
+  // richiusa dall'utente, non si riapre a ogni punto
+  await page.click("#sec-groups > summary");
   await clickAt(page, { x: 300, y: 500 });
-  assert.strictEqual((await st())["sec-results"], false, "non si riapre a ogni clic");
-  // nuova foto: alla prima mira si riaprono
+  assert.strictEqual((await st())["sec-groups"], false, "non si riapre a ogni clic");
+  // nuova foto: alla prima mira si riapre
   await loadTarget(page, "secondo.png");
   await key(page, "3"); await clickAt(page, POA);
-  assert.strictEqual((await st())["sec-results"], true, "nuova foto: di nuovo aperte al primo punto");
+  assert.strictEqual((await st())["sec-groups"], true, "nuova foto: di nuovo aperta al primo punto");
 });
 test("nuovo gruppo: copia tutti i dati di ricarica e condizioni del gruppo attivo", async page => {
   await loadTarget(page);
@@ -710,10 +715,10 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   assert.strictEqual(await page.inputValue("#langSel"), "it", "italiano predefinito");
   await page.selectOption("#langSel", "en");
   assert.strictEqual(await page.evaluate(() => document.documentElement.lang), "en");
-  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Results");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Session results");
   assert.strictEqual(await page.getAttribute("#bLoad", "aria-label"), "Load photo");   // dalla 1.17.0 la barra principale ha solo icone
   assert.strictEqual(await page.getAttribute("#bLoad", "title"), "Load photo (Ctrl+O)");
-  assert.strictEqual(await page.getAttribute("#bUndo", "title"), "Undo (Ctrl+Z)");
+  assert.strictEqual((await page.getAttribute("#bUndo", "title")).split("\n")[0], "Undo (Ctrl+Z)");
   // lavoro completo in inglese
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
@@ -724,7 +729,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await setDialCell(page, 0, "dv", 5);   // click impostati → riga della dope nei risultati
   const s1 = await S(page);
   assert.strictEqual(s1.g.name, "Group 1", "nome automatico del gruppo in inglese");
-  ok2(/Dope at 100 m: elevation/.test(await page.textContent("#results")), "dope in inglese");
+  ok2(/Dope at 100 m: elevation/.test(await resText(page)), "dope in inglese");
   const side = await page.innerText("#sideScroll");
   ok2(/Group size \(c-c\)/.test(side) && /Score/.test(side) && /Probability per shot/.test(side), "risultati in inglese");
   assert.ok(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun testo italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
@@ -788,14 +793,14 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   await page.evaluate(() => window.__SA.doAutosave());
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
   assert.strictEqual(await page.inputValue("#langSel"), "en", "lingua ricordata");
-  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Results");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Session results");
   await page.waitForSelector("#restoreBar:not([hidden])", { timeout: 5000 });
   assert.match(await page.textContent("#restoreText"), /Unsaved work found/);
   await page.click("#bRestoreIgnore");
   // ritorno all'italiano senza ricaricare
   await page.selectOption("#langSel", "it");
-  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Risultati");
-  assert.strictEqual(await page.getAttribute("#bUndo", "title"), "Annulla (Ctrl+Z)");
+  assert.strictEqual((await page.textContent("#sec-results > summary")).trim(), "Risultati della sessione");
+  assert.strictEqual((await page.getAttribute("#bUndo", "title")).split("\n")[0], "Annulla (Ctrl+Z)");
   assert.strictEqual(await page.evaluate(() => localStorage.getItem("shootAnalyzer.lang")), "it");
 });
 
@@ -803,9 +808,9 @@ test("cambio lingua a lavoro aperto: pannelli e menu ridisegnati", async page =>
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100);
-  ok2(/Raggio medio/i.test(await page.innerText("#results")), "risultati in italiano");
+  ok2(/Raggio medio/i.test(await resText(page)), "risultati in italiano");
   await page.selectOption("#langSel", "en");
-  const res = await page.innerText("#results");
+  const res = await resText(page);
   ok2(/Mean radius/i.test(res) && !/Raggio medio/i.test(res), "risultati ridisegnati in inglese");
   ok2(/From aim/.test(await page.innerText("#points")), "tabella punti in inglese");
   assert.strictEqual(await page.textContent('#ld-windDir option[value="12"]'), "12 o'clock (headwind)");
@@ -814,7 +819,7 @@ test("cambio lingua a lavoro aperto: pannelli e menu ridisegnati", async page =>
   const dir = await page.evaluate(() => [...document.querySelectorAll("#points td")].map(td => td.textContent).find(t => /°/.test(t)));
   ok2(dir && !/O/.test(dir.replace(/[^A-Z]/g, "")), "sigle della bussola in inglese (W, non O): " + dir);
   await page.selectOption("#langSel", "it");
-  ok2(/Raggio medio/.test(await page.innerText("#results")), "di nuovo in italiano");
+  ok2(/Raggio medio/.test(await resText(page)), "di nuovo in italiano");
   assert.strictEqual((await S(page)).g.name, "Gruppo 1");
 });
 
@@ -847,7 +852,7 @@ test("click di alzo e brandeggio: ripresi dal foro precedente, correzione propag
   const k = 1 / (await S(page)).ctxPx, D = 100000;
   const v = g.shots.reduce((a, q) => a + (q.dv * 0.1 - Math.atan((g.poa.y - q.y) * k / D) * 1000), 0) / 5;
   const h = g.shots.reduce((a, q) => a + (q.dh * 0.1 - Math.atan((q.x - g.poa.x) * k / D) * 1000), 0) / 5;
-  const res = await page.textContent("#results");
+  const res = await resText(page);
   const m = res.match(/Dope a 100 m: alzo ([+−-]?[\d,]+) click \(([+−-]?[\d,]+) MIL[^)]*\) · brandeggio ([+−-]?[\d,]+) click \(([+−-]?[\d,]+) MIL/);
   ok2(m, "riga della dope nei risultati: " + res.slice(res.indexOf("Dope"), res.indexOf("Dope") + 120));
   const it = t => parseFloat(t.replace(",", ".").replace("−", "-"));
@@ -1065,7 +1070,7 @@ test("convex hull: area e perimetro nei risultati, sull'immagine, nei CSV", asyn
     return { area: ap.area * k * k, perim: ap.perim * k, n: h.length }; });
   // verifica indipendente dell'area: fori del test, formula del laccio sul poligono atteso
   ok2(exp.n >= 3 && exp.n <= 5, "vertici del poligono");
-  const res = await page.textContent("#results");
+  const res = await resText(page);
   const m = res.match(/Convex hull\s*([\d.]+) mm² · perimetro ([\d,]+) mm/);
   ok2(m, "riga del convex hull nei risultati");
   near(parseFloat(m[1].replace(".", "")), exp.area, 0.6, "area (mm²)"); near(parseFloat(m[2].replace(",", ".")), exp.perim, 0.06, "perimetro (mm)");
@@ -1115,20 +1120,20 @@ test("termini dei risultati collegati al glossario dell'help tecnico", async pag
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100);
-  const links = await page.$$eval("#results [data-gl]", a => a.map(x => [x.textContent.trim(), x.dataset.gl]));
+  const links = await page.$$eval(".resroot [data-gl]", a => a.map(x => [x.textContent.trim(), x.dataset.gl]));
   const has = (t, id) => links.some(([a, b]) => a.startsWith(t) && b === id);
   ok2(has("CEP (50%)", "gl-cep") && has("FOM", "gl-fom") && has("Raggio medio", "gl-mr") && has("Asse maggiore", "gl-asse"), "link dei termini principali");
   ok2(links.some(([, b]) => b === "gl-ic"), "anche gli intervalli di confidenza");
-  const title = await page.getAttribute('#results a[data-gl="gl-cep"]', "title");
+  const title = await page.getAttribute('.resroot a[data-gl="gl-cep"]', "title");
   ok2(/50% dei colpi/.test(title) && /clic: spiegazione/.test(title), "spiegazione breve al passaggio del mouse");
-  await page.click('#results a[data-gl="gl-cep"]');
+  await page.click('.resroot a[data-gl="gl-cep"]');
   await page.waitForFunction(() => window.__SA.helpOpen());
   ok2(await page.evaluate(() => document.getElementById("gl-cep").classList.contains("hl")), "voce del glossario evidenziata");
   const vis = await page.evaluate(() => { const r = document.getElementById("gl-cep").getBoundingClientRect(); return r.top >= 0 && r.bottom <= window.innerHeight; });
   ok2(vis, "voce del glossario visibile");
   await key(page, "Escape");
   // ogni destinazione esiste nell'help
-  const missing = await page.evaluate(() => [...document.querySelectorAll("#results [data-gl]")].map(a => a.dataset.gl).filter(id => !document.getElementById(id)));
+  const missing = await page.evaluate(() => [...document.querySelectorAll(".resroot [data-gl]")].map(a => a.dataset.gl).filter(id => !document.getElementById(id)));
   assert.deepStrictEqual(missing, [], "destinazioni esistenti");
 });
 
@@ -1322,7 +1327,7 @@ test("sagome: IPSC con spostamento e rotazione, IDPA, silhouette, zona vitale, d
   await setField(page, "#tgtDx", -60);
   r = await SI(page); assert.deepStrictEqual(r.cells, ["C", "C", "C", "C", "C"], "zona C"); assert.strictEqual(r.total, 15, "minor: C = 3");
   await page.selectOption("#ipscPF", "major"); r = await SI(page); assert.strictEqual(r.total, 20, "major: C = 4");
-  ok2(/20 \/ 25 punti · A 0 · C 5/.test(await page.textContent("#results")), "riepilogo nei risultati");
+  ok2(/20 \/ 25 punti · A 0 · C 5/.test(await resText(page)), "riepilogo nei risultati");
   // trascinamento col mouse: sposta; Shift+trascina: ruota; annulla
   await page.click("#bTgtMove");
   assert.strictEqual(await page.evaluate(() => window.__SA.state.mode), "tgt");
@@ -1505,7 +1510,7 @@ test("verifica incrociata della scala: diametro dei fori e riferimento di contro
 test("incertezza di misura, foro difficile, ES equivalente", async page => {
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
-  const r = await page.textContent("#results");
+  const r = await resText(page);
   ok2(/Incertezza di misura \(95%\): ES/.test(r), "blocco nei risultati");
   ok2(/ES equivalente/.test(r) && /10 colpi/.test(r) && !/5 colpi \d/.test(r), "5 colpi: solo l'equivalente a 10");
   const e = await page.evaluate(() => { const S = window.__SA, a = analyzeA(); function analyzeA() { const g = S.state.groups[0], cc = S.calcContext(); return S.Calc.analyze(g.shots, g.poa, cc); } return S.Calc.esEquivalent(a.mm.es, 5, 10); });
@@ -1545,8 +1550,8 @@ test("diagnostica del modello: due centri, QQ-plot e avviso", async page => {
   await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; }, null, { timeout: 15000 });
   const D = await page.evaluate(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return { two: D.two.p, an: D.aniso.p, n: D.qq.length }; });
   ok2(D.two < 0.05, "due centri: p " + D.two); assert.strictEqual(D.n, 10);
-  await page.waitForFunction(() => /Modello circolare normale poco adatto/.test(document.getElementById("results").textContent));
-  ok2(/due centri distinti/.test(await page.textContent("#results")), "avviso con il motivo");
+  await page.waitForFunction(() => /Modello circolare normale poco adatto/.test(document.getElementById("groups").textContent));
+  ok2(/due centri distinti/.test(await resText(page)), "avviso con il motivo");
   await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
   assert.strictEqual(await page.evaluate(() => window.__SA.CH.hits.qq.length), 10, "QQ-plot: un punto per foro");
   ok2(/Rayleigh/.test(await page.textContent("#chQQNote")), "nota del QQ-plot");
@@ -1627,16 +1632,16 @@ test("freccia di correzione sulla foto e correzione virtuale", async page => {
   await page.uncheck("#corrArrowOn"); await page.waitForTimeout(100);
   const s1 = await canvasSig(page); ok2(s1 !== s0, "la freccia si toglie");
   await page.check("#corrArrowOn"); await page.waitForTimeout(100);
-  const before = JSON.stringify((await S(page)).g.shots), res0 = await page.textContent("#results");
-  await page.click("#results button[data-vcorr]"); await page.waitForTimeout(100);
+  const before = JSON.stringify((await S(page)).g.shots), res0 = await resText(page);
+  await page.click(".resroot button[data-vcorr]"); await page.waitForTimeout(100);
   ok2(await page.evaluate(() => window.__SA.state.virtCorr === true), "attiva");
   ok2(await canvasSig(page) !== s0, "fori spostati disegnati");
   ok2(/Correzione virtuale attiva/.test(await page.textContent("#livePanel")), "segnalata nel pannello");
   assert.strictEqual(JSON.stringify((await S(page)).g.shots), before, "i dati non cambiano");
   ok2(await page.evaluate(() => window.__SA.buildSession().params.virtCorr === undefined), "non salvata nella sessione");
-  await page.click("#results button[data-vcorr]"); await page.waitForTimeout(100);
+  await page.click(".resroot button[data-vcorr]"); await page.waitForTimeout(100);
   ok2(await page.evaluate(() => !window.__SA.state.virtCorr), "si toglie");
-  assert.strictEqual(await page.textContent("#results"), res0, "risultati invariati");
+  assert.strictEqual(await resText(page), res0, "risultati invariati");
 });
 
 test("semaforo della calibrazione, densità, layout del pannello ed effetto dei fori", async page => {
@@ -1657,24 +1662,24 @@ test("semaforo della calibrazione, densità, layout del pannello ed effetto dei 
   ok2(/Effetto ES \/ RM/.test(await page.textContent("#points thead")), "colonna");
   // densità
   await page.selectOption("#densSel", "compact");
-  ok2(await page.evaluate(() => getComputedStyle(document.querySelector("#results .rc-more")).display === "none"), "compatta: dettagli delle card nascosti");
+  ok2(await page.evaluate(() => getComputedStyle(document.querySelector(".resroot .rc-more")).display === "none"), "compatta: dettagli delle card nascosti");
   await page.selectOption("#densSel", "detail");
-  ok2(await page.evaluate(() => [...document.querySelectorAll("#results details.meas")].every(d => d.open)), "dettagliata: riquadri aperti");
+  ok2(await page.evaluate(() => [...document.querySelectorAll(".resroot details.meas")].every(d => d.open)), "dettagliata: riquadri aperti");
   // layout
   await page.click("#bLayout"); ok2(await page.isVisible("#layoutPop"), "pannello layout");
   const ord0 = await page.evaluate(() => window.__SA.getLayout().map(x => x.id));
   await page.click('#layoutPop button[data-lm="sec-points"][data-d="-1"]');
   const ord1 = await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), i0 = ord0.indexOf("sec-points");
   assert.strictEqual(ord1[i0 - 1], "sec-points", "sezione spostata in su");
-  await page.uncheck('#layoutPop input[data-lv="sec-load"]');
-  ok2(await page.isHidden("#sec-load"), "sezione nascosta");
+  await page.uncheck('#layoutPop input[data-lv="sec-notes"]');
+  ok2(await page.isHidden("#sec-notes"), "sezione nascosta");
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
   assert.strictEqual(await page.inputValue("#densSel"), "detail", "densità ricordata");
   assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord1, "ordine ricordato");
-  ok2(await page.isHidden("#sec-load"), "visibilità ricordata");
+  ok2(await page.isHidden("#sec-notes"), "visibilità ricordata");
   await page.click("#bLayout"); await page.click("#bLayReset");
   assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord0, "layout ripristinato");
-  ok2(await page.isVisible("#sec-load >> xpath=..") , "sezione di nuovo visibile");
+  ok2(await page.isVisible("#sec-notes >> xpath=..") , "sezione di nuovo visibile");
   await page.selectOption("#densSel", "standard");
 });
 
@@ -1695,7 +1700,7 @@ test("croce estesa della mira, quadrante del vento e profili di ricarica", async
     return best; }, h);
   ok2(px > 20, "tratteggio scuro lungo l'orizzontale: " + px);
   // quadrante del vento
-  await page.evaluate(() => { document.getElementById("sec-load").open = true; });
+  await page.evaluate(() => { window.__SA.showGroupBlock(window.__SA.state.activeGroupId, "ld"); });
   await setField(page, "#ld-wind", 10); await page.selectOption("#ld-windUnit", "km/h");
   await page.click('#windDial g[data-h="3"]');
   assert.strictEqual((await S(page)).g.load.windDir, "3");
@@ -1704,7 +1709,7 @@ test("croce estesa della mira, quadrante del vento e profili di ricarica", async
   await page.focus('#windDial g[data-h="12"]'); await page.keyboard.press("Enter");
   assert.strictEqual((await S(page)).g.load.windDir, "12", "da tastiera");
   ok2(/frontale 10,0 km\/h/.test(await page.textContent("#windInfo")), "vento contro");
-  ok2(/Vento/.test(await page.textContent("#results")) && /Componente frontale/.test(await page.textContent("#results")), "card del vento");
+  ok2(/Vento/.test(await resText(page)) && /Componente frontale/.test(await resText(page)), "card del vento");
   const W = await page.evaluate(() => window.__SA.Calc.windComponents(4, 2));
   near(W.cross, 4 * Math.sin(Math.PI / 3), 1e-12, "laterale"); near(W.head, 2, 1e-12, "frontale");
   // profili
@@ -1780,15 +1785,15 @@ test("risultati a card e file ZIP di sessione: salva, riapri, storico, ZIP compr
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100);
   await page.waitForFunction(() => { const S = window.__SA, D = S.diagInfo(S.state.groups[0]); return D && D !== "pending"; });
-  const keys = await page.$$eval("#results .rcard", a => a.map(e => e.dataset.key));
-  assert.deepStrictEqual(keys, ["gqi", "es", "mr", "corr", "shape", "stab", "sgqi"], "card (GQI dalla 1.16, stabilità da 5 colpi, GQI della sessione)");
-  ok2(/3 click SINISTRA/.test(await page.textContent('#results .rcard[data-key="corr"] .rc-main')), "correzione in evidenza");
-  ok2(!(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table')), "dettagli chiusi");
-  await page.click('#results .rcard[data-key="mr"] .rc-more > summary');
+  const keys = await page.$$eval(".resroot .rcard", a => a.map(e => e.dataset.key));
+  assert.deepStrictEqual(keys, ["gqi", "es", "mr", "corr", "shape", "stab", "sens", "sgqi"], "card (GQI dalla 1.16, stabilità da 5 colpi, robustezza dalla 1.24, GQI della sessione)");
+  ok2(/3 click SINISTRA/.test(await page.textContent('.resroot .rcard[data-key="corr"] .rc-main')), "correzione in evidenza");
+  ok2(!(await page.isVisible('.resroot .rcard[data-key="mr"] .rc-more table')), "dettagli chiusi");
+  await page.click('.resroot .rcard[data-key="mr"] .rc-more > summary');
   await clickAt(page, { x: 430, y: 255 });
-  ok2(await page.isVisible('#results .rcard[data-key="mr"] .rc-more table'), "dettagli ancora aperti dopo l'aggiornamento");
-  ok2(/R99/.test(await page.textContent('#results .rcard[data-key="mr"]')), "R99 nei dettagli");
-  await page.click('#results .rc-t a.gl >> nth=0'); ok2(await page.evaluate(() => window.__SA.helpOpen()), "titolo collegato al glossario"); await key(page, "Escape");
+  ok2(await page.isVisible('.resroot .rcard[data-key="mr"] .rc-more table'), "dettagli ancora aperti dopo l'aggiornamento");
+  ok2(/R99/.test(await page.textContent('.resroot .rcard[data-key="mr"]')), "R99 nei dettagli");
+  await page.click('.resroot .rc-t a.gl >> nth=0'); ok2(await page.evaluate(() => window.__SA.helpOpen()), "titolo collegato al glossario"); await key(page, "Escape");
   // ZIP di sessione
   const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bSaveZip")]);
   ok2(/\.zip$/.test(dl.suggestedFilename()), dl.suggestedFilename());
@@ -1840,7 +1845,7 @@ test("stabilità colpo dopo colpo e ordine di sparo", async page => {
   const es = await page.evaluate(() => { const C = window.__SA.Calc, P = window.__SA.state.groups[0].shots; return P.slice(1).map((_, i) => C.extremeSpread(P.slice(0, i + 2)).d); });
   S0.steps.forEach((s, i) => near(s.es, es[i], 1e-9, "ES progressivo " + (i + 2)));
   ok2(S0.open && S0.open.from === 6 && S0.open.p < 0.05, "si apre dal 6° colpo: " + JSON.stringify(S0.open));
-  ok2(/si apre dal colpo 6/.test(await page.textContent('#results .rcard[data-key="stab"]')), "card dei risultati");
+  ok2(/si apre dal colpo 6/.test(await page.textContent('.resroot .rcard[data-key="stab"]')), "card dei risultati");
   // grafici
   await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
   await page.waitForTimeout(300);
@@ -1883,7 +1888,7 @@ test("1.15.0: colori dei gruppi senza giallo, linea elastica della scala, campo 
   await page.evaluate(t => window.__SA.loadSessionText(t), ses);
   assert.strictEqual((await S(page)).g.color, "#c2410c", "giallo di una sessione 1.14 rimappato");
   // linea elastica: dopo il primo punto della scala, tratteggio verde fino al cursore
-  await page.click("#bClear").catch(() => {});
+  await page.click("#bMore"); await page.click("#bClear").catch(() => {});
   await page.evaluate(() => { window.__SA.state.calib = { p1: null, p2: null }; window.__SA.commit(); });
   await key(page, "2"); await clickAt(page, { x: 100, y: 100 });
   const far = await screenOf(page, { x: 400, y: 220 }); await page.mouse.move(far.x, far.y, { steps: 3 }); await redraw(page);
@@ -1951,7 +1956,7 @@ test("1.15.0: blocco di fori, mira, scala e riferimento", async page => {
   await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(await page.evaluate(() => window.__SA.buildSession(true))));
   s = await S(page); ok2(s.g.shots[0].lock && s.g.shots[4].lock && s.g.poa.lock && s.calib.lock && s.calib.refLock, "blocchi salvati nella sessione");
   // «Tutto»: restano gli elementi bloccati
-  await page.click("#bClear");
+  await page.click("#bMore"); await page.click("#bClear");
   s = await S(page);
   assert.strictEqual(s.g.shots.length, 2, "restano i 2 fori bloccati"); ok2(s.g.poa && s.calib.p1 && s.calib.r1, "restano mira, scala e riferimento bloccati");
   // sblocco: il foro torna eliminabile
@@ -2173,8 +2178,9 @@ test("1.15.0 in inglese: note, blocco, righello, scala sulla foto, differenze se
   await key(page, "1"); await clickAt(page, SHOTS[0]); await key(page, "k"); await page.click("#bCalLock");
   await key(page, "r"); await clickAt(page, { x: 100, y: 200 }); await clickAt(page, { x: 300, y: 200 });
   assert.match(await page.textContent("#hint"), /^Ruler: .*50\.00 mm · 1\.969 in · 1\.72 MOA · 0\.50 MRAD · 0\.0° · on axis/);
-  await key(page, "Escape"); await key(page, "d");
+  await key(page, "Escape");
   await page.click("#bAddGroup"); await setField(page, "#ld-charge", "45"); await key(page, "3"); await clickAt(page, { x: 600, y: 400 }); await clickAt(page, { x: 640, y: 420 }); await clickAt(page, { x: 650, y: 380 });
+  await key(page, "d");   // 1.26.0: la finestra di dettaglio si apre dopo i fori (con la barra dei passi coprirebbe i punti cliccati)
   await page.click(`#groups button.eye >> nth=0`);
   const side = await page.textContent("#side");
   ok2(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
@@ -2197,7 +2203,7 @@ const qiIndep = (page, gi = 0) => page.evaluate(gi => {   // calcolo indipendent
   const aqi = D == null ? null : 100 * Math.exp(-Math.log(1.25) * (D / dref) ** 2), w = +v("qiWP") / 100;
   return { n: pts.length, mr, gqi, aqi, tqi: aqi == null ? null : w * gqi + (1 - w) * aqi };
 }, gi);
-const cardNum = (page, key, nth = 0) => page.$$eval(`#results .rcard[data-key="${key}"] .qi-num`, (els, i) => els[i] ? els[i].textContent : null, nth);
+const cardNum = (page, key, nth = 0) => page.$$eval(`.resroot .rcard[data-key="${key}"] .qi-num`, (els, i) => els[i] ? els[i].textContent : null, nth);
 
 test("1.16.0: GQI e TQI del gruppo, impostazioni, unità, colpi esclusi, casi particolari", async page => {
   await loadTarget(page);
@@ -2205,8 +2211,8 @@ test("1.16.0: GQI e TQI del gruppo, impostazioni, unità, colpi esclusi, casi pa
   let I = await qiIndep(page);
   assert.strictEqual(await cardNum(page, "gqi"), String(Math.round(I.gqi)), "GQI nella card = calcolo indipendente");
   const cls = I.gqi >= 90 ? "Ottimo" : I.gqi >= 75 ? "Buono" : I.gqi >= 60 ? "Discreto" : I.gqi >= 40 ? "Scarso" : "Insufficiente";
-  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), new RegExp(`— ${cls}`));
-  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /IC 95% del punteggio: \d+–\d+/, "attendibilità separata dal punteggio");
+  assert.match(await page.textContent('.resroot .rcard[data-key="gqi"]'), new RegExp(`— ${cls}`));
+  assert.match(await page.textContent('.resroot .rcard[data-key="gqi"]'), /IC 95% del punteggio: \d+–\d+/, "attendibilità separata dal punteggio");
   // riferimento più largo → punteggio più alto; MR = ref → 80
   const mrMoa = await page.evaluate(m => window.__SA.Calc.fromRad(m, "MOA"), I.mr);
   await setField(page, "#qiMrRef", mrMoa.toFixed(6));
@@ -2223,28 +2229,28 @@ test("1.16.0: GQI e TQI del gruppo, impostazioni, unità, colpi esclusi, casi pa
   await clickAt(page, SHOTS[0]); await key(page, "x");
   I = await qiIndep(page); assert.strictEqual(I.n, 4);
   assert.strictEqual(await cardNum(page, "gqi"), String(Math.round(I.gqi)), "GQI senza il foro escluso");
-  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /4 \(1 esclusi\)/);
+  assert.match(await page.textContent('.resroot .rcard[data-key="gqi"]'), /4 \(1 esclusi\)/);
   // riferimento non valido: messaggio e calcolo bloccato
   await setField(page, "#qiMrRef", 0);
   ok2(await page.isVisible("#qiValid"), "messaggio di validazione"); assert.match(await page.textContent("#qiValid"), /maggiore di zero/);
-  assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /Non disponibile: riferimento non valido/);
-  await setField(page, "#qiMrRef", -2); assert.match(await page.textContent('#results .rcard[data-key="gqi"]'), /Non disponibile/);
+  assert.match(await page.textContent('.resroot .rcard[data-key="gqi"]'), /Non disponibile: riferimento non valido/);
+  await setField(page, "#qiMrRef", -2); assert.match(await page.textContent('.resroot .rcard[data-key="gqi"]'), /Non disponibile/);
   await setField(page, "#qiMrRef", 0.5);
   // TQI: spento di default, poi acceso; 70/30
-  ok2(!(await page.$('#results .rcard[data-key="tqi"]')), "TQI spento di default");
+  ok2(!(await page.$('.resroot .rcard[data-key="tqi"]')), "TQI spento di default");
   await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
   assert.strictEqual(await cardNum(page, "tqi"), String(Math.round(I.tqi)), "TQI = 0,7·GQI + 0,3·AQI");
   await setField(page, "#qiWP", 50); I = await qiIndep(page);
   assert.strictEqual(await cardNum(page, "tqi"), String(Math.round(I.tqi)), "TQI con pesi 50/50"); assert.strictEqual(await page.textContent("#qiWA"), "50");
   // gruppo senza mira: GQI sì, TQI no; un solo colpo: nessun GQI
   await page.click("#bAddGroup"); await key(page, "4"); await clickAt(page, { x: 600, y: 400 });
-  assert.match(await page.textContent("#results .res:nth-of-type(2)"), /GQINon disponibile: un solo colpo valido/);
+  assert.match(await page.textContent("#groups .gitem:nth-child(2) .gres"), /GQINon disponibile: un solo colpo valido/);
   await clickAt(page, { x: 630, y: 410 }); await clickAt(page, { x: 615, y: 380 });
-  assert.match(await page.textContent("#results .res:nth-of-type(2)"), /TQINon disponibile: manca il punto di mira\. Il GQI resta valido/);
+  assert.match(await page.textContent("#groups .gitem:nth-child(2) .gres"), /TQINon disponibile: manca il punto di mira\. Il GQI resta valido/);
   ok2(await cardNum(page, "gqi", 1), "GQI del gruppo senza mira");
   // le statistiche esistenti non cambiano
   const mr = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[0]; return Calc.analyze(g.shots.filter(s => !s.excluded), g.poa, calcContext(g)).mm.mr; });
-  assert.match(await page.textContent('#results .rcard[data-key="mr"]'), new RegExp(mr.toFixed(1).replace(".", ",") + " mm"), "raggio medio esistente invariato");
+  assert.match(await page.textContent('.resroot .rcard[data-key="mr"]'), new RegExp(mr.toFixed(1).replace(".", ",") + " mm"), "raggio medio esistente invariato");
 });
 
 test("1.16.0: GQI e TQI della sessione, ripetibilità, confronto, esportazioni, sessione salvata", async page => {
@@ -2262,7 +2268,7 @@ test("1.16.0: GQI e TQI della sessione, ripetibilità, confronto, esportazioni, 
   ok2(Math.abs(gS - (A.gqi + B.gqi) / 2) > 0.01, "diverso dalla media dei GQI");
   const sess = await page.textContent("#results .res.sess");
   assert.match(sess, /Gruppi validi2 \/ 2/); assert.match(sess, new RegExp(`Colpi validi${A.n + B.n}`));
-  ok2(await page.$('#results .rcard[data-key="stqi"] .qi-num'), "TQI di sessione");
+  ok2(await page.$('.resroot .rcard[data-key="stqi"] .qi-num'), "TQI di sessione");
   ok2(/Ripetibilità tra gruppi/.test(sess) && /Attesa per caso/.test(sess), "ripetibilità separata");
   // confronto: colonne GQI e TQI
   await key(page, "c");
@@ -2316,7 +2322,7 @@ test("1.16.0: storico con valutazione originale, sessioni vecchie compatibili, i
   // inglese
   await page.evaluate(() => window.__SA.setLang("en"));
   await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
-  const txt = (await page.textContent("#results")) + (await page.textContent("#sec-quality"));
+  const txt = (await resText(page)) + (await page.textContent("#sec-quality"));
   ok2(!ITALIAN.test(txt), "risultati e impostazioni in inglese: " + (txt.match(ITALIAN) || [""])[0]);
   assert.match(txt, /— (Excellent|Good|Fair|Poor|Insufficient)/);
   await page.evaluate(() => window.__SA.resultText());
@@ -2327,8 +2333,8 @@ test("1.16.0: storico con valutazione originale, sessioni vecchie compatibili, i
 // fori del test: 1–2 sovrapposti (centri a 12 px < mezzo calibro 15,6 px), 3 segnato difficile, 6 lontano (possibile flyer)
 const RV_SHOTS = [{ x: 420, y: 240 }, { x: 432, y: 240 }, { x: 380, y: 200 }, { x: 460, y: 280 }, { x: 380, y: 290 }, { x: 590, y: 110 }, { x: 440, y: 300 }, { x: 395, y: 250 }];
 test("1.17.0: barra principale solo icone con tooltip e nome accessibile", async page => {
-  const B = await page.$$eval("#toolbar button", bs => bs.map(b => ({ id: b.id, t: (b.childNodes[b.childNodes.length - 1] && b.firstChild.nodeType === 3 ? b.firstChild.textContent : [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("")).trim(), title: b.title, aria: b.getAttribute("aria-label") })));
-  ok2(B.length >= 20, "pulsanti " + B.length);
+  const B = await page.$$eval("#toolbar button:not(#moreMenu button)", bs => bs.map(b => ({ id: b.id, t: (b.childNodes[b.childNodes.length - 1] && b.firstChild.nodeType === 3 ? b.firstChild.textContent : [...b.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("")).trim(), title: b.title, aria: b.getAttribute("aria-label") })));
+  ok2(B.length >= 15, "pulsanti " + B.length);
   for (const b of B) {
     ok2(b.title && b.title.length > 3, "tooltip di " + b.id);
     ok2(b.aria || /zoom/i.test(b.title), "nome accessibile di " + b.id);
@@ -2336,7 +2342,11 @@ test("1.17.0: barra principale solo icone con tooltip e nome accessibile", async
   }
   // le scorciatoie sono nel tooltip
   assert.match(await page.getAttribute("#bReview", "title"), /\(V\)$/);
-  assert.match(await page.getAttribute('#toolbar [data-mode="shot"]', "title"), /\(4\)$/);
+  assert.match((await page.getAttribute('#toolbar [data-mode="shot"]', "title")).split("\n")[0], /\(4\)$/);
+  // 1.26.0: gli strumenti meno usati nel menu «⋯», con icona, nome e scorciatoia
+  const M = await page.$$eval("#moreMenu button", bs => bs.map(b => ({ id: b.id, label: b.querySelector(".ml").textContent, title: b.title })));
+  assert.deepStrictEqual(M.map(m => m.id), ["bRuler", "bDetail", "bGrid", "bLock", "bClear"]);
+  ok2(M.every(m => m.label.length > 4 && m.title.length > 10), "voci del menu con nome e tooltip");
   // i pulsanti del pannello mantengono il testo
   ok2((await page.textContent("#bAddGroup")).trim().length > 4, "pulsanti del pannello con testo");
 });
@@ -2435,7 +2445,7 @@ test("1.17.0: mostra origine del dato — ES, H-spread, raggio medio, esclusi", 
   // ES: coppia più lontana tra i fori inclusi (verifica a forza bruta)
   const inc = SHOTS.map((s, i) => ({ ...s, n: i + 1 })).filter(s => s.n !== 2);
   let best = [0, 0, 0]; for (const a of inc) for (const b of inc) { const d = Math.hypot(a.x - b.x, a.y - b.y); if (d > best[0]) best = [d, Math.min(a.n, b.n), Math.max(a.n, b.n)]; }
-  await page.click('#results .rcard[data-key="es"] .orgbtn');
+  await page.click('.resroot .rcard[data-key="es"] .orgbtn');
   ok2(await page.isVisible("#originBar"), "barra dell'origine");
   const t = await page.textContent("#originText");
   ok2(t.includes(`fori ${best[1]} e ${best[2]}`), "coppia dell'ES: " + t);
@@ -2447,13 +2457,13 @@ test("1.17.0: mostra origine del dato — ES, H-spread, raggio medio, esclusi", 
   const px = await pixelAt(page, mid); ok2(px[0] > 200 && px[2] < 80, "linea della coppia: " + px);
   // H-spread: estremi orizzontali
   const xs = inc.map(s => s.x), lo = inc[xs.indexOf(Math.min(...xs))].n, hi = inc[xs.indexOf(Math.max(...xs))].n;
-  await page.evaluate(() => { const b = [...document.querySelectorAll("#results .rcard td")].find(td => /^H-spread/.test(td.textContent)); b.querySelector(".orgbtn").click(); });
+  await page.evaluate(() => { const b = [...document.querySelectorAll(".resroot .rcard td")].find(td => /^H-spread/.test(td.textContent)); b.querySelector(".orgbtn").click(); });
   const t2 = await page.textContent("#originText"); ok2(t2.includes(`(${lo})`) && t2.includes(`(${hi})`), "estremi orizzontali: " + t2);
   // raggio medio: tutti i fori inclusi
-  await page.click('#results .rcard[data-key="mr"] .orgbtn');
+  await page.click('.resroot .rcard[data-key="mr"] .orgbtn');
   assert.match(await page.textContent("#originText"), new RegExp(`dei ${inc.length} fori inclusi`));
   // il testo dei risultati non contiene i simboli dei pulsanti
-  ok2(!(await page.textContent("#results")).includes("⌖"), "simboli solo dal CSS");
+  ok2(!(await resText(page)).includes("⌖"), "simboli solo dal CSS");
   // Esc toglie l'evidenziazione
   await key(page, "Escape");
   assert.strictEqual(await page.isVisible("#originBar"), false);
@@ -2465,7 +2475,7 @@ test("1.17.0: baseline persistente — card, condizioni, sessione, browser", asy
   await setField(page, "#shotDist", 100);
   await setField(page, "#ld-weather", "sole");
   // il gruppo 1 diventa la baseline
-  await page.click("#results .bstarg");
+  await page.click(".resroot .bstarg");
   const B = await page.evaluate(() => window.__SA.baselineState().baseline);
   ok2(B && B.bid && B.n === 5, "baseline creata");
   ok2(await page.evaluate(() => !!JSON.parse(localStorage.getItem("shootAnalyzer.baseline")).bid), "salvata nel browser");
@@ -2552,7 +2562,7 @@ test("1.17.0: inglese — coda di revisione, origine, baseline e periodo tradott
   await loadTarget(page);
   await setupGroup(page, POA, RV_SHOTS);
   await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].shots[2].hard = 1; commit(); });
-  await page.click("#results .bstarg");
+  await page.click(".resroot .bstarg");
   await page.click("#bAddGroup"); await clickAt(page, { x: 190, y: 400 });
   for (const s of [{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]) await clickAt(page, s);
   await key(page, "v");
@@ -2561,7 +2571,7 @@ test("1.17.0: inglese — coda di revisione, origine, baseline e periodo tradott
   await page.evaluate(() => document.activeElement.blur());
   await page.evaluate(() => window.__SA.openAnalysis("cmp")); await page.waitForTimeout(150);
   await page.evaluate(() => window.__SA.setRange(1, 1));
-  const txt = (await page.textContent("#sec-review")) + (await page.textContent("#results")) + (await page.textContent("#baseBox")) + (await page.textContent("#cmpRange"));
+  const txt = (await page.textContent("#sec-review")) + (await resText(page)) + (await page.textContent("#baseBox")) + (await page.textContent("#cmpRange"));
   ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
@@ -2586,7 +2596,7 @@ test("1.18.0: pannello — riepilogo GQI/TQI in cima, esportazioni in Dati, Gest
   assert.strictEqual(await page.$eval("#qiTop", e => e.previousElementSibling && e.nextElementSibling.tagName), "SECTION", "prima delle sezioni");
   // stesso punteggio della card della sessione, solo GQI con il TQI spento
   const top = await page.$$eval("#qiTop .qtb", bs => bs.map(b => ({ k: b.dataset.qt, n: b.querySelector(".qi-num").textContent, bar: !!b.querySelector(".qi-bar"), rows: b.querySelectorAll("tr").length })));
-  const card = await page.$eval('#results .rcard[data-key="sgqi"] .qi-num', e => e.textContent);
+  const card = await page.$eval('.resroot .rcard[data-key="sgqi"] .qi-num', e => e.textContent);
   assert.deepStrictEqual(top, [{ k: "sgqi", n: card, bar: true, rows: 0 }]);
   // TQI acceso: due riquadri affiancati
   await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
@@ -2594,7 +2604,7 @@ test("1.18.0: pannello — riepilogo GQI/TQI in cima, esportazioni in Dati, Gest
   assert.deepStrictEqual(top2, ["sgqi", "stqi"]);
   const [r1, r2] = await page.$$eval("#qiTop .qtb", bs => bs.map(b => b.getBoundingClientRect()).map(r => ({ x: r.x, y: r.y, w: r.width })));
   near(r1.y, r2.y, 0.5, "affiancati"); ok2(r2.x > r1.x + r1.w - 1, "uno accanto all'altro");
-  assert.strictEqual(await page.$eval("#qiTop .qtb[data-qt=stqi] .qi-num", e => e.textContent), await page.$eval('#results .rcard[data-key="stqi"] .qi-num', e => e.textContent));
+  assert.strictEqual(await page.$eval("#qiTop .qtb[data-qt=stqi] .qi-num", e => e.textContent), await page.$eval('.resroot .rcard[data-key="stqi"] .qi-num', e => e.textContent));
   // gruppo senza mira: TQI non calcolabile → solo GQI
   await page.evaluate(() => { const { state, commit } = window.__SA; state.groups[0].poa = null; commit(); });
   assert.deepStrictEqual(await page.$$eval("#qiTop .qtb", bs => bs.map(b => b.dataset.qt)), ["sgqi"]);
@@ -2606,38 +2616,52 @@ test("1.18.0: pannello — riepilogo GQI/TQI in cima, esportazioni in Dati, Gest
   await page.uncheck("#qiGqiOn"); await page.dispatchEvent("#qiGqiOn", "change");
   assert.strictEqual(await page.isHidden("#qiTop"), true);
 });
-test("1.18.0: gruppi richiudibili nei Risultati con la riga dei valori principali", async page => {
+test("1.18.0 → 1.26.0: gruppi richiudibili nella sezione Gruppi con la riga dei valori principali", async page => {
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   await page.click("#bAddGroup"); await clickAt(page, { x: 190, y: 400 });
   for (const s of [{ x: 250, y: 400 }, { x: 268, y: 410 }, { x: 240, y: 386 }]) await clickAt(page, s);
   const [g1, g2] = await page.evaluate(() => window.__SA.state.groups.map(g => g.id));
-  const sel = id => `#results .res[data-gid="${id}"]`;
-  ok2(!(await page.$eval(sel(g1), b => b.classList.contains("collapsed"))), "aperto all'inizio");
-  // clic sul titolo: chiuso, resta solo titolo + riga
-  await page.click(`${sel(g1)} > h3`);
-  const st = await page.$eval(sel(g1), b => ({ c: b.classList.contains("collapsed"), vis: [...b.children].filter(e => getComputedStyle(e).display !== "none").map(e => e.tagName + "." + e.className), sum: b.querySelector(".resg-sum").textContent, aria: b.querySelector(".rtog").getAttribute("aria-expanded") }));
-  ok2(st.c && st.aria === "false", "chiuso");
-  assert.deepStrictEqual(st.vis, ["H3.", "DIV.resg-sum"]);
+  const it = id => `#groups .gitem[data-gid="${id}"]`;
+  ok2(await page.$eval(it(g1), b => b.classList.contains("open")) && await page.$eval(it(g2), b => b.classList.contains("open")), "aperti all'inizio (il primo dall'avvio, il nuovo appena creato)");
+  // ▾ nella riga del gruppo: chiuso, resta la riga con i valori principali
+  await page.click(`${it(g1)} .gtog`);
+  const st = await page.$eval(it(g1), b => ({ c: !b.classList.contains("open"), body: getComputedStyle(b.querySelector(".gbody")).display, sum: b.querySelector(".gsum").textContent, aria: b.querySelector(".gtog").getAttribute("aria-expanded") }));
+  ok2(st.c && st.aria === "false" && st.body === "none", "chiuso");
   // valori della riga = calcolo indipendente
   let es = 0; for (const a of SHOTS) for (const b of SHOTS) es = Math.max(es, Math.hypot(a.x - b.x, a.y - b.y));
   const c = { x: SHOTS.reduce((a, s) => a + s.x, 0) / SHOTS.length, y: SHOTS.reduce((a, s) => a + s.y, 0) / SHOTS.length }, mr = SHOTS.reduce((a, s) => a + Math.hypot(s.x - c.x, s.y - c.y), 0) / SHOTS.length;
-  const gqi = await page.$eval(`${sel(g1)} .rcard[data-key="gqi"] .qi-num`, e => e.textContent);
+  const gqi = await page.$eval(`${it(g1)} .rcard[data-key="gqi"] .qi-num`, e => e.textContent);
   assert.strictEqual(st.sum, `group size ${fmtIt(es / 4, 1)} mm · raggio medio ${fmtIt(mr / 4, 1)} mm · GQI ${gqi}`);
   // l'altro gruppo resta aperto; lo stato sopravvive agli aggiornamenti (nuovo foro nel gruppo 2)
-  ok2(!(await page.$eval(sel(g2), b => b.classList.contains("collapsed"))), "gruppo 2 aperto");
+  ok2(await page.$eval(it(g2), b => b.classList.contains("open")), "gruppo 2 aperto");
   await clickAt(page, { x: 258, y: 380 });
-  ok2(await page.$eval(sel(g1), b => b.classList.contains("collapsed")), "ancora chiuso dopo l'aggiornamento");
-  // la stella della baseline nel titolo non chiude il gruppo
-  await page.click(`${sel(g2)} .bstarg`);
-  ok2(!(await page.$eval(sel(g2), b => b.classList.contains("collapsed"))), "stella senza chiusura");
+  ok2(!(await page.$eval(it(g1), b => b.classList.contains("open"))), "ancora chiuso dopo l'aggiornamento");
+  // la stella della baseline non chiude il gruppo
+  await page.click(`${it(g2)} .bstarg`);
+  ok2(await page.$eval(it(g2), b => b.classList.contains("open")), "stella senza chiusura");
   await page.evaluate(() => window.__SA.setBaseline(null, true));
-  // riapertura con ▸; nuovo gruppo aperto; nuova foto: tutto riaperto
-  await page.click(`${sel(g1)} .rtog`);
-  ok2(!(await page.$eval(sel(g1), b => b.classList.contains("collapsed"))), "riaperto");
-  await page.click(`${sel(g1)} > h3`);
+  // il modulo Ricarica e condizioni segue il gruppo attivo; il gruppo non attivo mostra il riepilogo e «Modifica»
+  ok2(await page.$eval("#ldWrap", w => w.closest(".gitem").dataset.gid) === String(g2), "modulo nel gruppo attivo (2)");
+  await page.click(`${it(g1)} .gtog`);
+  ok2(/Modifica/.test(await page.textContent(`${it(g1)} .gldsum`)), "riepilogo nel gruppo 1");
+  await page.click(`${it(g1)} [data-gedit]`);
+  assert.strictEqual((await S(page)).g.id, g1, "Modifica rende attivo il gruppo 1");
+  ok2(await page.$eval("#ldWrap", w => w.closest(".gitem").dataset.gid) === String(g1) && await page.isVisible("#ld-powder"), "il modulo si sposta nel gruppo 1");
+  // espandi / comprimi tutti dalla testata della sezione (senza chiudere la sezione)
+  assert.strictEqual(await page.textContent("#bGrpFold"), "⊟", "tutti aperti: il pulsante comprime");
+  await page.click("#bGrpFold");
+  ok2(await page.evaluate(() => window.__SA.grpOpen.size === 0 && document.getElementById("sec-groups").open), "tutti compressi, sezione ancora aperta");
+  assert.strictEqual(await page.textContent("#bGrpFold"), "⊞");
+  await page.click("#bGrpFold");
+  assert.strictEqual(await page.evaluate(() => window.__SA.grpOpen.size), 2, "tutti espansi");
+  // il campo in cui si scrive non perde il fuoco quando si aggiorna l'elenco
+  await page.click("#ld-powder"); await page.keyboard.type("N140"); await page.keyboard.press("Tab");
+  assert.strictEqual(await page.evaluate(() => document.activeElement.id), "ld-charge", "Tab passa al campo successivo dopo il salvataggio");
+  assert.strictEqual((await S(page)).g.load.powder, "N140");
+  // nuova foto: si apre solo il gruppo attivo
   await loadTarget(page);
-  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.resCollapsed]), []);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.grpOpen]), await page.evaluate(() => [window.__SA.state.activeGroupId]));
 });
 test("1.18.0: marcatori delle note più grandi, presi su tutta la pillola, trascinati senza salti", async page => {
   await loadTarget(page);
@@ -2669,11 +2693,11 @@ test("1.18.0: inglese — riepilogo, Gestione immagine e gruppi chiusi tradotti"
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
   await page.check("#qiTqiOn"); await page.dispatchEvent("#qiTqiOn", "change");
-  await page.click("#results .res > h3");
+  await page.click("#groups .gitem .gtog");
   assert.strictEqual((await page.textContent("#sec-orient > summary")).trim(), "Image handling");
-  const txt = (await page.textContent("#qiTop")) + (await page.textContent("#results .res")) + (await page.textContent("#sec-orient")) + (await page.textContent("#sec-data"));
+  const txt = (await page.textContent("#qiTop")) + (await page.textContent("#groups")) + (await page.textContent("#results")) + (await page.textContent("#sec-orient")) + (await page.textContent("#sec-data")) + (await page.textContent("#stepper")) + (await page.textContent("#toolbar"));
   ok2(!ITALIAN.test(txt), "testi in inglese: " + (txt.match(ITALIAN) || [""])[0]);
-  assert.match(await page.textContent("#results .resg-sum"), /^group size [\d.]+ mm · mean radius [\d.]+ mm · GQI \d+$/);
+  assert.match(await page.textContent("#groups .gitem:not(.open) .gsum"), /^group size [\d.]+ mm · mean radius [\d.]+ mm · GQI \d+$/);
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
 });
 
@@ -2714,7 +2738,7 @@ test("1.19.0: lingua russa — interfaccia, unità, numeri, bussola, nomi dei gr
   await expandAll(page);
   // nome automatico del gruppo, unità cirilliche, virgola decimale
   assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].name), "Группа 1");
-  const res = await page.textContent("#results");
+  const res = await resText(page);
   ok2(/\d,\d мм · \d,\d{3}"/.test(res), "group size in мм con la virgola: " + (res.match(/[\d,]+ [мm]м[^·]*·[^"]*"/) || [""])[0]);
   ok2(!/\d mm\b|\d px\b/.test(res), "nessun «mm»/«px» latino nei risultati: " + (res.match(/.{20}\d (mm|px)\b/) || [""])[0]);
   ok2(/MOA/.test(res) && /MIL/.test(res), "MOA e MIL restano latini");
@@ -2737,7 +2761,7 @@ test("1.19.0: lingua russa — interfaccia, unità, numeri, bussola, nomi dei gr
   // ritorno all'italiano: tutto come prima
   await page.selectOption("#langSel", "it");
   assert.strictEqual(await page.evaluate(() => window.__SA.state.groups[0].name), "Gruppo 1");
-  ok2(/\d,\d mm · /.test(await page.textContent("#results")), "mm in italiano");
+  ok2(/\d,\d mm · /.test(await resText(page)), "mm in italiano");
   // il russo è ricordato dal browser
   await page.selectOption("#langSel", "ru"); await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
   assert.strictEqual(await page.inputValue("#langSel"), "ru");
@@ -2773,7 +2797,7 @@ test("1.19.0: report PDF — font incorporati solo quando servono, testo russo e
 /* ------------------------------ 1.20.0 ------------------------------ */
 test("1.20.0: pannello — sezioni divise in riquadri con titolo, comandi al loro posto e funzionanti", async page => {
   // ogni sezione con più funzioni ha almeno due riquadri, ognuno con un titolo
-  for (const id of ["sec-orient", "sec-calib", "sec-params", "sec-load", "sec-quality", "sec-score", "sec-hit", "sec-data"]) {
+  for (const id of ["sec-orient", "sec-calib", "sec-params", "sec-groups", "sec-quality", "sec-score", "sec-hit", "sec-data"]) {
     const t = await page.$$eval("#" + id + " .subsec", ss => ss.map(s => { const h = s.querySelector(":scope > .subsec-h"); return h ? [...h.childNodes].filter(n => !(n.classList && n.classList.contains("ssi"))).map(n => n.textContent).join("").trim() : ""; }));
     ok2(t.length >= (id === "sec-score" || id === "sec-hit" ? 1 : 2), id + ": riquadri " + t.length);
     ok2(t.every(x => x.length > 2), id + ": titoli " + JSON.stringify(t));
@@ -2866,7 +2890,7 @@ test("1.20.0: ricerca nelle impostazioni — occorrenze, navigazione, sezioni ch
   await page.selectOption("#scoreTarget", "none"); await page.dispatchEvent("#scoreTarget", "change");
   await expandAll(page); await loadTarget(page); await setupGroup(page, POA, SHOTS); await expandAll(page);
   await run("gruppo");
-  ok2(await page.evaluate(() => window.__SA.find.hits.every(h => !h.el.closest("#results, #points, #groups, #qiTop"))), "solo impostazioni");
+  ok2(await page.evaluate(() => window.__SA.find.hits.every(h => !h.el.closest("#results, #points, #qiTop, #groups .gres, #groups .g"))), "solo impostazioni");
   // in inglese la ricerca segue la lingua (anche la posizione)
   await page.evaluate(() => window.__SA.setLang("en"));
   st = await run("caliber");
@@ -3000,14 +3024,15 @@ test("1.22.0: Modalità Base, blocchi comprimibili, guida senza novità", async 
   await setupGroup(page, POA, SHOTS);
   await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
   await expandAll(page);
-  const keys = () => page.$$eval("#results .res[data-gid] .rcard", cs => cs.map(c => c.dataset.key));
+  const keys = () => page.$$eval("#groups .res[data-gid] .rcard", cs => cs.map(c => c.dataset.key));
   ok2((await keys()).includes("mr") && (await keys()).includes("gqi"), "Esperto: tutte le card");
   ok2(!/Novità|New in/.test(await page.textContent("#sec-guide")), "guida senza le novità per versione");
   ok2(/1\. Carica la foto/.test(await page.textContent("#sec-guide")) && /Scorciatoie – strumenti/.test(await page.textContent("#sec-guide")), "guida per flusso di lavoro");
   await page.selectOption("#uiModeSel", "basic");
   assert.deepStrictEqual(await keys(), ["es", "corr"], "Base: solo group size e correzione");
   ok2(await page.isHidden("#sec-quality") && await page.isHidden("#sec-hit") && await page.isHidden("#bCompare") && await page.isHidden("#qiTop"), "Base: Qualità, Probabilità, Confronto nascosti");
-  ok2(!/raggio medio/.test(await page.textContent("#results .resg-sum")), "riga riassuntiva senza raggio medio");
+  const gsum = async () => { const a = await page.evaluate(() => window.__SA.state.activeGroupId); await page.evaluate(a => window.__SA.setGroupOpen(a, false), a); const t = await page.textContent(`#groups .gitem[data-gid="${a}"] .gsum`); await page.evaluate(a => window.__SA.setGroupOpen(a, true), a); return t; };
+  ok2(!/raggio medio/.test(await gsum()) && /group size/.test(await gsum()), "riga riassuntiva senza raggio medio");
   await key(page, "c");
   ok2(!(await page.evaluate(() => window.__SA.anaOpen())), "C non apre il confronto in Base");
   await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
@@ -3127,7 +3152,9 @@ test("1.23.0: velocità per foro — colonna, Invio, media/SD/ES, foto, riepilog
   const VS = await page.evaluate(() => window.__SA.velStats(window.__SA.state.groups[0]));
   near(VS.mean, 800, 1e-9, "media"); near(VS.sd, Math.sqrt(62.5), 1e-9, "SD (n − 1)"); near(VS.es, 20, 1e-9, "ES"); assert.strictEqual(VS.n, 5);
   ok2(/800,0 m\/s/.test(await page.textContent("#points .vstat")) && /SD 7,9/.test(await page.textContent("#points .vstat")) && /ES 20,0/.test(await page.textContent("#points .vstat")), "riepilogo: " + await page.textContent("#points .vstat"));
-  ok2(/V media 800,0 m\/s/.test(await page.textContent("#results .resg-sum")), "velocità media nella riga del gruppo: " + await page.textContent("#results .resg-sum"));
+  { const a = await page.evaluate(() => window.__SA.state.activeGroupId); await page.evaluate(a => window.__SA.setGroupOpen(a, false), a);
+    const t = await page.textContent(`#groups .gitem[data-gid="${a}"] .gsum`); await page.evaluate(a => window.__SA.setGroupOpen(a, true), a);
+    ok2(/V media 800,0 m\/s/.test(t), "velocità media nella riga del gruppo: " + t); }
   ok2(/V media/.test(await page.textContent("#livePanel")), "velocità media nel pannello in tempo reale");
   // un foro escluso resta nelle statistiche della velocità (l'esclusione riguarda l'impatto)
   await page.evaluate(() => { const g = window.__SA.state.groups[0]; window.__SA.toggleExclude ? 0 : 0; g.shots[4].excluded = true; window.__SA.commit(); });
@@ -3272,10 +3299,10 @@ test("1.23.0: tour guidato — invito al primo avvio, 5 passi, frecce, Esc, ling
   ok2(await noOverlap(), "la scheda non copre il comando");
   await page.keyboard.press("ArrowRight"); await page.waitForTimeout(300);
   assert.strictEqual(await page.textContent("#tourStep"), "Passo 2 di 5");
-  ok2(await page.evaluate(() => document.getElementById("sec-calib").open) && await inside('#modes [data-mode="calib"]'), "passo 2: scala");
+  ok2(await page.evaluate(() => document.getElementById("sec-calib").open) && await inside('#toolbar [data-mode="calib"]'), "passo 2: scala");
   await page.click("#bTourNext"); await page.click("#bTourNext");
   assert.strictEqual(await page.textContent("#tourT"), "4 · Leggi la correzione");
-  ok2(await page.evaluate(() => document.getElementById("sec-results").open), "passo 4: risultati aperti");
+  ok2(await page.evaluate(() => document.getElementById("sec-groups").open && window.__SA.grpOpen.has(window.__SA.state.activeGroupId)), "passo 4: risultati del gruppo attivo aperti");
   await page.keyboard.press("ArrowLeft"); assert.strictEqual(await page.textContent("#tourStep"), "Passo 3 di 5");
   await page.click("#bTourNext"); await page.click("#bTourNext"); await page.waitForTimeout(300);
   assert.strictEqual(await page.textContent("#bTourNext"), "Fine ✓");
@@ -3338,9 +3365,9 @@ test("1.24.0: analisi di sensibilità — scenari, conclusioni, giudizi, tornado
   ok2(await page.evaluate(() => window.__SA.CH.hits.sens.length) > 0, "barre del tornado");
   await key(page, "Escape");
   // card dei Risultati (Esperto) e non in Base
-  ok2(await page.$('#results .rcard[data-key="sens"]'), "card «Robustezza delle conclusioni»");
+  ok2(await page.$('.resroot .rcard[data-key="sens"]'), "card «Robustezza delle conclusioni»");
   await page.evaluate(() => window.__SA.setUiMode("basic"));
-  ok2(!(await page.$('#results .rcard[data-key="sens"]')), "nessuna card in Modalità Base");
+  ok2(!(await page.$('.resroot .rcard[data-key="sens"]')), "nessuna card in Modalità Base");
   await page.evaluate(() => window.__SA.setUiMode("expert"));
   // confronto con un secondo gruppo
   await page.click("#bAddGroup"); await clickAt(page, { x: 300, y: 400 });
@@ -3370,7 +3397,7 @@ test("1.24.0: variabilità dentro e tra i gruppi — REML, intervalli, giudizio,
   assert.strictEqual(H, 2);
   await page.click('#hierBody input[data-hg="3"]');
   await key(page, "Escape");
-  ok2(await page.$('#results .rcard[data-key="hier"]'), "card nei Risultati");
+  ok2(await page.$('.resroot .rcard[data-key="hier"]'), "card nei Risultati");
   // stessi centri: nessuno spostamento dimostrabile
   await threeGroups(page, [{ x: 0, y: 0 }, { x: 0, y: 0 }, { x: 0, y: 0 }], 10);
   const H0 = await page.evaluate(() => { const H = window.__SA.hierData(); return { p: H.fit.p, txt: window.__SA.hierVerdict(H.fit, H.level).cls, lo: H.fit.ci.icc.lo }; });
@@ -3479,6 +3506,130 @@ test("1.25.0: quote della cartuccia e report ricetta — campi, profili, CSV, se
   const U = pdfTextU((await dlBuf()).buf);
   ok2(/РЕЦЕПТ/.test(U) && /Подготовка гильзы/i.test(U) && /мм/.test(U), "PDF in russo");
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "ru");
+});
+
+/* ------------------------------ 1.26.0 ------------------------------ */
+test("1.26.0: barra dei passi — stato di ogni passo, passi spenti senza foto, clic per saltare", async page => {
+  const st = () => page.$$eval("#stepper .stp", B => B.map(b => ({ id: b.dataset.step, cls: b.className, dis: b.getAttribute("aria-disabled") === "true", t: b.title, d: b.querySelector(".sd").textContent })));
+  let S0 = await st();
+  assert.deepStrictEqual(S0.map(x => x.id), ["photo", "geom", "scale", "shoot", "holes", "res"]);
+  ok2(/\bnext\b/.test(S0[0].cls) && !/done/.test(S0[0].cls), "senza foto il passo corrente è Foto");
+  ok2(["geom", "scale", "holes", "res"].every(id => S0.find(x => x.id === id).dis), "passi che richiedono la foto spenti");
+  ok2(/⛔ Carica prima una foto/.test(S0.find(x => x.id === "scale").t), "motivo nel tooltip");
+  ok2(/done/.test(S0.find(x => x.id === "shoot").cls) && /100 m/.test(S0.find(x => x.id === "shoot").d), "Tiro con i valori predefiniti");
+  await page.click('#stepper [data-step="scale"]', { force: true });
+  ok2(/Carica prima una foto/.test(await page.textContent("#toast")), "clic su un passo spento: il motivo");
+  await loadTarget(page);
+  S0 = await st();
+  ok2(/done/.test(S0[0].cls) && /800 × 600/.test(S0[0].d), "Foto fatta");
+  ok2(/\bopt\b/.test(S0[1].cls) && !S0[1].dis, "Geometria facoltativa");
+  ok2(/\bnext\b/.test(S0[2].cls), "ora il passo corrente è Scala");
+  // clic su Scala: sezione aperta e strumento Scala
+  await page.evaluate(() => { document.getElementById("sec-calib").open = false; });
+  await page.click('#stepper [data-step="scale"]');
+  ok2(await page.evaluate(() => document.getElementById("sec-calib").open) && (await S(page)).mode === "calib", "Scala: sezione aperta e strumento attivo");
+  await clickAt(page, { x: 100, y: 500 });
+  ok2(/\bwarn\b/.test((await st())[2].cls) && /2° punto/.test((await st())[2].d), "un solo punto: da completare");
+  await clickAt(page, { x: 300, y: 500 }); await setField(page, "#calDist", 50); await page.selectOption("#calUnit", "mm");
+  ok2(/done/.test((await st())[2].cls) && /4,00 px\/mm/.test((await st())[2].d), "Scala fatta");
+  // Fori: senza mira → da completare; con mira e 5 colpi → fatto; Risultati con l'ES
+  ok2(/\bnext\b/.test((await st())[4].cls), "passo corrente: Fori");
+  await page.click('#stepper [data-step="holes"]');
+  assert.strictEqual((await S(page)).mode, "poa", "Fori senza mira: strumento Mira");
+  await clickAt(page, POA); for (const p of SHOTS) await clickAt(page, p);
+  const S1 = await st(), es = (await analyzeActive(page)).mm.es;
+  ok2(/done/.test(S1[4].cls) && /1 gr\. · 5 fori/.test(S1[4].d), "Fori fatti: " + S1[4].d);
+  ok2(/done/.test(S1[5].cls) && S1[5].d === `ES ${fmtIt(es, 1)} mm`, "Risultati: " + S1[5].d);
+  ok2(!S1.some(x => /\bnext\b/.test(x.cls)), "tutti i passi obbligatori fatti");
+  await page.evaluate(() => { window.__SA.setGroupOpen(window.__SA.state.activeGroupId, false); document.getElementById("sec-groups").open = false; });
+  await page.click('#stepper [data-step="res"]');
+  ok2(await page.isVisible('#groups .gitem.active .rcard[data-key="es"]'), "Risultati: risultati del gruppo attivo in vista");
+  // Geometria fatta dopo una rotazione, con lo stato nel riquadro
+  await page.click("#bRotR");
+  ok2(/done/.test((await st())[1].cls) && /90,0°/.test((await st())[1].d), "Geometria fatta");
+  assert.strictEqual(await page.textContent("#ssSt-rot"), "✓ 90,0°");
+  await page.click('#stepper [data-step="geom"]');
+  ok2(await page.evaluate(() => document.getElementById("sec-orient").open), "Geometria: Gestione immagine aperta");
+});
+test("1.26.0: barra strumenti a famiglie, menu «⋯ Altri strumenti», comandi spenti con il motivo", async page => {
+  assert.deepStrictEqual(await page.$$eval("#toolbar > .grp.fam", G => G.map(g => g.dataset.fam + ":" + g.querySelector(".fam-l").textContent)),
+    ["file:foto", "view:vista", "mark:marcatura", "geom:geometria", "hist:storia", "more:altro"]);
+  assert.deepStrictEqual(await page.$$eval('#toolbar [data-fam="mark"] button', B => B.map(b => b.id || b.dataset.mode)), ["poa", "shot", "bSnap", "bNote", "bReview", "bDelLast"]);
+  assert.deepStrictEqual(await page.$$eval('#toolbar [data-fam="geom"] button', B => B.map(b => b.id || b.dataset.mode)), ["calib", "align", "persp"]);
+  // senza foto: strumenti spenti, motivo nel tooltip, al clic e con la scorciatoia
+  const shot = '#toolbar [data-mode="shot"]';
+  assert.strictEqual(await page.getAttribute(shot, "aria-disabled"), "true");
+  ok2(/\(4\)\n⛔ Carica prima una foto/.test(await page.getAttribute(shot, "title")), await page.getAttribute(shot, "title"));
+  await page.click(shot, { force: true });
+  ok2(/⛔ Carica prima una foto/.test(await page.textContent("#toast")) && (await S(page)).mode === "pan", "clic: motivo, nessuna azione");
+  await page.evaluate(() => { document.getElementById("toast").textContent = ""; });
+  await key(page, "4");
+  ok2(/Carica prima una foto/.test(await page.textContent("#toast")) && (await S(page)).mode === "pan", "scorciatoia: motivo");
+  ok2(/⛔ Niente da annullare/.test(await page.getAttribute("#bUndo", "title")), "annulla: motivo");
+  ok2(/⛔ Disegna|⛔ Prima «✂ Ritaglia»/.test(await page.getAttribute("#bCropApply", "title")), "pulsanti del pannello: motivo");
+  assert.strictEqual(await page.evaluate(() => document.getElementById("bCropApply").disabled), true, "la proprietà disabled resta quella del codice");
+  // con la foto: strumenti accesi; snap acceso senza scala = senza effetto (bordo e motivo), poi di nuovo normale
+  await loadTarget(page);
+  assert.strictEqual(await page.getAttribute(shot, "aria-disabled"), "false");
+  ok2(!(await page.getAttribute(shot, "title")).includes("⛔"), "niente motivo con lo strumento attivo");
+  ok2(await page.evaluate(() => document.getElementById("bSnap").classList.contains("inert")) && /Ora non ha effetto: serve la scala/.test(await page.getAttribute("#bSnap", "title")), "snap senza scala");
+  await setupGroup(page, POA, SHOTS);
+  ok2(!(await page.evaluate(() => document.getElementById("bSnap").classList.contains("inert"))), "snap con la scala");
+  // blocco: senza selezione spento con il motivo
+  await page.evaluate(() => { window.__SA.state.selected = null; window.__SA.refreshLockUI(); });
+  ok2(/⛔ Seleziona prima un elemento/.test(await page.getAttribute("#bLock", "title")), "blocca: motivo");
+  // menu «⋯»: apre, Esc chiude, una voce agisce e chiude
+  ok2(await page.isHidden("#moreMenu"), "menu chiuso");
+  await page.click("#bMore");
+  ok2(await page.isVisible("#moreMenu") && await page.getAttribute("#bMore", "aria-expanded") === "true", "menu aperto");
+  await page.keyboard.press("Escape");
+  ok2(await page.isHidden("#moreMenu"), "Esc chiude");
+  await page.click("#bMore"); await page.click("#bGrid");
+  ok2(await page.isHidden("#moreMenu") && await page.evaluate(() => document.getElementById("gridOn").checked), "griglia accesa dal menu, menu chiuso");
+  ok2(await page.evaluate(() => document.getElementById("bMore").classList.contains("on")), "⋯ segnala uno strumento acceso nel menu");
+  await key(page, "g");
+  ok2(!(await page.evaluate(() => document.getElementById("bMore").classList.contains("on"))), "scorciatoia G invariata");
+  await page.click("#bMore"); await page.mouse.click(400, 500);
+  ok2(await page.isHidden("#moreMenu"), "clic fuori chiude");
+});
+test("1.26.0: Configurazione sessione, Gestione immagine a blocchi, layout salvati prima della 1.26, inglese e russo", async page => {
+  // Configurazione sessione con i tre blocchi annidati; Ricarica e condizioni non è più una sezione
+  assert.deepStrictEqual(await page.$$eval("#sec-config > details.nest", D => D.map(d => d.id)), ["sec-params", "sec-quality", "sec-score"]);
+  ok2(!(await page.$("#sec-load")), "sezione Ricarica e condizioni assorbita da Gruppi");
+  assert.deepStrictEqual(await page.$$eval("#sec-orient > details.sub-d", D => D.map(d => d.id)), ["ss-rot", "ss-crop", "ss-lens", "ss-persp"]);
+  // Modalità Base: nascosto solo il blocco Qualità, non tutta la configurazione
+  await page.selectOption("#uiModeSel", "basic");
+  ok2(await page.isHidden("#sec-quality") && await page.isVisible("#sec-config"), "Base: Qualità nascosta, Configurazione visibile");
+  await page.selectOption("#uiModeSel", "expert");
+  // layout salvato da una versione precedente: Configurazione al posto di Parametri, Ricarica tolta, ordine dell'utente
+  await page.evaluate(() => localStorage.setItem("shootAnalyzer.layout", JSON.stringify([{ id: "sec-orient", hidden: false }, { id: "sec-data", hidden: false }, { id: "sec-calib", hidden: false }, { id: "sec-params", hidden: false },
+    { id: "sec-groups", hidden: false }, { id: "sec-load", hidden: false }, { id: "sec-results", hidden: false }, { id: "sec-quality", hidden: false }, { id: "sec-score", hidden: true }, { id: "sec-hit", hidden: false },
+    { id: "sec-points", hidden: false }, { id: "sec-review", hidden: false }, { id: "sec-notes", hidden: true }, { id: "sec-guide", hidden: false }])));
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  const L = await page.evaluate(() => window.__SA.getLayout());
+  assert.deepStrictEqual(L.map(x => x.id), ["sec-orient", "sec-data", "sec-calib", "sec-config", "sec-groups", "sec-results", "sec-hit", "sec-points", "sec-review", "sec-notes", "sec-guide"]);
+  ok2(L.find(x => x.id === "sec-notes").hidden && !L.find(x => x.id === "sec-config").hidden, "visibilità conservata");
+  await page.evaluate(() => { localStorage.removeItem("shootAnalyzer.layout"); window.__SA.resetLayout(); });
+  // ricerca: una voce in un blocco annidato chiuso apre sezione e blocco, con il percorso completo
+  await page.evaluate(() => { document.querySelectorAll("#side details").forEach(d => { d.open = false; }); });
+  await page.fill("#findIn", "Valore click"); await page.keyboard.press("Enter");
+  ok2(await page.isVisible("#clickVal"), "voce visibile");
+  ok2(/Configurazione sessione › Parametri di tiro › Distanza, calibro e mirino/.test(await page.textContent("#findWhere")), await page.textContent("#findWhere"));
+  await page.keyboard.press("Escape"); await page.keyboard.press("Escape");
+  // un campo della ricarica in un gruppo compresso: la ricerca espande il gruppo
+  await page.evaluate(() => window.__SA.setGroupOpen(window.__SA.state.activeGroupId, false));
+  await page.fill("#findIn", "CBTO"); await page.keyboard.press("Enter");
+  ok2(await page.isVisible("#ld-cbto") && /Gruppi › Ricarica e condizioni › Munizione/.test(await page.textContent("#findWhere")), await page.textContent("#findWhere"));
+  await page.keyboard.press("Escape"); await page.keyboard.press("Escape");
+  // inglese e russo: barra dei passi, famiglie, menu, gruppi; nessun testo mancante
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  for (const [l, re] of [["en", ITALIAN], ["ru", /[A-Za-zÀ-ú]{4,}/]]) {
+    await page.evaluate(l => window.__SA.setLang(l), l);
+    const txt = (await page.textContent("#stepper")) + (await page.$$eval("#toolbar .fam-l, #moreMenu .ml", E => E.map(e => e.textContent).join(" "))) + (await page.textContent("#sec-config > summary")) + (await page.$$eval("#groups .gsub > summary", E => E.map(e => e.textContent).join(" ")));
+    ok2(!re.test(txt.replace(/ES|GQI|TQI|CBTO|COAL|MOA|MIL/g, "")), l + ": " + (txt.match(re) || [""])[0]);
+    ok2(/\n⛔ /.test(await page.getAttribute("#bRedo", "title")), l + ": titolo con il motivo");
+    assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l + ": testi senza traduzione");
+  }
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

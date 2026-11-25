@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.25.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.26.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -54,7 +54,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Help tecnico** integrato: significato e formula di ogni termine, lettura dei grafici, guida alla correzione ed esempi svolti calcolati dall'app.
 - **Export**: Result Card PNG, testo, **CSV fori** e **CSV gruppi** per Excel/LibreOffice (in italiano `;` e virgola decimale, in inglese `,` e punto), sessione JSON.
 - **Lingua**: italiano (predefinito), inglese o russo, scelta ricordata; nella lingua scelta anche testo copiato, Result Card, report PDF, CSV (inglese: `,` e punto decimale; italiano e russo: `;` e virgola) e ZIP. In russo unità di lunghezza cirilliche (мм, см, м), MOA e MIL latini; il report PDF incorpora un font con il cirillico (vedi `fonts/OFL.txt`).
-- **Pannello a sezioni comprimibili**: all'apertura è aperta solo Calibrazione scala; Gruppi e Risultati si aprono da sole al primo punto inserito.
+- **Pannello a sezioni comprimibili**: all'apertura è aperta solo Calibrazione scala; Gruppi (con il gruppo attivo espanso) si apre da sola al primo punto inserito.
+- **Flusso guidato e pannello gerarchico** (1.26): barra dei passi sopra la foto (Foto → Geometria → Scala → Tiro → Fori → Risultati) con lo stato di ogni passo (✓ fatto, ! da completare, – facoltativo) e clic per andarci; barra strumenti divisa per famiglie (foto, vista, marcatura, geometria, storia) con micro-etichette e menu «⋯ Altri strumenti» (righello, dettaglio, griglia, blocco, elimina tutto); comandi spenti che dicono nel suggerimento, al clic e con la scorciatoia che cosa manca; snap e griglia accesi ma senza effetto segnalati. Nella sezione Gruppi ogni gruppo si espande (▸) con «Risultati del gruppo» e «Ricarica e condizioni» (il modulo sta nel gruppo attivo, gli altri ne mostrano il riepilogo con «Modifica»), ⊞/⊟ nel titolo espande o comprime tutti i gruppi; la sezione Risultati tiene i risultati della sessione. Nuova sezione «Configurazione sessione» con i blocchi Parametri di tiro, Indice di qualità e Zone di punteggio; i riquadri di Gestione immagine si aprono e chiudono uno per uno e mostrano la correzione applicata.
 - **Click di alzo e brandeggio per foro** (ripresi dal foro precedente) e **dope card**: click da impostare per distanza, dai gruppi della sessione e dello storico, filtrati per munizione; CSV e PNG da stampare. Solo le distanze tirate (niente interpolazione senza modello balistico).
 - **Precisione e ricarica**: CEP o raggio medio angolare per **carica di polvere** o per **salto dalle righe** (profondità di seduta), con gruppi combinati e intervallo di confidenza; un livello è indicato come migliore solo se il suo intervallo non si sovrappone agli altri (nessun «nodo» dichiarato su gruppi piccoli).
 - **Report PDF** A4 (pulsante accanto alla Result Card): foto, calibrazione, colpi analizzati, misure con IC, modello statistico, grafici, tabella dei fori, ricarica e note, confronto, dope card, precisione, correlazioni, cono, reticolo; testo vero, generato offline, senza librerie.

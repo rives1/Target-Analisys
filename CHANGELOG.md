@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.26.0] - 2026-11-25
+### Aggiunto
+- **Barra dei passi** sopra la foto: Foto → Geometria → Scala → Tiro → Fori → Risultati. Ogni passo mostra lo stato
+  (✓ fatto, ! da completare, numero = da fare, – facoltativo per Geometria) con un dettaglio breve (dimensioni della
+  foto, correzioni applicate, px/mm e qualità della scala, distanza e calibro, gruppi e fori, group size) e un
+  tooltip; il passo da fare è evidenziato. Un clic porta al passo: apre la sezione o il blocco giusto e, dove serve,
+  attiva lo strumento (Scala, Mira o Foro); senza foto i passi che la richiedono sono spenti con il motivo.
+- **Barra strumenti a famiglie** con micro-etichette (foto, vista, marcatura, geometria, storia, altro) e menu
+  **«⋯ Altri strumenti»** con righello, finestra di dettaglio, griglia angolare, blocco ed elimina tutto (nome e
+  scorciatoia; Esc, frecce, clic fuori). «⋯» si evidenzia quando uno di questi strumenti è acceso. Scorciatoie invariate.
+- **Comandi spenti motivati**: gli strumenti della barra e i pulsanti di Gestione immagine, Calibrazione, archivio e
+  stima del BC che ora non possono agire restano visibili, spenti, con la riga «⛔ motivo» nel tooltip; al clic e con la
+  scorciatoia mostrano il motivo invece di non rispondere (senza foto, niente da annullare, nessuna selezione da
+  bloccare, rettangolo del ritaglio mancante, linee insufficienti per la distorsione, rettangolo della prospettiva
+  senza misure…). Snap e griglia accesi ma senza effetto (manca scala, calibro o distanza) hanno un bordo arancione e il
+  motivo nel tooltip.
+- **Gruppi gerarchici**: ogni gruppo nella sezione Gruppi si espande (▸/▾) e contiene «Risultati del gruppo» e
+  «Ricarica e condizioni»; compresso mostra la riga con colpi, group size, raggio medio, GQI e velocità media. Il
+  modulo della ricarica (unico, stessi id) sta nel gruppo attivo e lo segue; gli altri gruppi espansi mostrano il
+  riepilogo dei loro dati con «✎ Modifica». ⊞/⊟ nel titolo della sezione espande o comprime tutti i gruppi. Le voci dei
+  gruppi non vengono più ricostruite a ogni modifica (il campo in cui si scrive non perde il fuoco).
+- **Configurazione sessione**: nuova sezione con i blocchi annidati Parametri di tiro, Indice di qualità e Zone di
+  punteggio (espandibili uno per uno).
+- **Gestione immagine**: Rotazione, Ritaglio, Distorsione e Prospettiva sono riquadri espandibili, con la correzione
+  applicata nel titolo (es. «✓ 1,2°»).
+### Modificato
+- La sezione **Risultati** diventa «Risultati della sessione» (GQI/TQI della sessione, ripetibilità, variabilità
+  dentro e tra i gruppi); i risultati di ogni gruppo sono nella sua voce della sezione Gruppi.
+- Al primo punto su una foto si apre la sezione Gruppi con il gruppo attivo espanso (prima: Gruppi e Risultati).
+- La ricerca apre tutti i blocchi annidati e il gruppo che contengono la voce trovata e ne mostra il percorso completo
+  (es. «Configurazione sessione › Parametri di tiro › Distanza, calibro e mirino»).
+- Layout del pannello salvati prima della 1.26: Parametri, Qualità e Punteggio diventano «Configurazione sessione»,
+  «Ricarica e condizioni» confluisce in Gruppi; ordine e visibilità delle altre sezioni restano.
+- Tour guidato (passi 3 e 4) e Guida rapida (passi 4, 6, 7 e Pannello) aggiornati.
+### Corretto
+- Test UI «risultati a card e file ZIP di sessione»: l'elenco atteso delle card non conteneva ancora la card
+  «Robustezza delle conclusioni» introdotta nella 1.24.
+
 ## [1.25.0] - 2026-11-24
 ### Aggiunto
 - **Quote della cartuccia** nel riquadro Munizione (Ricarica e condizioni), in mm, per gruppo: **CBTO** (fondello →
