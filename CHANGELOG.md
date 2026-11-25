@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.28.0] - 2026-11-25
+### Aggiunto
+- **Quanti colpi servono** (pagina «Confronto tra gruppi», pannello «Quanti colpi servono · potenza del confronto»):
+  raggio medio di riferimento (vuoto = quello del gruppo attivo), differenza da rilevare in MOA o MIL, potenza
+  80/90/95%, α 5/10/1%, rosate da m colpi (0 = gruppo unico). Test F bilaterale sul rapporto delle varianze, lo stesso
+  del confronto (2(n − 1) gradi di libertà per gruppo; con le rosate si sommano quelli delle rosate): colpi minimi per
+  configurazione, tabella della potenza per numero di colpi, potenza con un gruppo come quello attivo, curva.
+  Esempio: 1,0 contro 1,2 MOA con potenza 80% → 120 colpi per configurazione in un gruppo unico.
+- **Verticale: carica o tiratore?** (card dei risultati del gruppo): quota della varianza verticale spiegata dalla
+  dispersione della velocità, σ_vel = |∂y/∂V| × SD dalla traiettoria con i dati del gruppo, confrontata con la σ
+  verticale misurata (al netto dei click di alzo), con IC dalla χ² di σ_y; resto (tiratore, arma, appoggio…),
+  V-spread misurato e atteso dalla sola velocità (d₂·σ), giudizio solo se l'intervallo lo permette. Con la velocità di
+  almeno 4 fori: retta altezza–velocità contro la pendenza attesa (test t). Senza dati balistici la card compare solo
+  se c'è già una misura della dispersione della velocità (SD o fori), con i dati mancanti.
+- **Errore di distanza** (card dei risultati, errore impostato in «Probabilità di colpire» in m, yd o % della
+  distanza): spostamento verticale del punto d'impatto se il bersaglio è più vicino o più lontano della distanza
+  impostata (dalla traiettoria) e distanza massima fino alla quale l'errore resta entro metà dell'altezza della zona
+  scelta (cerchio o rettangolo del modulo).
+- **Più colpi** nella «Probabilità di colpire»: P(almeno k su n) (binomiale, con l'IC trasformato dagli estremi) e
+  colpi necessari per il 95% di almeno uno a segno, anche per le sagome.
+- **Scheda arma completa**: passo della rigatura (pollici o mm) e verso, lunghezza della canna (mm/cm/in), tipo di
+  scatto (con suggerimenti); peso (gr) e lunghezza (mm) della palla nel riquadro Munizione. Nei profili, nei dati
+  ereditati (peso e lunghezza della palla), nelle differenze tra configurazioni, nel CSV dei gruppi (con la Sg) e nei
+  dati del report.
+- **Stabilità giroscopica** (card): Sg di Miller con le correzioni per velocità e densità dell'aria, giudizio
+  (instabile < 1, marginale < 1,5, stabile), lunghezza in calibri, passo per Sg = 1,5, deriva giroscopica alla
+  distanza del gruppo. **Deriva giroscopica** (Litz, azzerata alla distanza di zero) nel calcolatore balistico e nella
+  dope stimata quando passo, verso, peso e lunghezza della palla sono indicati.
+- **Confronto per arma**: filtro «Arma» della tabella del confronto e riepilogo «Per arma» (gruppi, colpi, raggio
+  medio dalla σ combinata con IC, ES medio e migliore, scheda dell'arma).
+- **Densità per sezione**: pulsante nel titolo di ogni sezione del pannello (generale → Compatta → Standard →
+  Dettagliata → generale) e selettore nella vista Grafici/Confronto per ogni pagina; ricordati nel browser
+  (`shootAnalyzer.densitySec`). La densità governa ora anche righe delle tabelle (punti, confronto, probabilità),
+  spaziatura dei riquadri e dei pannelli e numero di grafici per riga (4 / 3 / 2).
+### Modificato
+- **Numeri delle card**: valore in evidenza, unità in corpo minore, equivalenti (pollici, MOA/MIL) attenuati;
+  intervalli di confidenza come barra da zero sotto il valore (intervallo, segno della stima, estremi), così si vede
+  che gli intervalli χ² sono più lunghi verso l'alto. Il testo completo dell'IC resta nel suggerimento e nel nome
+  accessibile. Tabelle, confronto e report PDF invariati.
+- Calcolatore balistico: la nota dice se la deriva giroscopica è inclusa.
+- Help tecnico: nuove voci «Errore di distanza», «Stabilità giroscopica e deriva», «Verticale: carica o tiratore?»,
+  «Quanti colpi servono»; più colpi nella probabilità; Guida rapida aggiornata (paragrafi 6, 7, 8 e Pannello).
+
 ## [1.27.0] - 2026-11-25
 ### Aggiunto
 - **Dati ereditati**: un nuovo gruppo copia dal gruppo attivo distanza, munizione, condizioni e serie (colpi sparati,

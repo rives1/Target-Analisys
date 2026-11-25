@@ -3461,10 +3461,11 @@ test("1.25.0: quote della cartuccia e report ricetta — campi, profili, CSV, se
   ok2(D.diff.includes("cbto") && !D.diff.includes("coal"), "solo il CBTO è diverso: " + JSON.stringify(D.diff));
   assert.deepStrictEqual(D.cb, ["55,76 mm", "56,26 mm"]);
   await page.evaluate(() => { const st = window.__SA.state; st.activeGroupId = st.groups[0].id; window.__SA.commit(); });
-  // CSV dei gruppi: cinque colonne in fondo
-  const C = await download(page, "#bCsvGroups"), R = parseCsv(C.text.slice(1));
-  assert.deepStrictEqual(R[0].slice(-5), ["CBTO (mm)", "COAL (mm)", "Lunghezza bossolo (mm)", "Spalla (mm)", "Colletto Ø (mm)"]);
-  assert.deepStrictEqual(R[1].slice(-5), ["55,76", "71,76", "48,51", "39,47", "7,40"]);
+  // CSV dei gruppi: cinque colonne consecutive (in fondo fino alla 1.27; dopo vengono quelle della scheda arma, 1.28.0)
+  const C = await download(page, "#bCsvGroups"), R = parseCsv(C.text.slice(1)), ci = R[0].indexOf("CBTO (mm)");
+  assert.deepStrictEqual(R[0].slice(ci, ci + 5), ["CBTO (mm)", "COAL (mm)", "Lunghezza bossolo (mm)", "Spalla (mm)", "Colletto Ø (mm)"]);
+  assert.deepStrictEqual(R[1].slice(ci, ci + 5), ["55,76", "71,76", "48,51", "39,47", "7,40"]);
+  assert.strictEqual(R[0][R[0].length - 1], "Sg (Miller)", "ultima colonna dalla 1.28.0");
   ok2(R.every(r => r.length === R[0].length), "stesso numero di colonne");
   // sessione: salvate e riaperte
   const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
@@ -3891,6 +3892,275 @@ test("1.27.0: «Usa il codice» — 4 marcatori, prospettiva, scala, distanza, m
   ok2(/Click reale di alzo0,103 MIL \(\+3,0%\)/.test(out.replace(/\s+/g, "")) || /0,103 MIL \(\+3,0%\)/.test(out), "alzo +3%: " + out);
   ok2(/0,1 MIL \((0,0|\+0,0|−0,0|-0,0)%\)/.test(out), "brandeggio nominale");
   ok2(/Scostamento moderato/.test(out) && /Ritorno a zero/.test(out), "giudizio e ritorno a zero");
+});
+
+/* ------------------------------ 1.28.0 ------------------------------ */
+const itNum = t => parseFloat(String(t).replace(/\s/g, "").replace("−", "-").replace(",", "."));
+/** Gruppo SHOTS a 300 m con i dati balistici completi (V0, SD, BC G7, ottica, zero, palla, passo e verso della rigatura). */
+async function ballisticGroup(page, { dir = "R", sd = 6 } = {}) {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 300);
+  for (const [k, v] of [["v0", 790], ["v0sd", sd], ["bc", "0.243"], ["sightH", 45], ["zero", 100], ["bulletWt", 175], ["bulletLen", 31.4], ["twist", 11]]) await setField(page, `#ld-${k}`, v);
+  await page.selectOption("#ld-bcModel", "G7"); if (dir) await page.selectOption("#ld-twistDir", dir);
+  await expandAll(page);
+}
+test("1.28.0: numeri dei risultati — valore dominante, unità più piccola, barra dell'IC da zero e asimmetrica", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS); await setField(page, "#shotDist", 100);
+  const R = await page.evaluate(() => { const { state, Calc, calcContext } = window.__SA, g = state.groups[0], r = Calc.analyze(g.shots.filter(s => !s.excluded), g.poa, calcContext(g));
+    return { mr: r.mm.mr, s: Math.sqrt((r.mm.sx ** 2 + r.mm.sy ** 2) / 2), sigma: r.mm.sigma, n: r.n, nu: 2 * (r.n - 1), c975: Calc.chi2invAny(0.975, 2 * (r.n - 1)), c025: Calc.chi2invAny(0.025, 2 * (r.n - 1)) }; });
+  const C = await page.locator('.resroot .rcard[data-key="mr"]').first().evaluate(c => {
+    const nv = c.querySelector(".rc-main .nv"), nu = c.querySelector(".rc-main .nu"), b = c.querySelector(".rc-sub .cib"), cs = e => parseFloat(getComputedStyle(e).fontSize);
+    return { v: nv.textContent, u: nu.textContent, main: c.querySelector(".rc-main").textContent, fs: [cs(nv), cs(nu)], aria: b.getAttribute("aria-label"), role: b.getAttribute("role"), title: b.title,
+      lo: parseFloat(b.querySelector(".cib-in").style.left), w: parseFloat(b.querySelector(".cib-in").style.width), pt: parseFloat(b.querySelector(".cib-pt").style.left),
+      rows: [...c.querySelectorAll("td.v .cib")].length };
+  });
+  assert.strictEqual(C.v, R.mr.toFixed(1).replace(".", ","), "valore dominante = raggio medio");
+  assert.strictEqual(C.u.trim(), "mm"); ok2(/^\d+,\d mm/.test(C.main), "nel testo «valore unità» con lo spazio: " + C.main);
+  ok2(C.fs[0] > C.fs[1] * 1.5, "unità in corpo minore: " + C.fs);
+  // IC χ² del raggio medio atteso, calcolato qui: s·√(π/2)·√(ν/χ²) con s² = (sx² + sy²)/2; il segno è la stima non distorta σ·√(π/2)
+  const e = R.sigma * Math.sqrt(Math.PI / 2), e0 = R.s * Math.sqrt(Math.PI / 2), lo = e0 * Math.sqrt(R.nu / R.c975), hi = e0 * Math.sqrt(R.nu / R.c025), f = v => v.toFixed(1).replace(".", ",");
+  assert.strictEqual(C.role, "img"); assert.strictEqual(C.aria, `IC 95% del raggio medio atteso (modello): ${f(lo)}–${f(hi)} mm`);
+  const max = Math.max(hi, e) * 1.1;
+  near(C.lo, lo / max * 100, 0.06, "inizio dell'intervallo sulla scala da zero"); near(C.w, (hi - lo) / max * 100, 0.06, "larghezza"); near(C.pt, e / max * 100, 0.06, "segno della stima");
+  ok2(C.pt - C.lo < C.lo + C.w - C.pt, "intervallo più lungo verso l'alto");
+  ok2(C.rows === 3 && /stima/.test(C.title), "barre anche su CEP, R95, R99");
+  // densità compatta della sezione: le barre spariscono come gli altri dettagli
+  await page.evaluate(() => { window.__SA.DENS.sec["sec-groups"] = "compact"; window.__SA.DENS.sec["sec-results"] = "compact"; window.__SA.applySecDensity(); });
+  ok2(await page.evaluate(() => [...document.querySelectorAll(".resroot .cib")].every(b => !b.offsetParent)), "compatta: barre nascoste");
+});
+test("1.28.0: densità per sezione (pulsante nel titolo) e per pagina dei grafici, generale come riserva, ricordata", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS); await setField(page, "#shotDist", 100);
+  const dens = () => page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#sideScroll > section")].filter(s => s.querySelector(":scope > details[id]")).map(s => [s.querySelector(":scope > details[id]").id, s.dataset.dens])));
+  const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem("shootAnalyzer.densitySec") || "null"));
+  const pad = () => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector("#points td")).paddingTop));
+  const d0 = await dens(); ok2(Object.keys(d0).length >= 6 && Object.values(d0).every(v => v === "standard"), "all'avvio tutte con la generale: " + JSON.stringify(d0));
+  const p0 = await pad(), b = "details#sec-points > summary .densb";
+  await page.click(b);
+  ok2(await page.evaluate(() => document.getElementById("sec-points").open), "il pulsante non chiude la sezione");
+  let d = await dens(); assert.strictEqual(d["sec-points"], "compact"); ok2(Object.entries(d).every(([k, v]) => k === "sec-points" || v === "standard"), "le altre restano");
+  assert.deepStrictEqual(await stored(), { "sec-points": "compact" });
+  ok2(await page.$eval(b, e => e.classList.contains("ovr") && /Compatta \(scelta qui\)/.test(e.title) && e.getAttribute("aria-label") === e.title), "pulsante evidenziato, con il nome accessibile");
+  const p1 = await pad(); ok2(p1 < p0, `righe più fitte nella tabella dei punti (${p1} < ${p0})`);
+  await page.click(b); assert.strictEqual((await dens())["sec-points"], "standard");
+  await page.click(b); assert.strictEqual((await dens())["sec-points"], "detail"); const p3 = await pad(); ok2(p3 > p0, `righe più alte (${p3} > ${p0})`);
+  await page.click(b); assert.strictEqual((await dens())["sec-points"], "standard"); assert.strictEqual(await stored(), null, "di nuovo la generale: nulla salvato");
+  ok2(await page.$eval(b, e => !e.classList.contains("ovr")), "pulsante normale");
+  // dettagliata solo per i gruppi: le card del gruppo si aprono tutte, quelle della sessione no
+  await page.evaluate(() => window.__SA.cycleSecDensity("sec-groups")); await page.evaluate(() => window.__SA.cycleSecDensity("sec-groups")); await page.evaluate(() => window.__SA.cycleSecDensity("sec-groups"));
+  assert.strictEqual((await dens())["sec-groups"], "detail");
+  ok2(await page.evaluate(() => { const D = [...document.querySelectorAll("#groups .gres details[data-card]")]; return D.length > 2 && D.every(x => x.open); }), "card del gruppo aperte");
+  // la generale cambia le sezioni senza scelta propria, non le altre
+  await page.selectOption("#densSel", "compact");
+  d = await dens(); assert.strictEqual(d["sec-groups"], "detail"); ok2(Object.entries(d).every(([k, v]) => k === "sec-groups" || v === "compact"), "le altre seguono la generale");
+  // vista Grafici: scelta per pagina
+  await page.evaluate(() => window.__SA.openAnalysis("group"));
+  assert.strictEqual(await page.getAttribute("#anaView", "data-dens"), "compact");
+  ok2(/generale \(Compatta\)/.test(await page.$eval("#anaDens", s => s.options[0].textContent)), "voce della generale col nome");
+  const cols = () => page.$eval("#charts", e => getComputedStyle(e).gridTemplateColumns.split(" ").length);
+  assert.strictEqual(await cols(), 4, "compatta: 4 grafici per riga");
+  await page.selectOption("#anaDens", "detail");
+  assert.strictEqual(await page.getAttribute("#anaView", "data-dens"), "detail"); assert.strictEqual(await cols(), 2, "dettagliata: 2 per riga");
+  await page.evaluate(() => window.__SA.setAnaPage("cmp"));
+  assert.strictEqual(await page.getAttribute("#anaView", "data-dens"), "compact", "il confronto segue la generale"); assert.strictEqual(await page.inputValue("#anaDens"), "");
+  await page.evaluate(() => window.__SA.setAnaPage("group")); assert.strictEqual(await page.inputValue("#anaDens"), "detail");
+  assert.deepStrictEqual(await stored(), { "sec-groups": "detail", "ana-group": "detail" });
+  // riapertura: scelte ricordate; dati non validi ignorati
+  await page.evaluate(() => { const o = JSON.parse(localStorage.getItem("shootAnalyzer.densitySec")); o["sec-x"] = "enorme"; o["<b>"] = "compact"; localStorage.setItem("shootAnalyzer.densitySec", JSON.stringify(o)); });
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(await page.evaluate(() => window.__SA.DENS.sec))), { "sec-groups": "detail", "ana-group": "detail" });
+  d = await dens(); assert.strictEqual(d["sec-groups"], "detail"); assert.strictEqual(d["sec-points"], "compact");
+  // inglese: titolo del pulsante tradotto
+  await page.evaluate(() => window.__SA.setLang("en"));
+  ok2(/Density of this section: Detailed \(chosen here\)/.test(await page.$eval("details#sec-groups > summary .densb", e => e.title)), "pulsante in inglese");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+test("1.28.0: quanti colpi servono — test F, rosate, gruppo attivo, tabella e curva", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS); await setField(page, "#shotDist", 100);
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await setField(page, "#powRef", 1); await setField(page, "#powDiff", 0.5); await setField(page, "#powM", 0);
+  const ind = await page.evaluate(() => { const C = window.__SA.Calc; const n1 = (() => { for (let n = 2; ; n++) if (C.fPower(2.25, 2 * (n - 1), 2 * (n - 1), 0.05) >= 0.8) return n; })();
+    const k5 = (() => { for (let k = 1; ; k++) if (C.fPower(2.25, 8 * k, 8 * k, 0.05) >= 0.8) return k; })(); return { n1, k5 }; });
+  let t = (await page.textContent("#powBody")).replace(/\s+/g, " ");
+  ok2(t.includes(`Servono ${ind.n1} colpi per configurazione, ${ind.n1 * 2} in tutto`) && /1,50 contro 1,00 MOA/.test(t) && /rapporto 1,50/.test(t), "gruppo unico: " + t.slice(0, 220));
+  assert.strictEqual(ind.n1, 26);
+  const cells = await page.$$eval("#powBody table.cmp td.x", tds => tds.map(td => [td.textContent, td.classList.contains("best")]));
+  ok2(cells.length === 8 && cells.every(([, b], i) => b === ([3, 5, 10, 15, 20, 30, 50, 100][i] >= 26)), "tabella: evidenziate le colonne con potenza sufficiente " + JSON.stringify(cells));
+  await setField(page, "#powM", 5);
+  t = (await page.textContent("#powBody")).replace(/\s+/g, " ");
+  ok2(t.includes(`Servono ${ind.k5 * 5} colpi per configurazione (${ind.k5} rosate da 5)`), "rosate da 5: " + t.slice(0, 200));
+  ok2(ind.k5 * 5 > 26, "con le rosate servono più colpi");
+  ok2(await page.evaluate(() => document.getElementById("chPow").width > 0 && window.__SA.CH.hits.pow.length > 5), "curva disegnata con i punti al passaggio");
+  // potenza e α diversi
+  await page.selectOption("#powPw", "0.9"); await page.selectOption("#powAlpha", "0.01");
+  const n90 = await page.evaluate(() => window.__SA.Calc.shotsForPower({ ratio: 1.5, power: 0.9, alpha: 0.01, perGroup: 5 }).n);
+  ok2((await page.textContent("#powBody")).includes(`Servono ${n90} colpi`) && n90 > ind.k5 * 5, "potenza 90%, α 1%");
+  // riferimento vuoto: dal gruppo attivo
+  await page.selectOption("#powPw", "0.8"); await page.selectOption("#powAlpha", "0.05"); await setField(page, "#powRef", ""); await setField(page, "#powDiff", 0.2);
+  const A = await page.evaluate(() => { const a = window.__SA.powerAuto("MOA"); return { v: a.v, n: a.n }; });
+  const r = await analyzeActive(page);
+  near(A.v, r.mm.sigma * Math.sqrt(Math.PI / 2) / 100000 * 180 / Math.PI * 60, 1e-9, "raggio medio atteso del gruppo in MOA");
+  assert.strictEqual(await page.getAttribute("#powRef", "placeholder"), A.v.toFixed(2).replace(".", ","));
+  t = await page.textContent("#powBody");
+  ok2(/stimato dal gruppo attivo «Gruppo 1»/.test(t) && /Con un gruppo come quello attivo \(5 colpi\)/.test(t), "riferimento dal gruppo attivo");
+  await setField(page, "#powDiff", 0.0001);
+  ok2(/Oltre 2000 colpi/.test(await page.textContent("#powBody")), "differenza troppo piccola");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); await setField(page, "#powDiff", 0.3); await page.evaluate(() => window.__SA.drawPower()); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+test("1.28.0: scheda arma — Sg di Miller, deriva giroscopica, dati salvati, CSV, profilo, differenze e sessione", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await ballisticGroup(page);
+  const L = (await S(page)).g.load;
+  assert.deepStrictEqual([L.twist, L.twistUnit, L.twistDir, L.bulletWt, L.bulletLen].map(String), ["11", "in", "R", "175", "31.4"]);
+  // Sg calcolato qui con la formula di Miller (aria standard: nessuna correzione)
+  const d = 7.82 / 25.4, l = 31.4 / 25.4 / d, tw = 11 / d, sg = 30 * 175 / (tw * tw * d ** 3 * l * (1 + l * l)) * Math.cbrt(790 / 0.3048 / 2800);
+  const card = '.resroot .rcard[data-key="sg"]';
+  const C = await page.$eval(card, c => ({ v: c.querySelector(".rc-main .nv").textContent, cls: c.querySelector(".sgv").className, t: c.textContent }));
+  assert.strictEqual(C.v, sg.toFixed(2).replace(".", ","), "Sg nella card"); ok2(/sg-ok/.test(C.cls) && /stabile \(Sg ≥ 1,5/.test(C.t), "giudizio: stabile");
+  ok2(C.t.includes(`Lunghezza in calibri${l.toFixed(2).replace(".", ",")}`), "lunghezza in calibri");
+  const t15 = Math.sqrt(sg * tw * tw / 1.5) * d; ok2(C.t.includes(`Passo per Sg = 1,51:${t15.toFixed(1).replace(".", ",")}″`), "passo per Sg = 1,5: " + C.t);
+  // deriva giroscopica alla distanza del gruppo: Litz con il tempo di volo, azzerata a 100 m
+  const tof = await page.evaluate(() => { const I = window.__SA.balInputs(window.__SA.state.groups[0]), o = { ...I.o }; delete o.spin; return window.__SA.Calc.trajectory({ ...o, dists: [100, 300] }).rows.map(r => r.t); });
+  const lz = t => 1.25 * (sg + 1.2) * t ** 1.83 * 25.4, spin = lz(tof[1]) - lz(tof[0]) * 3;
+  const m = C.t.match(/Deriva giroscopica a 300 m([\d,]+) mm a destra/); ok2(m, "riga della deriva: " + C.t);
+  near(itNum(m[1]), spin, 0.051, "deriva a 300 m");
+  // nota del calcolatore balistico
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen()); await setField(page, "#balDist", 300);
+  ok2(/deriva giroscopica inclusa nel brandeggio \(formula di Litz, Sg [\d,]+, rigatura destrorsa/.test(await page.textContent("#balBody")), "deriva inclusa nel calcolatore");
+  await key(page, "Escape");
+  // instabile con un passo lungo; rigatura non indicata: niente deriva
+  await setField(page, "#ld-twist", 16); await page.selectOption("#ld-twistDir", "");
+  const C2 = await page.$eval(card, c => ({ cls: c.className, sgv: c.querySelector(".sgv").className, t: c.textContent }));
+  ok2(/warnc/.test(C2.cls) && /sg-bad/.test(C2.sgv) && /instabile/.test(C2.t) && !/Deriva giroscopica a/.test(C2.t), "instabile, senza deriva: " + C2.t.slice(0, 160));
+  await setField(page, "#ld-twist", 11); await page.selectOption("#ld-twistDir", "L");
+  ok2(/mm a sinistra/.test(await page.textContent(card)), "sinistrorsa: deriva a sinistra");
+  // canna e scatto; CSV dei gruppi
+  await setField(page, "#ld-barrel", 610); await setField(page, "#ld-trigger", "bistadio 600 g");
+  const R = parseCsv((await download(page, "#bCsvGroups")).text.slice(1)), H = R[0], V = R[1], col = h => V[H.indexOf(h)];
+  assert.deepStrictEqual(["Passo rigatura (1:x)", "Unità passo", "Verso rigatura", "Lunghezza canna", "Unità canna", "Scatto", "Peso palla (gr)", "Lunghezza palla (mm)"].map(col), ["11", "in", "sinistrorsa", "610", "mm", "bistadio 600 g", "175", "31,4"]);
+  assert.strictEqual(col("Sg (Miller)"), sg.toFixed(2).replace(".", ","));
+  // profilo: salvato e applicato a un nuovo gruppo
+  await page.fill("#ldProfName", "Tikka"); await page.evaluate(() => window.__SA.saveProfile());
+  const P = await page.evaluate(() => window.__SA.getProfiles().find(p => p.name === "Tikka"));
+  assert.deepStrictEqual([P.twist, P.twistDir, P.barrel, P.trigger, P.bulletWt, P.bulletLen].map(String), ["11", "L", "610", "bistadio 600 g", "175", "31.4"]);
+  await page.click("#bAddGroup"); await clickAt(page, { x: 600, y: 400 }); for (const p of [{ x: 640, y: 420 }, { x: 650, y: 380 }, { x: 630, y: 400 }]) await clickAt(page, p);
+  await page.evaluate(() => window.__SA.applyProfile("Tikka"));
+  const L2 = (await S(page)).g.load; assert.deepStrictEqual([L2.twist, L2.twistDir, L2.barrel, L2.trigger].map(String), ["11", "L", "610", "bistadio 600 g"]);
+  // differenze tra le configurazioni: passo e canna
+  await setField(page, "#ld-twist", 10); await setField(page, "#ld-barrel", 51); await page.selectOption("#ld-barrelUnit", "cm");
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  const D = await page.evaluate(() => { const d = window.__SA.configDiff(); return { diff: d.diff, tw: d.cells.get("twist"), b: d.cells.get("barrel") }; });
+  ok2(D.diff.includes("twist") && D.diff.includes("barrel") && !D.diff.includes("trigger"), "differenze: " + JSON.stringify(D.diff));
+  assert.deepStrictEqual(D.tw, ["1:11 in sinistrorsa", "1:10 in sinistrorsa"]); assert.deepStrictEqual(D.b, ["610 mm", "51 cm"]);
+  // sessione salvata e riaperta
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  const back = await page.evaluate(() => window.__SA.state.groups.map(g => [g.load.twist, g.load.twistDir, g.load.barrel, g.load.barrelUnit, g.load.trigger].map(String)));
+  assert.deepStrictEqual(back, [["11", "L", "610", "mm", "bistadio 600 g"], ["10", "L", "51", "cm", "bistadio 600 g"]]);
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+test("1.28.0: verticale — quota della velocità, eccesso, fori con velocità e retta altezza–velocità", async page => {
+  await ballisticGroup(page, { sd: 6 });
+  const card = '.resroot .rcard[data-key="vsplit"]';
+  // SD 6 m/s a 300 m: la sola velocità darebbe più verticale di quella misurata
+  let t = await page.textContent(card);
+  ok2(/La velocità da sola spiegherebbe più della verticale misurata/.test(t) && await page.$eval(card, c => c.classList.contains("warnc")), "eccesso segnalato: " + t.slice(0, 200));
+  // velocità dei 5 fori: SD dai fori, quota calcolata qui
+  await page.check("#vPerShot");
+  const vs = [790, 791, 790, 789, 790]; for (const [i, v] of vs.entries()) await setDialCell(page, i, "v", v);
+  const X = await page.evaluate(() => { const SA = window.__SA, g = SA.state.groups[0], I = SA.balInputs(g), C = SA.Calc, th = C.zeroAngle(I.o);
+    const y = v => C.trajectory({ ...I.o, v0: v, theta: th, dists: [300] }).rows[0].drop;
+    const px = SA.calcContext(g).pxPerMm; return { slope: (y(791) - y(789)) / 2, ys: g.shots.map(q => -q.y / px), V: JSON.parse(JSON.stringify(SA.vSplitInfo(g, SA.calcContext(g)), (k, v) => k === "I" || k === "q" ? undefined : v)) }; });
+  const mean = a => a.reduce((x, y) => x + y, 0) / a.length, sdev = a => Math.sqrt(a.reduce((x, y) => x + (y - mean(a)) ** 2, 0) / (a.length - 1));
+  const sdV = sdev(vs), sigVel = X.slope * sdV * 1000, sigY = sdev(X.ys), share = (sigVel / sigY) ** 2;
+  near(X.V.S.sigY, sigY, 1e-6, "σ verticale"); near(X.V.S.sigVel, sigVel, 0.01, "σ dalla velocità (differenza finita)"); near(X.V.S.share, share, 0.002, "quota");
+  ok2(X.V.useShots && Math.abs(X.V.sdV - sdV) < 1e-9, "SD dai fori");
+  t = (await page.textContent(card)).replace(/\s+/g, " ");
+  ok2(t.includes(`${Math.round(share * 100)}% dalla velocità`), "valore principale: " + t.slice(0, 120));
+  ok2(/Non si può ancora dire: con 5 colpi la quota della velocità sta tra \d+% e \d+%/.test(t), "con 5 colpi: incerto");
+  ok2(/SD 0,7 m\/s \(dai fori\)/.test(t), "SD dai fori nella riga");
+  // retta altezza–velocità sui 5 fori: pendenza ai minimi quadrati, calcolata qui
+  const mv = mean(vs), my = mean(X.ys), b = vs.reduce((a, v, i) => a + (v - mv) * (X.ys[i] - my), 0) / vs.reduce((a, v) => a + (v - mv) ** 2, 0);
+  near(X.V.REG.slope * 1000, b, 1e-6, "pendenza mm per m/s");
+  ok2(t.includes(`Altezza–velocità (5 fori)${b >= 0 ? "+" : "−"}${Math.abs(b).toFixed(2).replace(".", ",")} mm/m/s`), "riga della retta: " + t);
+  // senza dati balistici e senza velocità: nessuna card; con la sola SD: card con i dati mancanti
+  await setField(page, "#ld-bc", ""); for (let i = 0; i < 5; i++) await setDialCell(page, i, "v", "");
+  ok2(/Non calcolabile: servono nei dati del gruppo: coefficiente balistico/.test(await page.textContent(card)), "SD senza BC: dati mancanti");
+  await setField(page, "#ld-v0sd", "");
+  assert.strictEqual(await page.locator(card).count(), 0, "nessun dato di velocità: niente card");
+});
+test("1.28.0: errore di distanza e probabilità con più colpi nel modulo «Probabilità di colpire»", async page => {
+  await ballisticGroup(page); await openHit(page);
+  const card = '.resroot .rcard[data-key="rangeerr"]';
+  const E = await page.evaluate(() => { const SA = window.__SA, I = SA.balInputs(SA.state.groups[0]); return { o: { v0: I.o.v0, bc: I.o.bc, sightH: I.o.sightH, zero: I.o.zero }, R: SA.Calc.rangeErrorScan(I.o, [300], { m: 10 }, 0.06, 1500) }; });
+  assert.deepStrictEqual(E.o, { v0: 790, bc: 0.243, sightH: 0.045, zero: 100 }, "dati del gruppo in unità SI");
+  // verifica indipendente: con l'alzo per 300 m, a 290 e 310 m il colpo va in alto e in basso
+  const P = await page.evaluate(() => { const SA = window.__SA, C = SA.Calc, I = SA.balInputs(SA.state.groups[0]), th = C.zeroAngle(I.o), T = C.trajectory({ ...I.o, theta: th, dists: [290, 300, 310] }).rows, c = T[1].vMil / 1000;
+    return [290 * (Math.tan(c) - Math.tan(T[0].vMil / 1000)), 310 * (Math.tan(c) - Math.tan(T[2].vMil / 1000))]; });
+  near(E.R.rows[0].up, P[0], 1e-4, "più vicino"); near(E.R.rows[0].dn, P[1], 1e-4, "più lontano");
+  let t = (await page.textContent(card)).replace(/\s+/g, " ");
+  ok2(t.includes(`±${(E.R.rows[0].worst * 100).toFixed(1).replace(".", ",")} cm`) && t.includes("±10 m a 300 m sul punto d'impatto"), "card: " + t.slice(0, 160));
+  ok2(t.includes(`Distanza massima entro la zona${E.R.maxD} m · ⌀ 12,0 cm`), "distanza massima nel cerchio da 12 cm: " + t);
+  await page.selectOption("#rangeErrUnit", "pct"); await setField(page, "#rangeErr", 5);
+  t = await page.textContent(card); ok2(/±15 m a 300 m/.test(t), "5% di 300 m = ±15 m");
+  await page.selectOption("#hitShape", "target");
+  ok2(/scegli un cerchio o un rettangolo/.test(await page.textContent(card)), "zona non definita");
+  await setField(page, "#rangeErr", ""); assert.strictEqual(await page.locator(card).count(), 0, "errore vuoto: niente card");
+  // più colpi: almeno k su n e colpi per il 95%
+  await page.selectOption("#hitShape", "circle");
+  const h = await page.evaluate(() => { const SA = window.__SA, g = SA.state.groups[0], x = SA.hitInfo(g, SA.calcContext()); return { p: x.corr.p, lo: x.corr.lo, hi: x.corr.hi }; });
+  const rowOf = async name => page.$$eval("#hitOut table.hit tr", (trs, n) => { const r = trs.find(tr => tr.cells[0] && tr.cells[0].textContent.trim() === n); return r ? [...r.cells].map(c => c.textContent) : null; }, name);
+  const pct = s => itNum(s.match(/([\d,]+)\s*%/)[1]) / 100;
+  let r = await rowOf("Almeno 1 su 3"); ok2(r, "riga «Almeno 1 su 3»");
+  near(pct(r[1]), 1 - (1 - h.p) ** 3, 0.0011, "almeno 1 su 3");
+  await setField(page, "#hitK", 2); await setField(page, "#hitN", 5);
+  r = await rowOf("Almeno 2 su 5"); const b25 = 1 - (1 - h.p) ** 5 - 5 * h.p * (1 - h.p) ** 4; near(pct(r[1]), b25, 0.0011, "almeno 2 su 5");
+  r = await rowOf("Colpi per il 95% di almeno uno a segno");
+  const n95 = p => p >= 0.95 ? 1 : Math.ceil(Math.log(0.05) / Math.log(1 - p));
+  ok2(r[1].startsWith(String(n95(h.p))), `colpi per il 95%: ${r[1]} (attesi ${n95(h.p)})`);
+  await setField(page, "#hitK", 9);
+  ok2(await rowOf("Almeno 5 su 5"), "k limitato a n");
+  ok2(/Più colpi: binomiale/.test(await page.textContent("#hitOut")), "nota");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+test("1.28.0: confronto per arma — filtro della tabella e riepilogo con la σ combinata", async page => {
+  await threeGroups(page);
+  await setField(page, "#shotDist", 100);
+  await page.evaluate(() => { const st = window.__SA.state, W = ["Arma A", "Arma B", "Arma A"];
+    st.groups.forEach((g, i) => { g.load = { ...(g.load || {}), weapon: W[i], date: `2026-01-0${i + 1}`, twist: i === 1 ? "8" : "10", twistDir: "R", barrel: "610" }; }); window.__SA.commit(); });
+  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.deepStrictEqual(await page.$$eval("#cmpWeapon option", o => o.map(x => x.textContent)), ["tutte", "Arma A", "Arma B"]);
+  ok2(await page.isVisible("#cmpWeaponsWrap"), "riepilogo per arma");
+  const rows = await page.$$eval("#cmpWeapons tbody tr", trs => trs.map(tr => [...tr.cells].map(c => c.textContent.trim())));
+  assert.strictEqual(rows.length, 2); ok2(rows[0][0].startsWith("Arma A") && /1:10 in destrorsa · 610 mm/.test(rows[0][0]), "nome e scheda: " + rows[0][0]);
+  assert.deepStrictEqual([rows[0][1], rows[0][2], rows[1][1], rows[1][2]], ["2", "11", "1", "5"], "gruppi e colpi");
+  // σ combinata dell'arma A calcolata qui: varianze dei due gruppi pesate con 2(n − 1)
+  const pool = await page.evaluate(() => { const SA = window.__SA, cc = SA.calcContext(), out = [];
+    for (const g of [SA.state.groups[0], SA.state.groups[2]]) { const P = g.shots.filter(s => !s.excluded), n = P.length, k = 1 / cc.pxPerMm;
+      const mx = P.reduce((a, q) => a + q.x, 0) / n, my = P.reduce((a, q) => a + q.y, 0) / n, ss = P.reduce((a, q) => a + ((q.x - mx) * k) ** 2 + ((q.y - my) * k) ** 2, 0); out.push([ss, 2 * (n - 1)]); }
+    return out; });
+  // σ non distorta: divisa per c(ν) = √(2/ν)·Γ((ν+1)/2)/Γ(ν/2) (Stirling con spostamento: errore < 1e-12)
+  const lg = x => { let a = 0; while (x < 12) { a -= Math.log(x); x++; } return a + (x - 0.5) * Math.log(x) - x + 0.5 * Math.log(2 * Math.PI) + 1 / (12 * x) - 1 / (360 * x ** 3) + 1 / (1260 * x ** 5); };
+  const nu = pool[0][1] + pool[1][1], c = Math.sqrt(2 / nu) * Math.exp(lg((nu + 1) / 2) - lg(nu / 2));
+  const s2 = (pool[0][0] + pool[1][0]) / nu, mrMil = Math.sqrt(s2) / c * Math.sqrt(Math.PI / 2) / 100000 * 1000;
+  ok2(rows[0][3].startsWith(mrMil.toFixed(mrMil < 0.1 ? 3 : 2).replace(".", ",")), `raggio medio combinato ${rows[0][3]} ≈ ${mrMil}`);
+  // filtro: solo l'arma B, poi di nuovo tutte
+  await page.selectOption("#cmpWeapon", "Arma B");
+  ok2(/Servono almeno 2 gruppi/.test(await page.textContent("#cmpBody")), "un solo gruppo dell'arma B");
+  await page.selectOption("#cmpWeapon", "Arma A");
+  assert.strictEqual(await page.locator("#cmpBody table.cmp tbody tr").count(), 2, "due gruppi dell'arma A");
+  await page.selectOption("#cmpWeapon", "*"); assert.strictEqual(await page.locator("#cmpBody table.cmp tbody tr").count(), 3);
+  // un'arma sola: niente riepilogo
+  await key(page, "Escape"); await page.evaluate(() => { window.__SA.state.groups.forEach(g => { g.load.weapon = "Arma A"; }); window.__SA.commit(); });
+  await key(page, "c"); ok2(await page.isHidden("#cmpWeaponsWrap"), "una sola arma: riepilogo nascosto");
+  await page.evaluate(() => window.__SA.setLang("en")); await page.evaluate(() => { const st = window.__SA.state; st.groups[1].load.weapon = ""; window.__SA.commit(); window.__SA.drawCompare(); });
+  ok2(/\(rifle not given\)/.test(await page.textContent("#cmpWeapons")), "arma non indicata, in inglese");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+  await page.evaluate(() => window.__SA.setLang("it"));
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

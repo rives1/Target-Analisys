@@ -919,4 +919,71 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   ok(Calc.trDiamond(E.slice(0, 5), Dsp).zeroMm === undefined, "5 fori: niente ritorno a zero");
 }
 
+// --- 1.28.0: potenza del test F, verticale e velocità, errore di distanza, più colpi, stabilità giroscopica
+{
+  near(Calc.finv(0.975, 8, 8), 4.4333, 1e-3, "F 0,975 (8, 8)"); near(Calc.finv(0.95, 10, 20), 2.3479, 1e-3, "F 0,95 (10, 20)");
+  near(Calc.fcdf(Calc.finv(0.3, 7, 13), 7, 13), 0.3, 1e-9, "finv inversa di fcdf");
+  near(Calc.fPower(1, 18, 18, 0.05), 0.05, 1e-6, "senza differenza la potenza è α");
+  ok(Calc.fPower(2.25, 18, 18) < Calc.fPower(2.25, 30, 30) && Calc.fPower(1.5, 30, 30) < Calc.fPower(2.25, 30, 30), "la potenza cresce con i colpi e con la differenza");
+  // Monte Carlo (seme fisso): due gruppi di 10 colpi, σ in rapporto 1,5
+  { const rnd = Calc.prng(4242), gauss = () => { const u = Math.max(1e-12, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    const n = 10, nu = 2 * (n - 1), lo = Calc.finv(0.025, nu, nu), hi = Calc.finv(0.975, nu, nu); let rej = 0; const N = 4000;
+    const ss = sd => { const P = Array.from({ length: n }, () => [gauss() * sd, gauss() * sd]); const mx = P.reduce((a, q) => a + q[0], 0) / n, my = P.reduce((a, q) => a + q[1], 0) / n; return P.reduce((a, q) => a + (q[0] - mx) ** 2 + (q[1] - my) ** 2, 0) / nu; };
+    for (let i = 0; i < N; i++) { const F = ss(1.5) / ss(1); if (F > hi || F < lo) rej++; }
+    near(rej / N, Calc.fPower(2.25, nu, nu), 0.025, "potenza contro simulazione"); }
+  const P1 = Calc.shotsForPower({ ratio: 1.5 }), P5 = Calc.shotsForPower({ ratio: 1.5, perGroup: 5 });
+  eq([P1.n, P1.k], [26, 1], "rapporto 1,5, gruppo unico: 26 colpi");
+  ok(P1.power >= 0.8 && Calc.fPower(2.25, 2 * 24, 2 * 24) < 0.8, "26 è il minimo");
+  ok(P5.n % 5 === 0 && P5.power >= 0.8 && Calc.fPower(2.25, 2 * (P5.k - 1) * 4, 2 * (P5.k - 1) * 4) < 0.8 && P5.n >= P1.n, `rosate da 5: ${P5.n} colpi (${P5.k} rosate), minimo e non meno del gruppo unico`);
+  eq(Calc.shotsForPower({ ratio: 1 }), null, "nessuna differenza: nessun numero");
+  near(Calc.chi2invAny(0.975, 3), 9.3484, 1e-3, "χ² dispari"); near(Calc.chi2invAny(0.025, 4), 0.48442, 1e-4, "χ² pari");
+  near(Calc.chi2invAny(0.9, 10), Calc.chi2invAny(0.9, 10), 0, "stabile");
+  for (const [n, d2] of [[2, 1.128], [3, 1.693], [5, 2.326], [10, 3.078]]) near(Calc.rangeFactor(n), d2, 1.5e-3, `d₂(${n})`);
+  // decomposizione della verticale
+  const VS = Calc.verticalSplit(10, 10, 6, 0.95);
+  near(VS.share, 0.36, 1e-12, "quota = σ_vel²/σ_y²"); near(VS.rest, 8, 1e-12, "resto = √(σ_y² − σ_vel²)");
+  ok(VS.shareCi.lo < VS.share && VS.shareCi.hi > VS.share && VS.sigYci.lo < 10 && VS.sigYci.hi > 10, "intervalli attorno alla stima");
+  near(VS.vSpreadVel, Calc.rangeFactor(10) * 6, 1e-12, "V-spread atteso dalla velocità");
+  ok(Calc.verticalSplit(5, 10, 6).excess && Calc.verticalSplit(5, 10, 6).share === 1, "velocità oltre la verticale misurata: segnalata, quota 1");
+  eq(Calc.verticalSplit(5, 2, 1), null, "servono 3 fori");
+  const atm = Calc.atmosphere({}), o = { v0: 800, bc: 0.243, model: "G7", sightH: 0.045, zero: 100, atm };
+  const VV = Calc.velocityVertical(o, 600, 4);
+  ok(VV.slope > 0, "più veloce = più in alto"); near(VV.sig, 4 * VV.slope, 1e-12, "σ_vel = pendenza × SD");
+  { const th = Calc.zeroAngle(o), a = Calc.trajectory({ ...o, v0: 802, theta: th, dists: [600] }).rows[0].drop, b = Calc.trajectory({ ...o, v0: 798, theta: th, dists: [600] }).rows[0].drop;
+    near(VV.slope, (a - b) / 4, 2e-4, "pendenza come differenza finita indipendente"); }
+  ok(Calc.velocityVertical(o, 100, 4).sig < Calc.velocityVertical(o, 300, 4).sig, "cresce con la distanza");
+  { const pts = [790, 795, 800, 805, 810].map(v => ({ v, y: 0.002 + VV.slope * (v - 800) })); const R = Calc.velocityRegression(pts, VV.slope);
+    near(R.slope, VV.slope, 1e-12, "retta esatta"); near(R.r2, 1, 1e-9, "R² = 1"); }
+  { const rnd = Calc.prng(7), pts = Array.from({ length: 12 }, (_, i) => { const v = 790 + i * 2; return { v, y: VV.slope * (v - 800) + (rnd() - 0.5) * 0.004 }; }); const R = Calc.velocityRegression(pts, VV.slope);
+    ok(R.p > 0.05, `pendenza compatibile con il modello (p ${R.p.toFixed(3)})`); ok(Calc.velocityRegression(pts.slice(0, 3), 0) === null, "servono 4 fori"); }
+  // errore di distanza
+  const RE = Calc.rangeErrorScan(o, [300, 600], { m: 10 }, 0.06, 1500);
+  ok(RE.rows.every(r => r.up > 0 && r.dn < 0), "bersaglio più vicino → in alto, più lontano → in basso");
+  ok(RE.rows[1].worst > RE.rows[0].worst, "cresce con la distanza");
+  { const th = Calc.zeroAngle(o), T = Calc.trajectory({ ...o, theta: th, dists: [600, 610] }).rows, c = T[0].vMil / 1000;
+    near(RE.rows[1].dn, 610 * (Math.tan(c) - Math.tan(T[1].vMil / 1000)), 2e-4, "spostamento a 610 m con la correzione per 600 m"); }
+  ok(RE.maxD > 300 && RE.maxD < 1500 && Calc.rangeErrorScan(o, [600], { m: 10 }, 0.06, 1500).maxD === RE.maxD, `distanza massima nella zona ±6 cm: ${RE.maxD} m`);
+  ok(Calc.rangeErrorScan(o, [600], { m: 20 }, 0.06, 1500).maxD < RE.maxD, "errore più grande → distanza massima più corta");
+  near(Calc.rangeErrorScan(o, [400], { pct: 0.05 }, 0).rows[0].e, 20, 1e-12, "errore in percentuale");
+  // più colpi
+  near(Calc.atLeastK(1, 3, 0.5), 0.875, 1e-12, "almeno 1 su 3"); near(Calc.atLeastK(2, 3, 0.5), 0.5, 1e-12, "almeno 2 su 3");
+  near(Calc.atLeastK(3, 3, 0.7), 0.343, 1e-12, "tutti e 3"); eq([Calc.atLeastK(0, 5, 0.1), Calc.atLeastK(6, 5, 0.9)], [1, 0], "casi limite");
+  { let p = 0; for (let j = 4; j <= 10; j++) { let c = 1; for (let i = 0; i < j; i++) c = c * (10 - i) / (i + 1); p += c * 0.3 ** j * 0.7 ** (10 - j); } near(Calc.atLeastK(4, 10, 0.3), p, 1e-12, "binomiale 4 su 10"); }
+  eq([Calc.shotsForOne(0.5), Calc.shotsForOne(0.3), Calc.shotsForOne(0.95), Calc.shotsForOne(1)], [5, 9, 1, 1], "colpi per il 95% di almeno uno");
+  eq(Calc.shotsForOne(0), Infinity, "p = 0: mai");
+  // stabilità giroscopica (Miller) e deriva
+  const SG = Calc.millerSg({ massGr: 168, diamIn: 0.308, lenIn: 1.215, twistIn: 12, vFps: 2800, tempC: 15, pressHPa: 1013.25 });
+  near(SG.sg, 1.739, 0.005, "168 gr .308 lunga 1,215″ con passo 1:12 a 2800 ft/s: Sg ≈ 1,74");
+  near(SG.fa, 1, 2e-4, "aria standard: nessuna correzione"); near(SG.fv, 1, 1e-12, "2800 ft/s: nessuna correzione");
+  near(Calc.millerSg({ massGr: 168, diamIn: 0.308, lenIn: 1.215, twistIn: 10, vFps: 2800, tempC: 15, pressHPa: 1013.25 }).sg, SG.sg * 1.44, 1e-9, "Sg ∝ 1/passo²");
+  near(Calc.millerSg({ massGr: 168, diamIn: 0.308, lenIn: 1.215, twistIn: SG.twistFor15, vFps: 2800, tempC: 15, pressHPa: 1013.25 }).sg, 1.5, 1e-9, "passo per Sg = 1,5");
+  ok(Calc.millerSg({ massGr: 168, diamIn: 0.308, lenIn: 1.215, twistIn: 12, vFps: 2800, tempC: -10, pressHPa: 1013.25 }).sg < SG.sg, "al freddo Sg scende");
+  eq(Calc.millerSg({ massGr: 168, diamIn: 0.308, lenIn: 0, twistIn: 12 }), null, "dati mancanti");
+  near(Calc.spinDrift(1.5, 1, true), 1.25 * 2.7 * 0.0254, 1e-12, "Litz: 1,25 (Sg + 1,2) TOF^1,83 pollici"); near(Calc.spinDrift(1.5, 1, false), -1.25 * 2.7 * 0.0254, 1e-12, "sinistrorsa: a sinistra");
+  { const T = Calc.trajectory({ ...o, spin: { sg: 1.8, right: true }, dists: [100, 300, 800] }).rows, T0 = Calc.trajectory({ ...o, dists: [100, 300, 800] }).rows;
+    near(T[0].spin, 0, 1e-9, "deriva giroscopica nulla alla distanza di zero"); ok(T[2].spin > T[1].spin && T[1].spin > 0, "a destra e crescente");
+    near(T[2].drift - T0[2].drift, T[2].spin, 1e-12, "sommata alla deriva"); ok(T[2].hMil < T0[2].hMil, "correzione di brandeggio verso sinistra");
+    near(T[2].vMil, T0[2].vMil, 1e-12, "l'alzo non cambia"); }
+}
+
 console.log(`OK — ${passed} verifiche superate`);
