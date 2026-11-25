@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.26.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.27.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -30,7 +30,7 @@ Il **manuale d'uso** completo, con schermate ed esempi, è in [`docs/manuale/Man
 4. Imposta distanza di tiro (ogni gruppo ha la sua), calibro (elenco o valore libero) e valore del click del mirino.
 5. Leggi risultati e correzione; apri **📊 Grafici del gruppo** (tasto `A`) o **📈 Confronto tra gruppi** (tasto `C`), in fondo al pannello; esporta la **Result Card** (PNG) o copia i risultati come testo; salva la sessione (**ZIP**, `Ctrl+S`).
 
-Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i dati di ricarica e condizioni del gruppo attivo). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
+Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i dati di ricarica e condizioni del gruppo attivo, segnati «↺ ereditati» finché non li confermi). Per confrontare sessioni diverse nel tempo: **Importa sessioni nello storico**.
 
 ### Funzioni
 
@@ -42,7 +42,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Flyer**: segnalati automaticamente (⚠, da 5 fori) con il test di Mahalanobis leave-one-out (criterio ellittico, F di Hotelling, Bonferroni) ed escludibili dal calcolo.
 - **Verifica incrociata della scala**: diametro mediano dei fori contro il calibro e riferimento di controllo di lunghezza nota.
 - **Incertezza di misura** per simulazione (marcatura per foro, fori «difficili», errore di scala) accanto agli IC statistici; **diagnostica del modello** (QQ-plot Rayleigh, test di adattamento, stringing e due centri); **ES equivalente** a 5 e 10 colpi.
-- **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click.
+- **Tabella punti**: coordinate, distanza da mira e da centro, direzione (gradi e sigla cardinale), click; intestazione fissa, colonne nascondibili e riordinabili, dati modificabili da tastiera (Tab/Invio). Passando su un foro lo si evidenzia insieme nella foto, nella tabella e nei grafici.
 - **Ricarica e condizioni** per gruppo: data, bossolo, polvere e carica, palla, innesco, quote della cartuccia (CBTO, COAL, lunghezza del bossolo, spalla, colletto, in mm), meteo, temperatura, umidità, pressione, vento, colpi sparati, scaldacanna, note.
 - **Orientamento**: rotazione della foto (raddrizza con 2 punti, angolo libero, ±90°); punti e direzioni seguono il bersaglio raddrizzato.
 - **Correzione prospettica** a 4 punti (omografia) per le foto di sbieco, con scala automatica dal rettangolo di riferimento.
@@ -84,6 +84,7 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Report ricetta** (1.25, pulsante 📐 nel riquadro Munizione): PDF A4 chiaro di una pagina per il gruppo attivo, anche senza foto: disegno schematico vettoriale della cartuccia con le quote inserite (CBTO evidenziato, spalla con i punti del comparatore, Ø del colletto), tabelle Ricetta, Preparazione bossolo, Prestazioni misurate (velocità media/SD/ES dal cronografo o dalla V0, group size e raggio medio) e Condizioni, note e avvisi se le quote non sono coerenti. Nome del file `ShAn-Recipe-…`.
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
+- **Bersagli da allenamento** (1.27): PDF A4 vettoriali a scala reale — sight-in con 1–9 mire, griglia a passo scelto, diamond test per verificare i click — con righello, codice e 4 marcatori; «Usa il codice» + 4 clic sui marcatori impostano prospettiva, scala, distanza e mire; la verifica del diamond test riporta il click reale di alzo e brandeggio, l'inclinazione della torretta e il ritorno a zero.
 - **Lettura immediata** (1.12): etichette dei fori senza sovrapposizioni, pannello dei valori in tempo reale sull'immagine, tooltip sul foro, doppio clic per aprirne la riga, colonna «Effetto ES / RM» dei fori, semaforo della calibrazione.
 - **Correzione sulla foto**: freccia dal centro gruppo al punto previsto dopo i click e correzione virtuale (fori spostati in trasparenza, solo visualizzazione).
 - **Personalizzazione**: densità Compatta / Standard / Dettagliata e layout del pannello (ordine e sezioni nascoste) salvati nel browser.

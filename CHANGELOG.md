@@ -1,5 +1,51 @@
 # Changelog
 
+## [1.27.0] - 2026-11-25
+### Aggiunto
+- **Dati ereditati**: un nuovo gruppo copia dal gruppo attivo distanza, munizione, condizioni e serie (colpi sparati,
+  scaldacanna, note) e li segna come «ereditati» finché non vengono confermati: campi con contorno arancio e badge
+  «↺» accanto all'etichetta (clic = confermato così), barra «n dati copiati da «Gruppo X» da controllare» con
+  «✓ Conferma tutti» nel modulo, badge «↺n» nella riga del gruppo, avviso nei risultati del gruppo con «✓ Conferma»,
+  riga «Da confermare» nei dati di ricarica, avviso sul passo Tiro per la distanza. Modificare un campo lo conferma.
+  Nella sessione e nella storia (annulla/ripristina); arma e data non sono marcate.
+- **Tabella punti potenziata** (Dettaglio gruppo attivo): intestazione e colonna «Tipo» fisse in un riquadro
+  scorrevole; colonne nascondibili e riordinabili (trascinando l'intestazione o dal pannello **⚙**, con «Ripristina
+  colonne»), ricordate nel browser; editing da tastiera dei soli dati (Escl., alzo, brandeggio, carica, V0; X e Y si
+  cambiano trascinando il foro sulla foto): **Tab/Maiusc+Tab** cella modificabile successiva/precedente, **Invio/Maiusc+
+  Invio** stessa colonna, foro successivo/precedente, **Esc** annulla la modifica; fuoco e scorrimento conservati dopo
+  ogni ricalcolo. I pulsanti della riga sono fuori dall'ordine del Tab (restano K, X, Canc sul foro selezionato).
+- **Hover condiviso foto ↔ tabella ↔ grafici**: passando su un foro (foto, riga della tabella, grafici del gruppo) lo
+  si evidenzia ovunque con un anello azzurro (distinto dal giallo della selezione e dall'arancio del ⌖); una fascia
+  dell'istogramma o uno spicchio dell'orologio evidenziano i loro fori; la riga della tabella resta visibile nel suo
+  riquadro. Nuovo grafico **«Foto del gruppo»** (ritaglio della foto attorno ai fori) nella pagina Grafici del gruppo.
+- **Bersagli da allenamento** (Configurazione sessione › Bersagli da stampare): PDF A4 vettoriale a scala reale,
+  **sight-in** con 1, 4, 5, 6 o 9 mire a quadretti, **griglia** a passo scelto (MOA, MIL, mm, cm, in; posizioni angolari
+  esatte alla distanza), **diamond test** per verificare i click (sequenza centro, alzo +N, brandeggio +N, alzo −N,
+  brandeggio −N, centro; posizioni attese e click da impostare sul foglio). Ogni foglio ha righello di 100 mm,
+  **codice** (es. `SA-S5-1MOA-100M-S`, con lettera di controllo) e **4 marcatori a scacchi** ai vertici di un
+  rettangolo di 180 × 240 mm. **«⬚ Usa il codice»**: si cliccano i 4 marcatori e l'app imposta prospettiva, scala,
+  distanza e un gruppo con il punto di mira per ogni mira (passo della griglia angolare dell'app per la griglia,
+  valore del click per il diamond test). **«📐 Verifica il diamond test»**: click reale di alzo e brandeggio (rapporto
+  col nominale), inclinazione dell'asse dell'alzo, ritorno a zero, scostamento di ogni colpo, con il giudizio e la
+  sensibilità alla dispersione. Anteprima delle misure e limiti dell'A4 mentre si scelgono le opzioni.
+- Motore: `Calc.trEncode`, `trDecode`, `trLayout`, `trDiamond`, `trOffMm`, `TR_RECT`, `TR_AREA`; `ReportDoc.path` accetta
+  curve di Bézier («C»).
+- Help tecnico: «Bersagli da allenamento e diamond test». Preset della prospettiva «Marcatori dei bersagli da
+  allenamento · 180 × 240 mm».
+### Modificato
+- **Calibrazione scala**: «Riferimento di controllo» e «Scala sulla foto» sono riquadri espandibili (chiusi all'avvio,
+  stato nel titolo); lo strumento Riferimento apre il suo riquadro.
+- **Probabilità di colpire** spostata in **Gruppi**: terzo blocco di ogni gruppo espanso (Modalità Esperto), con la
+  probabilità di quel gruppo; bersaglio e distanza si impostano nel gruppo attivo e valgono per tutti.
+- **Dati**: riquadri comprimibili tranne il primo (Sessione).
+- **Bersaglio di autoverifica** spostato in Configurazione sessione › Bersagli da stampare (istruzione stampata sul
+  foglio aggiornata).
+- **Note sull'immagine** dentro «Risultati della sessione»; **Colpi da rivedere** dentro il dettaglio del gruppo;
+  «Punti del gruppo attivo» diventa **«Dettaglio gruppo attivo»**. Layout salvati prima: le sezioni tolte spariscono
+  dall'elenco, il resto resta come era.
+- Grafici: un punto sotto il puntatore è il più vicino tra quelli a portata (non il primo dell'elenco).
+- Guida rapida (passi 2, 5 e 9) aggiornata.
+
 ## [1.26.0] - 2026-11-25
 ### Aggiunto
 - **Barra dei passi** sopra la foto: Foto → Geometria → Scala → Tiro → Fori → Risultati. Ogni passo mostra lo stato

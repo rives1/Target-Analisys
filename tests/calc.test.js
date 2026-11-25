@@ -861,4 +861,62 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
   ok(mono, "posizioni crescenti e quote note rispettate su 400 casi casuali");
 }
 
+// --- 1.27.0: bersagli da allenamento (codice, impaginazione, diamond test)
+{
+  const S5 = { kind: "S", n: 5, step: 1, unit: "MOA", dist: 100, distUnit: "M" };
+  const c = Calc.trEncode(S5);
+  ok(/^SA-S5-1MOA-100M-[A-Z]$/.test(c), "codice sight-in: " + c);
+  const d = Calc.trDecode(c);
+  eq([d.kind, d.n, d.step, d.unit, d.dist, d.distUnit, d.distMm, d.code], ["S", 5, 1, "MOA", 100, "M", 100000, c], "decodifica");
+  eq(Calc.trDecode(" " + c.toLowerCase().replace("-1moa", "-1,0moa") + " ").code, c, "minuscole, spazi, virgola e «1,0» = stesso codice");
+  eq(Calc.trDecode(c.replace("100M", "300M")).error, "check", "distanza alterata: controllo fallito");
+  eq(Calc.trDecode("SA-S5-1MOA-100M").error, "format", "senza lettera di controllo");
+  const bad = sp => Calc.trDecode(Calc.trEncode(sp)).error;
+  eq(bad({ ...S5, n: 3 }), "aims", "3 mire non previste");
+  eq(bad({ kind: "D", n: 10, step: 1, unit: "CM", dist: 50, distUnit: "M" }), "unit", "diamond con unità lineare");
+  eq(bad({ ...S5, dist: 0.5 }), "range", "distanza sotto 1 m");
+  const G = Calc.trDecode(Calc.trEncode({ kind: "G", n: 7, step: 0.5, unit: "MIL", dist: 50, distUnit: "YD" }));
+  eq([G.kind, G.n, G.distMm], ["G", 1, 45720], "griglia: una mira, iarde");
+  // ogni carattere sostituito o due vicini scambiati: quasi sempre rilevati (lettera su 23)
+  let miss = 0, tot = 0;
+  for (const code of [c, Calc.trEncode({ kind: "D", n: 12, step: 0.25, unit: "MOA", dist: 25, distUnit: "M" })])
+    for (let i = 3; i < code.length - 2; i++) for (const ch of "0123456789") { if (ch === code[i]) continue; const t = code.slice(0, i) + ch + code.slice(i + 1); const r = Calc.trDecode(t); if (r.error !== "format") { tot++; if (!r.error && r.code !== code) miss++; } }
+  ok(tot > 20 && miss / tot < 0.1, `errori di battitura non rilevati ${miss}/${tot}`);
+  // posizioni sul foglio: angoli esatti alla distanza, unità lineari
+  near(Calc.trOffMm(1, 1, "MOA", 100000), 100000 * Math.tan(Math.PI / 10800), 1e-9, "1 MOA a 100 m");
+  near(Calc.trOffMm(10, 0.1, "MIL", 100000), 100000 * Math.tan(0.001), 1e-9, "10 click da 0,1 MIL a 100 m");
+  near(Calc.trOffMm(2, 1, "IN", 0), 50.8, 1e-12, "pollici"); near(Calc.trOffMm(3, 1, "CM", 0), 30, 1e-12, "centimetri");
+  // impaginazione: riquadri delle mire dentro l'area e senza sovrapposizioni, per tutti i numeri di mire
+  const A = Calc.TR_AREA;
+  for (const n of [1, 4, 5, 6, 9]) {
+    const L = Calc.trLayout(Calc.trDecode(Calc.trEncode({ ...S5, n })));
+    eq(L.aims.length, n, `${n} mire`);
+    const h = L.half.x;
+    ok(L.aims.every(a => a.x - h >= A.x0 - 1e-9 && a.x + h <= A.x1 + 1e-9 && a.y - h >= A.y0 - 1e-9 && a.y + h <= A.y1 + 1e-9), `${n} mire: riquadri nell'area`);
+    let overlap = false;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const p = L.aims[i], q = L.aims[j]; if (Math.abs(p.x - q.x) < 2 * h && Math.abs(p.y - q.y) < 2 * h) overlap = true; }
+    ok(!overlap && h > 20, `${n} mire: riquadri separati (lato ${(2 * h).toFixed(1)} mm)`);
+  }
+  eq(Calc.TR_RECT, { x0: 15, y0: 30, w: 180, h: 240 }, "rettangolo dei marcatori");
+  // diamond test: escursione, limiti del foglio, posizioni attese
+  const Dsp = Calc.trDecode(Calc.trEncode({ kind: "D", n: 10, step: 0.1, unit: "MIL", dist: 50, distUnit: "M" }));
+  const DL = Calc.trLayout(Dsp);
+  near(DL.S, 50000 * Math.tan(0.001), 1e-9, "escursione per lato");
+  eq(DL.expected.map(e => [e.n, Math.sign(e.x), Math.sign(e.y), e.dv, e.dh]), [[1, 0, 0, 0, 0], [2, 0, 1, 10, 0], [3, 1, 0, 0, 10], [4, 0, -1, -10, 0], [5, -1, 0, 0, -10], [6, 0, 0, 0, 0]], "sequenza centro, alto, destra, basso, sinistra, centro");
+  const big = Calc.trLayout({ ...Dsp, n: 20, distMm: 100000 });
+  ok(big.error === "big" && big.maxN === 7, "20 click da 0,1 MIL a 100 m: troppo per l'A4 (max 7)");
+  const small = Calc.trLayout({ ...Dsp, n: 1, distMm: 25000 });
+  ok(small.error === "small" && small.minN === 4, "1 click a 25 m: escursione troppo piccola (min 4)");
+  const E = DL.expected.map(e => ({ x: e.x, y: e.y }));
+  const P = Calc.trDiamond(E, Dsp);
+  near(P.rv, 1, 1e-12, "fori attesi: click di alzo nominale"); near(P.rh, 1, 1e-12, "click di brandeggio nominale");
+  near(P.tiltDeg, 0, 1e-12, "nessuna inclinazione"); near(P.zeroMm, 0, 1e-12, "ritorno a zero");
+  const M = E.map((q, i) => ({ x: q.x + (i === 1 ? 3 : i === 3 ? -3 : 0), y: q.y * (i === 1 || i === 3 ? 1.03 : 1) * 1 }));
+  const Q = Calc.trDiamond(M, Dsp);
+  near(Q.rv, 1.03, 1e-12, "alzo più lungo del 3%"); near(Q.clickV, 0.103, 1e-12, "click reale di alzo");
+  near(Q.tiltDeg, Math.atan2(6, 2 * 1.03 * DL.S) * 180 / Math.PI, 1e-9, "inclinazione dalla deriva orizzontale tra alto e basso");
+  eq(Calc.trDiamond(E.slice(0, 4), Dsp), null, "servono 5 o 6 fori");
+  ok(Calc.trDiamond(E.slice(0, 5), Dsp).zeroMm === undefined, "5 fori: niente ritorno a zero");
+}
+
 console.log(`OK — ${passed} verifiche superate`);

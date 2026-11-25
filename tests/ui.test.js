@@ -38,6 +38,8 @@ async function openApp(context) {
   await expandAll(page);
   return page;
 }
+/** 1.27.0: blocco «Probabilità di colpire» dei gruppi (parte chiuso; il modulo sta nel gruppo attivo). */
+const openHit = page => page.evaluate(() => document.querySelectorAll('#groups [data-gsub="hit"]').forEach(d => { d.open = true; }));
 /** Dalla 1.6.0 alcune sezioni del pannello partono chiuse: i test le aprono tutte (i comandi devono essere visibili). */
 const expandAll = page => page.evaluate(() => document.querySelectorAll("#side details").forEach(d => { d.open = true; }));
 /** Bersaglio sintetico 800×600: griglia ogni 20 px (= 5 mm con la scala dei test), bordo nero. */
@@ -456,7 +458,7 @@ test("prospettiva: sessione salvata e ricaricata, Esc e Backspace", async page =
 test("probabilità di colpire: cerchio, rettangolo, altra distanza, testo e sessione", async page => {
   await loadTarget(page);
   await setupGroup(page, POA, SHOTS);
-  await setField(page, "#shotDist", 100);
+  await setField(page, "#shotDist", 100); await openHit(page);
   await page.selectOption("#hitShape", "circle"); await setField(page, "#hitD", 2); await page.selectOption("#hitUnit", "cm");   // ⌀ 20 mm con σ ≈ 3,4 mm: probabilità intermedie
   const h = await page.evaluate(() => { const { state, hitInfo, calcContext } = window.__SA; return hitInfo(state.groups[0], calcContext()); });
   // controllo indipendente della stima «con correzione»: residuo dell'arrotondamento al click e probabilità del cerchio
@@ -730,6 +732,7 @@ test("lingua inglese: interfaccia, risultati, esportazioni, help in italiano, sc
   const s1 = await S(page);
   assert.strictEqual(s1.g.name, "Group 1", "nome automatico del gruppo in inglese");
   ok2(/Dope at 100 m: elevation/.test(await resText(page)), "dope in inglese");
+  await openHit(page);
   const side = await page.innerText("#sideScroll");
   ok2(/Group size \(c-c\)/.test(side) && /Score/.test(side) && /Probability per shot/.test(side), "risultati in inglese");
   assert.ok(!ITALIAN.test(side.replace(/bersaglio\.png/g, "")), "nessun testo italiano nel pannello: " + (side.match(ITALIAN) || [""])[0]);
@@ -1343,7 +1346,7 @@ test("sagome: IPSC con spostamento e rotazione, IDPA, silhouette, zona vitale, d
   ok2(await page.evaluate(() => window.__SA.state.mode !== "tgt"), "Esc esce dallo strumento");
   ok2(await page.evaluate(() => JSON.stringify(window.__SA.buildSession().groups[0].tgt).includes("dx")), "posizione nella sessione");
   // probabilità sulla sagoma: righe per zona e punti attesi; A + C + D = a segno
-  await page.selectOption("#hitShape", "target");
+  await openHit(page); await page.selectOption("#hitShape", "target");
   await page.waitForFunction(() => /Zona A/.test(document.getElementById("hitOut").textContent));
   const ht = await page.textContent("#hitOut");
   ok2(/Zona C/.test(ht) && /Zona D/.test(ht) && /A segno/.test(ht) && /Punti attesi per colpo/.test(ht), "tabella della sagoma: " + ht.slice(0, 200));
@@ -1671,15 +1674,15 @@ test("semaforo della calibrazione, densità, layout del pannello ed effetto dei 
   await page.click('#layoutPop button[data-lm="sec-points"][data-d="-1"]');
   const ord1 = await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), i0 = ord0.indexOf("sec-points");
   assert.strictEqual(ord1[i0 - 1], "sec-points", "sezione spostata in su");
-  await page.uncheck('#layoutPop input[data-lv="sec-notes"]');
-  ok2(await page.isHidden("#sec-notes"), "sezione nascosta");
+  await page.uncheck('#layoutPop input[data-lv="sec-results"]');
+  ok2(await page.isHidden("#sec-results"), "sezione nascosta");
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
   assert.strictEqual(await page.inputValue("#densSel"), "detail", "densità ricordata");
   assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord1, "ordine ricordato");
-  ok2(await page.isHidden("#sec-notes"), "visibilità ricordata");
+  ok2(await page.isHidden("#sec-results"), "visibilità ricordata");
   await page.click("#bLayout"); await page.click("#bLayReset");
   assert.deepStrictEqual(await page.evaluate(() => window.__SA.getLayout().map(x => x.id)), ord0, "layout ripristinato");
-  ok2(await page.isVisible("#sec-notes >> xpath=..") , "sezione di nuovo visibile");
+  ok2(await page.isVisible("#sec-results >> xpath=..") , "sezione di nuovo visibile");
   await page.selectOption("#densSel", "standard");
 });
 
@@ -2797,9 +2800,9 @@ test("1.19.0: report PDF — font incorporati solo quando servono, testo russo e
 /* ------------------------------ 1.20.0 ------------------------------ */
 test("1.20.0: pannello — sezioni divise in riquadri con titolo, comandi al loro posto e funzionanti", async page => {
   // ogni sezione con più funzioni ha almeno due riquadri, ognuno con un titolo
-  for (const id of ["sec-orient", "sec-calib", "sec-params", "sec-groups", "sec-quality", "sec-score", "sec-hit", "sec-data"]) {
+  for (const id of ["sec-orient", "sec-calib", "sec-params", "sec-groups", "sec-quality", "sec-score", "sec-data"]) {
     const t = await page.$$eval("#" + id + " .subsec", ss => ss.map(s => { const h = s.querySelector(":scope > .subsec-h"); return h ? [...h.childNodes].filter(n => !(n.classList && n.classList.contains("ssi"))).map(n => n.textContent).join("").trim() : ""; }));
-    ok2(t.length >= (id === "sec-score" || id === "sec-hit" ? 1 : 2), id + ": riquadri " + t.length);
+    ok2(t.length >= (id === "sec-score" ? 1 : 2), id + ": riquadri " + t.length);
     ok2(t.every(x => x.length > 2), id + ": titoli " + JSON.stringify(t));
   }
   const where = { calDist: "ss-scale", bCalLock: "ss-scale", bRef: "ss-ref", bRefLock: "ss-ref", smOn: "smBox", shotDist: "ss-shot", clickVal: "ss-shot", markHand: "ss-stat", ciLevel: "ss-stat",
@@ -3594,7 +3597,7 @@ test("1.26.0: barra strumenti a famiglie, menu «⋯ Altri strumenti», comandi 
 });
 test("1.26.0: Configurazione sessione, Gestione immagine a blocchi, layout salvati prima della 1.26, inglese e russo", async page => {
   // Configurazione sessione con i tre blocchi annidati; Ricarica e condizioni non è più una sezione
-  assert.deepStrictEqual(await page.$$eval("#sec-config > details.nest", D => D.map(d => d.id)), ["sec-params", "sec-quality", "sec-score"]);
+  assert.deepStrictEqual(await page.$$eval("#sec-config > details.nest", D => D.map(d => d.id)), ["sec-params", "sec-quality", "sec-score", "sec-targets"]);   // 1.27.0: + bersagli da stampare
   ok2(!(await page.$("#sec-load")), "sezione Ricarica e condizioni assorbita da Gruppi");
   assert.deepStrictEqual(await page.$$eval("#sec-orient > details.sub-d", D => D.map(d => d.id)), ["ss-rot", "ss-crop", "ss-lens", "ss-persp"]);
   // Modalità Base: nascosto solo il blocco Qualità, non tutta la configurazione
@@ -3607,8 +3610,9 @@ test("1.26.0: Configurazione sessione, Gestione immagine a blocchi, layout salva
     { id: "sec-points", hidden: false }, { id: "sec-review", hidden: false }, { id: "sec-notes", hidden: true }, { id: "sec-guide", hidden: false }])));
   await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
   const L = await page.evaluate(() => window.__SA.getLayout());
-  assert.deepStrictEqual(L.map(x => x.id), ["sec-orient", "sec-data", "sec-calib", "sec-config", "sec-groups", "sec-results", "sec-hit", "sec-points", "sec-review", "sec-notes", "sec-guide"]);
-  ok2(L.find(x => x.id === "sec-notes").hidden && !L.find(x => x.id === "sec-config").hidden, "visibilità conservata");
+  // 1.27.0: Probabilità, Note e Colpi da rivedere non sono più sezioni (sono in Gruppi, Risultati e Dettaglio)
+  assert.deepStrictEqual(L.map(x => x.id), ["sec-orient", "sec-data", "sec-calib", "sec-config", "sec-groups", "sec-results", "sec-points", "sec-guide"]);
+  ok2(!L.find(x => x.id === "sec-config").hidden && L.every(x => !x.hidden), "visibilità conservata");
   await page.evaluate(() => { localStorage.removeItem("shootAnalyzer.layout"); window.__SA.resetLayout(); });
   // ricerca: una voce in un blocco annidato chiuso apre sezione e blocco, con il percorso completo
   await page.evaluate(() => { document.querySelectorAll("#side details").forEach(d => { d.open = false; }); });
@@ -3630,6 +3634,263 @@ test("1.26.0: Configurazione sessione, Gestione immagine a blocchi, layout salva
     ok2(/\n⛔ /.test(await page.getAttribute("#bRedo", "title")), l + ": titolo con il motivo");
     assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l + ": testi senza traduzione");
   }
+});
+
+/* ------------------------------ 1.27.0 ------------------------------ */
+test("1.27.0: pannello — blocchi spostati, Dati e calibrazione comprimibili, probabilità in ogni gruppo", async page => {
+  // Calibrazione: riferimento di controllo e scala sulla foto espandibili, chiusi all'avvio
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  const closed = await page.evaluate(() => ["ss-ref", "smBox", "ss-export", "ss-prov", "ss-tables", "ss-archive", "ss-storage"].map(id => { const d = document.getElementById(id); return [id, d.tagName, d.open]; }));
+  assert.deepStrictEqual(closed.map(x => x[1]), Array(7).fill("DETAILS"), "riquadri espandibili");
+  ok2(closed.every(x => !x[2]), "chiusi all'avvio: " + JSON.stringify(closed));
+  ok2(await page.evaluate(() => document.getElementById("ss-session").tagName !== "DETAILS"), "Dati: il primo riquadro (Sessione) resta aperto");
+  // spostamenti
+  ok2(await page.evaluate(() => !!document.querySelector("#sec-config #sec-targets #ss-tt") && !!document.querySelector("#sec-targets #ss-train")), "autoverifica e allenamento in Configurazione sessione");
+  ok2(await page.evaluate(() => !!document.getElementById("sec-notes").parentElement.closest("#sec-results")), "Note dentro Risultati della sessione");
+  ok2(await page.evaluate(() => !!document.getElementById("sec-review").parentElement.closest("#sec-points")), "Colpi da rivedere dentro il dettaglio del gruppo");
+  assert.strictEqual(await page.evaluate(() => [...document.querySelector("#sec-points > summary").childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join("").trim()), "Dettaglio gruppo attivo");
+  ok2(!(await page.$("#sec-hit")), "nessuna sezione Probabilità di colpire separata");
+  // probabilità di colpire: il modulo nel gruppo attivo, negli altri gruppi espansi il risultato del gruppo
+  await expandAll(page);
+  await loadTarget(page); await setupGroup(page, POA, SHOTS); await setField(page, "#shotDist", 100);
+  const g1 = (await S(page)).g.id;
+  await page.click("#bAddGroup"); await key(page, "4");
+  for (const p of SHOTS) await clickAt(page, { x: p.x - 150, y: p.y + 120 });
+  await page.evaluate(() => window.__SA.state.groups.forEach(g => window.__SA.setGroupOpen(g.id, true)));
+  await openHit(page);
+  const g2 = (await S(page)).g.id;
+  ok2(await page.evaluate(g2 => !!document.querySelector(`#groups .gitem[data-gid="${g2}"] .ghit #hitWrap`), g2), "modulo nel gruppo attivo");
+  await page.selectOption("#hitShape", "circle"); await setField(page, "#hitD", 2); await page.selectOption("#hitUnit", "cm");
+  ok2(await page.evaluate(g1 => /Bersaglio e distanza si impostano nel gruppo attivo/.test(document.querySelector(`#groups .gitem[data-gid="${g1}"] .ghitsum`).textContent)
+    && !!document.querySelector(`#groups .gitem[data-gid="${g1}"] .ghitsum table.hit`), g1), "gruppo non attivo: probabilità del suo gruppo e nota");
+  ok2(await page.evaluate(() => !!document.querySelector("#hitOut table.hit")), "gruppo attivo: risultato sotto il modulo");
+  await page.selectOption("#uiModeSel", "basic");
+  ok2(await page.evaluate(() => [...document.querySelectorAll('#groups [data-gsub="hit"]')].every(d => getComputedStyle(d).display === "none")), "Base: blocco nascosto");
+  await page.selectOption("#uiModeSel", "expert");
+});
+
+test("1.27.0: dati ereditati — badge, avviso nei risultati, conferma per campo, conferma tutti, annulla e sessione", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  await setField(page, "#shotDist", 100); await setField(page, "#ld-powder", "Vihtavuori N140"); await setField(page, "#ld-charge", "42.5"); await setField(page, "#ld-notes", "serie A");
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.click("#bAddGroup");
+  let g = (await S(page)).g;
+  assert.deepStrictEqual(g.inh.slice().sort(), ["charge", "dist", "notes", "powder"].sort(), "chiavi ereditate");
+  ok2(/^Gruppo 1$/.test(g.inhFrom), "origine");
+  ok2(await page.evaluate(gid => { const b = document.querySelector(`#groups .gitem[data-gid="${gid}"] .ginh`); return b && !b.hidden && b.textContent === "↺4"; }, g.id), "badge ↺4 nella riga del gruppo");
+  ok2(await page.isVisible("#inhBar") && /4 dati copiati da «Gruppo 1»/.test(await page.textContent("#inhBar")), "barra nel modulo");
+  ok2(await page.evaluate(() => document.getElementById("ld-powder").classList.contains("inh-f")), "campo evidenziato");
+  // il gruppo non ha ancora fori: l'avviso compare nei risultati quando li ha
+  await key(page, "3"); await clickAt(page, { x: 300, y: 400 }); await key(page, "4");
+  for (const p of SHOTS) await clickAt(page, { x: p.x, y: p.y + 160 });
+  ok2(/Dati ereditati da «Gruppo 1» non ancora confermati/.test(await resText(page)), "avviso nei risultati del gruppo");
+  // badge della riga: conferma i dati di quella riga (polvere e carica), non gli altri
+  assert.strictEqual(await page.getAttribute('label[for="ld-powder"] .inhb', "data-inh"), "powder,charge");
+  await page.click('label[for="ld-powder"] .inhb');
+  g = (await S(page)).g; assert.deepStrictEqual(g.inh.slice().sort(), ["dist", "notes"], "conferma della sola riga");
+  // modificare un campo lo conferma
+  await setField(page, "#ld-notes", "serie B");
+  g = (await S(page)).g; assert.deepStrictEqual(g.inh, ["dist"], "modifica = conferma");
+  // distanza: il badge accanto alla distanza di tiro
+  ok2(await page.isVisible('label[for="shotDist"] .inhb'), "badge sulla distanza");
+  ok2(/Tiro/.test(await page.textContent("#stepper")), "barra dei passi");
+  // sessione: i dati da confermare restano
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  assert.deepStrictEqual(JSON.parse(sess).groups[1].inh, ["dist"], "nella sessione");
+  // conferma tutti, poi annulla
+  await page.click("#bInhOk");
+  g = (await S(page)).g; ok2(!g.inh && !g.inhFrom, "tutto confermato");
+  ok2(await page.isHidden("#inhBar"), "barra sparita"); ok2(!/non ancora confermati/.test(await resText(page)), "avviso sparito: " + (await resText(page)).match(/.{60}non ancora confermati.{60}/));
+  await page.evaluate(() => window.__SA.undo());
+  g = (await S(page)).g; assert.deepStrictEqual(g.inh, ["dist"], "annulla: di nuovo da confermare");
+  await page.evaluate(t => window.__SA.loadSessionText(t), sess);
+  g = await page.evaluate(() => window.__SA.state.groups[1]); assert.deepStrictEqual([g.inh, g.inhFrom], [["dist"], "Gruppo 1"], "ricaricata dalla sessione");
+});
+
+test("1.27.0: tabella punti — intestazione fissa, colonne nascondibili e riordinabili, Tab/Invio/Esc, solo i dati modificabili", async page => {
+  await page.evaluate(() => localStorage.removeItem("shootAnalyzer.ptsCols"));
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  const ids = (await S(page)).g.shots.map(s => s.id);
+  const css = await page.evaluate(() => { const sc = document.querySelector("#points .tscroll"), th = document.querySelector("#points thead th[data-col]"), t0 = document.querySelector("#points td.ptc-tipo");
+    return [getComputedStyle(sc).overflowY, getComputedStyle(th).position, getComputedStyle(t0).position]; });
+  assert.deepStrictEqual(css, ["auto", "sticky", "sticky"], "riquadro scorrevole, intestazione e prima colonna fisse");
+  const cols = () => page.$$eval("#points thead th[data-col]", T => T.map(t => t.dataset.col));
+  assert.deepStrictEqual(await cols(), ["ex", "dv", "dh", "x", "y", "dPoa", "dC", "dir", "eff", "cv", "chc"], "colonne predefinite (carica, V0 e punti non attive)");
+  // le coordinate non si modificano dalla tabella
+  ok2(await page.evaluate(() => { const i = [...document.querySelectorAll("#points thead th")].findIndex(t => t.dataset.col === "x");
+    return [...document.querySelectorAll("#points tbody tr")].every(tr => !tr.cells[i].querySelector("input")); }), "X senza campi");
+  // Tab: cella modificabile successiva (salta i pulsanti della riga), Invio: stessa colonna, foro successivo
+  const cell = (k, sid) => `#points input[data-dial="${k}"][data-sid="${sid}"]`;
+  const active = () => page.evaluate(() => { const a = document.activeElement; return a && a.dataset.sid ? `${a.dataset.dial || "ex"}:${a.dataset.sid}` : a.tagName; });
+  await page.click(cell("dv", ids[0])); await page.keyboard.press("Control+A"); await page.keyboard.type("3"); await page.keyboard.press("Tab");
+  assert.strictEqual(await active(), `dh:${ids[0]}`, "Tab → brandeggio dello stesso foro");
+  assert.deepStrictEqual((await S(page)).g.shots.map(s => s.dv), [3, 3, 3, 3, 3], "valore salvato e propagato ai fori successivi");
+  await page.keyboard.press("Tab"); assert.strictEqual(await active(), `ex:${ids[1]}`, "Tab → Escl. del foro successivo");
+  await page.keyboard.press("Shift+Tab"); assert.strictEqual(await active(), `dh:${ids[0]}`, "Maiusc+Tab → indietro");
+  await page.keyboard.type("-2"); await page.keyboard.press("Enter");
+  assert.strictEqual(await active(), `dh:${ids[1]}`, "Invio → stessa colonna, foro successivo");
+  await page.keyboard.press("Shift+Enter"); assert.strictEqual(await active(), `dh:${ids[0]}`, "Maiusc+Invio → foro precedente");
+  await page.keyboard.press("Control+A"); await page.keyboard.type("9"); await page.keyboard.press("Escape");
+  assert.strictEqual(await page.inputValue(cell("dh", ids[0])), "-2", "Esc ripristina il valore");
+  assert.strictEqual((await S(page)).g.shots[0].dh, -2, "Esc: nessuna modifica");
+  // Escl. con Spazio: il fuoco resta sulla casella dopo la ricostruzione della tabella
+  await page.focus(`#points input[data-ex][data-sid="${ids[2]}"]`); await page.keyboard.press("Space");
+  ok2((await S(page)).g.shots[2].excluded, "foro escluso"); assert.strictEqual(await active(), `ex:${ids[2]}`, "fuoco conservato");
+  await page.keyboard.press("Space");
+  // ⚙ Colonne: nascondi e riordina, salvato nel browser
+  await page.click("#points [data-ptcfg]"); ok2(await page.isVisible("#ptcPop"), "pannello delle colonne");
+  await page.uncheck('#ptcPop input[data-ptck="dir"]');
+  await page.click('#ptcPop button[data-ptcup="dC"]');
+  assert.deepStrictEqual(await cols(), ["ex", "dv", "dh", "x", "y", "dC", "dPoa", "eff", "cv", "chc"], "Direz. nascosta, Da centro prima di Da mira");
+  await page.keyboard.press("Escape"); ok2(await page.isHidden("#ptcPop"), "Esc chiude");
+  // trascinamento di un'intestazione
+  const b = await page.locator('#points th[data-col="ex"]').boundingBox();
+  await page.dragAndDrop('#points th[data-col="x"]', '#points th[data-col="ex"]', { targetPosition: { x: 2, y: b.height / 2 } });
+  assert.deepStrictEqual((await cols()).slice(0, 3), ["x", "ex", "dv"], "X trascinata prima di Escl.");
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state); await expandAll(page);
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  assert.deepStrictEqual(await cols(), ["x", "ex", "dv", "dh", "y", "dC", "dPoa", "eff", "cv", "chc"], "colonne ricordate dopo il riavvio");
+  // colonne non attive: compaiono al loro posto quando si attivano
+  await page.check("#vPerShot");
+  ok2((await cols()).indexOf("v") === (await cols()).indexOf("dh") + 1, "V0 dopo Brand.");
+  await page.uncheck("#vPerShot");
+  await page.evaluate(() => window.__SA.ptcReset());
+  assert.deepStrictEqual(await cols(), ["ex", "dv", "dh", "x", "y", "dPoa", "dC", "dir", "eff", "cv", "chc"], "Ripristina");
+  ok2(await page.evaluate(() => localStorage.getItem("shootAnalyzer.ptsCols") === null), "preferenza cancellata");
+});
+
+test("1.27.0: hover condiviso — foto, tabella e grafici", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS); await setField(page, "#shotDist", 100);
+  const ids = (await S(page)).g.shots.map(s => s.id);
+  // foto → tabella
+  await key(page, "1");
+  const p = await screenOf(page, SHOTS[2]); await page.mouse.move(p.x, p.y);
+  assert.deepStrictEqual(await page.$$eval("#points tr.hov", T => T.map(t => +t.dataset.sid)), [ids[2]], "riga del foro sotto il puntatore");
+  assert.strictEqual(await page.evaluate(() => window.__SA.HOV.src), "photo");
+  await page.mouse.move(5, 5);
+  assert.strictEqual(await page.$$eval("#points tr.hov", T => T.length), 0, "uscendo dalla foto si spegne");
+  // tabella → foto
+  await page.hover(`#points tr[data-sid="${ids[4]}"] td.ptc-tipo`);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.HOV.ids]), [ids[4]]);
+  const ring = await page.evaluate(id => { const S = window.__SA, s = S.state.groups[0].shots.find(q => q.id === id), q = S.toScreen(s), c = document.getElementById("canvas"), d = window.devicePixelRatio || 1;
+    const r = S.calcContext().caliberMm / 2 * S.calcContext().pxPerMm * S.state.view.scale; const R = Math.max(r, 5) + 8;
+    const px = c.getContext("2d").getImageData(Math.round((q.x + R) * d), Math.round(q.y * d), 1, 1).data; return [px[0], px[1], px[2]]; }, ids[4]);
+  ok2(Math.abs(ring[0] - 0x0e) < 40 && Math.abs(ring[1] - 0xa5) < 40 && Math.abs(ring[2] - 0xe9) < 40, "anello azzurro sulla foto: " + ring);
+  await page.mouse.move(5, 5);
+  // grafici: un foro evidenziato in tutti i grafici, una fascia dell'istogramma = più fori
+  await key(page, "a"); await page.waitForFunction(() => window.__SA.anaOpen());
+  const hits = await page.evaluate(() => { const H = window.__SA.CH.hits; return { photo: H.photo.filter(h => h.sid != null).length, scatter: H.scatter.filter(h => h.sid != null).length, polar: H.polar.filter(h => h.sid != null).length, qq: H.qq.filter(h => h.sid != null).length }; });
+  assert.deepStrictEqual(hits, { photo: 5, scatter: 5, polar: 10, qq: 5 }, "marcatori dei fori collegati");
+  const at = async (kind, cv, pick) => page.evaluate(([kind, cv, pick]) => { const h = window.__SA.CH.hits[kind].find(new Function("h", "return " + pick)); const r = document.getElementById(cv).getBoundingClientRect();
+    return h.x0 !== undefined ? { x: r.left + (h.x0 + h.x1) / 2, y: r.top + h.y1 - 3 } : { x: r.left + h.x, y: r.top + h.y }; }, [kind, cv, pick]);
+  let q = await at("scatter", "chScatter", `h.sid === ${ids[1]}`); await page.mouse.move(q.x, q.y);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.HOV.ids]), [ids[1]], "foro dal grafico a dispersione");
+  q = await at("photo", "chPhoto", `h.sid === ${ids[3]}`); await page.mouse.move(q.x, q.y);
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.HOV.ids]), [ids[3]], "foro dalla foto del gruppo");
+  q = await at("hist", "chHist", "h.sids.length >= 2"); await page.mouse.move(q.x, q.y);
+  ok2(await page.evaluate(() => window.__SA.HOV.ids.size >= 2), "fascia dell'istogramma: tutti i suoi fori");
+  await page.mouse.move(2, 300);
+  assert.strictEqual(await page.evaluate(() => window.__SA.HOV.ids.size), 0, "uscendo dal grafico si spegne");
+  await key(page, "Escape");
+});
+
+test("1.27.0: bersagli da allenamento — PDF dei tre tipi, codice, limiti del diamond test", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  const fs = require("fs");
+  const pdfOf = async () => { const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#bTrPdf")]); return fs.readFileSync(await dl.path()); };
+  // sight-in 5 mire, 1 MOA a 100 m
+  await page.selectOption("#trKind", "sight"); await page.selectOption("#trAims", "5"); await setField(page, "#trStep", 1); await page.selectOption("#trStepUnit", "MOA"); await setField(page, "#trDist", 100);
+  ok2(/Sight-in · 5 mire · quadretti da 1 MOA = 29,1 mm a 100 m/.test(await page.textContent("#trHint")), await page.textContent("#trHint"));
+  let buf = await pdfOf(), code = await page.inputValue("#trCode");
+  ok2(/^SA-S5-1MOA-100M-[A-Z]$/.test(code), code);
+  assert.strictEqual(checkPdf(buf), 1, "una pagina");
+  let txt = pdfText(buf);
+  ok2(txt.includes(code) && /bersaglio da allenamento/.test(txt) && /Sight-in/.test(txt) && /righello/.test(txt), "testi del foglio");
+  ok2(/MediaBox \[0 0 595\.28 841\.89\]/.test(buf.toString("latin1")) && !/DCTDecode/.test(buf.toString("latin1")), "A4 vettoriale, senza immagini");
+  ok2(buf.toString("latin1").includes("/ShootAnalyzerTarget"), "codice nei metadati");
+  // griglia in mm; diamond test con il click di Parametri di tiro
+  await page.selectOption("#trKind", "grid"); await setField(page, "#trStep", 1); await page.selectOption("#trStepUnit", "cm");
+  ok2(await page.isHidden("#trAimsRow") && await page.isVisible("#trStepRow"), "griglia: senza numero di mire");
+  buf = await pdfOf(); ok2(/^SA-G1-1CM-100M-[A-Z]$/.test(await page.inputValue("#trCode")), "codice della griglia");
+  await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  await page.selectOption("#trKind", "diamond"); await setField(page, "#trClicks", 20);
+  ok2(await page.isVisible("#trClickRow") && await page.isHidden("#trStepRow"), "diamond: click per lato");
+  ok2(/al massimo 7 click/.test(await page.textContent("#trHint")), "troppi click a 100 m: " + await page.textContent("#trHint"));
+  await page.click("#bTrPdf"); ok2(/al massimo 7 click/.test(await page.textContent("#trInfo")), "PDF rifiutato con il motivo");
+  await setField(page, "#trDist", 50); await setField(page, "#trClicks", 10);
+  buf = await pdfOf(); code = await page.inputValue("#trCode");
+  ok2(/^SA-D10-0\.1MIL-50M-[A-Z]$/.test(code), code);
+  txt = pdfText(buf); ok2(/Diamond test · 10 click da 0,1 MIL per lato = 50,0 mm a 50 m/.test(txt) && /alzo \+10/.test(txt) && /brand\. -10|brand\. −10/.test(txt), "sequenza sul foglio");
+  ok2(await page.isVisible("#bTrCheck"), "verifica del diamond test disponibile");
+  // codici non validi
+  await page.fill("#trCode", code.slice(0, -1) + (code.endsWith("A") ? "B" : "A")); await page.click("#bTrUse");
+  ok2(/lettera finale di controllo/.test(await page.textContent("#trInfo")), "lettera di controllo");
+  await page.fill("#trCode", "SA-X5-1MOA-100M-A"); await page.click("#bTrUse");
+  ok2(/deve avere la forma/.test(await page.textContent("#trInfo")), "formato");
+  // inglese: titolo del foglio tradotto
+  await page.evaluate(() => window.__SA.setLang("en"));
+  await page.selectOption("#trKind", "sight");
+  txt = pdfText(await pdfOf()); ok2(/training target/.test(txt) && !/bersaglio da allenamento/.test(txt), "PDF in inglese");
+  assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+
+/** Foto sintetica del foglio da allenamento ripreso di sbieco: proiezione nota mm del foglio → pixel. */
+async function loadTrainingPhoto(page) {
+  const H = { a: 2.4, b: 0.25, c: 60, d: -0.18, e: 2.3, f: 40, g: 0.00035, h: 0.00018 };
+  const P = (x, y) => { const w = H.g * x + H.h * y + 1; return { x: (H.a * x + H.b * y + H.c) / w, y: (H.d * x + H.e * y + H.f) / w }; };
+  const dataUrl = await page.evaluate(src => {
+    const P = new Function("x", "y", src);
+    const c = document.createElement("canvas"); c.width = 700; c.height = 760; const g = c.getContext("2d");
+    g.fillStyle = "#eee"; g.fillRect(0, 0, 700, 760);
+    const poly = pts => { g.beginPath(); pts.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); };
+    g.fillStyle = "#fff"; poly([P(0, 0), P(210, 0), P(210, 297), P(0, 297)]); g.fill();
+    g.fillStyle = "#000";
+    for (const [x, y] of [[15, 30], [195, 30], [195, 270], [15, 270]]) { poly([P(x - 5, y - 5), P(x, y - 5), P(x, y), P(x - 5, y)]); g.fill(); poly([P(x, y), P(x + 5, y), P(x + 5, y + 5), P(x, y + 5)]); g.fill(); }
+    return c.toDataURL("image/png");
+  }, `const H = ${JSON.stringify(H)}; const w = H.g * x + H.h * y + 1; return { x: (H.a * x + H.b * y + H.c) / w, y: (H.d * x + H.e * y + H.f) / w };`);
+  await page.setInputFiles("#fImg", { name: "allenamento.png", mimeType: "image/png", buffer: Buffer.from(dataUrl.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 700);
+  return P;
+}
+test("1.27.0: «Usa il codice» — 4 marcatori, prospettiva, scala, distanza, mire; verifica del diamond test", async page => {
+  const P = await loadTrainingPhoto(page);
+  const code = await page.evaluate(() => window.__SA.Calc.trEncode({ kind: "S", n: 5, step: 1, unit: "MOA", dist: 100, distUnit: "M" }));
+  await page.fill("#trCode", code.toLowerCase()); await page.click("#bTrUse");
+  assert.strictEqual((await S(page)).mode, "persp");
+  assert.deepStrictEqual([await page.inputValue("#perspW"), await page.inputValue("#perspH"), await page.inputValue("#perspPreset")], ["180", "240", "180x240"], "rettangolo dei marcatori");
+  ok2(new RegExp(code).test(await page.textContent("#hint")), "suggerimento con il codice");
+  // i 4 marcatori, in un ordine qualsiasi
+  for (const [x, y] of [[195, 270], [15, 30], [15, 270], [195, 30]]) await clickAt(page, P(x, y));
+  await page.waitForFunction(() => window.__SA.state.groups.filter(g => g.poa).length === 5, null, { timeout: 15000 });
+  const st = await page.evaluate(() => { const S = window.__SA, R = S.perspR(); return { R: { H: R.H, k: R.k }, pxPerMm: S.calcContext().pxPerMm, mode: S.state.mode, groups: S.state.groups.map(g => ({ name: g.name, poa: g.poa, dist: g.dist })) }; });
+  near(st.pxPerMm, st.R.k, 1e-9, "scala dal rettangolo");
+  assert.deepStrictEqual(st.groups.map(g => g.name), ["Mira 1", "Mira 2", "Mira 3", "Mira 4", "Mira 5"]);
+  ok2(st.groups.every(g => g.dist === 100), "distanza dal codice");
+  assert.strictEqual(st.mode, "shot", "pronto per segnare i fori");
+  // verifica indipendente: la mira stampata (mm del foglio) → foto originale con la proiezione nota → foto rettificata
+  const L = await page.evaluate(c => window.__SA.Calc.trLayout(window.__SA.Calc.trDecode(c)), code);
+  for (const [i, a] of L.aims.entries()) {
+    const w = await page.evaluate(([H, p]) => window.__SA.Calc.applyH(H, p), [st.R.H, P(a.x, a.y)]);
+    ok2(Math.hypot(w.x - st.groups[i].poa.x, w.y - st.groups[i].poa.y) < 0.6 * st.R.k, `mira ${i + 1} al suo posto (${Math.hypot(w.x - st.groups[i].poa.x, w.y - st.groups[i].poa.y).toFixed(2)} px)`);
+  }
+  // diamond test: 6 colpi con l'alzo più lungo del 3%
+  const dc = await page.evaluate(() => window.__SA.Calc.trEncode({ kind: "D", n: 10, step: 0.1, unit: "MIL", dist: 50, distUnit: "M" }));
+  await page.fill("#trCode", dc); await page.click("#bTrUse");
+  // la foto è già rettificata: i marcatori vanno cliccati dove sono ora (foto originale → rettificata)
+  for (const [x, y] of [[15, 30], [195, 30], [195, 270], [15, 270]]) await clickAt(page, await page.evaluate(([H, p]) => window.__SA.Calc.applyH(H, p), [st.R.H, P(x, y)]));
+  await page.waitForFunction(() => window.__SA.state.groups.some(g => g.name === "Diamond test" && g.poa), null, { timeout: 15000 });
+  const R2 = await page.evaluate(() => window.__SA.perspR().H);
+  const S10 = 50000 * Math.tan(0.001);
+  const at = async (dx, dy, alt) => { const w = await page.evaluate(([H, p]) => window.__SA.Calc.applyH(H, p), [R2, P(105 + dx, 149 - dy)]); const s = await screenOf(page, w);
+    if (alt) await page.keyboard.down("Alt"); await page.mouse.click(s.x, s.y); if (alt) await page.keyboard.up("Alt"); };
+  for (const [i, [dx, dy]] of [[0.4, -0.3], [0, 1.03 * S10], [S10, 0], [0, -1.03 * S10], [-S10, 0], [0.6, 0.5]].entries()) await at(dx, dy, i === 0 || i === 5);
+  assert.strictEqual((await S(page)).g.shots.length, 6, "6 fori nel gruppo del diamond test");
+  await page.click("#bTrCheck");
+  const out = await page.textContent("#trInfo");
+  ok2(/Click reale di alzo0,103 MIL \(\+3,0%\)/.test(out.replace(/\s+/g, "")) || /0,103 MIL \(\+3,0%\)/.test(out), "alzo +3%: " + out);
+  ok2(/0,1 MIL \((0,0|\+0,0|−0,0|-0,0)%\)/.test(out), "brandeggio nominale");
+  ok2(/Scostamento moderato/.test(out) && /Ritorno a zero/.test(out), "giudizio e ritorno a zero");
 });
 
 /* ------------------------------ esecuzione ------------------------------ */
