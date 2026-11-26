@@ -986,4 +986,48 @@ eq(Calc.shotScore(0, 7.82, { d10: 20, step: 10 }).inner, false, "bersaglio perso
     near(T[2].vMil, T0[2].vMil, 1e-12, "l'alzo non cambia"); }
 }
 
+// --- 1.29.0: test di ricarica (ladder, OCW, seduta): Holm, ANOVA, spostamenti, TOST, tratti costanti
+{
+  eq(Calc.holm([0.01, 0.04, 0.03, 0.2], 0.05), [true, false, false, false], "Holm: 0,01 ≤ 0,05/4, poi 0,03 > 0,05/3 si ferma");
+  eq(Calc.holm([0.001, 0.011, 0.02, 0.04], 0.05), [true, true, true, true], "Holm: 0,001 ≤ 0,0125, 0,011 ≤ 0,0167, 0,02 ≤ 0,025, 0,04 ≤ 0,05");
+  eq(Calc.holm([0.02, NaN, 0.03], 0.05), [true, false, true], "Holm: i valori non finiti non contano (m = 2)");
+  // livelli, rumore (MSE dell'ANOVA) e IC calcolati qui
+  const S = [[1, [0.1, -0.2, 0.3]], [2, [0.5, 0.9]], [3, [1.4]], [4, [1.0, 1.6, 1.3, 1.1]]];
+  const shots = S.flatMap(([x, vs]) => vs.map((v, i) => ({ x, v, h: 0.05 * i - 0.05 })));
+  const T = Calc.ladderTest(shots, { alpha: 0.05, delta: 0.5 });
+  const mean = a => a.reduce((p, q) => p + q, 0) / a.length, ss = a => a.reduce((p, q) => p + (q - mean(a)) ** 2, 0);
+  const df = S.reduce((a, [, vs]) => a + vs.length - 1, 0), sv = Math.sqrt(S.reduce((a, [, vs]) => a + ss(vs), 0) / df);
+  eq([T.k, T.df, T.levels.map(L => L.n)], [4, 6, [3, 2, 1, 4]], "livelli e gradi di libertà");
+  near(T.sp.v, sv, 1e-12, "σ verticale = √(Σ SS / Σ (n − 1))");
+  near(T.levels[2].ciV, Calc.tinv(0.975, 6) * sv, 1e-12, "IC di un livello con un solo colpo dal rumore comune");
+  near(T.levels[3].mv, 1.25, 1e-12, "media del livello");
+  { const P = T.pairs[0], se = sv * Math.sqrt(1 / 3 + 1 / 2), t = (0.7 - mean([0.1, -0.2, 0.3])) / se;
+    near(P.dv, 0.7 - mean([0.1, -0.2, 0.3]), 1e-12, "differenza"); near(P.pv, 2 * (1 - Calc.tcdf(Math.abs(t), 6)), 1e-12, "p bilaterale con varianza comune");
+    eq(P.eqV, Math.abs(P.dv) + Calc.tinv(0.95, 6) * se < 0.5, "TOST: IC al 90% dentro ±δ"); }
+  const rej = Calc.holm(T.pairs.flatMap(P => [P.pv, P.ph]), 0.05);
+  eq(T.pairs.map(P => P.shiftV), [rej[0], rej[2], rej[4]], "spostamenti = Holm sui 6 confronti");
+  eq(Calc.ladderTest([{ x: 1, v: 0, h: 0 }, { x: 2, v: 1, h: 0 }], { delta: 1 }).sp, null, "un colpo per livello: niente rumore, niente test");
+  // tratti costanti massimali (rumore quasi nullo): medie 0; 0,1; 0,2; 0,3; 0,4 e δ = 0,22 → [0–2], [1–3], [2–4]
+  { const rnd = Calc.prng(11), pts = [];
+    [0, 0.1, 0.2, 0.3, 0.4].forEach((m, i) => { for (let j = 0; j < 6; j++) pts.push({ x: 44 + 0.3 * i, v: m + (rnd() - 0.5) * 1e-4, h: 0 }); });
+    const R = Calc.ladderTest(pts, { delta: 0.22 });
+    eq(R.runs.map(r => [r.i, r.j]), [[0, 2], [1, 3], [2, 4]], "tratti massimali che si sovrappongono");
+    eq([R.pairs.map(P => P.shift), R.pairs.map(P => P.verdict)], [[true, true, true, true], ["eq", "eq", "eq", "eq"]], "0,1 per livello con rumore minimo: differenze rilevabili ma entro ±0,22 → «costante»");
+    eq(Calc.ladderTest(pts, { delta: 0.05 }).pairs.map(P => P.verdict), ["shift", "shift", "shift", "shift"], "tolleranza stretta: spostamenti");
+    eq(Calc.ladderTest(pts, { delta: 0.45 }).runs.map(r => [r.i, r.j]), [[0, 4]], "tolleranza larga: un solo tratto");
+    eq(Calc.ladderTest(pts, { delta: 0 }).runs, [], "senza tolleranza nessun tratto"); }
+  // simulazione: niente spostamenti veri → falso allarme (almeno uno su 5 livelli) ≤ α; differenza vera = δ → «costante» ≤ α
+  { const rnd = Calc.prng(2029), gs = () => { const u = Math.max(1e-12, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    let fa = 0, fe = 0; const N = 600;
+    for (let r = 0; r < N; r++) {
+      const P0 = [], P1 = [];
+      for (let i = 0; i < 5; i++) for (let j = 0; j < 5; j++) P0.push({ x: i, v: gs(), h: gs() });
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 8; j++) P1.push({ x: i, v: gs() + (i ? 0.8 : 0), h: gs() });
+      if (Calc.ladderTest(P0, { alpha: 0.05 }).pairs.some(P => P.shift)) fa++;
+      if (Calc.ladderTest(P1, { alpha: 0.05, delta: 0.8 }).pairs[0].eqV) fe++;
+    }
+    ok(fa / N <= 0.075, `falsi spostamenti ${(fa / N * 100).toFixed(1)}% (Holm, α 5%)`);
+    ok(fe / N <= 0.075, `falsa costanza al limite della tolleranza ${(fe / N * 100).toFixed(1)}% (TOST, α 5%)`); }
+}
+
 console.log(`OK — ${passed} verifiche superate`);

@@ -390,6 +390,9 @@ test("correzione prospettica a 4 punti: foto appiattita, fori in mm, scala autom
   await key(page, "6");
   assert.strictEqual((await S(page)).mode, "persp");
   for (const i of [2, 0, 3, 1]) await clickAt(page, PHOTO_CORNERS[i]);   // ordine sparso
+  // dalla 1.29.0 la correzione non parte da sola: «✓ Applica correzione»
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.persp), null, "non ancora applicata");
+  await page.click("#bPerspApply");
   await waitBase(page);
   const info = await page.evaluate(() => {
     const { state, perspR, calcContext } = window.__SA, R = perspR();
@@ -441,6 +444,7 @@ test("prospettiva: sessione salvata e ricaricata, Esc e Backspace", async page =
   assert.strictEqual(await page.evaluate(() => window.__SA.state.persp), null);
   await key(page, "6");
   for (const c of PHOTO_CORNERS) await clickAt(page, c);
+  await key(page, "Enter");
   await waitBase(page);
   await key(page, "3"); await clickAt(page, { x: 300, y: 200 });
   const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
@@ -966,16 +970,16 @@ test("carica e precisione: CEP per carica con gruppi combinati e intervallo", as
   };
   await add("42.0", { x: 200, y: 100 });
   await add("43.0", { x: 560, y: 120 });
-  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen() && window.__SA.anaPage() === "load");   // 1.29.0: pagina «Test di ricarica»
   const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
   assert.deepStrictEqual(L.levels.map(x => [x.charge, x.groups.length]), [[42, 2], [43, 1]], "42 e 42.0 sono la stessa carica; 2 gruppi combinati");
   // σ combinata = media delle s² pesata per ν (verifica indipendente)
   const lv = L.levels[0];
   near(lv.pool.s2, (lv.groups[0].nu * lv.groups[0].s2 + lv.groups[1].nu * lv.groups[1].s2) / (lv.groups[0].nu + lv.groups[1].nu), 1e-12, "s² combinata");
-  const rows = await page.$$eval("#chgBody tbody tr", trs => trs.map(tr => tr.textContent));
+  const rows = await page.$$eval("#ltBody table.lt-tab tbody tr", trs => trs.map(tr => tr.textContent));
   assert.strictEqual(rows.length, 2);
-  ok2(/non si può dire/.test(await page.textContent("#chgBody")), "intervalli sovrapposti: nessuna carica dichiarata migliore");
-  ok2(!/nodo armonico\b(?!»)/.test(await page.textContent("#chgBody")) || /Non è la ricerca di un «nodo armonico»/.test(await page.textContent("#chgBody")), "nessun «nodo» dichiarato");
+  ok2(/non si può dire/.test(await page.textContent("#ltBody")), "intervalli sovrapposti: nessuna carica dichiarata migliore");
+  ok2(!/nodo armonico\b(?!»)/.test(await page.textContent("#ltBody")) || /Non è la ricerca di un «nodo armonico»/.test(await page.textContent("#ltBody")), "nessun «nodo» dichiarato");
   ok2(await page.isVisible("#chCharge"), "grafico carica-CEP");
 });
 
@@ -1103,17 +1107,17 @@ test("precisione e seduta: salto dalle righe nei dati, livelli combinati, raggio
   await add("0.508", "mm", { x: 200, y: 100 });   // 0,508 mm = 0,020 in: stesso livello
   await add("0.040", "in", { x: 560, y: 120 });
   assert.strictEqual((await S(page)).g.load.jump, "0.040", "il nuovo gruppo copia il salto e lo si corregge");
-  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
-  await page.selectOption("#chgVar", "jump"); await page.selectOption("#chgMetric", "mr");
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen() && window.__SA.anaPage() === "load");   // 1.29.0: pagina «Test di ricarica»
+  await page.selectOption("#ltVar", "jump"); await page.selectOption("#ltMetric", "mr");
   const L = await page.evaluate(() => JSON.parse(JSON.stringify(window.__SA.chargeLevels())));
   assert.strictEqual(L.v, "jump"); assert.strictEqual(L.metric, "mr");
   assert.deepStrictEqual(L.levels.map(x => [+(x.x / 25.4).toFixed(3), x.groups.length]), [[0.02, 2], [0.04, 1]], "0,020 in e 0,508 mm combinati");
   const lv = L.levels[0];
   near(lv.pool.val, lv.pool.sigma * Math.sqrt(Math.PI / 2), 1e-12, "raggio medio atteso = σ·√(π/2)");
-  const body = await page.textContent("#chgBody");
+  const body = await page.textContent("#ltBody");
   ok2(/0,020 in/.test(body) && /0,040 in/.test(body) && /Raggio medio atteso/.test(body), "tabella per salto dalle righe");
   ok2(/non si può dire/.test(body), "verdetto prudente");
-  assert.strictEqual(await page.inputValue("#chgLoad"), "SMK 168 · N140 · 44.5 gr", "seduta: munizione con la carica");
+  assert.strictEqual(await page.inputValue("#ltLoad"), "SMK 168 · N140 · 44.5 gr", "seduta: munizione con la carica");
   // il salto è nel testo copiato e nella sessione
   await key(page, "Escape");
   ok2(/Salto dalle righe: *0,040 in/.test(await page.evaluate(() => window.__SA.resultText())), "salto nel testo copiato");
@@ -1387,7 +1391,8 @@ test("correlazioni ricarica/condizioni e ladder con carica per foro", async page
     for (let i = 1; i < 4; i++) { const g = JSON.parse(JSON.stringify(g0)); g.id = 500 + i; g.name = "C" + i; g.load.charge = String(43.5 + 0.5 * i).replace(".", ","); g.load.temp = String(10 + 5 * i);
       g.poa = { ...g0.poa }; g.shots = g0.shots.map((q, j) => ({ ...q, id: 600 + i * 10 + j, y: q.y - 8 * i })); st.groups.push(g); }
     S.commit(); });
-  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen() && window.__SA.anaPage() === "load");   // 1.29.0: nella pagina «Test di ricarica»
+  ok2(await page.isVisible("#corBox") && await page.isHidden("#cmpBox"), "correlazioni nella pagina del test di ricarica");
   let C = await page.evaluate(() => window.__SA.corData());
   assert.strictEqual(C.pts.length, 4, "4 gruppi");
   const exp = await page.evaluate(() => { const S = window.__SA, cc = S.calcContext(); const ys = S.state.groups.map(g => S.Calc.dope(g.shots, g.poa, { ...cc, distMm: 100000 }).v.mil);
@@ -1409,10 +1414,12 @@ test("correlazioni ricarica/condizioni e ladder con carica per foro", async page
   }
   const chs = await page.evaluate(() => window.__SA.state.groups.find(g => g.id === window.__SA.state.activeGroupId).shots.map(q => q.ch));
   assert.deepStrictEqual(chs.map(v => Math.round(v * 10) / 10), [44, 44.2, 44.4, 44.6, 44.8], "carica per foro salvata");
-  await key(page, "c"); await page.waitForFunction(() => window.__SA.anaOpen());
-  await page.selectOption("#corPair", "ladder"); C = await page.evaluate(() => window.__SA.corData());
-  assert.strictEqual(C.pts.filter(p => p.x >= 44 && p.x <= 44.81 && p.x !== 44.5 && p.x !== 45).length >= 5, true, "un punto per foro con la sua carica");
-  ok2(/non indica «nodi»/.test(await page.textContent("#corBody")), "nessun nodo automatico");
+  // 1.29.0: il ladder per foro è nel pannello «Test di ricarica» (niente più relazione «ladder» nelle correlazioni)
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen());
+  assert.strictEqual(await page.locator('#corPair option[value="ladder"]').count(), 0);
+  const LD = await page.evaluate(() => { const D = window.__SA.ltData(), gid = window.__SA.state.activeGroupId; return D.shots.filter(p => p.r.gid === gid).map(p => p.x); });
+  assert.deepStrictEqual(LD.map(v => Math.round(v * 10) / 10), [44, 44.2, 44.4, 44.6, 44.8], "un punto per foro con la sua carica");
+  ok2(/Non è la ricerca di «nodi»/.test(await page.textContent("#ltBody")), "nessun nodo automatico");
 });
 
 test("1.21.0: cono di dispersione rimosso (codice commentato)", async page => {
@@ -3863,6 +3870,7 @@ test("1.27.0: «Usa il codice» — 4 marcatori, prospettiva, scala, distanza, m
   ok2(new RegExp(code).test(await page.textContent("#hint")), "suggerimento con il codice");
   // i 4 marcatori, in un ordine qualsiasi
   for (const [x, y] of [[195, 270], [15, 30], [15, 270], [195, 30]]) await clickAt(page, P(x, y));
+  await key(page, "Enter");
   await page.waitForFunction(() => window.__SA.state.groups.filter(g => g.poa).length === 5, null, { timeout: 15000 });
   const st = await page.evaluate(() => { const S = window.__SA, R = S.perspR(); return { R: { H: R.H, k: R.k }, pxPerMm: S.calcContext().pxPerMm, mode: S.state.mode, groups: S.state.groups.map(g => ({ name: g.name, poa: g.poa, dist: g.dist })) }; });
   near(st.pxPerMm, st.R.k, 1e-9, "scala dal rettangolo");
@@ -3880,6 +3888,7 @@ test("1.27.0: «Usa il codice» — 4 marcatori, prospettiva, scala, distanza, m
   await page.fill("#trCode", dc); await page.click("#bTrUse");
   // la foto è già rettificata: i marcatori vanno cliccati dove sono ora (foto originale → rettificata)
   for (const [x, y] of [[15, 30], [195, 30], [195, 270], [15, 270]]) await clickAt(page, await page.evaluate(([H, p]) => window.__SA.Calc.applyH(H, p), [st.R.H, P(x, y)]));
+  await key(page, "Enter");
   await page.waitForFunction(() => window.__SA.state.groups.some(g => g.name === "Diamond test" && g.poa), null, { timeout: 15000 });
   const R2 = await page.evaluate(() => window.__SA.perspR().H);
   const S10 = 50000 * Math.tan(0.001);
@@ -4161,6 +4170,232 @@ test("1.28.0: confronto per arma — filtro della tabella e riepilogo con la σ 
   ok2(/\(rifle not given\)/.test(await page.textContent("#cmpWeapons")), "arma non indicata, in inglese");
   assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], "testi senza traduzione");
   await page.evaluate(() => window.__SA.setLang("it"));
+});
+
+/* ------------------------------ 1.29.0 ------------------------------ */
+const dragW = async (page, p, q) => { const a = await screenOf(page, p), b = await screenOf(page, q); await page.mouse.move(a.x, a.y); await page.mouse.down(); await page.mouse.move(b.x, b.y, { steps: 5 }); await page.mouse.up(); };
+test("1.29.0: ritaglio — vertici, lati e interno trascinabili, dimensioni in mm con la scala", async page => {
+  await loadTarget(page); await setupGroup(page, POA, SHOTS);
+  const ppm = await page.evaluate(() => window.__SA.calcContext(null).pxPerMm);
+  await page.evaluate(() => { document.getElementById("sec-orient").open = true; });
+  await page.click("#bCrop");
+  const R = () => page.evaluate(() => ({ ...window.__SA.state.cropRect }));
+  await dragW(page, { x: 200, y: 120 }, { x: 600, y: 420 });
+  assert.deepStrictEqual(await R(), { x: 200, y: 120, w: 400, h: 300 });
+  const mm = v => (v / ppm).toFixed(1).replace(".", ",");
+  ok2((await page.textContent("#cropStatus")).includes(`Rettangolo 400 × 300 px · ${mm(400)} × ${mm(300)} mm`), "dimensioni in px e mm: " + await page.textContent("#cropStatus"));
+  ok2(/trascina vertici e lati per ridimensionare/.test(await page.textContent("#hint")), "suggerimento per ritoccare");
+  // cursori sulle maniglie
+  const cur = async p => { const a = await screenOf(page, p); await page.mouse.move(a.x, a.y); return page.evaluate(() => document.getElementById("canvas").style.cursor); };
+  assert.deepStrictEqual([await cur({ x: 600, y: 420 }), await cur({ x: 600, y: 120 }), await cur({ x: 200, y: 300 }), await cur({ x: 400, y: 420 }), await cur({ x: 400, y: 270 }), await cur({ x: 100, y: 50 })],
+    ["nwse-resize", "nesw-resize", "ew-resize", "ns-resize", "move", "crosshair"], "cursori");
+  await dragW(page, { x: 600, y: 420 }, { x: 640, y: 460 });   // vertice in basso a destra
+  assert.deepStrictEqual(await R(), { x: 200, y: 120, w: 440, h: 340 });
+  await dragW(page, { x: 200, y: 330 }, { x: 180, y: 330 });   // lato sinistro (non a metà)
+  assert.deepStrictEqual(await R(), { x: 180, y: 120, w: 460, h: 340 });
+  await dragW(page, { x: 300, y: 120 }, { x: 300, y: 100 });   // lato superiore
+  assert.deepStrictEqual(await R(), { x: 180, y: 100, w: 460, h: 360 });
+  await dragW(page, { x: 400, y: 300 }, { x: 450, y: 330 });   // interno: sposta
+  assert.deepStrictEqual(await R(), { x: 230, y: 130, w: 460, h: 360 });
+  await dragW(page, { x: 400, y: 300 }, { x: 700, y: 600 });   // spostamento oltre il bordo: resta dentro la foto
+  assert.deepStrictEqual(await R(), { x: 340, y: 240, w: 460, h: 360 }, "dentro la foto 800 × 600");
+  await dragW(page, { x: 340, y: 240 }, { x: 790, y: 590 });   // vertice oltre l'opposto: il rettangolo si ribalta
+  const f = await R(); ok2(f.w > 0 && f.h > 0 && f.x === 790 && f.y === 590 && f.w === 10 && f.h === 10, "ribaltato e normalizzato: " + JSON.stringify(f));
+  await dragW(page, { x: 100, y: 80 }, { x: 300, y: 200 });   // fuori: nuovo rettangolo
+  assert.deepStrictEqual(await R(), { x: 100, y: 80, w: 200, h: 120 });
+  await dragW(page, { x: 520, y: 340 }, { x: 260, y: 160 });   // di nuovo fuori, al contrario: mira e fori dentro
+  assert.deepStrictEqual(await R(), { x: 260, y: 160, w: 260, h: 180 });
+  // senza scala: solo pixel
+  await page.evaluate(() => { const S = window.__SA; S.state.calib = { p1: null, p2: null }; S.refreshCrop(); });
+  ok2(/Rettangolo 260 × 180 px(?! ·\s*\d)/.test(await page.textContent("#cropStatus")), "senza scala niente mm: " + await page.textContent("#cropStatus"));
+  await key(page, "Enter"); await page.waitForFunction(() => !!window.__SA.state.cropUndo);
+  assert.deepStrictEqual([await page.evaluate(() => window.__SA.state.image.w), await page.evaluate(() => window.__SA.state.image.h)], [260, 180], "ritaglio con il rettangolo ritoccato");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+test("1.29.0: prospettiva — angoli trascinabili, «Applica correzione», ritocco della correzione attiva", async page => {
+  await loadSkewedTarget(page);
+  await key(page, "4"); for (const h of await holesInPhoto(page)) await clickAt(page, h);
+  await page.selectOption("#perspPreset", "297x210");
+  await key(page, "6");
+  ok2(await page.isDisabled("#bPerspApply"), "niente da applicare");
+  const bad = { x: PHOTO_CORNERS[2].x + 25, y: PHOTO_CORNERS[2].y - 20 };
+  for (const c of [PHOTO_CORNERS[0], PHOTO_CORNERS[1], bad, PHOTO_CORNERS[3]]) await clickAt(page, c);
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.persp), null, "non parte al quarto clic");
+  ok2(await page.isEnabled("#bPerspApply") && /trascina gli angoli per correggerli/.test(await page.textContent("#hint")), "pronta da applicare");
+  await clickAt(page, { x: 450, y: 350 });
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.perspPts.length), 4, "un quinto clic non aggiunge punti");
+  ok2(/I 4 angoli ci sono già/.test(await page.textContent("#toast")), "spiegato");
+  const a = await screenOf(page, bad); await page.mouse.move(a.x, a.y);
+  assert.strictEqual(await page.evaluate(() => document.getElementById("canvas").style.cursor), "move");
+  await dragW(page, bad, PHOTO_CORNERS[2]);
+  const q = await page.evaluate(() => window.__SA.state.perspPts[2]);
+  near(Math.hypot(q.x - PHOTO_CORNERS[2].x, q.y - PHOTO_CORNERS[2].y), 0, 0.8, "angolo spostato sul posto giusto");
+  assert.strictEqual(await page.evaluate(() => window.__SA.state.persp), null, "ancora da applicare");
+  await page.click("#bPerspApply"); await waitBase(page);
+  const info = await page.evaluate(() => { const { state, perspR } = window.__SA, R = perspR(); return { R: { k: R.k, ox: R.ox, oy: R.oy }, shots: state.groups[0].shots.map(s => ({ x: s.x, y: s.y })), mode: state.mode }; });
+  info.shots.forEach((s, i) => near(Math.hypot((s.x - info.R.ox) / info.R.k - HOLES_MM[i].x, (s.y - info.R.oy) / info.R.k - HOLES_MM[i].y), 0, 1.0, `foro ${i + 1} in mm dopo la correzione con l'angolo corretto`));
+  assert.strictEqual(info.mode, "shot");
+  assert.strictEqual(await page.textContent("#bPersp"), "⬚ Ritocca i 4 angoli");
+  // ritocco: ripropone gli angoli del rettangolo; senza spostarli la correzione resta (e la storia non cambia)
+  const src0 = await page.evaluate(() => JSON.stringify(window.__SA.state.persp.src)), canUndo = await page.isEnabled("#bUndo");
+  await page.click("#bPersp");
+  const P = await page.evaluate(() => { const S = window.__SA, R = S.perspR(); return { pts: S.state.perspPts.map(p => ({ ...p })), C: [[R.ox, R.oy], [R.ox + R.wMm * R.k, R.oy], [R.ox + R.wMm * R.k, R.oy + R.hMm * R.k], [R.ox, R.oy + R.hMm * R.k]].map(([x, y]) => S.imgToWorld({ x, y })) }; });
+  P.pts.forEach((p, i) => near(Math.hypot(p.x - P.C[i].x, p.y - P.C[i].y), 0, 1e-6, `angolo ${i + 1} proposto sul rettangolo`));
+  ok2(/Prospettiva attiva: trascina i 4 angoli/.test(await page.textContent("#hint")), "suggerimento del ritocco");
+  await key(page, "Enter");
+  ok2(/invariata/.test(await page.textContent("#toast")) && (await page.evaluate(() => JSON.stringify(window.__SA.state.persp.src))) === src0, "invariata");
+  assert.strictEqual(await page.isEnabled("#bUndo"), canUndo, "niente voce nella storia");
+  // ritocco vero: un angolo spostato di 12 px; la nuova correzione usa quel punto riportato sulla foto originale
+  await page.click("#bPersp");
+  const p0 = await page.evaluate(() => ({ ...window.__SA.state.perspPts[1] })), p1 = { x: p0.x + 12, y: p0.y + 6 };
+  await dragW(page, p0, p1);
+  const w1 = await page.evaluate(() => ({ ...window.__SA.state.perspPts[1] }));
+  const o1 = await page.evaluate(w => window.__SA.worldToOrig(w), w1);
+  const before = await page.evaluate(() => window.__SA.state.groups[0].shots.map(s => window.__SA.worldToOrig(s)));
+  await key(page, "Enter"); await waitBase(page);
+  const after = await page.evaluate(() => ({ src: window.__SA.state.persp.src, orig: window.__SA.state.groups[0].shots.map(s => window.__SA.worldToOrig(s)) }));
+  ok2(after.src.some(c => Math.hypot(c.x - o1.x, c.y - o1.y) < 1e-6), "il nuovo angolo è nella correzione");
+  after.orig.forEach((o, i) => near(Math.hypot(o.x - before[i].x, o.y - before[i].y), 0, 1e-6, `foro ${i + 1}: stesso punto della foto originale`));
+  await key(page, "Control+z"); await waitBase(page);
+  assert.strictEqual(await page.evaluate(() => JSON.stringify(window.__SA.state.persp.src)), src0, "Annulla: correzione di prima");
+  // Esc durante il ritocco lascia tutto com'è
+  await page.click("#bPersp"); await key(page, "Backspace"); await key(page, "Escape");
+  assert.strictEqual(await page.evaluate(() => JSON.stringify(window.__SA.state.persp.src)), src0);
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); await key(page, "6"); assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); await key(page, "Escape"); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+});
+/** Sessione OCW: 6 cariche × 2 gruppi da n colpi (σ 0,35 MOA), POI che sale, si ferma e risale; nessun click. */
+async function ocwSession(page, n = 5, seed = 7) {
+  await page.evaluate(() => { const c = document.createElement("canvas"); c.width = 2400; c.height = 1800; const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, 2400, 1800); window.__ocw = c.toDataURL("image/png"); });
+  const url = await page.evaluate(() => window.__ocw);
+  await page.setInputFiles("#fImg", { name: "ocw.png", mimeType: "image/png", buffer: Buffer.from(url.split(",")[1], "base64") });
+  await page.waitForFunction(() => window.__SA.state.image && window.__SA.state.image.w === 2400);
+  await setField(page, "#shotDist", 100); await setField(page, "#clickVal", 0.1); await page.selectOption("#clickUnit", "MIL");
+  return page.evaluate(([N, seed]) => {
+    const SA = window.__SA, st = SA.state, rnd = SA.Calc.prng(seed), gs = () => { const u = Math.max(1e-12, rnd()), v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+    st.calib = { p1: { x: 100, y: 1700 }, p2: { x: 700, y: 1700 } }; document.getElementById("calDist").value = 300; document.getElementById("calUnit").value = "mm";
+    const C = [44.0, 44.3, 44.6, 44.9, 45.2, 45.5], M = [-0.6, 0.1, 0.8, 0.85, 0.9, 1.6], moaMm = 29.0888, k = 2;
+    let id = 1; st.groups = [];
+    C.forEach((c, i) => { for (let r = 0; r < 2; r++) { const cx = 250 + i * 340, cy = 450 + r * 700;
+      st.groups.push({ id: id++, name: `${c} gr · ${r + 1}`, color: "#2563eb", dist: 0, poa: { x: cx, y: cy }, load: { bullet: "SMK 168", powder: "N140", charge: String(c), cbto: String(55.5 + 0.1 * i), date: `2026-11-2${r}` },
+        shots: Array.from({ length: N }, () => ({ id: id++, x: cx + gs() * 0.35 * moaMm * k, y: cy - (M[i] + gs() * 0.35) * moaMm * k })) }); } });
+    st.activeGroupId = st.groups[0].id; SA.commit();
+    return st.groups.map(g => ({ id: g.id, c: +g.load.charge, poa: g.poa, shots: g.shots.map(q => ({ x: q.x, y: q.y })) }));
+  }, [n, seed]);
+}
+test("1.29.0: test di ricarica — livelli, rumore, spostamenti (Holm), tratti costanti (TOST), pagina e tasti", async page => {
+  const G = await ocwSession(page);
+  // ricalcolo indipendente: POI in MOA = atan(mm / 100 m), media e σ comune per livello
+  const moa = rad => rad * 180 / Math.PI * 60, ppm = 2, D = 100000;
+  const pts = G.flatMap(g => g.shots.map(q => ({ x: g.c, v: moa(Math.atan((g.poa.y - q.y) / ppm / D)), h: moa(Math.atan((q.x - g.poa.x) / ppm / D)) })));
+  const lv = [...new Set(pts.map(p => p.x))].sort((a, b) => a - b).map(x => { const P = pts.filter(p => p.x === x), mv = P.reduce((a, p) => a + p.v, 0) / P.length; return { x, n: P.length, mv, ss: P.reduce((a, p) => a + (p.v - mv) ** 2, 0) }; });
+  const df = lv.reduce((a, L) => a + L.n - 1, 0), sv = Math.sqrt(lv.reduce((a, L) => a + L.ss, 0) / df);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen() && window.__SA.anaPage() === "load");
+  assert.deepStrictEqual(await page.$$eval(".ana-tabs [data-pg]", B => B.map(b => [b.dataset.pg, b.getAttribute("aria-selected")])), [["group", "false"], ["cmp", "false"], ["load", "true"]], "linguette");
+  assert.strictEqual(await page.textContent("#anaTitle"), "Test di ricarica");
+  ok2(await page.isVisible("#ltBox") && await page.isVisible("#corBox") && await page.isHidden("#cmpBox") && await page.isHidden("#chartsBox"), "pannelli della pagina");
+  const T = await page.evaluate(() => { const D = window.__SA.ltData(); return JSON.parse(JSON.stringify({ T: D.T, unit: D.unit, tol: D.tol, n: D.shots.length, reg: D.reg })); });
+  assert.deepStrictEqual([T.unit, T.tol, T.n, T.T.k, T.T.df], ["MOA", 0.3, 60, 6, df]);
+  T.T.levels.forEach((L, i) => { near(L.mv, lv[i].mv, 1e-9, `POI medio ${lv[i].x}`); assert.strictEqual(L.n, 10); });
+  near(T.T.sp.v, sv, 1e-9, "σ verticale comune");
+  const tq = await page.evaluate(df => [window.__SA.Calc.tinv(0.975, df), window.__SA.Calc.tinv(0.95, df)], df);
+  near(T.T.levels[0].ciV, tq[0] * sv / Math.sqrt(10), 1e-9, "IC del livello");
+  T.T.pairs.forEach((P, i) => { const se = sv * Math.sqrt(0.2); near(P.dv, lv[i + 1].mv - lv[i].mv, 1e-9, "Δ"); assert.strictEqual(P.eqV, Math.abs(P.dv) + tq[1] * se < 0.3, `TOST coppia ${i + 1}`); });
+  assert.deepStrictEqual(T.T.pairs.map(P => P.verdict), ["shift", "shift", "eq", "unsure", "shift"], "esiti");
+  assert.deepStrictEqual(T.T.runs.map(R => [R.x0, R.x1]), [[44.6, 44.9]], "tratto costante");
+  // pendenza: retta indipendente sui 60 fori
+  { const mx = pts.reduce((a, p) => a + p.x, 0) / 60, my = pts.reduce((a, p) => a + p.v, 0) / 60, b = pts.reduce((a, p) => a + (p.x - mx) * (p.v - my), 0) / pts.reduce((a, p) => a + (p.x - mx) ** 2, 0); near(T.reg.b, b, 1e-9, "pendenza MOA/gr"); }
+  // tabella e riepilogo
+  const rows = await page.$$eval("#ltBody table.lt-tab tbody tr", trs => trs.map(tr => [tr.className, ...[...tr.cells].map(c => c.textContent.trim())]));
+  assert.strictEqual(rows.length, 6);
+  assert.deepStrictEqual(rows.map(r => r[6]), ["", "↕ spostamento", "↕ spostamento", "≈ costante", "? non si può dire", "↕ spostamento"]);
+  ok2(/lt-run/.test(rows[2][0]) && /lt-run/.test(rows[3][0]) && !/lt-run/.test(rows[4][0]), "righe del tratto evidenziate");
+  const body = (await page.textContent("#ltBody")).replace(/\s+/g, " ");
+  ok2(body.includes("Tratto costante dimostrato: 44,60–44,90 gr (2 livelli, 20 colpi)") && body.includes("Spostamenti rilevabili (Holm, α 5%): 44,00 → 44,30 gr"), "riepilogo: " + body.slice(0, 400));
+  ok2(/Non è la ricerca di «nodi»/.test(body) && !/\bnodo\b(?!»)/.test(body.replace(/«nodi»/g, "")), "nessun nodo");
+  ok2(await page.evaluate(() => document.getElementById("chLtPoi").width > 0 && document.getElementById("chLtMap").width > 0 && document.getElementById("chCharge").width > 0 && window.__SA.CH.hits.ltPoi.length > 60), "tre grafici");
+  // tolleranza più stretta: niente tratto, colpi necessari stimati
+  await setField(page, "#ltTol", 0.1);
+  const need = Math.ceil(2 * sv * sv * (await page.evaluate(() => window.__SA.Calc.tinv(0.95, 1e6) + window.__SA.Calc.tinv(0.9, 1e6))) ** 2 / 0.01);
+  ok2((await page.textContent("#ltBody")).replace(/\s+/g, " ").includes(`servono circa ${need} colpi per livello`), "colpi necessari per dimostrarlo: " + need);
+  // MIL: la tolleranza si converte, i valori seguono
+  await setField(page, "#ltTol", 0.3); await page.selectOption("#ltUnit", "MIL");
+  near(+(await page.inputValue("#ltTol")), 0.087, 1e-9, "0,3 MOA = 0,087 MIL");
+  const Tm = await page.evaluate(() => window.__SA.ltData().T.sp.v); near(Tm, sv * Math.PI / 180 / 60 * 1000, 1e-9, "σ in MIL");
+  await page.selectOption("#ltUnit", "MOA");
+  // click impostati: il POI con la regolazione di partenza non cambia
+  await page.evaluate(() => { const g = window.__SA.state.groups[0]; g.shots.forEach(q => { q.dv = 3; }); window.__SA.commit(); });
+  const v0 = await page.evaluate(() => window.__SA.ltData().shots.filter(p => p.r.gid === 1).map(p => p.v));
+  v0.forEach((v, i) => { const q = G[0].shots[i]; near(v, moa(Math.atan((G[0].poa.y - q.y) / ppm / D)) - moa(Math.atan(Math.tan(0.0003)) ), 1e-9, `foro ${i + 1} con 3 click da 0,1 MIL tolti`); });
+  await page.evaluate(() => { const g = window.__SA.state.groups[0]; g.shots.forEach(q => { delete q.dv; }); window.__SA.commit(); });
+  // seduta: CBTO a parità di carica
+  await page.evaluate(() => { window.__SA.state.groups.forEach(g => { g.load.charge = "44.6"; }); window.__SA.commit(); });
+  await page.selectOption("#ltVar", "cbto");
+  const C2 = await page.evaluate(() => { const D = window.__SA.ltData(); return { lk: D.lk, k: D.T.k, xs: D.T.levels.map(L => window.__SA.precLabel(L.x, "cbto")) }; });
+  assert.deepStrictEqual(C2, { lk: "SMK 168 · N140 · 44.6 gr", k: 6, xs: ["55,50 mm", "55,60 mm", "55,70 mm", "55,80 mm", "55,90 mm", "56,00 mm"] });
+  ok2(/6<\/b> livelli di CBTO|6 livelli di CBTO/.test(await page.textContent("#ltBody")), "CBTO non in minuscolo");
+  // distanze diverse: «tutte» = solo precisione
+  await page.evaluate(() => { window.__SA.state.groups[11].dist = 200; window.__SA.commit(); });
+  await page.selectOption("#ltDist", "all");
+  ok2(await page.isHidden("#ltPoiWrap") && await page.isVisible("#chgChartWrap") && /Distanze diverse: si confronta solo la precisione/.test(await page.textContent("#ltBody")), "solo precisione");
+  // tasti, linguette e Modalità Base
+  await page.click("#bAnaPgGroup"); assert.strictEqual(await page.evaluate(() => window.__SA.anaPage()), "group");
+  await key(page, "p"); assert.strictEqual(await page.evaluate(() => window.__SA.anaPage()), "load");
+  await page.click("#bAnaSwitch"); assert.strictEqual(await page.evaluate(() => window.__SA.anaPage()), "cmp");
+  await key(page, "Escape"); await page.click("#bLoadTest"); assert.strictEqual(await page.evaluate(() => window.__SA.anaPage()), "load");
+  for (const l of ["en", "ru"]) { await page.evaluate(l => window.__SA.setLang(l), l); await page.selectOption("#ltDist", { index: 0 }); await page.evaluate(() => window.__SA.drawLoadTest());
+    assert.deepStrictEqual(await page.evaluate(() => [...window.__SA.I18N.missing]), [], l); }
+  await page.evaluate(() => window.__SA.setLang("it"));
+  await key(page, "Escape");
+  await page.selectOption("#uiModeSel", "basic");
+  ok2(await page.isHidden("#bLoadTest"), "Base: niente pulsante");
+  await key(page, "p"); ok2(await page.isHidden("#anaView") && /disponibile in Modalità Esperto/.test(await page.textContent("#toast")), "Base: tasto P spiegato");
+  await page.selectOption("#uiModeSel", "expert");
+});
+test("1.29.0: test di ricarica — storico, ladder per foro, sessione e report PDF", async page => {
+  await page.evaluate(() => { window.showSaveFilePicker = undefined; });
+  await ocwSession(page);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen());
+  await setField(page, "#ltTol", 0.25); await key(page, "Escape");
+  const sess = await page.evaluate(() => JSON.stringify(window.__SA.buildSession(false)));
+  assert.strictEqual(JSON.parse(sess).params.ltTol, "0.25", "tolleranza nella sessione");
+  await page.setInputFiles("#fHist", [{ name: "ocw.json", mimeType: "application/json", buffer: Buffer.from(sess) }]);
+  await page.waitForFunction(() => window.__SA.cmpState && window.__SA.cmpState.history.length === 12);
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen());
+  const A = await page.evaluate(() => { const D = window.__SA.ltData(); return { n: D.shots.length, hist: D.shots.filter(p => p.r.hist).length, mv: D.T.levels.map(L => L.mv) }; });
+  assert.deepStrictEqual([A.n, A.hist], [120, 60], "storico con i suoi fori");
+  await page.uncheck("#ltHist"); await page.dispatchEvent("#ltHist", "change");
+  const B = await page.evaluate(() => { const D = window.__SA.ltData(); return { n: D.shots.length, mv: D.T.levels.map(L => L.mv) }; });
+  assert.strictEqual(B.n, 60);
+  A.mv.forEach((m, i) => near(m, B.mv[i], 1e-6, `storico: stesso POI medio (${i + 1})`));
+  await page.check("#ltHist"); await page.dispatchEvent("#ltHist", "change");
+  // report PDF: sezione del test di ricarica
+  await key(page, "Escape");
+  await page.selectOption("#cardScope", "all");
+  const [d] = await Promise.all([page.waitForEvent("download", { timeout: 60000 }), page.click("#bPdf")]);
+  const Tx = pdfText(require("fs").readFileSync(await d.path()));
+  for (const w of ["Test di ricarica · Carica", "Rispetto al precedente", "Precisione per livello · Carica"]) ok2(Tx.includes(w), "nel report: " + w);
+  // ladder classico: un gruppo, un colpo per carica → nessun esito
+  await page.evaluate(() => { const S = window.__SA, st = S.state, g = st.groups[0]; S.cmpState.history = [];
+    st.groups = [g]; g.shots.forEach((q, i) => { q.ch = 44 + 0.3 * i; }); S.commit(); });
+  await page.check("#chPerShot");
+  await key(page, "p"); await page.waitForFunction(() => window.__SA.anaOpen());
+  const L1 = await page.evaluate(() => { const D = window.__SA.ltData(); return { k: D.T.k, df: D.T.df, sp: D.T.sp, levels: D.levels.length }; });
+  assert.deepStrictEqual(L1, { k: 5, df: 0, sp: null, levels: 0 }, "un colpo per carica");
+  ok2(/la dispersione non si può stimare/.test(await page.textContent("#ltBody")), "spiegato");
+  // sessione riaperta: scelte della pagina
+  await page.selectOption("#ltVar", "jump"); await page.selectOption("#ltMetric", "mr");
+  const s2 = await page.evaluate(() => JSON.stringify(window.__SA.buildSession()));
+  await page.reload(); await page.waitForFunction(() => window.__SA && window.__SA.state);
+  await page.evaluate(t => window.__SA.loadSessionText(t), s2);
+  assert.deepStrictEqual([await page.inputValue("#ltVar"), await page.inputValue("#ltMetric"), await page.inputValue("#ltTol")], ["jump", "mr", "0.25"]);
+  // vecchia sessione con «ladder» nelle correlazioni: torna alla prima relazione
+  const old = JSON.parse(s2); old.params.corPair = "ladder"; old.params.ltVar = "xyz";
+  await page.evaluate(t => window.__SA.loadSessionText(t), JSON.stringify(old));
+  assert.deepStrictEqual([await page.inputValue("#corPair"), await page.inputValue("#ltVar")], ["vcharge", "charge"]);
 });
 
 /* ------------------------------ esecuzione ------------------------------ */

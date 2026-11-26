@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="it">
 <!--
-  Shoot Analyzer 1.28.0 — analisi della dispersione dei colpi da foto di bersagli.
+  Shoot Analyzer 1.29.0 — analisi della dispersione dei colpi da foto di bersagli.
   Applicazione in un unico file: nessuna installazione, nessuna dipendenza, nessuna connessione di rete.
   Licenza MIT © 2026 Rives · https://github.com/rives1/Target-Analisys
 -->
@@ -267,7 +267,16 @@
   .diaginfo b { font-weight: 600; }
   #mcWrap { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 12px; }
   @media (max-width: 900px) { #mcWrap { grid-template-columns: 1fr; } }
-  #anaView[data-page="group"] .ana-panel:not(.pg-group), #anaView[data-page="cmp"] .ana-panel:not(.pg-cmp) { display: none; }
+  #anaView[data-page="group"] .ana-panel:not(.pg-group), #anaView[data-page="cmp"] .ana-panel:not(.pg-cmp), #anaView[data-page="load"] .ana-panel:not(.pg-load) { display: none; }
+  .ana-tabs { display: flex; gap: 0; } .ana-tabs .btn { border-radius: 0; margin-left: -1px; } .ana-tabs .btn:first-child { border-radius: 7px 0 0 7px; } .ana-tabs .btn:last-child { border-radius: 0 7px 7px 0; }
+  .ana-tabs .btn[aria-selected="true"] { background: var(--accent); color: #fff; border-color: var(--accent); position: relative; z-index: 1; }
+  .lt-charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 18px; margin-top: 8px; }
+  #anaView[data-dens=compact] .lt-charts { gap: 2px 10px; } #anaView[data-dens=detail] .lt-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 26px; }
+  @media (max-width: 1100px) { .lt-charts, #anaView[data-dens] .lt-charts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 700px) { .lt-charts, #anaView[data-dens] .lt-charts { grid-template-columns: 1fr; } }
+  table.cmp tr.lt-run td:first-child { box-shadow: inset 3px 0 0 var(--ok-ink, #15803d); }
+  .lt-v { font-weight: 600; white-space: nowrap; } .lt-v.shift { color: #c2410c; } .lt-v.eq { color: var(--ok-ink, #15803d); } .lt-v.unsure { color: var(--muted); font-weight: 500; }
+  [data-theme=dark] .lt-v.shift { color: #fdba74; }
   .ana-head .ana-switch { margin-left: auto; }
   #toolbar select { border: 0; background: transparent; color: var(--ink); padding: 4px 2px; cursor: pointer; }
   #toolbar select:hover { background: var(--tb-hover); }
@@ -627,7 +636,7 @@
   .ptcpop .ptc-mv button:disabled { opacity: .35; cursor: default; }
   .ptcpop-f { display: flex; justify-content: space-between; margin-top: 8px; }
   /* Modalità Base (1.22.0): restano group size, correzione e punteggio; le esportazioni non cambiano */
-  html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] #bAnaSwitch, html[data-ui="basic"] #qiTop { display: none !important; }
+  html[data-ui="basic"] .xp-only, html[data-ui="basic"] #bCompare, html[data-ui="basic"] .ana-tabs, html[data-ui="basic"] #bLoadTest, html[data-ui="basic"] #qiTop { display: none !important; }
   details.box > summary { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
   /* 1.24.0: analisi di sensibilità e modello gerarchico */
   .sens-b { display: inline-block; font-size: 11px; font-weight: 700; border-radius: 4px; padding: 0 6px; white-space: nowrap; }
@@ -855,7 +864,8 @@
           <input id="perspH" type="number" min="1" step="any" value="297" title="Altezza = lato verticale del rettangolo">
         </div>
         <div class="btns">
-          <button class="btn" id="bPersp" title="Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6)">⬚ Correggi con 4 punti</button>
+          <button class="btn" id="bPersp" title="Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6); con una correzione attiva ripropone i suoi 4 angoli da ritoccare">⬚ Correggi con 4 punti</button>
+          <button class="btn primary" id="bPerspApply" title="Applica la correzione con i 4 angoli messi (Invio); prima puoi trascinarli per correggerli" disabled>✓ Applica correzione</button>
           <button class="btn" id="bPerspOff" title="Torna alla foto originale (i punti vengono riportati su di essa)" disabled>Rimuovi correzione</button>
         </div>
         <div class="muted" style="font-size:12px;margin-top:4px">Serve un rettangolo VERO di dimensioni note (bordo del foglio, riquadro stampato). Dopo la correzione la scala è già impostata dal rettangolo; puoi rifarla a mano con «Scala».</div>
@@ -1387,19 +1397,19 @@
         <summary>Guida rapida e scorciatoie</summary>
         <div class="help">
           <p data-i18n><b>1. Carica la foto</b>: 📂 (<kbd>Ctrl+O</kbd>) o trascinala sull'immagine. Scattala il più possibile <b>perpendicolare</b> al bersaglio: la prospettiva altera le misure.</p>
-          <p data-i18n><b>2. Sistema l'immagine</b> (Gestione immagine): <b>📐 Raddrizza</b> (<kbd>5</kbd>) con 2 punti su una linea che deve risultare orizzontale o verticale, «Rotazione» per la regolazione fine e ⟲/⟳ 90° per le foto girate; <b>ritaglio</b> per togliere lo sfondo; <b>distorsione dell'obiettivo</b> da punti lungo linee dritte vicino ai bordi; foto di sbieco: <b>⬚ Prospettiva</b> (<kbd>6</kbd>), dimensioni reali di un rettangolo visibile e i suoi 4 angoli (imposta anche la scala). I punti già inseriti seguono la foto. Con un <b>bersaglio da allenamento</b> stampato dall'app (Configurazione sessione › Bersagli da stampare) basta <b>⬚ Usa il codice</b> e 4 clic sui marcatori: prospettiva, scala, distanza e mire sono impostate dal codice.</p>
+          <p data-i18n><b>2. Sistema l'immagine</b> (Gestione immagine): <b>📐 Raddrizza</b> (<kbd>5</kbd>) con 2 punti su una linea che deve risultare orizzontale o verticale, «Rotazione» per la regolazione fine e ⟲/⟳ 90° per le foto girate; <b>ritaglio</b> per togliere lo sfondo; <b>distorsione dell'obiettivo</b> da punti lungo linee dritte vicino ai bordi; foto di sbieco: <b>⬚ Prospettiva</b> (<kbd>6</kbd>), dimensioni reali di un rettangolo visibile e i suoi 4 angoli, da ritoccare trascinandoli prima di <b>✓ Applica correzione</b> (<kbd>Invio</kbd>; imposta anche la scala). I punti già inseriti seguono la foto. Con un <b>bersaglio da allenamento</b> stampato dall'app (Configurazione sessione › Bersagli da stampare) basta <b>⬚ Usa il codice</b>, 4 clic sui marcatori e <kbd>Invio</kbd>: prospettiva, scala, distanza e mire sono impostate dal codice.</p>
           <p data-i18n><b>3. Calibra la scala</b> (Calibrazione scala): <b>↔ Scala</b> (<kbd>2</kbd>), clicca due punti a distanza nota (es. due linee della griglia) e inserisci la distanza. Il semaforo indica la qualità della scala; il riferimento di controllo e il diametro dei fori la verificano. Il cerchio tratteggiato sul cursore è grande quanto il calibro.</p>
           <p data-i18n><b>4. Imposta il tiro</b> (Configurazione sessione › Parametri di tiro): calibro, distanza, valore e unità del click; lì anche indice di qualità e zone di punteggio. Più rosate sulla stessa foto: <b>＋ Nuovo gruppo</b> in Gruppi; ogni gruppo ha la sua distanza.</p>
           <p data-i18n><b>5. Segna mira e fori</b>: <b>⊕ Mira</b> (<kbd>3</kbd>) sul punto mirato, <b>◉ Foro</b> (<kbd>4</kbd>) sul centro di ogni foro. <b>🧲 Snap</b> (<kbd>M</kbd>) aggancia il punto al centro della macchia; <kbd>Alt</kbd>+clic = senza snap, anche per un foro sopra un altro. Trascina per spostare, tasto destro per eliminare, <kbd>K</kbd> per bloccare. Nella tabella dei punti (Dettaglio gruppo attivo): click di alzo e brandeggio impostati per ogni foro, ordine di sparo (↑/↓), «Escl.» (<kbd>X</kbd>) per i flyer (⚠); <kbd>Tab</kbd> e <kbd>Invio</kbd> passano da una cella all'altra, <b>⚙</b> o il trascinamento delle intestazioni scelgono e riordinano le colonne. Passando su un foro lo evidenzi insieme nella foto, nella tabella e nei grafici. <b>⚑ Colpi da rivedere</b> (<kbd>V</kbd>) e <b>✎ note</b> (<kbd>N</kbd>).</p>
           <p data-i18n><b>6. Registra ricarica e condizioni</b> (Gruppi › espandi il gruppo ▸ › Ricarica e condizioni; il modulo sta nel gruppo attivo, gli altri ne mostrano il riepilogo): <b>Arma</b> (nome, altezza dell'ottica, azzeramento, passo e verso della rigatura, canna, scatto), <b>Munizione</b> (componenti, peso e lunghezza della palla, quote della cartuccia, BC G1/G7, velocità iniziale e SD), <b>Condizioni</b> (meteo, vento con il quadrante). I <b>profili di ricarica</b> li riutilizzano. <b>🧮</b> accanto al BC: stima guidata del BC dalle correzioni di alzo osservate a due distanze.</p>
           <p data-i18n><b>7. Leggi i risultati</b> (Gruppi › Risultati del gruppo): per ogni gruppo il <b>group size</b>, la <b>correzione</b> in click (con la dope se hai indicato i click) e, con un bersaglio scelto in Zone di punteggio, il <b>punteggio</b>. In Modalità Esperto anche raggio medio, CEP/R95, forma, stabilità, indici di qualità (GQI/TQI), incertezza di misura e diagnostica del modello, stabilità giroscopica (Sg), «Verticale: carica o tiratore?», errore di distanza e la <b>probabilità di colpire</b> un cerchio o un rettangolo, anche con più colpi; i numeri hanno sotto una barra con l'intervallo di confidenza; «Risultati della sessione» riunisce i valori di tutti i gruppi. <b>⌖</b> mostra sulla foto da dove nasce un valore; i termini sottolineati aprono il glossario; ▾ nella riga del gruppo lo riduce a una riga con i valori principali, ⊞/⊟ nel titolo di Gruppi espande o comprime tutti i gruppi.</p>
-          <p data-i18n><b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, quanti colpi servono per riconoscere una differenza, riepilogo per arma, dope card e calcolatore balistico, precisione per carica, correlazioni, confronto visivo e simulazione Monte Carlo. <kbd>Esc</kbd> torna all'immagine.</p>
+          <p data-i18n><b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, quanti colpi servono per riconoscere una differenza, riepilogo per arma, dope card e calcolatore balistico, confronto visivo e simulazione Monte Carlo; <b>🧪 Test di ricarica</b> (<kbd>P</kbd>, Modalità Esperto) con i livelli di carica o di seduta in ordine: punto d'impatto, spostamenti, tratti costanti, precisione e correlazioni. <kbd>Esc</kbd> torna all'immagine.</p>
           <p data-i18n><b>9. Salva ed esporta</b> (Dati): <b>Salva sessione ZIP</b> (<kbd>Ctrl+S</kbd>) è il salvataggio principale (foto, punti e dati, si riapre con «Carica sessione»). Il salvataggio automatico nel browser propone «Ripristina» alla riapertura, ma non sostituisce il file. Poi Result Card PNG, report PDF, CSV dei fori e dei gruppi (separatore «;», virgola decimale), archivio ZIP di tutte le sessioni. I bersagli da stampare (autoverifica e allenamento) sono in Configurazione sessione. Nomi dei file: <b>ShAn-tipo-arma-profilo-data-ora</b>.</p>
           <p data-i18n><b>Pannello</b>: <b>barra dei passi</b> sopra la foto (Foto → Geometria → Scala → Tiro → Fori → Risultati: ✓ fatto, ! da completare, – facoltativo; un clic porta al passo) · strumenti divisi per famiglie, i meno usati in <b>⋯</b> · un comando spento dice nel suggerimento e al clic che cosa manca · <b>🎓</b> tour guidato in 5 passi · <b>🔍</b> cerca un'impostazione (<kbd>/</kbd>; <kbd>Invio</kbd>/<kbd>↓</kbd> e <kbd>Maiusc</kbd>+<kbd>Invio</kbd>/<kbd>↑</kbd> per scorrere, <kbd>Esc</kbd> azzera) · <b>⊟</b> comprime o espande tutti i blocchi · <b>Esperto / Base</b>: in Base restano group size, correzione e punteggio e si nascondono Qualità, Probabilità e Confronto (le esportazioni restano complete) · densità Compatta / Standard / Dettagliata (generale; il pulsante a righe nel titolo di una sezione e il menu della vista Grafici scelgono una densità propria, ricordata) · <b>⚙</b> ordine e visibilità delle sezioni · tema · lingua.</p>
           <p data-i18n><b>Scorciatoie – strumenti</b>: <kbd>1</kbd> mano · <kbd>2</kbd> scala · <kbd>3</kbd> mira · <kbd>4</kbd> foro · <kbd>5</kbd> raddrizza · <kbd>6</kbd> prospettiva · <kbd>R</kbd> righello · <kbd>N</kbd> nota · <kbd>Esc</kbd> annulla lo strumento.</p>
           <p data-i18n><b>Scorciatoie – modifica</b>: <kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd> annulla / ripeti · <kbd>Canc</kbd> elimina il punto selezionato · <kbd>Backspace</kbd> elimina l'ultimo · <kbd>X</kbd> escludi / includi il foro · <kbd>K</kbd> blocca / sblocca · <kbd>M</kbd> snap.</p>
           <p data-i18n><b>Scorciatoie – vista</b>: rotella o <kbd>+</kbd>/<kbd>−</kbd> zoom · <kbd>F</kbd> adatta · trascina lo sfondo o tasto centrale = sposta · <kbd>L</kbd> lente (<kbd>Maiusc</kbd>+rotella = ingrandimento) · <kbd>G</kbd> griglia · <kbd>D</kbd> finestra di dettaglio · <kbd>T</kbd> tema.</p>
-          <p data-i18n><b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.</p>
+          <p data-i18n><b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>P</kbd> test di ricarica · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.</p>
           <p class="muted" data-i18n>Group size = distanza centro-centro tra i due fori più lontani; il bordo-bordo esterno è c-c + calibro. Gli angoli sono calcolati in modo esatto (arcotangente). 1 MOA = 1,047" a 100 yd; 1 MIL = 10 cm a 100 m. CEP, R95, R99, ellisse e intervalli di confidenza assumono una dispersione normale circolare; con meno di 5 colpi sono indicativi.</p>
           <p class="muted" data-i18n>I dati restano sul tuo dispositivo: la pagina non effettua alcuna connessione di rete.</p>
         </div>
@@ -1409,7 +1419,8 @@
    <div id="sideFoot">
      <div class="footbtns">
        <button class="btn primary" id="bAnalysis" title="Apre a schermo intero i grafici del gruppo attivo (tasto A)">📊 Grafici del gruppo</button>
-       <button class="btn primary" id="bCompare" title="Apre a schermo intero il confronto tra i gruppi: tabella, andamento, dope card e calcolatore balistico, carica, correlazioni, confronto visivo, Monte Carlo (tasto C)">📈 Confronto tra gruppi</button>
+       <button class="btn primary" id="bCompare" title="Apre a schermo intero il confronto tra i gruppi: tabella, andamento, quanti colpi servono, dope card e calcolatore balistico, confronto visivo, Monte Carlo (tasto C)">📈 Confronto tra gruppi</button>
+       <button class="btn primary" id="bLoadTest" title="Apre a schermo intero il test di ricarica: livelli di carica o di seduta in ordine, punto d'impatto, precisione e correlazioni (tasto P)">🧪 Test di ricarica</button>
      </div>
    </div>
   </aside>
@@ -1421,7 +1432,11 @@
     <h2 id="anaTitle">Grafici del gruppo</h2>
     <label for="anaGroup">Gruppo attivo <select id="anaGroup"></select></label>
     <select id="anaDens" title="Densità di questa pagina: spaziature, tabelle e dimensione dei grafici (si ricorda per la pagina)" aria-label="Densità di questa pagina"><option value="">Densità: generale</option><option value="compact">Compatta</option><option value="standard">Standard</option><option value="detail">Dettagliata</option></select>
-    <button class="btn ana-switch" id="bAnaSwitch" title="Passa all'altra pagina (A = grafici del gruppo, C = confronto)">📈 Confronto tra gruppi →</button>
+    <div class="ana-tabs ana-switch" role="tablist" aria-label="Pagine della vista">
+      <button class="btn" id="bAnaPgGroup" data-pg="group" role="tab" title="Grafici del gruppo attivo (tasto A)">📊 Gruppo</button>
+      <button class="btn" id="bAnaSwitch" data-pg="cmp" role="tab" title="Confronto tra gruppi (tasto C)">📈 Confronto</button>
+      <button class="btn" id="bAnaPgLoad" data-pg="load" role="tab" title="Test di ricarica: livelli di carica o di seduta in ordine (tasto P)">🧪 Test di ricarica</button>
+    </div>
   </div>
   <div class="ana-grid">
     <section class="ana-panel pg-group" id="chartsBox">
@@ -1539,23 +1554,31 @@
         <div class="chart" id="balChartWrap"><div class="ctitle">Alzo calcolato (linea) e dope misurata (punti con intervallo di confidenza), in MIL</div>
           <canvas id="chBal" aria-label="Correzione di alzo calcolata per distanza confrontata con la dope card"></canvas><div class="cnote" id="balNote"></div></div>
     </section>
-    <section class="ana-panel pg-cmp" id="chgBox">
-      <h3>Precisione e ricarica · carica o seduta</h3>
+    <section class="ana-panel pg-load" id="ltBox">
+      <h3>Test di ricarica · livelli in ordine (ladder, OCW, seduta)</h3>
         <div class="row" style="flex-wrap:wrap">
-          <label for="chgVar" style="flex:0 0 auto">Variabile</label>
-          <select id="chgVar" title="Carica: confronto a parità di palla e polvere. Salto dalle righe (seduta): a parità di palla, polvere e carica"><option value="charge" selected>Carica (gr)</option><option value="jump">Salto dalle righe (seduta)</option></select>
-          <select id="chgMetric"><option value="cep" selected>CEP</option><option value="mr">Raggio medio</option></select>
-          <label for="chgLoad" style="flex:0 0 auto">Munizione</label>
-          <select id="chgLoad"></select>
-          <select id="chgUnit"><option value="MOA" selected>MOA</option><option value="MIL">MIL</option></select>
-          <label style="flex:0 0 auto"><input type="checkbox" id="chgHist" checked> anche lo storico</label>
+          <label for="ltVar" style="flex:0 0 auto">Variabile</label>
+          <select id="ltVar" title="Carica: a parità di palla e polvere. Seduta (salto dalle righe, CBTO, COAL): a parità di palla, polvere e carica"><option value="charge" selected>Carica (gr)</option><option value="jump">Salto dalle righe</option><option value="cbto">CBTO (mm)</option><option value="coal">COAL (mm)</option></select>
+          <label for="ltLoad" style="flex:0 0 auto">Munizione</label><select id="ltLoad"></select>
+          <label for="ltDist" style="flex:0 0 auto">Distanza</label><select id="ltDist" title="Il punto d'impatto si confronta alla stessa distanza; «tutte» = solo la precisione, con gruppi a distanze diverse"></select>
+          <select id="ltUnit" aria-label="Unità angolare"><option value="MOA" selected>MOA</option><option value="MIL">MIL</option></select>
+          <select id="ltMetric" aria-label="Misura della precisione"><option value="cep" selected>CEP</option><option value="mr">Raggio medio</option></select>
+          <label for="ltTol" style="flex:0 0 auto" title="Differenza di punto d'impatto verticale che per te è trascurabile: un tratto è «costante» solo se i dati mostrano che tutte le sue differenze stanno dentro questo margine">Tolleranza ±</label>
+          <input id="ltTol" type="number" min="0" step="any" value="0.3" style="width:70px"><span id="ltTolU" class="muted">MOA</span>
+          <label style="flex:0 0 auto"><input type="checkbox" id="ltHist" checked> anche lo storico</label>
         </div>
-        <div id="chgBody"></div>
-        <div class="chart" id="chgChartWrap"><div class="ctitle">Precisione per livello, con intervallo di confidenza</div>
-          <canvas id="chCharge" aria-label="Precisione in funzione della carica o del salto dalle righe"></canvas><div class="cnote" id="chgNote"></div></div>
+        <div id="ltBody"></div>
+        <div class="lt-charts">
+          <div class="chart" id="ltPoiWrap"><div class="ctitle">Punto d'impatto verticale per livello, con IC</div>
+            <canvas id="chLtPoi" aria-label="Punto d'impatto verticale in funzione della variabile di ricarica"></canvas><div class="cnote" id="ltPoiNote"></div></div>
+          <div class="chart" id="ltMapWrap"><div class="ctitle">Baricentri dei livelli rispetto alla mira</div>
+            <canvas id="chLtMap" aria-label="Baricentri dei livelli sul piano del bersaglio, in ordine"></canvas><div class="cnote" id="ltMapNote"></div></div>
+          <div class="chart" id="chgChartWrap"><div class="ctitle">Precisione per livello, con intervallo di confidenza</div>
+            <canvas id="chCharge" aria-label="Precisione in funzione della variabile di ricarica"></canvas><div class="cnote" id="chgNote"></div></div>
+        </div>
     </section>
-    <section class="ana-panel pg-cmp" id="corBox">
-      <h3>Correlazioni ricarica e condizioni · ladder</h3>
+    <section class="ana-panel pg-load" id="corBox">
+      <h3>Correlazioni ricarica e condizioni</h3>
         <div class="row" style="flex-wrap:wrap">
           <label for="corPair" style="flex:0 0 auto">Relazione</label>
           <select id="corPair">
@@ -1564,7 +1587,6 @@
             <option value="hwind">Brandeggio necessario (POI orizzontale) ↔ vento trasversale</option>
             <option value="vscharge">V-spread ↔ carica</option>
             <option value="vstemp">V-spread ↔ temperatura</option>
-            <option value="ladder">Ladder / OCW: alzo di ogni foro ↔ carica</option>
           </select>
           <label for="corLoad" style="flex:0 0 auto">Munizione</label><select id="corLoad"></select>
           <label for="corDist" style="flex:0 0 auto">Distanza</label><select id="corDist"></select>
@@ -1740,7 +1762,7 @@
       <a data-to="h-errdist">Errore di distanza</a>
       <a data-to="h-punti">Zone di punteggio e punteggio</a>
       <a data-to="h-dope">Click impostati e dope card</a>
-      <a data-to="h-carica">Carica, seduta e precisione («nodi»)</a>
+      <a data-to="h-carica">Test di ricarica: ladder, OCW, seduta («nodi»)</a>
       <a data-to="h-hull">Convex hull</a>
       <a data-to="h-gqi">Indice di qualità GQI / TQI</a>
       <a data-to="h-pdf">Report PDF</a>
@@ -1751,7 +1773,7 @@
       <a data-to="h-autoverifica">Bersaglio di autoverifica</a>
       <a data-to="h-allenamento">Bersagli da allenamento e diamond test</a>
       <a data-to="h-sagome">Sagome e punteggio decimale</a>
-      <a data-to="h-correlazioni">Correlazioni e ladder</a>
+      <a data-to="h-correlazioni">Correlazioni ricarica e condizioni</a>
       <a data-to="h-balistica">Calcolatore balistico</a>
       <a data-to="h-stabilita">Stabilità giroscopica e deriva</a>
       <a data-to="h-verticale">Verticale: carica o tiratore?</a>
@@ -1825,7 +1847,9 @@
 <tr id="gl-t"><td>t di Student</td><td>Distribuzione usata per l'incertezza di una media (il centro gruppo) stimata da pochi colpi.</td><td>IC del centro e della correzione</td></tr>
 <tr id="gl-hull"><td>Convex hull</td><td>Involucro convesso: il poligono convesso più piccolo che racchiude tutti i fori inclusi; l'app ne dà area e perimetro.</td><td>Risultati, immagine, grafico a dispersione</td></tr>
 <tr id="gl-dope"><td>Dope</td><td>Click da impostare sulla torretta per colpire il punto di mira a una certa distanza: click impostati + correzione di ogni foro, mediati.</td><td>Risultati, dope card</td></tr>
-<tr id="gl-salto"><td>Salto dalle righe (jump)</td><td>Distanza dell'ogiva della palla dall'inizio delle righe con la cartuccia camerata: misura della profondità di seduta.</td><td>Dati di ricarica, precisione e ricarica</td></tr>
+<tr id="gl-salto"><td>Salto dalle righe (jump)</td><td>Distanza dell'ogiva della palla dall'inizio delle righe con la cartuccia camerata: misura della profondità di seduta.</td><td>Dati di ricarica, test di ricarica</td></tr>
+<tr id="gl-tost"><td>Test di equivalenza (TOST)</td><td>Due test unilaterali che dimostrano che una differenza sta <b>dentro</b> un margine ±δ scelto prima: l'IC al (1 − 2α) della differenza deve stare tutto nel margine. Diverso da «differenza non significativa», che con pochi colpi è quasi sempre vero.</td><td>Test di ricarica (tratti costanti)</td></tr>
+<tr id="gl-holm"><td>Correzione di Holm</td><td>Con molti confronti qualcuno risulta «significativo» per caso: Holm ordina i p-value e confronta il k-esimo più piccolo con α/(m − k + 1), così la probabilità di anche un solo falso allarme resta sotto α.</td><td>Test di ricarica (spostamenti)</td></tr>
 <tr id="gl-alone"><td>Alone di incertezza</td><td>Cerchio attorno al centro marcato di un foro che contiene la posizione vera con probabilità del 95%, per l'incertezza di marcatura <i>u</i> (1σ per asse in px della foto: a mano, con lo snap, ×3 sui fori difficili). Raggio R = u·√(−2·ln(1 − 0,95)) ≈ 2,45·u (distribuzione di Rayleigh). È solo grafica: coordinate e calcoli non cambiano; l'effetto sui risultati è nell'«Incertezza di misura».</td><td>Immagine (Parametri di tiro)</td></tr>
 <tr id="gl-righello"><td>Righello (misura libera)</td><td>Distanza tra due punti cliccati: px della foto ÷ scala = mm (÷ 25,4 = pollici); dimensione angolare esatta 2·atan(L / 2D) alla distanza del gruppo attivo, in MOA e MRAD; orientamento in gradi dall'orizzontale (+ = sale verso destra) e scarto dall'asse più vicino. Non crea fori e non cambia la scala.</td><td>Strumento 📏 (tasto R)</td></tr>
 <tr id="gl-gqi"><td>GQI (Group Quality Index)</td><td>Punteggio 0–100 della compattezza: 100·exp[−ln(1,25)·(MR/MR<sub>rif</sub>)²], 80 quando il raggio medio angolare atteso è uguale al riferimento scelto. Criterio dell'app, relativo al riferimento; l'attendibilità è il suo intervallo, separato.</td><td>Risultati (card GQI, sessione)</td></tr>
@@ -2029,17 +2053,28 @@ Con pochi colpi R95 e R99 <b>non si possono misurare</b> contando i fori (con 5 
 </section>
 
 <section id="h-carica">
-<h3>Carica, seduta e precisione: perché l'app non indica un «nodo»</h3>
-<p>La vista grafici confronta una misura angolare di precisione (<b>CEP</b> o <b>raggio medio atteso</b> = σ·√(π/2)) in funzione di una variabile di ricarica: la <b>carica</b> di polvere (a parità di palla e polvere) o il <b>salto dalle righe</b>, cioè la profondità di seduta (a parità di palla, polvere e carica). I gruppi dello stesso livello sono combinati: le loro varianze si sommano pesate per i gradi di libertà, così più gruppi danno una stima più precisa.</p>
-<p class="formula">s² = Σ ν<sub>i</sub>·s<sub>i</sub>² / Σ ν<sub>i</sub>, &nbsp; s<sub>i</sub>² = (s<sub>x</sub>² + s<sub>y</sub>²)/2, &nbsp; ν<sub>i</sub> = 2(n<sub>i</sub> − 1); &nbsp; CEP = σ·√(2 ln 2), intervallo con χ²(Σν)</p>
-<p>La teoria del «nodo» (la canna vibra in modo più coerente a una certa carica o con un certo salto dalle righe, e lì i gruppi si stringono) è diffusa, ma <b>non c'è consenso</b> che i test usuali (scale di cariche, OCW, 3–5 colpi per carica) la dimostrino: ripetendo le prove con più colpi i «nodi» di solito spariscono, perché le differenze tra gruppi piccoli sono in gran parte casuali. Per questo l'app:</p>
+<h3>Test di ricarica: ladder, OCW e seduta (perché l'app non indica «nodi»)</h3>
+<p>La pagina <b>🧪 Test di ricarica</b> (tasto <kbd>P</kbd>, Modalità Esperto) mette in ordine i livelli di una variabile di ricarica: la <b>carica</b> di polvere (a parità di palla e polvere; anche la carica del singolo foro con «Carica per foro») oppure la <b>seduta</b> — salto dalle righe, CBTO o COAL — a parità di palla, polvere e carica. Il punto d'impatto si confronta alla stessa distanza; «tutte» le distanze lascia solo la precisione, che è angolare. Per ogni livello mostra il <b>punto d'impatto medio (POI)</b> rispetto alla mira, con i click impostati tolti (dove sarebbe arrivato con la regolazione di partenza), e la <b>precisione</b>.</p>
 <ul>
-  <li>mostra il CEP di ogni carica <b>con il suo intervallo di confidenza</b>;</li>
-  <li>dichiara una carica migliore solo se il suo intervallo <b>non si sovrappone</b> a quello di nessun'altra (criterio prudente: può non vedere una differenza vera, ma raramente ne inventa una);</li>
-  <li>non usa la parola «nodo» e non interpola una curva «a valle» tra le cariche.</li>
+  <li><b>Rumore</b>: la dispersione tra colpi dello stesso livello, combinata su tutti i livelli (analisi della varianza a una via): s² = Σ SS<sub>livello</sub> / Σ (n − 1). Vale anche per i livelli con un solo colpo. IC del POI di un livello: t·s/√n.</li>
+  <li><b>Spostamento</b> tra livelli adiacenti: differenza dei POI con un test t a varianza comune, in verticale e in orizzontale. La correzione di <b>Holm</b> su tutti i confronti tiene sotto α la probabilità di segnalare per caso anche un solo spostamento.</li>
+  <li><b>Tratto costante</b>: livelli consecutivi in cui il POI verticale non cambia più della <b>tolleranza</b> che scegli (±δ, la differenza che per te è trascurabile). Non basta che le differenze «non siano significative», perché con pochi colpi non lo sono quasi mai: serve un <b>test di equivalenza</b> (TOST, due test unilaterali). L'IC al (1 − 2α) di <b>ogni</b> differenza tra due livelli del tratto, non solo tra quelli adiacenti, deve stare dentro ±δ. Esito di ogni coppia: «↕ spostamento», «≈ costante» oppure «? non si può dire». Una differenza rilevabile ma dimostrata più piccola della tolleranza conta come «≈ costante»: per definizione della tolleranza è trascurabile.</li>
+  <li><b>Andamento</b>: retta ai minimi quadrati del POI verticale sulla variabile (MOA o MIL per gr, per mm o per 0,01 in): con la carica è la sensibilità del punto d'impatto alla velocità.</li>
+  <li><b>Precisione</b>: CEP o raggio medio atteso (σ·√(π/2)) di ogni livello, dalla σ combinata dei suoi gruppi (da 3 colpi in su): le varianze si sommano pesate per i gradi di libertà, così più gruppi danno una stima più precisa.</li>
 </ul>
+<p class="formula">s² = Σ ν<sub>i</sub>·s<sub>i</sub>² / Σ ν<sub>i</sub>, &nbsp; s<sub>i</sub>² = (s<sub>x</sub>² + s<sub>y</sub>²)/2, &nbsp; ν<sub>i</sub> = 2(n<sub>i</sub> − 1); &nbsp; CEP = σ·√(2 ln 2), intervallo con χ²(Σν)</p>
+<p>La teoria del «nodo» (la canna vibra in modo più coerente a una certa carica o con un certo salto dalle righe, e lì il punto d'impatto resta fermo o i gruppi si stringono) è diffusa, ma <b>non c'è consenso</b> che i test usuali (scale di cariche, OCW, 3–5 colpi per carica) la dimostrino: ripetendo le prove con più colpi i «nodi» di solito spariscono, perché le differenze tra gruppi piccoli sono in gran parte casuali. Per questo l'app:</p>
+<ul>
+  <li>mostra POI e precisione di ogni livello <b>con il loro intervallo di confidenza</b>;</li>
+  <li>dichiara un livello più preciso solo se il suo intervallo <b>non si sovrappone</b> a quello di nessun altro (criterio prudente: può non vedere una differenza vera, ma raramente ne inventa una);</li>
+  <li>segna un tratto costante solo se il test di equivalenza lo dimostra: è un fatto misurato (con questi colpi il POI non è cambiato più della tolleranza), non una proprietà della canna né una garanzia per il futuro;</li>
+  <li>non usa la parola «nodo» e non interpola una curva «a valle» tra i livelli.</li>
+</ul>
+<p><b>Quanti colpi</b>: per dimostrare un tratto davvero costante servono circa n = 2·σ²·(z<sub>1−α</sub> + z<sub>0,9</sub>)² / δ² colpi per livello (potenza 80% se la differenza vera è zero). Con σ verticale 0,3 MOA e δ = 0,3 MOA sono circa 18 colpi per livello, con δ = 0,5 MOA circa 7. La pagina lo calcola con la σ misurata.</p>
 <p><b>Esempio</b>: 5 colpi per carica danno ν = 8; l'intervallo 95% di σ va da circa 0,68·s a 1,92·s. Due cariche con CEP 0,6 e 0,9 MOA hanno intervalli che si sovrappongono largamente: la differenza non è dimostrata. Con 3 gruppi da 10 colpi (ν = 54) l'intervallo va da circa 0,84·s a 1,23·s.</p>
+<p><b>Limiti</b>: ogni livello conta come un insieme di colpi indipendenti; se è stato sparato in più gruppi (OCW a giro), le differenze tra un gruppo e l'altro entrano nel rumore. Lo storico entra con i fori salvati e la dope. Sono esclusi i gruppi con click impostati ma senza valore click e, dallo storico, quelli con click diversi da foro a foro. Con un colpo per livello (ladder classico) e nessun livello ripetuto il rumore non si può stimare: ripeti almeno alcuni livelli.</p>
 </section>
+
 
 <section id="h-gqi">
 <h3>Indice di qualità: GQI, AQI, TQI e ripetibilità</h3>
@@ -2180,14 +2215,13 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 </section>
 
 <section id="h-correlazioni">
-<h3>Correlazioni ricarica/condizioni e ladder</h3>
-<p>Il pannello della vista grafici mette in relazione un dato registrato con un risultato misurato, tra gruppi della <b>stessa munizione</b> (palla · polvere per la carica, munizione completa per temperatura e vento) e alla <b>stessa distanza</b>:</p>
+<h3>Correlazioni ricarica e condizioni</h3>
+<p>Il pannello della pagina «🧪 Test di ricarica» mette in relazione un dato registrato con un risultato misurato, tra gruppi della <b>stessa munizione</b> (palla · polvere per la carica, munizione completa per temperatura e vento) e alla <b>stessa distanza</b>:</p>
 <ul>
   <li><b>Alzo necessario</b> (POI verticale: la dope del gruppo, click impostati compresi) contro carica o temperatura; <b>brandeggio necessario</b> contro vento trasversale; <b>V-spread</b> (in MIL) contro carica o temperatura.</li>
   <li><b>Vento trasversale</b> = velocità × sin(ore × 30°), dalla direzione «da dove soffia» (ore 3 = da destra, positivo): spinge i colpi a sinistra, quindi serve brandeggio a destra.</li>
   <li>Retta ai minimi quadrati y = a + b·x; <b>pendenza</b> b con errore standard, intervallo t di Student a n − 2 gradi di libertà e p-value (ipotesi b = 0); R² = quota della variazione di y spiegata dalla retta. Se l'intervallo della pendenza non comprende lo zero la relazione è «rilevabile»; altrimenti con questi dati non si può dire che y cambi con x. Con meno di 5 punti la pendenza è molto incerta.</li>
-  <li><b>Ladder / OCW</b>: un punto per foro, con la carica del singolo foro (colonna «Carica» della tabella punti, attivabile con «Carica per foro») o del gruppo; media e IC t per carica. È la misura fisica di quanto si sposta il punto d'impatto con la carica (la velocità cresce con la carica).</li>
-  <li>L'app <b>non indica nodi o «piatti»</b>: con 1–3 colpi per carica la differenza di quota tra cariche vicine è dello stesso ordine della dispersione del singolo colpo, quindi un tratto «piatto» compare spesso per caso e non si ripete. Per confrontare cariche serve la precisione combinata con IC (pannello «Precisione e ricarica»).</li>
+  <li><b>Ladder e OCW</b> (un punto per foro, livelli di carica o di seduta in ordine, spostamenti e tratti costanti): dalla 1.29 nella stessa pagina, pannello «Test di ricarica» (vedi la voce «Test di ricarica»).</li>
   <li>Correlazione non è causalità: temperatura, luce, tiratore e canna cambiano spesso insieme.</li>
 </ul>
 </section>
@@ -2366,7 +2400,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <dt>Rotazione</dt>
 <dd>Se la foto è storta, «alto» e «destra» non sono quelli del bersaglio: correzione, H/V-spread, FOM, asse e orologio verrebbero scambiati in parte tra gli assi. Raddrizzare non cambia le distanze.</dd>
 <dt>Correzione prospettica (omografia)</dt>
-<dd>Una foto di sbieco comprime il bersaglio in una direzione e cambia la scala da un punto all'altro. Con i 4 angoli di un rettangolo di dimensioni note l'app calcola l'<b>omografia</b> (trasformazione proiettiva, 8 parametri) che lo riporta a un rettangolo esatto e ricampiona la foto. Non corregge la distorsione dell'obiettivo né un foglio non piano.</dd>
+<dd>Una foto di sbieco comprime il bersaglio in una direzione e cambia la scala da un punto all'altro. Con i 4 angoli di un rettangolo di dimensioni note l'app calcola l'<b>omografia</b> (trasformazione proiettiva, 8 parametri) che lo riporta a un rettangolo esatto e ricampiona la foto. Non corregge la distorsione dell'obiettivo né un foglio non piano. Dalla 1.29 la correzione non parte al quarto clic: gli angoli si trascinano per metterli a punto (con la lente) e si applica con «✓ Applica correzione» o Invio. Con una correzione attiva «⬚ Ritocca i 4 angoli» ripropone sulla foto gli angoli del rettangolo: spostarli e riapplicare ricalcola la correzione da capo, i punti seguono e la scala torna quella del rettangolo.</dd>
 <dt>Semaforo della calibrazione</dt>
 <dd>Riassume la qualità della scala (dalla 1.12.0): <b>verde</b> se l'incertezza √2 / (lunghezza in px) è al massimo ±0,5% (segmento di almeno ≈ 280 px), <b>giallo</b> fino a ±1% o con fori sotto 8 px, <b>rosso</b> oltre ±1%, con un'inquadratura insolita o se la verifica incrociata (diametro dei fori o riferimento di controllo) è in allarme. La barra si accorcia al crescere dell'incertezza. Le soglie sono una scelta pratica dell'app: con ±0,5% un group size di 20 mm è incerto di ±0,1 mm per la sola scala, meno dell'errore di marcatura.</dd>
 <dt>Griglia angolare</dt>
@@ -2401,7 +2435,7 @@ MR = MR<sub>rif</sub> → 80 · MR = 0 → 100 · MR = 2·MR<sub>rif</sub> → 4
 <h3>Ritaglio, profili di ricarica e file ZIP</h3>
 <dl class="help-dl">
 <dt>Ritaglio della foto</dt>
-<dd>«✂ Ritaglia» (Orientamento) e un rettangolo trascinato sulla foto; «✓ Applica ritaglio» o Invio. Il ritaglio è <b>definitivo</b>: la nuova foto è ciò che si vede (rotazione, prospettiva e distorsione corrette vengono incorporate) limitato al rettangolo, a 1 pixel = 1 pixel, quindi la <b>scala non cambia</b> e i punti vengono solo traslati: group size, statistiche e correzione restano identici. Mire e fori devono stare nel rettangolo; i punti della scala possono restare fuori (la scala resta valida). Se la scala veniva dal rettangolo della prospettiva diventa una scala a 2 punti sul lato superiore del rettangolo. Le foto JPEG vengono ricodificate in JPEG al 95% (perdita minima), le altre in PNG. La storia (Annulla) riparte dalla foto ritagliata; «↶ Annulla ritaglio» rimette foto e punti di prima finché non carichi un'altra foto. Per conservare il ritaglio salva la sessione con la foto (ZIP, o JSON con l'immagine incorporata): un JSON senza foto non si riapre sulla foto originale.</dd>
+<dd>«✂ Ritaglia» (Orientamento) e un rettangolo trascinato sulla foto; «✓ Applica ritaglio» o Invio. Prima di applicarlo il rettangolo si modifica: trascinando i vertici o i lati lo si ridimensiona, trascinando l'interno lo si sposta, trascinando fuori se ne disegna uno nuovo; accanto compaiono le dimensioni in pixel e, se la scala è impostata, in mm. Il ritaglio è <b>definitivo</b>: la nuova foto è ciò che si vede (rotazione, prospettiva e distorsione corrette vengono incorporate) limitato al rettangolo, a 1 pixel = 1 pixel, quindi la <b>scala non cambia</b> e i punti vengono solo traslati: group size, statistiche e correzione restano identici. Mire e fori devono stare nel rettangolo; i punti della scala possono restare fuori (la scala resta valida). Se la scala veniva dal rettangolo della prospettiva diventa una scala a 2 punti sul lato superiore del rettangolo. Le foto JPEG vengono ricodificate in JPEG al 95% (perdita minima), le altre in PNG. La storia (Annulla) riparte dalla foto ritagliata; «↶ Annulla ritaglio» rimette foto e punti di prima finché non carichi un'altra foto. Per conservare il ritaglio salva la sessione con la foto (ZIP, o JSON con l'immagine incorporata): un JSON senza foto non si riapre sulla foto originale.</dd>
 <dt>Profili di ricarica</dt>
 <dd>Un profilo è un nome con bossolo, polvere, carica, palla, salto dalle righe, innesco, quote della cartuccia (dalla 1.25) e calibro. «💾 Salva profilo» li prende dal gruppo attivo e dai parametri (stesso nome = aggiornato, nome vuoto = calibro · palla · polvere carica); sceglierlo nel menu li ricopia nel gruppo attivo e imposta il calibro. Data, meteo, vento e note non fanno parte del profilo. I profili stanno nel browser (localStorage): «⇩ Esporta profili» e «⇧ Importa profili» li portano su un altro browser o PC.</dd>
 <dt>Quadrante del vento</dt>
@@ -3718,6 +3752,59 @@ const Calc = (() => {
     return { n, perm, err, rms, max, scale: sT > 0 ? sM / sT : null, rotDeg: n >= 2 ? Math.atan2(cr, dt) * 180 / Math.PI : 0,
       shift: { x: cM.x - cT.x, y: cM.y - cT.y }, es: { t: extremeSpread(T).d, m: extremeSpread(m).d }, mr: { t: meanRadius(T, cT), m: meanRadius(m, cM) } };
   }
+  /* ---------------- 1.29.0: test di ricarica (ladder, OCW, seduta) ----------------
+     Colpi {x (livello), h, v} in unità angolari (POI rispetto alla mira, + = destra/alto). Per ogni livello media e
+     dispersione; rumore = varianza entro i livelli combinata (ANOVA a una via: s² = Σ SS_livello / Σ (n − 1)), che vale
+     anche per i livelli con un solo colpo. Livelli adiacenti: differenza con test t a varianza comune e correzione di Holm
+     su tutti i confronti (verticale e orizzontale) = «spostamento rilevabile». Tratto costante: TOST (due test unilaterali)
+     sul verticale, cioè IC al (1 − 2α) di OGNI coppia del tratto dentro ±δ (principio intersezione-unione: nessuna
+     correzione). Esito di una coppia: spostamento / equivalente / non si può dire. */
+  function holm(ps, alpha = 0.05) {
+    const idx = ps.map((p, i) => [p, i]).filter(q => isFinite(q[0])).sort((a, b) => a[0] - b[0]), out = ps.map(() => false), m = idx.length;
+    for (let k = 0; k < m; k++) { if (idx[k][0] <= alpha / (m - k)) out[idx[k][1]] = true; else break; }
+    return out;
+  }
+  function ladderTest(shots, { alpha = 0.05, delta = 0 } = {}) {
+    const by = new Map();
+    for (const q of shots) { if (!isFinite(q.x) || !isFinite(q.v) || !isFinite(q.h)) continue; const k = +q.x.toFixed(4); if (!by.has(k)) by.set(k, []); by.get(k).push(q); }
+    const levels = [...by.entries()].sort((a, b) => a[0] - b[0]).map(([x, Q]) => {
+      const n = Q.length, mh = Q.reduce((a, q) => a + q.h, 0) / n, mv = Q.reduce((a, q) => a + q.v, 0) / n;
+      return { x, n, mh, mv, ssh: Q.reduce((a, q) => a + (q.h - mh) ** 2, 0), ssv: Q.reduce((a, q) => a + (q.v - mv) ** 2, 0) };
+    });
+    const df = levels.reduce((a, L) => a + L.n - 1, 0), k = levels.length;
+    const out = { levels, df, k, alpha, delta, sp: null, pairs: [], runs: [] };
+    if (df < 2) return out;
+    const sh = Math.sqrt(levels.reduce((a, L) => a + L.ssh, 0) / df), sv = Math.sqrt(levels.reduce((a, L) => a + L.ssv, 0) / df);
+    out.sp = { h: sh, v: sv };
+    const q2 = tinv(1 - alpha / 2, df), q1 = tinv(1 - alpha, df);
+    for (const L of levels) { L.ciH = q2 * sh / Math.sqrt(L.n); L.ciV = q2 * sv / Math.sqrt(L.n); }
+    const cmp = (A, B) => {
+      const f = Math.sqrt(1 / A.n + 1 / B.n), dv = B.mv - A.mv, dh = B.mh - A.mh, sev = sv * f, seh = sh * f;
+      const pt = (d, se) => se > 0 ? 2 * (1 - tcdf(Math.abs(d / se), df)) : (d === 0 ? 1 : 0);
+      return { dv, dh, sev, seh, pv: pt(dv, sev), ph: pt(dh, seh), eqV: delta > 0 && Math.abs(dv) + q1 * sev < delta, ci90: q1 * sev };
+    };
+    for (let i = 0; i + 1 < k; i++) out.pairs.push({ i, j: i + 1, ...cmp(levels[i], levels[i + 1]) });
+    const rej = holm(out.pairs.flatMap(P => [P.pv, P.ph]), alpha);
+    out.pairs.forEach((P, t) => { P.shiftV = rej[2 * t]; P.shiftH = rej[2 * t + 1]; P.shift = P.shiftV || P.shiftH;
+      P.verdict = P.eqV ? "eq" : P.shift ? "shift" : "unsure"; });   // entro la tolleranza vince «costante», anche se la differenza è rilevabile
+    // tratti costanti massimali: ogni coppia (non solo le adiacenti) equivalente entro ±δ. e(i) = ultimo livello del
+    // tratto più lungo che parte da i; e non decresce con i, quindi i tratti massimali sono quelli con e(i) > e(i − 1).
+    if (delta > 0) {
+      const eq = (a, b) => cmp(levels[a], levels[b]).eqV;
+      let prev = -1;
+      for (let i = 0; i < k - 1; i++) {
+        let j = Math.max(i, prev);
+        if (j > i) { let okAll = true; for (let a = i; a < j && okAll; a++) for (let b = a + 1; b <= j && okAll; b++) okAll = eq(a, b); if (!okAll) j = i; }
+        while (j + 1 < k) { let okAll = true; for (let a = i; a <= j && okAll; a++) okAll = eq(a, j + 1); if (!okAll) break; j++; }
+        if (j > i && j > prev) {
+          const R = levels.slice(i, j + 1), n = R.reduce((a, L) => a + L.n, 0), mv = R.reduce((a, L) => a + L.mv * L.n, 0) / n;
+          out.runs.push({ i, j, n, mv, x0: levels[i].x, x1: levels[j].x });
+        }
+        prev = Math.max(prev, j);
+      }
+    }
+    return out;
+  }
   /* ---------------- 1.28.0: potenza, velocità e verticale, errore di distanza, più colpi, stabilità ---------------- */
   /** Quantile della F(d1, d2) per bisezione sulla scala logaritmica (fcdf è monotona). */
   function finv(p, d1, d2) {
@@ -4538,7 +4625,8 @@ const Calc = (() => {
     afterCorrection, influence, stability, measureLine, haloRadius, niceLength, differingKeys,
     QI_VERSION, QI_CLASSES, qiScore, qiClass, qiTqi, qiRefOk, groupQuality, sessionQuality, centerRepeatability, fcdf,
     DRAG, cdOf, atmosphere, trajectory, zeroAngle, velocitySpread, estimateBC, WHEEL_KEYS, errorWheel,
-    finv, fPower, shotsForPower, gammp, chi2invAny, rangeFactor, velocityVertical, verticalSplit, velocityRegression, rangeErrorScan, atLeastK, shotsForOne, millerSg, spinDrift };
+    finv, fPower, shotsForPower, gammp, chi2invAny, rangeFactor, velocityVertical, verticalSplit, velocityRegression, rangeErrorScan, atLeastK, shotsForOne, millerSg, spinDrift,
+    holm, ladderTest };
 })();
 if (typeof module !== "undefined") module.exports = Calc;
 </script>
@@ -7083,7 +7171,94 @@ const I18N = (() => {
    "es. 10": "e.g. 10",
    "es. 610": "e.g. 610",
    "es. 168": "e.g. 168",
-   "es. 30,86": "e.g. 30.86"
+   "es. 30,86": "e.g. 30.86",
+   "Correzione prospettica invariata.": "Perspective correction unchanged.",
+   "⬚ Ritocca i 4 angoli": "⬚ Adjust the 4 corners",
+   "I 4 angoli ci sono già: trascinali per correggerli, poi «✓ Applica correzione» (Invio). Backspace toglie l'ultimo.": "The 4 corners are already placed: drag them to adjust, then «✓ Apply correction» (Enter). Backspace removes the last one.",
+   "Ritaglio: trascina vertici e lati per ridimensionare il rettangolo, l'interno per spostarlo, fuori per disegnarne uno nuovo; Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.": "Crop: drag the corners and sides to resize the rectangle, the inside to move it, outside to draw a new one; Enter or «✓ Apply crop» = cut, Esc = cancel.",
+   "Prospettiva attiva: trascina i 4 angoli del rettangolo per ritoccarla, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo (per rifarla da capo) · Esc = lascia com'è.": "Perspective active: drag the 4 corners of the rectangle to adjust it, then Enter or «✓ Apply correction». Backspace = remove the last one (to redo it from scratch) · Esc = leave it as it is.",
+   "Prospettiva: trascina gli angoli per correggerli, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla.": "Perspective: drag the corners to adjust them, then Enter or «✓ Apply correction». Backspace = remove the last one · Esc = cancel.",
+   " · trascina vertici e lati per ridimensionarlo, l'interno per spostarlo": " · drag corners and sides to resize it, the inside to move it",
+   "Δ vert.": "Δ vert.",
+   "Rispetto al precedente": "Versus the previous level",
+   "Con un colpo per livello la dispersione non si può stimare: nessun esito.": "With one shot per level the dispersion cannot be estimated: no verdict.",
+   "Spostamenti rilevabili segnati nella tabella (Holm).": "Detectable shifts marked in the table (Holm).",
+   "Nessuno spostamento rilevabile tra livelli adiacenti.": "No detectable shift between adjacent levels.",
+   "tutte (solo precisione)": "all (precision only)",
+   "↕ spostamento": "↕ shift",
+   "≈ costante": "≈ steady",
+   "? non si può dire": "? can't tell",
+   "la carica (gr) nei dati di ricarica o la carica per foro": "the charge (gr) in the load data or the charge per shot",
+   "palla e polvere": "bullet and powder",
+   "palla, polvere e carica": "bullet, powder and charge",
+   "Con un colpo per livello (o quasi) la dispersione non si può stimare: niente spostamenti né tratti costanti. Servono almeno 2 colpi in qualche livello, meglio 3–5 per livello.": "With one shot per level (or nearly) the dispersion cannot be estimated: no shifts and no steady stretches. At least 2 shots are needed in some levels, better 3–5 per level.",
+   ": la pendenza è rilevabile.": ": the slope is detectable.",
+   ": con questi dati la pendenza non è distinguibile da zero.": ": with these data the slope cannot be told apart from zero.",
+   "Imposta una tolleranza per cercare i tratti in cui il punto d'impatto resta costante.": "Set a tolerance to look for stretches where the point of impact stays steady.",
+   "Distanze diverse: si confronta solo la precisione (metrica angolare). Scegli una distanza per il punto d'impatto.": "Different distances: only precision is compared (angular metric). Choose a distance for the point of impact.",
+   "Precisione: serve almeno un secondo livello con un gruppo da 3 colpi o più.": "Precision: at least a second level with a group of 3 or more shots is needed.",
+   "Test di ricarica": "Load test",
+   "Il test di ricarica è disponibile in Modalità Esperto.": "The load test is available in Expert mode.",
+   "Servono 4 angoli (ora {0}).": "4 corners are needed (now {0}).",
+   "Bersaglio {0}: trascina i 4 punti sul centro dei marcatori se serve, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla.": "Target {0}: drag the 4 points onto the centre of the markers if needed, then Enter or «✓ Apply correction». Backspace = remove the last one · Esc = cancel.",
+   "Rettangolo {0}": "Rectangle {0}",
+   "Test di ricarica · {0}": "Load test · {0}",
+   "Munizione: {0} · {1} {2} · POI rispetto alla mira con la regolazione di partenza (+ = in alto / a destra), IC {3}%": "Ammunition: {0} · {1} {2} · POI relative to the aim with the starting adjustment (+ = up / right), CI {3}%",
+   "POI vert. ({0})": "Vert. POI ({0})",
+   "POI orizz. ({0})": "Horiz. POI ({0})",
+   "Tratto costante dimostrato {0}–{1} (entro ±{2} {3}, TOST).": "Steady stretch demonstrated {0}–{1} (within ±{2} {3}, TOST).",
+   "Nessun tratto costante dimostrato entro ±{0} {1}.": "No steady stretch demonstrated within ±{0} {1}.",
+   "Precisione per livello · {0}": "Precision per level · {0}",
+   "<div class=\"muted\">Servono gruppi con {0}, scala, distanza e punto di mira, in questa sessione o nello storico. La munizione deve essere la stessa ({1}).</div>": "<div class=\"muted\">Groups with {0}, scale, distance and point of aim are needed, in this session or in the history. The ammunition must be the same ({1}).</div>",
+   "{0} nei dati di ricarica": "{0} in the load data",
+   "<b>{0}</b> livelli di {1} · <b>{2}</b> colpi a {3} {4}": "<b>{0}</b> levels of {1} · <b>{2}</b> shots at {3} {4}",
+   "Dispersione tra colpi dello stesso livello (rumore): σ verticale {0} {1}, orizzontale {2} {3} (ν = {4}).": "Dispersion between shots of the same level (noise): vertical σ {0} {1}, horizontal {2} {3} (ν = {4}).",
+   "Andamento: il punto d'impatto verticale cambia di <b>{0} {1} per {2}</b> (IC {3}% {4} … {5})": "Trend: the vertical point of impact changes by <b>{0} {1} per {2}</b> (CI {3}% {4} … {5})",
+   "Spostamenti rilevabili (Holm, α {0}%): ": "Detectable shifts (Holm, α {0}%): ",
+   "{0} {1} in verticale": "{0} {1} vertically",
+   "{0} {1} in orizzontale": "{0} {1} horizontally",
+   "<span class=\"lt-v eq\">Tratto costante dimostrato</span>: <b>{0}–{1}</b> ({2} livelli, {3} colpi): tutte le differenze verticali stanno entro ±{4} {5} (TOST, α {6}%).": "<span class=\"lt-v eq\">Steady stretch demonstrated</span>: <b>{0}–{1}</b> ({2} levels, {3} shots): all vertical differences are within ±{4} {5} (TOST, α {6}%).",
+   "Nessun tratto costante dimostrato entro ±{0} {1}": "No steady stretch demonstrated within ±{0} {1}",
+   ": con σ verticale {0} {1} servono circa <b>{2}</b> colpi per livello per dimostrarlo (se la differenza vera è zero, potenza 80%).": ": with a vertical σ of {0} {1} about <b>{2}</b> shots per level are needed to demonstrate it (if the true difference is zero, 80% power).",
+   "Esclusi: {0} gruppi senza punto di mira o scala, {1} con click per foro diversi o senza valore click.": "Excluded: {0} groups without point of aim or scale, {1} with different clicks per shot or without click value.",
+   "Precisione: <b>{0}</b> ha il {1} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).": "Precision: <b>{0}</b> has the smallest {1} and its interval does not overlap those of the other levels: the difference is probably real (conservative criterion).",
+   "Precisione: gli intervalli del {0} si sovrappongono, con questi colpi <b>non si può dire</b> quale livello sia più preciso (meglio 2–3 gruppi da 5–10 colpi per livello).": "Precision: the {0} intervals overlap; with these shots it is <b>not possible to say</b> which level is more precise (better 2–3 groups of 5–10 shots per level).",
+   "differenza verticale {0} ± {1} {2} (IC {3}%) · p verticale {4}, orizzontale {5}": "vertical difference {0} ± {1} {2} (CI {3}%) · p vertical {4}, horizontal {5}",
+   "<div class=\"tscroll\"><table class=\"cmp lt-tab\"><thead><tr><th class=\"x\">{0}</th><th class=\"x\">Colpi</th>\n      <th class=\"x\" title=\"Punto d'impatto medio rispetto alla mira con la regolazione di partenza (+ = in alto), con IC\">POI vert. ({1})</th><th class=\"x\" title=\"+ = a destra\">POI orizz. ({2})</th>\n      <th class=\"x\" title=\"Differenza del POI verticale dal livello precedente\">Δ vert.</th><th class=\"x\">Rispetto al precedente</th>\n      <th class=\"x\" title=\"Dalla σ combinata dei gruppi dello stesso livello, con IC\">{3} ({4})</th></tr></thead><tbody>{5}</tbody></table></div>": "<div class=\"tscroll\"><table class=\"cmp lt-tab\"><thead><tr><th class=\"x\">{0}</th><th class=\"x\">Shots</th>\n      <th class=\"x\" title=\"Mean point of impact relative to the aim with the starting adjustment (+ = up), with CI\">Vert. POI ({1})</th><th class=\"x\" title=\"+ = right\">Horiz. POI ({2})</th>\n      <th class=\"x\" title=\"Difference of the vertical POI from the previous level\">Δ vert.</th><th class=\"x\">Versus the previous level</th>\n      <th class=\"x\" title=\"From the pooled σ of the groups of the same level, with CI\">{3} ({4})</th></tr></thead><tbody>{5}</tbody></table></div>",
+   "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">POI = punto d'impatto rispetto alla mira con la regolazione di partenza (i click impostati sono tolti), IC {0}% dalla dispersione comune. «↕ spostamento»: differenza dal livello precedente rilevabile (test t, correzione di Holm su tutti i confronti). «≈ costante»: l'IC al {1}% della differenza verticale sta dentro ±tolleranza (TOST). «? non si può dire»: né l'uno né l'altro. Non è la ricerca di «nodi»: un tratto costante dice solo che lì, con questi colpi, il punto d'impatto non è cambiato più della tolleranza (help «Test di ricarica»).</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">POI = point of impact relative to the aim with the starting adjustment (the clicks set are removed), CI {0}% from the common dispersion. «↕ shift»: detectable difference from the previous level (t test, Holm correction over all comparisons). «≈ steady»: the {1}% CI of the vertical difference is within ±tolerance (TOST). «? can't tell»: neither. This is not a search for «nodes»: a steady stretch only says that there, with these shots, the point of impact did not change more than the tolerance (technical help, in Italian, «Test di ricarica»).</div>",
+   "POI verticale ({0})": "Vertical POI ({0})",
+   "{0} · {1} colpi · POI verticale {2} {3}{4} · orizzontale {5}": "{0} · {1} shots · vertical POI {2} {3}{4} · horizontal {5}",
+   "● media del livello con IC {0}% · punti piccoli = fori · linea tratteggiata = mira · arancio = spostamento rilevabile · fascia verde = tratto costante dimostrato (±{1} {2}).": "● level mean with {0}% CI · small dots = shots · dashed line = aim · orange = detectable shift · green band = demonstrated steady stretch (±{1} {2}).",
+   "griglia {0} {1} · + = a destra / in alto": "grid {0} {1} · + = right / up",
+   "{0} · {1} colpi · baricentro {2} ; {3} {4}": "{0} · {1} shots · centre {2} ; {3} {4}",
+   "Baricentri in ordine di {0} (dal chiaro allo scuro, con l'etichetta del livello) e croci = IC {1}% in orizzontale e verticale; punti chiari = fori; + al centro = mira.": "Centres in order of {0} (from light to dark, with the level label) and crosses = {1}% CI horizontally and vertically; light dots = shots; + in the middle = aim.",
+   "<b>2. Sistema l'immagine</b> (Gestione immagine): <b>📐 Raddrizza</b> (<kbd>5</kbd>) con 2 punti su una linea che deve risultare orizzontale o verticale, «Rotazione» per la regolazione fine e ⟲/⟳ 90° per le foto girate; <b>ritaglio</b> per togliere lo sfondo; <b>distorsione dell'obiettivo</b> da punti lungo linee dritte vicino ai bordi; foto di sbieco: <b>⬚ Prospettiva</b> (<kbd>6</kbd>), dimensioni reali di un rettangolo visibile e i suoi 4 angoli, da ritoccare trascinandoli prima di <b>✓ Applica correzione</b> (<kbd>Invio</kbd>; imposta anche la scala). I punti già inseriti seguono la foto. Con un <b>bersaglio da allenamento</b> stampato dall'app (Configurazione sessione › Bersagli da stampare) basta <b>⬚ Usa il codice</b>, 4 clic sui marcatori e <kbd>Invio</kbd>: prospettiva, scala, distanza e mire sono impostate dal codice.": "<b>2. Fix the image</b> (Image handling): <b>📐 Straighten</b> (<kbd>5</kbd>) with 2 points on a line that must become horizontal or vertical, «Rotation» for fine adjustment and ⟲/⟳ 90° for rotated photos; <b>crop</b> to remove the background; <b>lens distortion</b> from points along straight lines near the edges; photo taken at an angle: <b>⬚ Perspective</b> (<kbd>6</kbd>), real size of a visible rectangle and its 4 corners, to be adjusted by dragging them before <b>✓ Apply correction</b> (<kbd>Enter</kbd>; it also sets the scale). Points already placed follow the photo. With a <b>training target</b> printed by the app (Session setup › Printable targets) just <b>⬚ Use the code</b>, 4 clicks on the markers and <kbd>Enter</kbd>: perspective, scale, distance and aiming marks are set from the code.",
+   "<b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, quanti colpi servono per riconoscere una differenza, riepilogo per arma, dope card e calcolatore balistico, confronto visivo e simulazione Monte Carlo; <b>🧪 Test di ricarica</b> (<kbd>P</kbd>, Modalità Esperto) con i livelli di carica o di seduta in ordine: punto d'impatto, spostamenti, tratti costanti, precisione e correlazioni. <kbd>Esc</kbd> torna all'immagine.": "<b>8. Analyse and compare</b>: <b>📊 Group charts</b> (<kbd>A</kbd>) with dispersion, histogram, clock, polar, density, diagnostics, stability, error wheel and reticle with holdover; <b>📈 Group comparison</b> (<kbd>C</kbd>, Expert mode) with table and trend including the history, how many shots you need to detect a difference, summary by rifle, dope card and ballistic calculator, visual comparison and Monte Carlo simulation; <b>🧪 Load test</b> (<kbd>P</kbd>, Expert mode) with the charge or seating levels in order: point of impact, shifts, steady stretches, precision and correlations. <kbd>Esc</kbd> returns to the image.",
+   "<b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>P</kbd> test di ricarica · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.": "<b>Shortcuts – pages and files</b>: <kbd>A</kbd> group charts · <kbd>C</kbd> comparison · <kbd>P</kbd> load test · <kbd>H</kbd> technical help · <kbd>V</kbd> shots to review (<kbd>,</kbd> / <kbd>.</kbd> previous / next) · <kbd>/</kbd> search · <kbd>Ctrl+O</kbd> load photo · <kbd>Ctrl+S</kbd> save the ZIP session · <kbd>Esc</kbd> closes windows and pages.",
+   "✓ Applica correzione": "✓ Apply correction",
+   "🧪 Test di ricarica": "🧪 Load test",
+   "📊 Gruppo": "📊 Group",
+   "📈 Confronto": "📈 Comparison",
+   "Test di ricarica · livelli in ordine (ladder, OCW, seduta)": "Load test · levels in order (ladder, OCW, seating)",
+   "Tolleranza ±": "Tolerance ±",
+   "Punto d'impatto verticale per livello, con IC": "Vertical point of impact per level, with CI",
+   "Baricentri dei livelli rispetto alla mira": "Level centres relative to the aim",
+   "Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6); con una correzione attiva ripropone i suoi 4 angoli da ritoccare": "Click the 4 corners of the reference rectangle, in any order (key 6); with an active correction it shows its 4 corners again to adjust them",
+   "Applica la correzione con i 4 angoli messi (Invio); prima puoi trascinarli per correggerli": "Apply the correction with the 4 corners placed (Enter); you can drag them first to adjust them",
+   "Apre a schermo intero il confronto tra i gruppi: tabella, andamento, quanti colpi servono, dope card e calcolatore balistico, confronto visivo, Monte Carlo (tasto C)": "Opens the group comparison full screen: table, trend, how many shots you need, dope card and ballistic calculator, visual comparison, Monte Carlo (C key)",
+   "Apre a schermo intero il test di ricarica: livelli di carica o di seduta in ordine, punto d'impatto, precisione e correlazioni (tasto P)": "Opens the load test full screen: charge or seating levels in order, point of impact, precision and correlations (P key)",
+   "Pagine della vista": "View pages",
+   "Grafici del gruppo attivo (tasto A)": "Charts of the active group (A key)",
+   "Confronto tra gruppi (tasto C)": "Group comparison (C key)",
+   "Test di ricarica: livelli di carica o di seduta in ordine (tasto P)": "Load test: charge or seating levels in order (P key)",
+   "Carica: a parità di palla e polvere. Seduta (salto dalle righe, CBTO, COAL): a parità di palla, polvere e carica": "Charge: same bullet and powder. Seating (jump to the lands, CBTO, COAL): same bullet, powder and charge",
+   "Il punto d'impatto si confronta alla stessa distanza; «tutte» = solo la precisione, con gruppi a distanze diverse": "The point of impact is compared at the same distance; «all» = precision only, with groups at different distances",
+   "Unità angolare": "Angular unit",
+   "Misura della precisione": "Precision measure",
+   "Differenza di punto d'impatto verticale che per te è trascurabile: un tratto è «costante» solo se i dati mostrano che tutte le sue differenze stanno dentro questo margine": "Vertical point-of-impact difference that is negligible to you: a stretch is «steady» only if the data show that all its differences are within this margin",
+   "Punto d'impatto verticale in funzione della variabile di ricarica": "Vertical point of impact as a function of the load variable",
+   "Baricentri dei livelli sul piano del bersaglio, in ordine": "Level centres on the target plane, in order",
+   "Precisione in funzione della variabile di ricarica": "Precision as a function of the load variable"
   }/*END-EN-DICT*/;
   /* Dizionario russo (dalla 1.19.0): stesse chiavi italiane. Una chiave assente in russo finisce in «missing» e
      ripiega sull'inglese (meglio dell'italiano per chi legge il russo). Unità angolari lasciate in caratteri latini
@@ -9617,7 +9792,94 @@ const I18N = (() => {
    "es. 10": "напр. 10",
    "es. 610": "напр. 610",
    "es. 168": "напр. 168",
-   "es. 30,86": "напр. 30,86"
+   "es. 30,86": "напр. 30,86",
+   "Correzione prospettica invariata.": "Коррекция перспективы не изменилась.",
+   "⬚ Ritocca i 4 angoli": "⬚ Поправить 4 угла",
+   "I 4 angoli ci sono già: trascinali per correggerli, poi «✓ Applica correzione» (Invio). Backspace toglie l'ultimo.": "4 угла уже поставлены: перетащите их для правки, затем «✓ Применить коррекцию» (Enter). Backspace убирает последний.",
+   "Ritaglio: trascina vertici e lati per ridimensionare il rettangolo, l'interno per spostarlo, fuori per disegnarne uno nuovo; Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.": "Обрезка: тяните углы и стороны, чтобы изменить размер прямоугольника, внутреннюю часть — чтобы переместить его, снаружи — чтобы нарисовать новый; Enter или «✓ Применить обрезку» = обрезать, Esc = отмена.",
+   "Prospettiva attiva: trascina i 4 angoli del rettangolo per ritoccarla, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo (per rifarla da capo) · Esc = lascia com'è.": "Перспектива включена: перетащите 4 угла прямоугольника, чтобы поправить её, затем Enter или «✓ Применить коррекцию». Backspace = убрать последний (чтобы переделать заново) · Esc = оставить как есть.",
+   "Prospettiva: trascina gli angoli per correggerli, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla.": "Перспектива: перетащите углы для правки, затем Enter или «✓ Применить коррекцию». Backspace = убрать последний · Esc = отмена.",
+   " · trascina vertici e lati per ridimensionarlo, l'interno per spostarlo": " · тяните углы и стороны для изменения размера, внутреннюю часть — для перемещения",
+   "Δ vert.": "Δ верт.",
+   "Rispetto al precedente": "По сравнению с предыдущим",
+   "Con un colpo per livello la dispersione non si può stimare: nessun esito.": "При одном выстреле на уровень рассеивание оценить нельзя: вывода нет.",
+   "Spostamenti rilevabili segnati nella tabella (Holm).": "Обнаруживаемые сдвиги отмечены в таблице (Холм).",
+   "Nessuno spostamento rilevabile tra livelli adiacenti.": "Обнаруживаемых сдвигов между соседними уровнями нет.",
+   "tutte (solo precisione)": "все (только кучность)",
+   "↕ spostamento": "↕ сдвиг",
+   "≈ costante": "≈ стабильно",
+   "? non si può dire": "? нельзя сказать",
+   "la carica (gr) nei dati di ricarica o la carica per foro": "навеской (гран) в данных снаряжения или навеской для каждой пробоины",
+   "palla e polvere": "пуля и порох",
+   "palla, polvere e carica": "пуля, порох и навеска",
+   "Con un colpo per livello (o quasi) la dispersione non si può stimare: niente spostamenti né tratti costanti. Servono almeno 2 colpi in qualche livello, meglio 3–5 per livello.": "При одном выстреле на уровень (или почти) рассеивание оценить нельзя: ни сдвигов, ни стабильных участков. Нужно хотя бы 2 выстрела на некоторых уровнях, лучше 3–5 на уровень.",
+   ": la pendenza è rilevabile.": ": наклон обнаруживается.",
+   ": con questi dati la pendenza non è distinguibile da zero.": ": по этим данным наклон не отличим от нуля.",
+   "Imposta una tolleranza per cercare i tratti in cui il punto d'impatto resta costante.": "Задайте допуск, чтобы искать участки, где точка попадания остаётся стабильной.",
+   "Distanze diverse: si confronta solo la precisione (metrica angolare). Scegli una distanza per il punto d'impatto.": "Разные дистанции: сравнивается только кучность (угловая мера). Выберите дистанцию для точки попадания.",
+   "Precisione: serve almeno un secondo livello con un gruppo da 3 colpi o più.": "Кучность: нужен хотя бы второй уровень с группой из 3 выстрелов или больше.",
+   "Test di ricarica": "Тест снаряжения",
+   "Il test di ricarica è disponibile in Modalità Esperto.": "Тест снаряжения доступен в режиме «Эксперт».",
+   "Servono 4 angoli (ora {0}).": "Нужно 4 угла (сейчас {0}).",
+   "Bersaglio {0}: trascina i 4 punti sul centro dei marcatori se serve, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla.": "Мишень {0}: при необходимости перетащите 4 точки в центр маркеров, затем Enter или «✓ Применить коррекцию». Backspace = убрать последнюю · Esc = отмена.",
+   "Rettangolo {0}": "Прямоугольник {0}",
+   "Test di ricarica · {0}": "Тест снаряжения · {0}",
+   "Munizione: {0} · {1} {2} · POI rispetto alla mira con la regolazione di partenza (+ = in alto / a destra), IC {3}%": "Патрон: {0} · {1} {2} · точка попадания относительно точки прицеливания при исходной выверке (+ = вверх / вправо), ДИ {3}%",
+   "POI vert. ({0})": "ТП верт. ({0})",
+   "POI orizz. ({0})": "ТП гориз. ({0})",
+   "Tratto costante dimostrato {0}–{1} (entro ±{2} {3}, TOST).": "Доказан стабильный участок {0}–{1} (в пределах ±{2} {3}, TOST).",
+   "Nessun tratto costante dimostrato entro ±{0} {1}.": "Стабильный участок в пределах ±{0} {1} не доказан.",
+   "Precisione per livello · {0}": "Кучность по уровням · {0}",
+   "<div class=\"muted\">Servono gruppi con {0}, scala, distanza e punto di mira, in questa sessione o nello storico. La munizione deve essere la stessa ({1}).</div>": "<div class=\"muted\">Нужны группы с {0}, масштабом, дистанцией и точкой прицеливания, в этой сессии или в истории. Патрон должен быть тем же ({1}).</div>",
+   "{0} nei dati di ricarica": "{0} в данных снаряжения",
+   "<b>{0}</b> livelli di {1} · <b>{2}</b> colpi a {3} {4}": "<b>{0}</b> уровней ({1}) · <b>{2}</b> выстрелов на {3} {4}",
+   "Dispersione tra colpi dello stesso livello (rumore): σ verticale {0} {1}, orizzontale {2} {3} (ν = {4}).": "Рассеивание между выстрелами одного уровня (шум): σ по вертикали {0} {1}, по горизонтали {2} {3} (ν = {4}).",
+   "Andamento: il punto d'impatto verticale cambia di <b>{0} {1} per {2}</b> (IC {3}% {4} … {5})": "Тенденция: вертикальная точка попадания меняется на <b>{0} {1} на {2}</b> (ДИ {3}% {4} … {5})",
+   "Spostamenti rilevabili (Holm, α {0}%): ": "Обнаруживаемые сдвиги (Холм, α {0}%): ",
+   "{0} {1} in verticale": "{0} {1} по вертикали",
+   "{0} {1} in orizzontale": "{0} {1} по горизонтали",
+   "<span class=\"lt-v eq\">Tratto costante dimostrato</span>: <b>{0}–{1}</b> ({2} livelli, {3} colpi): tutte le differenze verticali stanno entro ±{4} {5} (TOST, α {6}%).": "<span class=\"lt-v eq\">Доказан стабильный участок</span>: <b>{0}–{1}</b> ({2} уровней, {3} выстрелов): все вертикальные разницы в пределах ±{4} {5} (TOST, α {6}%).",
+   "Nessun tratto costante dimostrato entro ±{0} {1}": "Стабильный участок в пределах ±{0} {1} не доказан",
+   ": con σ verticale {0} {1} servono circa <b>{2}</b> colpi per livello per dimostrarlo (se la differenza vera è zero, potenza 80%).": ": при вертикальной σ {0} {1} для доказательства нужно около <b>{2}</b> выстрелов на уровень (если истинная разница равна нулю, мощность 80%).",
+   "Esclusi: {0} gruppi senza punto di mira o scala, {1} con click per foro diversi o senza valore click.": "Исключены: {0} групп без точки прицеливания или масштаба, {1} с разными кликами по пробоинам или без цены клика.",
+   "Precisione: <b>{0}</b> ha il {1} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).": "Кучность: у <b>{0}</b> наименьший {1}, и его интервал не перекрывается с интервалами других уровней: разница, вероятно, реальна (осторожный критерий).",
+   "Precisione: gli intervalli del {0} si sovrappongono, con questi colpi <b>non si può dire</b> quale livello sia più preciso (meglio 2–3 gruppi da 5–10 colpi per livello).": "Кучность: интервалы ({0}) перекрываются, по этим выстрелам <b>нельзя сказать</b>, какой уровень кучнее (лучше 2–3 группы по 5–10 выстрелов на уровень).",
+   "differenza verticale {0} ± {1} {2} (IC {3}%) · p verticale {4}, orizzontale {5}": "вертикальная разница {0} ± {1} {2} (ДИ {3}%) · p по вертикали {4}, по горизонтали {5}",
+   "<div class=\"tscroll\"><table class=\"cmp lt-tab\"><thead><tr><th class=\"x\">{0}</th><th class=\"x\">Colpi</th>\n      <th class=\"x\" title=\"Punto d'impatto medio rispetto alla mira con la regolazione di partenza (+ = in alto), con IC\">POI vert. ({1})</th><th class=\"x\" title=\"+ = a destra\">POI orizz. ({2})</th>\n      <th class=\"x\" title=\"Differenza del POI verticale dal livello precedente\">Δ vert.</th><th class=\"x\">Rispetto al precedente</th>\n      <th class=\"x\" title=\"Dalla σ combinata dei gruppi dello stesso livello, con IC\">{3} ({4})</th></tr></thead><tbody>{5}</tbody></table></div>": "<div class=\"tscroll\"><table class=\"cmp lt-tab\"><thead><tr><th class=\"x\">{0}</th><th class=\"x\">Выстрелы</th>\n      <th class=\"x\" title=\"Средняя точка попадания относительно точки прицеливания при исходной выверке (+ = вверх), с ДИ\">ТП верт. ({1})</th><th class=\"x\" title=\"+ = вправо\">ТП гориз. ({2})</th>\n      <th class=\"x\" title=\"Разница вертикальной ТП с предыдущим уровнем\">Δ верт.</th><th class=\"x\">По сравнению с предыдущим</th>\n      <th class=\"x\" title=\"По объединённой σ групп одного уровня, с ДИ\">{3} ({4})</th></tr></thead><tbody>{5}</tbody></table></div>",
+   "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">POI = punto d'impatto rispetto alla mira con la regolazione di partenza (i click impostati sono tolti), IC {0}% dalla dispersione comune. «↕ spostamento»: differenza dal livello precedente rilevabile (test t, correzione di Holm su tutti i confronti). «≈ costante»: l'IC al {1}% della differenza verticale sta dentro ±tolleranza (TOST). «? non si può dire»: né l'uno né l'altro. Non è la ricerca di «nodi»: un tratto costante dice solo che lì, con questi colpi, il punto d'impatto non è cambiato più della tolleranza (help «Test di ricarica»).</div>": "<div class=\"muted\" style=\"font-size:11.5px;margin-top:4px\">ТП = точка попадания относительно точки прицеливания при исходной выверке (выставленные клики вычтены), ДИ {0}% по общему рассеиванию. «↕ сдвиг»: обнаруживаемая разница с предыдущим уровнем (t-критерий, поправка Холма на все сравнения). «≈ стабильно»: ДИ {1}% вертикальной разницы лежит в пределах ±допуска (TOST). «? нельзя сказать»: ни то, ни другое. Это не поиск «узлов»: стабильный участок говорит лишь, что там, по этим выстрелам, точка попадания изменилась не больше допуска (техническая справка на итальянском, «Test di ricarica»).</div>",
+   "POI verticale ({0})": "Вертикальная ТП ({0})",
+   "{0} · {1} colpi · POI verticale {2} {3}{4} · orizzontale {5}": "{0} · {1} выстр. · вертикальная ТП {2} {3}{4} · горизонтальная {5}",
+   "● media del livello con IC {0}% · punti piccoli = fori · linea tratteggiata = mira · arancio = spostamento rilevabile · fascia verde = tratto costante dimostrato (±{1} {2}).": "● среднее уровня с ДИ {0}% · мелкие точки = пробоины · пунктир = точка прицеливания · оранжевый = обнаруживаемый сдвиг · зелёная полоса = доказанный стабильный участок (±{1} {2}).",
+   "griglia {0} {1} · + = a destra / in alto": "сетка {0} {1} · + = вправо / вверх",
+   "{0} · {1} colpi · baricentro {2} ; {3} {4}": "{0} · {1} выстр. · центр {2} ; {3} {4}",
+   "Baricentri in ordine di {0} (dal chiaro allo scuro, con l'etichetta del livello) e croci = IC {1}% in orizzontale e verticale; punti chiari = fori; + al centro = mira.": "Центры по порядку ({0}; от светлого к тёмному, с подписью уровня) и кресты = ДИ {1}% по горизонтали и вертикали; светлые точки = пробоины; + в центре = точка прицеливания.",
+   "<b>2. Sistema l'immagine</b> (Gestione immagine): <b>📐 Raddrizza</b> (<kbd>5</kbd>) con 2 punti su una linea che deve risultare orizzontale o verticale, «Rotazione» per la regolazione fine e ⟲/⟳ 90° per le foto girate; <b>ritaglio</b> per togliere lo sfondo; <b>distorsione dell'obiettivo</b> da punti lungo linee dritte vicino ai bordi; foto di sbieco: <b>⬚ Prospettiva</b> (<kbd>6</kbd>), dimensioni reali di un rettangolo visibile e i suoi 4 angoli, da ritoccare trascinandoli prima di <b>✓ Applica correzione</b> (<kbd>Invio</kbd>; imposta anche la scala). I punti già inseriti seguono la foto. Con un <b>bersaglio da allenamento</b> stampato dall'app (Configurazione sessione › Bersagli da stampare) basta <b>⬚ Usa il codice</b>, 4 clic sui marcatori e <kbd>Invio</kbd>: prospettiva, scala, distanza e mire sono impostate dal codice.": "<b>2. Подготовьте изображение</b> (Обработка изображения): <b>📐 Выровнять</b> (<kbd>5</kbd>) по 2 точкам на линии, которая должна стать горизонтальной или вертикальной, «Поворот» для точной подстройки и ⟲/⟳ 90° для повёрнутых фото; <b>обрезка</b>, чтобы убрать фон; <b>дисторсия объектива</b> по точкам вдоль прямых линий у краёв; фото под углом: <b>⬚ Перспектива</b> (<kbd>6</kbd>), реальные размеры видимого прямоугольника и его 4 угла, которые можно поправить перетаскиванием перед <b>✓ Применить коррекцию</b> (<kbd>Enter</kbd>; задаёт и масштаб). Уже поставленные точки следуют за фото. С <b>тренировочной мишенью</b>, напечатанной приложением (Настройка сессии › Мишени для печати), достаточно <b>⬚ Использовать код</b>, 4 щелчков по маркерам и <kbd>Enter</kbd>: перспектива, масштаб, дистанция и точки прицеливания задаются кодом.",
+   "<b>8. Analizza e confronta</b>: <b>📊 Grafici del gruppo</b> (<kbd>A</kbd>) con dispersione, istogramma, orologio, polare, densità, diagnostica, stabilità, ruota degli errori e reticolo con holdover; <b>📈 Confronto tra gruppi</b> (<kbd>C</kbd>, Modalità Esperto) con tabella e andamento anche dello storico, quanti colpi servono per riconoscere una differenza, riepilogo per arma, dope card e calcolatore balistico, confronto visivo e simulazione Monte Carlo; <b>🧪 Test di ricarica</b> (<kbd>P</kbd>, Modalità Esperto) con i livelli di carica o di seduta in ordine: punto d'impatto, spostamenti, tratti costanti, precisione e correlazioni. <kbd>Esc</kbd> torna all'immagine.": "<b>8. Анализируйте и сравнивайте</b>: <b>📊 Графики группы</b> (<kbd>A</kbd>) — рассеивание, гистограмма, часы, полярный график, плотность, диагностика, стабильность, круг ошибок и сетка с выносами; <b>📈 Сравнение групп</b> (<kbd>C</kbd>, режим «Эксперт») — таблица и динамика, в том числе по истории, сколько выстрелов нужно, чтобы обнаружить разницу, сводка по оружию, таблица поправок и баллистический калькулятор, визуальное сравнение и моделирование Монте-Карло; <b>🧪 Тест снаряжения</b> (<kbd>P</kbd>, режим «Эксперт») — уровни навески или посадки по порядку: точка попадания, сдвиги, стабильные участки, кучность и корреляции. <kbd>Esc</kbd> возвращает к изображению.",
+   "<b>Scorciatoie – pagine e file</b>: <kbd>A</kbd> grafici del gruppo · <kbd>C</kbd> confronto · <kbd>P</kbd> test di ricarica · <kbd>H</kbd> help tecnico · <kbd>V</kbd> colpi da rivedere (<kbd>,</kbd> / <kbd>.</kbd> precedente / successivo) · <kbd>/</kbd> ricerca · <kbd>Ctrl+O</kbd> carica foto · <kbd>Ctrl+S</kbd> salva la sessione ZIP · <kbd>Esc</kbd> chiude finestre e pagine.": "<b>Клавиши – страницы и файлы</b>: <kbd>A</kbd> графики группы · <kbd>C</kbd> сравнение · <kbd>P</kbd> тест снаряжения · <kbd>H</kbd> техническая справка · <kbd>V</kbd> выстрелы для проверки (<kbd>,</kbd> / <kbd>.</kbd> предыдущий / следующий) · <kbd>/</kbd> поиск · <kbd>Ctrl+O</kbd> загрузить фото · <kbd>Ctrl+S</kbd> сохранить сессию ZIP · <kbd>Esc</kbd> закрывает окна и страницы.",
+   "✓ Applica correzione": "✓ Применить коррекцию",
+   "🧪 Test di ricarica": "🧪 Тест снаряжения",
+   "📊 Gruppo": "📊 Группа",
+   "📈 Confronto": "📈 Сравнение",
+   "Test di ricarica · livelli in ordine (ladder, OCW, seduta)": "Тест снаряжения · уровни по порядку (лесенка, OCW, посадка)",
+   "Tolleranza ±": "Допуск ±",
+   "Punto d'impatto verticale per livello, con IC": "Вертикальная точка попадания по уровням, с ДИ",
+   "Baricentri dei livelli rispetto alla mira": "Центры уровней относительно точки прицеливания",
+   "Clicca i 4 angoli del rettangolo di riferimento, in qualsiasi ordine (tasto 6); con una correzione attiva ripropone i suoi 4 angoli da ritoccare": "Кликните 4 угла эталонного прямоугольника в любом порядке (клавиша 6); при включённой коррекции снова показывает её 4 угла для правки",
+   "Applica la correzione con i 4 angoli messi (Invio); prima puoi trascinarli per correggerli": "Применить коррекцию по поставленным 4 углам (Enter); перед этим их можно перетащить для правки",
+   "Apre a schermo intero il confronto tra i gruppi: tabella, andamento, quanti colpi servono, dope card e calcolatore balistico, confronto visivo, Monte Carlo (tasto C)": "Открывает на весь экран сравнение групп: таблица, динамика, сколько нужно выстрелов, таблица поправок и баллистический калькулятор, визуальное сравнение, Монте-Карло (клавиша C)",
+   "Apre a schermo intero il test di ricarica: livelli di carica o di seduta in ordine, punto d'impatto, precisione e correlazioni (tasto P)": "Открывает на весь экран тест снаряжения: уровни навески или посадки по порядку, точка попадания, кучность и корреляции (клавиша P)",
+   "Pagine della vista": "Страницы вида",
+   "Grafici del gruppo attivo (tasto A)": "Графики активной группы (клавиша A)",
+   "Confronto tra gruppi (tasto C)": "Сравнение групп (клавиша C)",
+   "Test di ricarica: livelli di carica o di seduta in ordine (tasto P)": "Тест снаряжения: уровни навески или посадки по порядку (клавиша P)",
+   "Carica: a parità di palla e polvere. Seduta (salto dalle righe, CBTO, COAL): a parità di palla, polvere e carica": "Навеска: при той же пуле и порохе. Посадка (заход в нарезы, CBTO, COAL): при той же пуле, порохе и навеске",
+   "Il punto d'impatto si confronta alla stessa distanza; «tutte» = solo la precisione, con gruppi a distanze diverse": "Точка попадания сравнивается на одной дистанции; «все» = только кучность, с группами на разных дистанциях",
+   "Unità angolare": "Угловая единица",
+   "Misura della precisione": "Мера кучности",
+   "Differenza di punto d'impatto verticale che per te è trascurabile: un tratto è «costante» solo se i dati mostrano che tutte le sue differenze stanno dentro questo margine": "Разница вертикальной точки попадания, которую вы считаете несущественной: участок «стабилен», только если данные показывают, что все его разницы лежат в этих пределах",
+   "Punto d'impatto verticale in funzione della variabile di ricarica": "Вертикальная точка попадания в зависимости от переменной снаряжения",
+   "Baricentri dei livelli sul piano del bersaglio, in ordine": "Центры уровней на плоскости мишени, по порядку",
+   "Precisione in funzione della variabile di ricarica": "Кучность в зависимости от переменной снаряжения"
   }/*END-RU-DICT*/;
   const DICT = { en: EN, ru: RU };
   const LANGS = ["it", "en", "ru"];
@@ -9693,7 +9955,7 @@ const COL_HOV = "#0ea5e9";   // evidenziazione condivisa (azzurro: distinta dal 
 const HOV = { gid: null, ids: new Set(), src: null };
 const TR = { pending: null };   // bersagli da allenamento: codice in attesa dei 4 marcatori (modalità Prospettiva)
 const DENS = { sec: {} };   // 1.28.0: densità scelte per sezione (chiave = id della sezione o «ana-group» / «ana-cmp»)
-const APP_VERSION = "1.28.0";
+const APP_VERSION = "1.29.0";
 // formato della sessione: 1 = foto originale; 2 = foto ruotata (campo «rotation»); 3 = correzione prospettica (campo «persp»).
 // Si scrive il formato più basso che basta, così le sessioni senza le funzioni nuove restano leggibili dalle versioni precedenti.
 const SESSION_FORMAT = 4;
@@ -9739,6 +10001,7 @@ const state = {
   lensLines: [],        // calibrazione della distorsione in corso: linee di punti (px della foto originale)
   persp: null,          // correzione prospettica {src: 4 angoli in px della foto ORIGINALE, wMm, hMm} o null
   perspPts: [],         // angoli già cliccati con lo strumento «Prospettiva» (temporanei, non nella storia)
+  perspEdit: null,      // 1.29.0: {moved} = angoli proposti dalla correzione attiva (per «invariata» senza spostamenti)
   busy: false,          // rettifica in corso: niente disegno né input
   sessionId: null,      // identificativo della sessione (archivio: stessa sessione = stessa voce)
   savedSig: "",         // firma dello stato all'ultimo salvataggio/caricamento da file (per «modifiche non salvate»)
@@ -9951,6 +10214,7 @@ function params() {
     rtType: $("rtType").value, rtStep: num("rtStep"), rtUnit: $("rtUnit").value, rtLab: num("rtLab"), rtPlane: $("rtPlane").value,
     rtCal: num("rtCal"), rtMag: num("rtMag"), rtSrc: $("rtSrc").value, rtWind: $("rtWind").checked,
     /* coneSrc, coneDists: cono rimosso nella 1.21.0 */ corPair: $("corPair").value,
+    ltVar: $("ltVar").value, ltUnit: $("ltUnit").value, ltMetric: $("ltMetric").value, ltTol: $("ltTol").value,   // 1.29.0: test di ricarica
     // dalla 1.15.0: alone di incertezza, scala sulla foto, note nel report
     haloOn: $("haloOn").checked, smOn: $("smOn").checked, smKind: $("smKind").value, smLen: $("smLen").value, smUnit: $("smUnit").value, smPos: $("smPos").value,
     smExport: $("smExport").checked, notesReport: $("notesReport").checked,
@@ -9970,7 +10234,7 @@ function setParams(p) {
     scoreTarget: "scoreTarget", scoreD10: "scoreD10", scoreStep: "scoreStep", scoreInner: "scoreInner",
     ipscPF: "ipscPF", silScale: "silScale", vitalPreset: "vitalPreset", vitalW: "vitalW", vitalH: "vitalH",
     visLayout: "visLayout", visRef: "visRef", visUnit: "visUnit", rtType: "rtType", rtStep: "rtStep", rtUnit: "rtUnit", rtLab: "rtLab",
-    rtPlane: "rtPlane", rtCal: "rtCal", rtMag: "rtMag", rtSrc: "rtSrc", corPair: "corPair",
+    rtPlane: "rtPlane", rtCal: "rtCal", rtMag: "rtMag", rtSrc: "rtSrc", corPair: "corPair", ltVar: "ltVar", ltUnit: "ltUnit", ltMetric: "ltMetric", ltTol: "ltTol",
     smKind: "smKind", smLen: "smLen", smUnit: "smUnit", smPos: "smPos",
     qiMrRef: "qiMrRef", qiMrUnit: "qiMrUnit", qiDRef: "qiDRef", qiDUnit: "qiDUnit", qiWP: "qiWP", qiDec: "qiDec", qiClasses: "qiClasses",
     diagHand: "diagHand", diagRef: "diagRef", balDist: "balDist", mcMax: "mcMax", mcN: "mcN", mcUnit: "mcUnit", mcAt: "mcAt", hierUnit: "hierUnit" }))
@@ -9994,6 +10258,9 @@ function setParams(p) {
   syncCaliberPreset();
   // preset non più presente (es. «10 × 10 mm» fino alla 1.13): le misure restano, il preset diventa «Personalizzato»
   if (![...$("perspPreset").options].some(o => o.value === $("perspPreset").value)) $("perspPreset").value = "custom";
+  // 1.29.0: «Ladder / OCW» non è più una relazione delle correlazioni (ora è la pagina «Test di ricarica»)
+  for (const [id, def] of [["corPair", "vcharge"], ["ltVar", "charge"], ["ltUnit", "MOA"], ["ltMetric", "cep"]]) if (![...$(id).options].some(o => o.value === $(id).value)) $(id).value = def;
+  $("ltUnit").dataset.prev = $("ltUnit").value;
 }
 /** Distanza di un gruppo nell'unità della sessione (gruppi senza distanza propria: quella del campo). */
 const gDist = g => g && g.dist > 0 ? g.dist : params().shotDist;
@@ -10370,9 +10637,49 @@ async function removePersp() {
   fitView();
   toast(hadManual ? _t("Correzione prospettica rimossa.") : _t("Correzione prospettica rimossa: la scala veniva dal rettangolo, rifai la calibrazione."));
 }
+/* 1.29.0: angoli trascinabili, applicazione esplicita, ritocco della correzione attiva. Con una correzione attiva gli
+   angoli proposti sono quelli del rettangolo sulla foto rettificata: applyPersp li riporta sulla foto originale
+   (worldToOrig), quindi spostarli e riapplicare ricalcola la correzione da capo e i punti seguono. */
+/** Indice dell'angolo della prospettiva sotto il punto dello schermo, o −1. */
+function perspHit(x, y) {
+  if (state.mode !== "persp") return -1;
+  let best = -1, bd = HANDLE_HIT + 3;
+  state.perspPts.forEach((p, i) => { const q = toScreen(p), d = Math.hypot(q.x - x, q.y - y); if (d <= bd) { bd = d; best = i; } });
+  return best;
+}
+/** Entrando nello strumento con una correzione attiva (e senza bersaglio da allenamento in attesa): i suoi 4 angoli. */
+function perspStartEdit() {
+  state.perspEdit = null;
+  const R = state.persp && !TR.pending ? perspR() : null;
+  if (!R) return;
+  state.perspPts = [{ x: R.ox, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy }, { x: R.ox + R.wMm * R.k, y: R.oy + R.hMm * R.k }, { x: R.ox, y: R.oy + R.hMm * R.k }].map(imgToWorld);
+  state.perspEdit = { moved: false };
+  if (!(parseFloat($("perspW").value) === state.persp.wMm && parseFloat($("perspH").value) === state.persp.hMm)) {
+    $("perspW").value = state.persp.wMm; $("perspH").value = state.persp.hMm; $("perspW").dispatchEvent(new Event("input"));
+  }
+}
+/** Stato del pulsante «Applica»; true = ci sono i 4 angoli. */
+function perspUI() {
+  const four = state.mode === "persp" && state.perspPts.length === 4;
+  if ($("bPerspApply")) $("bPerspApply").disabled = !four || state.busy;
+  return four;
+}
+/** «✓ Applica correzione» / Invio: con i 4 angoli applica la prospettiva (e il bersaglio da allenamento in attesa). */
+async function applyPerspPts() {
+  if (state.mode !== "persp" || state.perspPts.length !== 4 || state.busy) { if (state.mode === "persp") toast(_T`Servono 4 angoli (ora ${state.perspPts.length}).`); return false; }
+  const E = state.perspEdit, tp = TR.pending;
+  if (E && !E.moved && state.persp && parseFloat($("perspW").value) === state.persp.wMm && parseFloat($("perspH").value) === state.persp.hMm) {
+    setMode(state.prevMode); toast(_t("Correzione prospettica invariata.")); return true;   // niente da rifare (e niente voce nella storia)
+  }
+  const ok = await applyPersp(state.perspPts.slice());
+  if (ok) { state.perspPts = []; state.perspEdit = null; setMode(state.prevMode); if (tp) trApply(tp); }
+  else { updateHint(); requestDraw(); }   // gli angoli restano: si possono correggere
+  return ok;
+}
 function refreshPersp() {
   const el = $("perspStatus"), R = perspR();
   $("bPerspOff").disabled = !state.persp;
+  $("bPersp").textContent = state.persp ? _t("⬚ Ritocca i 4 angoli") : _t("⬚ Correggi con 4 punti");
   if (!state.persp || !R) { el.className = "status"; el.textContent = _t("Nessuna correzione prospettica."); return; }
   el.className = "status ok";
   el.textContent = _T`Correzione attiva: rettangolo ${fmt(state.persp.wMm, 1)} × ${fmt(state.persp.hMm, 1)} mm · foto rettificata ${R.W}×${R.Hpx} px · ${fmt(R.k, 2)} px/mm` +
@@ -10381,14 +10688,21 @@ function refreshPersp() {
 /** Strumento «Prospettiva»: angoli già cliccati, poligono e linea elastica verso il cursore. */
 function drawPerspGuide() {
   if (state.mode !== "persp" || !state.perspPts.length) return;
-  const g = ctx2d, P = state.perspPts.map(toScreen), h = state.hover;
+  const g = ctx2d, P = state.perspPts.map(toScreen), h = state.hover, four = P.length === 4;
   g.save();
+  // con 4 angoli il quadrilatero è chiuso (in ordine attorno al centro, qualunque sia l'ordine dei clic) e niente linea elastica
+  const Q = four ? (() => { const cx = P.reduce((a, p) => a + p.x, 0) / 4, cy = P.reduce((a, p) => a + p.y, 0) / 4; return [...P].sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx)); })() : P;
+  if (four) { g.fillStyle = "rgba(250,204,21,.10)"; g.beginPath(); Q.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y)); g.closePath(); g.fill(); }
   g.strokeStyle = "#facc15"; g.lineWidth = 2; g.setLineDash([8, 5]);
-  g.beginPath(); P.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
-  if (h) g.lineTo(h.x, h.y);
-  if (h && P.length === 3) g.lineTo(P[0].x, P[0].y);
+  g.beginPath(); Q.forEach((p, i) => i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y));
+  if (four) g.closePath();
+  else { if (h) g.lineTo(h.x, h.y); if (h && P.length === 3) g.lineTo(P[0].x, P[0].y); }
   g.stroke(); g.setLineDash([]);
-  P.forEach((p, i) => { crossMarker(g, p, "#facc15", true); label(g, p.x + 9, p.y - 9, String(i + 1), "#a16207", 12); });
+  P.forEach((p, i) => {
+    crossMarker(g, p, "#facc15", true);
+    g.strokeStyle = "rgba(0,0,0,.75)"; g.lineWidth = 1.5; g.beginPath(); g.arc(p.x, p.y, HANDLE_HIT, 0, 2 * Math.PI); g.stroke();   // 1.29.0: area da trascinare
+    label(g, p.x + 11, p.y - 11, String(i + 1), "#a16207", 12);
+  });
   g.restore();
 }
 /** Contorno del rettangolo di riferimento (verde tratteggiato) sulla foto rettificata. */
@@ -11153,7 +11467,13 @@ canvas.addEventListener("pointerdown", e => {
   // «Sposta sagoma» (dalla 1.10.0): trascinare sposta il bersaglio del gruppo attivo, Shift+trascinare lo ruota
   const tg = activeGroup(), tcc = calcContext();
   if (state.mode === "tgt" && e.button === 0 && tg && tg.poa && tcc.pxPerMm) { ptr.kind = "tgt"; ptr.rot = e.shiftKey; ptr.t0 = tgtOf(tg); ptr.w0 = toImage(x, y); ptr.ppm = tcc.pxPerMm; }
-  if (state.mode === "crop" && e.button === 0) { ptr.kind = "crop"; ptr.w0 = toImage(x, y); }
+  if (state.mode === "crop" && e.button === 0) {   // 1.29.0: sulle maniglie o dentro il rettangolo lo si modifica, fuori se ne disegna uno nuovo
+    const h = cropHit(x, y); ptr.kind = h ? "cropH" : "crop"; ptr.w0 = toImage(x, y); if (h) { ptr.h = h; ptr.r0 = { ...state.cropRect }; }
+  }
+  if (state.mode === "persp" && e.button === 0) {   // 1.29.0: gli angoli già messi si trascinano
+    const i = perspHit(x, y);
+    if (i >= 0) { const w0 = toImage(x, y), q = state.perspPts[i]; ptr.kind = "perspH"; ptr.i = i; ptr.grab = { dx: q.x - w0.x, dy: q.y - w0.y }; }
+  }
   if (hit) { state.selected = hit; refreshLists(); if (hit.kind === "note") focusNote(hit.id); requestDraw(); }
   e.preventDefault();
 });
@@ -11168,6 +11488,11 @@ canvas.addEventListener("pointermove", e => {
       if (p) { const w = toImage(x, y), G = ptr.grab, q = clampToImage(G ? { x: w.x + G.dx, y: w.y + G.dy } : w); p.x = q.x; p.y = q.y; refreshResults(); }
     } else if (ptr.kind === "crop") {
       state.cropRect = cropRectNorm(ptr.w0, toImage(x, y)); refreshCrop();
+    } else if (ptr.kind === "cropH") {
+      state.cropRect = cropDrag(ptr, toImage(x, y)); refreshCrop();
+    } else if (ptr.kind === "perspH") {
+      const w = toImage(x, y); state.perspPts[ptr.i] = clampToImage({ x: w.x + ptr.grab.dx, y: w.y + ptr.grab.dy });
+      if (state.perspEdit) state.perspEdit.moved = true;
     } else if (ptr.kind === "tgt") {
       const g = activeGroup(), w = toImage(x, y);
       if (ptr.rot) {
@@ -11187,7 +11512,8 @@ canvas.addEventListener("pointerup", e => {
   const { x, y } = localXY(e);
   const p = ptr; ptr = null;
   if ((p.kind === "point" || p.kind === "tgt") && p.moved) { commit(); requestDraw(); return; }
-  if (p.kind === "tgt" || p.kind === "crop") return;
+  if (p.kind === "tgt" || p.kind === "crop" || p.kind === "cropH") return;
+  if (p.kind === "perspH") { updateHint(); updateCursor(x, y); return; }
   if (!p.moved && p.button === 0 && !p.target) handleClick(toImage(x, y), e.altKey);
   updateCursor(x, y);
 });
@@ -11214,7 +11540,10 @@ function updateCursor(x, y) {
   if (!state.image) { canvas.style.cursor = "default"; return; }
   const h = !TOOL_MODES.includes(state.mode) ? hitTest(x, y) : null;
   if (h) canvas.style.cursor = isLocked(h) || !refPoint(h) ? "pointer" : "move";
-  else canvas.style.cursor = state.mode === "pan" ? "grab" : state.mode === "tgt" ? "move" : "crosshair";
+  else {
+    const ch = state.mode === "crop" ? cropHit(x, y) : null;   // 1.29.0: maniglie del ritaglio e angoli della prospettiva
+    canvas.style.cursor = ch ? CROP_CURSOR[ch] : state.mode === "persp" && perspHit(x, y) >= 0 ? "move" : state.mode === "pan" ? "grab" : state.mode === "tgt" ? "move" : "crosshair";
+  }
 }
 
 function handleClick(ip, alt = false) {
@@ -11265,10 +11594,9 @@ function handleClick(ip, alt = false) {
     if (!state.lensLines.length) state.lensLines.push([]);
     state.lensLines[state.lensLines.length - 1].push(worldToRaw(pt)); refreshLens(); updateHint(); requestDraw();
   } else if (state.mode === "persp") {
+    // 1.29.0: la correzione non parte più da sola al quarto clic: gli angoli si ritoccano, poi «✓ Applica correzione» o Invio
+    if (state.perspPts.length >= 4) { toast(_t("I 4 angoli ci sono già: trascinali per correggerli, poi «✓ Applica correzione» (Invio). Backspace toglie l'ultimo.")); return; }
     state.perspPts.push(pt); updateHint(); requestDraw();
-    if (state.perspPts.length < 4) return;
-    const pts = state.perspPts, tp = TR.pending; state.perspPts = [];
-    applyPersp(pts).then(ok => { if (ok) { setMode(state.prevMode); if (tp) trApply(tp); } else { updateHint(); requestDraw(); } });
   }
 }
 /* Visibilità dei gruppi (dalla 1.15.0): solo la vista principale (disegno e presa dei punti); calcoli, pannelli,
@@ -11296,7 +11624,8 @@ function setMode(m) {
   if (tool && !state.image) { toast(_t("Carica prima un'immagine.")); return; }
   if (tool && !TOOL_MODES.includes(state.mode)) state.prevMode = state.mode;
   if (m !== "align") state.alignP1 = null;
-  if (m !== "persp") { state.perspPts = []; TR.pending = null; }
+  if (m !== "persp") { state.perspPts = []; TR.pending = null; state.perspEdit = null; }
+  else if (state.mode !== "persp") perspStartEdit();   // 1.29.0: con una correzione attiva ripropone i suoi 4 angoli
   if (m !== "lens") state.lensLines = [];
   if (m !== "crop") state.cropRect = null;
   if (m !== "ruler") state.ruler = null;
@@ -11328,9 +11657,13 @@ function updateHint() {
     ruler: (() => { const I = rulerInfo(); return _t("Righello: clicca due punti per misurare (la misura non cambia fori né scala; clicca ancora per una nuova misura). Esc = fine.") + (I ? " — " + I.text : ""); })(),
     note: _t("Nota: clicca un foro (la nota lo segue) o una zona del bersaglio, poi scrivi il testo nella sezione «Note sull'immagine». Esc = fine."),
     dpick: _t("Dettaglio: clicca il punto della foto da osservare nella finestra di dettaglio. Esc = annulla."),
-    crop: _t("Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla."),
+    crop: state.cropRect && state.cropRect.w >= 16 ? _t("Ritaglio: trascina vertici e lati per ridimensionare il rettangolo, l'interno per spostarlo, fuori per disegnarne uno nuovo; Invio o «✓ Applica ritaglio» = taglia, Esc = annulla.")
+      : _t("Ritaglio: trascina un rettangolo attorno alla parte da tenere (mire e fori devono restarci dentro); Invio o «✓ Applica ritaglio» = taglia, Esc = annulla."),
     ref: state.calib.r1 && !state.calib.r2 ? _t("Riferimento di controllo: clicca il secondo estremo.") : _t("Riferimento di controllo: clicca i due estremi di una lunghezza nota diversa da quella della scala (es. il diametro di un anello). Esc = annulla."),
-    persp: TR.pending ? _T`Bersaglio ${TR.pending.code}: clicca il centro dei 4 marcatori a scacchi del foglio, in qualsiasi ordine (${state.perspPts.length}/4). Backspace = togli l'ultimo · Esc = annulla.` : _T`Prospettiva: clicca i 4 angoli del rettangolo di ${fmt(parseFloat($("perspW").value), 0)} × ${fmt(parseFloat($("perspH").value), 0)} mm, in qualsiasi ordine (${state.perspPts.length}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.`,
+    persp: perspUI() ? (TR.pending ? _T`Bersaglio ${TR.pending.code}: trascina i 4 punti sul centro dei marcatori se serve, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla.`
+      : state.perspEdit && !state.perspEdit.moved ? _t("Prospettiva attiva: trascina i 4 angoli del rettangolo per ritoccarla, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo (per rifarla da capo) · Esc = lascia com'è.")
+      : _t("Prospettiva: trascina gli angoli per correggerli, poi Invio o «✓ Applica correzione». Backspace = togli l'ultimo · Esc = annulla."))
+    : TR.pending ? _T`Bersaglio ${TR.pending.code}: clicca il centro dei 4 marcatori a scacchi del foglio, in qualsiasi ordine (${state.perspPts.length}/4). Backspace = togli l'ultimo · Esc = annulla.` : _T`Prospettiva: clicca i 4 angoli del rettangolo di ${fmt(parseFloat($("perspW").value), 0)} × ${fmt(parseFloat($("perspH").value), 0)} mm, in qualsiasi ordine (${state.perspPts.length}/4). La larghezza è il lato in alto. Backspace = togli l'ultimo · Esc = annulla.`,
   };
   h.textContent = msgs[state.mode];
 }
@@ -11430,7 +11763,7 @@ document.addEventListener("keydown", e => {
   if (anaOpen()) {
     if (k === "escape") { e.preventDefault(); closeAnalysis(); }
     else if (!typing && k === "t") toggleTheme();
-    else if (!typing && !e.ctrlKey && !e.metaKey && (k === "a" || k === "c")) openAnalysis(k === "c" ? "cmp" : "group");   // cambio pagina (1.21.0)
+    else if (!typing && !e.ctrlKey && !e.metaKey && (k === "a" || k === "c" || k === "p")) openAnalysis(k === "c" ? "cmp" : k === "p" ? "load" : "group");   // cambio pagina (1.21.0; P dalla 1.29.0)
     return;
   }
   if ((e.ctrlKey || e.metaKey) && k === "o") { e.preventDefault(); $("fImg").click(); return; }
@@ -11438,7 +11771,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "/" && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); const f = $("findIn"); f.focus(); f.select(); return; }
   if (k === "escape") { if (state.origin) { state.origin = null; refreshOriginUI(); refreshResults(); requestDraw(); return; } if (TOOL_MODES.includes(state.mode)) setMode(state.prevMode); return; }
   if (k === "enter" && state.mode === "crop") { e.preventDefault(); applyCrop(); return; }
-  if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); updateHint(); requestDraw(); return; }
+  if (k === "enter" && state.mode === "persp") { e.preventDefault(); applyPerspPts(); return; }
+  if (k === "backspace" && state.mode === "persp") { e.preventDefault(); state.perspPts.pop(); if (state.perspEdit) state.perspEdit.moved = true; updateHint(); requestDraw(); return; }
   if (state.mode === "lens" && (k === "enter" || k === "backspace")) {
     e.preventDefault();
     const L = state.lensLines;
@@ -11473,6 +11807,7 @@ document.addEventListener("keydown", e => {
   else if ((k === "-" || k === "_") && !e.ctrlKey && !e.metaKey) zoomStep(-1);
   else if (k === "a" && !e.ctrlKey && !e.metaKey) openAnalysis("group");
   else if (k === "c" && !e.ctrlKey && !e.metaKey) openCompare();
+  else if (k === "p" && !e.ctrlKey && !e.metaKey) openAnalysis("load");   // 1.29.0: test di ricarica
   else if (k === "h" && !e.ctrlKey && !e.metaKey) openHelp();
 });
 
@@ -11524,7 +11859,7 @@ async function setImage(name, dataUrl) {
   state.image = { name, w: bitmap.width, h: bitmap.height, dataUrl, bitmap };
   state.cropUndo = null; state.cropRect = null;   // una foto nuova chiude l'«Annulla ritaglio» (applyCrop lo reimposta)
   baseCache.clear(); srcCache.clear(); perspMemo.key = "";
-  state.persp = null; state.perspPts = []; state.lens = null; state.lensLines = [];
+  state.persp = null; state.perspPts = []; state.perspEdit = null; state.lens = null; state.lensLines = [];
   state.base = { w: bitmap.width, h: bitmap.height, bitmap }; state.baseKey = "orig";
   $("drop").style.display = "none";
   if (!$("tourAsk").hidden) tourMarkSeen();   // 1.23.0: chi carica una foto non ha bisogno dell'invito al tour
@@ -12508,7 +12843,7 @@ function applyUiMode(m) {
 function setUiMode(m) {
   applyUiMode(m);
   try { localStorage.setItem(UI_MODE_KEY, uiBasic() ? "basic" : "expert"); } catch { /* ignora */ }
-  if (uiBasic() && anaOpen() && anaPage() === "cmp") openAnalysis("group");
+  if (uiBasic() && anaOpen() && anaPage() !== "group") openAnalysis("group");
   if (find.q) findRun(find.q);
   refreshResults(); refreshSecFold(); requestDraw();
   toast(uiBasic() ? _t("Modalità Base: group size, correzione e punteggio. Le esportazioni restano complete.") : _t("Modalità Esperto: tutte le metriche e il confronto."));
@@ -12747,6 +13082,46 @@ function cropRectNorm(a, b) {
   const y0 = Math.round(cl(Math.min(a.y, b.y), B.y0, B.y1)), y1 = Math.round(cl(Math.max(a.y, b.y), B.y0, B.y1));
   return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
 }
+/* 1.29.0: rettangolo del ritaglio modificabile — maniglie sui vertici e a metà dei lati, lati presi in tutta la loro
+   lunghezza, trascinamento interno = spostamento (dentro la foto, dimensioni invariate). */
+const HANDLE_HIT = 9;   // px dello schermo attorno a una maniglia
+const CROP_CURSOR = { nw: "nwse-resize", se: "nwse-resize", ne: "nesw-resize", sw: "nesw-resize", n: "ns-resize", s: "ns-resize", e: "ew-resize", w: "ew-resize", move: "move" };
+function cropHandles(r) {
+  const x0 = r.x, y0 = r.y, x1 = r.x + r.w, y1 = r.y + r.h, xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
+  return [["nw", x0, y0], ["ne", x1, y0], ["se", x1, y1], ["sw", x0, y1], ["n", xm, y0], ["e", x1, ym], ["s", xm, y1], ["w", x0, ym]].map(([id, x, y]) => ({ id, x, y }));
+}
+/** Parte del rettangolo sotto il punto dello schermo (x, y): vertice, lato, «move» (dentro) o null. */
+function cropHit(x, y) {
+  const r = state.cropRect;
+  if (!r || state.mode !== "crop" || r.w < 1 || r.h < 1) return null;
+  for (const h of cropHandles(r).slice(0, 4)) { const q = toScreen(h); if (Math.abs(q.x - x) <= HANDLE_HIT && Math.abs(q.y - y) <= HANDLE_HIT) return h.id; }
+  const a = toScreen({ x: r.x, y: r.y }), b = toScreen({ x: r.x + r.w, y: r.y + r.h });
+  const inX = x >= a.x - HANDLE_HIT && x <= b.x + HANDLE_HIT, inY = y >= a.y - HANDLE_HIT && y <= b.y + HANDLE_HIT;
+  if (inY && Math.abs(x - a.x) <= HANDLE_HIT) return "w";
+  if (inY && Math.abs(x - b.x) <= HANDLE_HIT) return "e";
+  if (inX && Math.abs(y - a.y) <= HANDLE_HIT) return "n";
+  if (inX && Math.abs(y - b.y) <= HANDLE_HIT) return "s";
+  return x > a.x && x < b.x && y > a.y && y < b.y ? "move" : null;
+}
+/** Nuovo rettangolo trascinando la maniglia p.h (p.r0 = rettangolo all'inizio, p.w0 = punto mondo iniziale). */
+function cropDrag(p, w) {
+  const r0 = p.r0, dx = w.x - p.w0.x, dy = w.y - p.w0.y;
+  let L = r0.x, T = r0.y, Rr = r0.x + r0.w, B = r0.y + r0.h;
+  if (p.h === "move") {
+    const bb = worldBBox(), mx = clamp(dx, bb.x0 - L, Math.max(bb.x0 - L, bb.x1 - Rr)), my = clamp(dy, bb.y0 - T, Math.max(bb.y0 - T, bb.y1 - B));
+    return { x: Math.round(L + mx), y: Math.round(T + my), w: r0.w, h: r0.h };
+  }
+  if (p.h.includes("w")) L += dx;
+  if (p.h.includes("e")) Rr += dx;
+  if (p.h.includes("n")) T += dy;
+  if (p.h.includes("s")) B += dy;
+  return cropRectNorm({ x: L, y: T }, { x: Rr, y: B });   // oltre il lato opposto il rettangolo si ribalta
+}
+/** Dimensioni del rettangolo: px e, con la scala impostata, mm. */
+function cropSizeText(r) {
+  const k = calcContext(null).pxPerMm;
+  return `${r.w} × ${r.h} ${uL("px")}` + (k ? ` · ${fmt(r.w / k, 1)} × ${fmt(r.h / k, 1)} ${uL("mm")}` : "");
+}
 /** Punti che il rettangolo taglierebbe: mire e fori (obbligatori) e punti di scala/controllo (che possono restare fuori). */
 function cropOutside(r) {
   const out = p => p && (p.x < r.x || p.y < r.y || p.x > r.x + r.w || p.y > r.y + r.h);
@@ -12756,13 +13131,14 @@ function cropOutside(r) {
 }
 function refreshCrop() {
   const r = state.cropRect, el = $("cropStatus");
+  if (state.mode === "crop") updateHint();   // 1.29.0: il suggerimento cambia quando c'è un rettangolo da ritoccare
   $("bCrop").classList.toggle("primary", state.mode === "crop");
   $("bCropApply").disabled = !r || r.w < 16 || r.h < 16;
   $("bCropUndo").disabled = !state.cropUndo;
   if (r && r.w >= 16 && r.h >= 16) {
     const o = cropOutside(r);
     el.className = "status " + (o.shots ? "warn" : "ok");
-    el.textContent = _T`Rettangolo ${r.w} × ${r.h} px` + (o.shots ? _T` · ⚠ ${o.shots} punti (mire o fori) restano fuori: allarga il rettangolo` : "")
+    el.textContent = _T`Rettangolo ${cropSizeText(r)}` + _t(" · trascina vertici e lati per ridimensionarlo, l'interno per spostarlo") + (o.shots ? _T` · ⚠ ${o.shots} punti (mire o fori) restano fuori: allarga il rettangolo` : "")
       + (o.cal && !o.shots ? _T` · ${o.cal} punti di scala/controllo restano fuori dalla foto (la scala non cambia)` : "");
   } else if (state.cropUndo) { el.className = "status ok"; el.textContent = _T`Foto ritagliata: ${state.image.w} × ${state.image.h} px.`; }
   else { el.className = "status"; el.textContent = state.mode === "crop" ? _t("Trascina un rettangolo sulla foto.") : _t("Foto intera."); }
@@ -12774,8 +13150,12 @@ function drawCropGuide() {
   g.save(); g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.fillStyle = "rgba(0,0,0,.55)"; g.beginPath(); g.rect(0, 0, canvas.width / dpr, canvas.height / dpr); g.rect(a.x, a.y, b.x - a.x, b.y - a.y); g.fill("evenodd");
   for (const [col, w, d] of [["rgba(0,0,0,.8)", 3, []], ["#fde047", 1.5, [6, 4]]]) { g.strokeStyle = col; g.lineWidth = w; g.setLineDash(d); g.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y); }
+  // maniglie (1.29.0): quadratini sui vertici e a metà dei lati; quelle dei lati solo se il rettangolo non è minuscolo
+  const big = b.x - a.x > 40 && b.y - a.y > 40;
+  for (const hd of cropHandles(r).slice(0, big ? 8 : 4)) { const q = toScreen(hd), z = hd.id.length === 2 ? 4.5 : 3.5;
+    g.fillStyle = "#fde047"; g.strokeStyle = "rgba(0,0,0,.85)"; g.lineWidth = 1.5; g.fillRect(q.x - z, q.y - z, 2 * z, 2 * z); g.strokeRect(q.x - z, q.y - z, 2 * z, 2 * z); }
   g.restore();
-  label(g, a.x + 4, a.y + 14, `${r.w} × ${r.h} ${uL("px")}`, "#a16207", 12);
+  label(g, a.x + 8, a.y + 18, cropSizeText(r), "#a16207", 12);
 }
 /** Applica il ritaglio: nuova foto, punti spostati, prospettiva/distorsione/rotazione incorporate. */
 async function applyCrop() {
@@ -14226,11 +14606,25 @@ function buildReport(R, groups, p, cc, now) {
       [{ w: .1 }, { w: .14, align: "right" }, { w: .08, align: "right" }, { w: .14, align: "right" }, { w: .08, align: "right" }, { w: .05, align: "right" }, { w: .19 }, { w: .22 }]);
     R.image(chartCanvas((cv, W, H) => drawDopeChart(cv, W, H, dr, cc, u), 760, 260), R.cw, 460);
   }
-  const PL = chargeLevels();
+  const LD = ltData(), PL = { levels: LD.levels, unit: LD.unit, metric: LD.metric, v: LD.v, lvl: LD.lvl };
+  // 1.29.0: test di ricarica — punto d'impatto per livello, con gli esiti rispetto al livello precedente
+  if (LD.T && LD.T.k >= 2) {
+    const T = LD.T, U = uL(LD.unit);
+    R.heading(_T`Test di ricarica · ${ltVarName(LD.v)}`);
+    R.text(_T`Munizione: ${LD.lk === "*" ? _t("tutte le munizioni") : LD.lk} · ${fmt(distIn(LD.D, LD.du), 0)} ${uL(LD.du)} · POI rispetto alla mira con la regolazione di partenza (+ = in alto / a destra), IC ${fmt(LD.lvl * 100, 0)}%`, { size: 17, color: "#4b5563" });
+    R.table([ltVarName(LD.v), _t("Colpi"), _T`POI vert. (${U})`, _T`POI orizz. (${U})`, _t("Δ vert."), _t("Rispetto al precedente")],
+      T.levels.map((L, i) => { const P = i ? T.pairs[i - 1] : null;
+        return { bold: T.runs.some(Q => i >= Q.i && i <= Q.j), cells: [precLabel(L.x, LD.v), L.n, `${sgn(L.mv, 2)}${L.ciV != null ? ` ±${fmtA(L.ciV)}` : ""}`, `${sgn(L.mh, 2)}${L.ciH != null ? ` ±${fmtA(L.ciH)}` : ""}`, P ? sgn(P.dv, 2) : "", P && T.sp ? ltVerdictTxt[P.verdict]() : ""] }; }),
+      [{ w: .18 }, { w: .1, align: "right" }, { w: .2, align: "right" }, { w: .2, align: "right" }, { w: .12, align: "right" }, { w: .2 }]);
+    R.text(!T.sp ? _t("Con un colpo per livello la dispersione non si può stimare: nessun esito.")
+      : (T.runs.length ? T.runs.map(Q => _T`Tratto costante dimostrato ${precNum(Q.x0, LD.v)}–${precLabel(Q.x1, LD.v)} (entro ±${fmtA(LD.tol)} ${U}, TOST).`).join(" ") : LD.tol ? _T`Nessun tratto costante dimostrato entro ±${fmtA(LD.tol)} ${U}.` : "")
+        + " " + (T.pairs.some(P => P.verdict === "shift") ? _t("Spostamenti rilevabili segnati nella tabella (Holm).") : _t("Nessuno spostamento rilevabile tra livelli adiacenti.")), { size: 17, color: "#4b5563" });
+    R.image(chartCanvas((cv, W, H) => drawLtPoi(cv, W, H, LD), 760, 260), R.cw, 460);
+  }
   if (PL.levels.length) {
-    R.heading(PL.v === "jump" ? _t("Precisione e salto dalle righe") : _t("Precisione e carica"));
+    R.heading(_T`Precisione per livello · ${ltVarName(PL.v)}`);
     const best = PL.levels.reduce((a, b) => b.pool.val < a.pool.val ? b : a), distinct = PL.levels.length > 1 && PL.levels.every(L => L === best || best.pool.hi < L.pool.lo);
-    R.table([PL.v === "jump" ? _t("Salto dalle righe") : _t("Carica"), _t("Gruppi"), _t("Colpi"), `${PL.metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${PL.unit})`, _T`IC ${fmt(PL.lvl * 100, 0)}%`],
+    R.table([ltVarName(PL.v), _t("Gruppi"), _t("Colpi"), `${PL.metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${PL.unit})`, _T`IC ${fmt(PL.lvl * 100, 0)}%`],
       PL.levels.map(L => ({ bold: L === best && distinct, cells: [precLabel(L.x, PL.v), L.groups.length, L.shots, fmtA(L.pool.val), `${fmtA(L.pool.lo)}–${fmtA(L.pool.hi)}`] })),
       [{ w: .24 }, { w: .14, align: "right" }, { w: .14, align: "right" }, { w: .24, align: "right" }, { w: .24, align: "right" }]);
     R.text(PL.levels.length < 2 ? _t("Un solo livello: nessun confronto possibile.") : distinct ? _T`${precLabel(best.x, PL.v)}: valore più piccolo con intervallo che non si sovrappone agli altri (criterio prudente).`
@@ -14281,7 +14675,7 @@ function reportExtra(R) {
 /* ------------------------------ GRAFICI ------------------------------ */
 /* Tre grafici del gruppo attivo, disegnati su <canvas> (nessuna libreria):
    dispersione senza immagine, istogramma delle distanze dal centro, diagramma a orologio. */
-const CH = { hits: { pow: [], photo: [], polar: [], qq: [], scatter: [], hist: [], clock: [], trend: [], dope: [], charge: [], bal: [], mc: [], mcros: [], diag: [] } };
+const CH = { hits: { ltPoi: [], ltMap: [], pow: [], photo: [], polar: [], qq: [], scatter: [], hist: [], clock: [], trend: [], dope: [], charge: [], bal: [], mc: [], mcros: [], diag: [] } };
 function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function setupCanvas(cv, w, h) {
   const d = CH.dpr || window.devicePixelRatio || 1;   // CH.dpr: risoluzione forzata per il report PDF
@@ -14747,7 +15141,9 @@ function movingAverage(vals, N) {
 const fmtA = v => fmt(v, Math.abs(v) < 0.1 ? 3 : 2);
 const dIT = d => { if (!d) return "–"; const [y, m, g] = d.split("-"); return g ? `${g}/${m}/${y.slice(2)}` : d; };
 /** Pannelli della vista grafici che dipendono da tutti i gruppi: confronto, dope card, carica e precisione. */
-function drawCompare() { if (anaOpen() && anaPage() !== "cmp") return; drawCompareTable(); drawPower(); drawDope(); drawCharge(); drawCorr(); drawVisual(); drawBallistic(); drawMC(); drawHier(); /* drawHold(): nella pagina del gruppo dalla 1.21.0 · drawCone(): cono rimosso nella 1.21.0 */ }
+function drawCompare() {
+  if (anaOpen() && anaPage() === "load") { drawLoadTest(); drawCorr(); return; }   // 1.29.0: pagina «Test di ricarica»
+  if (anaOpen() && anaPage() !== "cmp") return; drawCompareTable(); drawPower(); drawDope(); drawVisual(); drawBallistic(); drawMC(); drawHier(); /* drawHold(): nella pagina del gruppo dalla 1.21.0 · drawCone(): cono rimosso nella 1.21.0 */ }
 /* 1.28.0: confronto per arma: filtro della tabella e riepilogo per arma (nome dell'arma nei dati del gruppo) */
 const weaponOf = r => String(((r && r.load) || {}).weapon || "").trim();
 function fillWeaponSelect(all) {
@@ -15002,61 +15398,233 @@ const jumpMm = L => { const x = parseFloat(String((L && L.jump) ?? "").replace("
 /** Unità di visualizzazione del salto: quella del gruppo attivo (predefinito pollici). */
 const jumpUnitShown = () => { const g = activeGroup(); return g && g.load && g.load.jumpUnit === "mm" ? "mm" : "in"; };
 const PREC_F = { cep: Math.sqrt(2 * Math.LN2), mr: Math.sqrt(Math.PI / 2) };   // σ → CEP, σ → raggio medio atteso
-function precVar() { return $("chgVar").value === "jump" ? "jump" : "charge"; }
-/** Etichetta di un livello della variabile (es. «44,50 gr», «0,020 in»). */
-function precLabel(x, v = precVar()) {
-  if (v === "charge") return `${fmt(x, 2)} gr`;
-  const u = jumpUnitShown();
-  return u === "mm" ? `${fmt(x, 2)} ${uL("mm")}` : `${fmt(x / 25.4, 3)} ${uL("in")}`;
-}
-function chargeLevels() {
-  const v = precVar(), metric = $("chgMetric").value === "mr" ? "mr" : "cep", F = PREC_F[metric];
-  const xOf = r => v === "jump" ? jumpMm(r.load) : chargeNum(r.load && r.load.charge);
-  const all = compareRows().filter(r => r.s2mm != null && r.nu >= 4 && r.distM > 0 && xOf(r) != null && (!r.hist || $("chgHist").checked));
-  const kOf = r => loadKey(r.load, v === "jump");   // seduta: a parità di palla, polvere e carica
-  const keys = [...new Set(all.map(kOf))].sort();
-  const g = activeGroup();
-  fillLoadSelect($("chgLoad"), keys, g ? loadKey(g.load, v === "jump") : "");
-  const key = $("chgLoad").value, unit = $("chgUnit").value, lvl = (params().ciLevel || 95) / 100;
-  const rows = all.filter(r => key === "*" || kOf(r) === key);
-  const by = new Map();
-  for (const r of rows) {
-    const s = Calc.fromRad(Calc.angleOfSize(Math.sqrt(r.s2mm), r.distM * 1000), unit), x = xOf(r), k = x.toFixed(v === "jump" ? 3 : 2);
-    const own = Calc.pooledSigma([{ s2: s * s, nu: r.nu }], lvl);
-    const e = { r, s2: s * s, nu: r.nu, own: own ? { val: own.sigma * F, lo: own.lo * F, hi: own.hi * F } : null };
-    if (!by.has(k)) by.set(k, { x, groups: [] });
-    by.get(k).groups.push(e);
+/* ===================== 1.29.0: TEST DI RICARICA (ladder, OCW, seduta) =====================
+   Pagina «load» della vista: i livelli della variabile scelta (carica; seduta = salto dalle righe, CBTO o COAL) in
+   ordine, con il punto d'impatto (POI) di ogni livello rispetto alla mira — click impostati tolti, cioè dove avrebbe
+   colpito con la regolazione di partenza — la sua incertezza e la precisione (σ combinata, come dalla 1.7.0).
+   Spostamenti tra livelli adiacenti solo se rilevabili (t a varianza comune + Holm), tratti «costanti» solo se
+   dimostrati con un test di equivalenza (TOST) entro la tolleranza scelta: nessun «nodo» a vista (Calc.ladderTest;
+   help «Test di ricarica»). Lo storico entra con i fori salvati (pts) e la dope: click per foro diversi = escluso. */
+const LT_VARS = ["charge", "jump", "cbto", "coal"];
+const ltVar = () => LT_VARS.includes($("ltVar").value) ? $("ltVar").value : "charge";
+const mmNum = v => { const x = parseFloat(String(v ?? "").replace(",", ".")); return isFinite(x) && x > 0 && String(v).trim() !== "" ? x : null; };
+/** Valore della variabile nei dati di ricarica (carica in gr, seduta in mm), o null. */
+const ltX = (v, L) => { L = L || {}; return v === "charge" ? chargeNum(L.charge) : v === "jump" ? jumpMm(L) : mmNum(L[v]); };
+/** Numero del livello come lo si legge (salto in pollici o mm come nel gruppo attivo). */
+function precNum(x, v = ltVar()) { return v === "charge" ? fmt(x, 2) : v === "jump" && jumpUnitShown() === "in" ? fmt(x / 25.4, 3) : fmt(x, 2); }
+/** Etichetta di un livello (es. «44,50 gr», «0,020 in», «55,80 mm»). */
+function precLabel(x, v = ltVar()) { return `${precNum(x, v)} ${v === "charge" ? "gr" : uL(ltXUnit(v))}`; }
+const ltXUnit = v => v === "charge" ? "gr" : v === "jump" ? jumpUnitShown() : "mm";
+const ltVarName = v => ({ charge: _t("Carica"), jump: _t("Salto dalle righe"), cbto: "CBTO", coal: "COAL" })[v];
+const ltVarLow = v => ({ charge: _t("carica"), jump: _t("salto dalle righe"), cbto: "CBTO", coal: "COAL" })[v];   // dentro una frase
+const ltMean = a => a.reduce((s, x) => s + x, 0) / a.length;
+const ltVarS = a => { const m = ltMean(a); return a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1); };
+/** Dati della pagina: fori (POI in unità angolari), campioni per la precisione, livelli, test. */
+function ltData() {
+  const v = ltVar(), cc = calcContext(), unit = $("ltUnit").value === "MIL" ? "MIL" : "MOA", lvl = (params().ciLevel || 95) / 100;
+  const conv = mil => Calc.fromRad(mil / 1000, unit), withCh = v !== "charge";
+  const rows0 = compareRows().filter(r => r.distM > 0 && (!r.hist || $("ltHist").checked));
+  const perShot = r => v === "charge" && !r.hist && (g => !!g && inc(g).some(q => q.ch != null && isFinite(q.ch)))(state.groups.find(x => x.id === r.gid));
+  const rows1 = rows0.filter(r => ltX(v, r.load) != null || perShot(r));
+  const kOf = r => loadKey(r.load, withCh), keys = [...new Set(rows1.map(kOf))].sort(), g0 = activeGroup();
+  fillLoadSelect($("ltLoad"), keys, g0 ? loadKey(g0.load, withCh) : "");
+  const lk = $("ltLoad").value, rows = rows1.filter(r => lk === "*" || kOf(r) === lk);
+  const dists = [...new Set(rows.map(r => Math.round(r.distM * 10) / 10))].sort((a, b) => a - b), du = dopeUnitD();
+  const sel = $("ltDist"), cur = sel.value, gd = g0 ? Math.round(ccG(cc, g0).distMm / 100) / 10 : null;
+  sel.innerHTML = dists.map(d => `<option value="${d}">${fmt(distIn(d, du), 0)} ${uL(du)}</option>`).join("") + (dists.length > 1 ? `<option value="all">${esc(_t("tutte (solo precisione)"))}</option>` : "");
+  sel.value = sel.dataset.user && (cur === "all" ? dists.length > 1 : dists.includes(+cur)) ? cur : dists.includes(gd) ? String(gd) : dists.length ? String(dists[0]) : "";
+  const all = sel.value === "all", D = all ? null : +sel.value, use = rows.filter(r => all || Math.abs(r.distM - D) < 0.05);
+  const shots = [], samples = [], skipped = { clicks: 0, poa: 0 };
+  for (const r of use) {
+    let P = null;   // fori {x, h, v} in MIL, + = a destra / in alto
+    if (!r.hist) {
+      const g = state.groups.find(x => x.id === r.gid), gcc = ccG(cc, g);
+      if (!g || !g.poa || !gcc.pxPerMm) { skipped.poa++; continue; }
+      const S = inc(g), dialed = S.some(q => +q.dv || +q.dh);
+      if (dialed && !(gcc.clickValue > 0)) { skipped.clicks++; continue; }
+      const xg = ltX(v, g.load), c1 = { ...gcc, clickValue: gcc.clickValue > 0 ? gcc.clickValue : 1 };
+      P = S.map(q => {
+        const x = v === "charge" && q.ch != null && isFinite(q.ch) ? +q.ch : xg, d = Calc.dope([q], g.poa, c1);
+        return x == null || !d ? null : { x, h: -d.h.mil, v: -d.v.mil, sid: q.id, label: `${g.name} · ${_T`foro ${g.shots.indexOf(q) + 1}`}` };
+      }).filter(Boolean);
+    } else {
+      const xg = ltX(v, r.load);
+      if (xg == null) continue;
+      if (r.ref !== "poa" || !r.pts || !r.pts.length) { skipped.poa++; continue; }
+      if (r.dope && r.dope.varies) { skipped.clicks++; continue; }
+      const Dm = r.distM * 1000, a = r.pts.map(([x, y]) => [Math.atan(x / Dm) * 1000, Math.atan(y / Dm) * 1000]);
+      // dope media = regolazione − POI medio: la regolazione (MIL) si ricava dalla dope e dai fori
+      const dV = r.dope ? r.dope.vMil + ltMean(a.map(p => p[1])) : 0, dH = r.dope ? r.dope.hMil + ltMean(a.map(p => p[0])) : 0;
+      P = a.map(([h, y], i) => ({ x: xg, h: h - dH, v: y - dV, label: `${r.name} · ${_T`foro ${i + 1}`} · ${r.source}` }));
+    }
+    const Pu = P.map(p => ({ ...p, h: conv(p.h), v: conv(p.v), r }));
+    shots.push(...Pu);
+    const byX = new Map();   // carica per foro: ogni carica del gruppo è un campione a sé
+    Pu.forEach(p => { const k = +p.x.toFixed(4); if (!byX.has(k)) byX.set(k, []); byX.get(k).push(p); });
+    for (const [x, Q] of byX) if (Q.length >= 3) samples.push({ x, n: Q.length, s2: (ltVarS(Q.map(q => q.h)) + ltVarS(Q.map(q => q.v))) / 2, nu: 2 * (Q.length - 1), r });
+  }
+  // precisione per livello (σ combinata con IC χ², come «Precisione e ricarica» dalla 1.7.0)
+  const metric = $("ltMetric").value === "mr" ? "mr" : "cep", F = PREC_F[metric], by = new Map();
+  for (const e of samples) {
+    const own = Calc.pooledSigma([{ s2: e.s2, nu: e.nu }], lvl), k = e.x.toFixed(4);
+    if (!by.has(k)) by.set(k, { x: e.x, groups: [] });
+    by.get(k).groups.push({ ...e, own: own ? { val: own.sigma * F, lo: own.lo * F, hi: own.hi * F } : null });
   }
   const levels = [...by.values()].sort((a, b) => a.x - b.x);
   for (const L of levels) {
     const P = Calc.pooledSigma(L.groups, lvl);
     L.pool = { ...P, val: P.sigma * F, lo: P.lo * F, hi: P.hi * F };
-    L.shots = L.groups.reduce((a, e) => a + e.r.n, 0);
-    L.charge = L.x;   // compatibilità con i test della 1.7.0 (carica in gr)
+    L.shots = L.groups.reduce((a, e) => a + e.n, 0); L.charge = L.x;
   }
-  return { levels, unit, metric, v, mixed: key === "*" && keys.length > 1, lvl };
+  const tol = parseFloat(String($("ltTol").value).replace(",", "."));
+  const T = !all && shots.length ? Calc.ladderTest(shots, { alpha: 1 - lvl, delta: tol > 0 ? tol : 0 }) : null;
+  const reg = T && T.k >= 2 ? Calc.linReg(shots.map(p => p.x), shots.map(p => p.v), lvl) : null;
+  return { v, unit, lvl, all, D, du, shots, samples, levels, metric, T, reg, tol: tol > 0 ? tol : 0, skipped, mixed: lk === "*" && keys.length > 1, lk, nRows: use.length };
 }
-function drawCharge() {
-  const box = $("chgBody"); if (!box || !anaOpen()) return;
-  const { levels, unit, metric, v, mixed, lvl } = chargeLevels();
-  const mName = metric === "mr" ? _t("raggio medio atteso") : "CEP";
-  if (!levels.length) {
-    box.innerHTML = v === "jump" ? _T`<div class="muted">Servono gruppi da almeno 3 colpi con scala, distanza e salto dalle righe indicato nei dati di ricarica, in questa sessione o nello storico.</div>`
-      : _T`<div class="muted">Servono gruppi da almeno 3 colpi con scala, distanza e carica (gr) indicata nei dati di ricarica, in questa sessione o nello storico.</div>`;
-    $("chgChartWrap").style.display = "none"; return;
+/** Precisione per livello (report PDF e test: stessa forma della 1.7.0). */
+function chargeLevels() { const D = ltData(); return { levels: D.levels, unit: D.unit, metric: D.metric, v: D.v, mixed: D.mixed, lvl: D.lvl }; }
+/** Pendenza del POI verticale per unità leggibile della variabile (gr, mm o 0,01 in). */
+function ltSlope(reg, v) {
+  const inch = v === "jump" && jumpUnitShown() === "in", f = inch ? 0.254 : 1;
+  return { b: reg.b * f, lo: reg.lo * f, hi: reg.hi * f, per: v === "charge" ? "gr" : inch ? `0,01 ${uL("in")}` : uL("mm") };
+}
+/** Colpi per livello perché un tratto davvero costante passi il TOST con potenza 80% (approssimazione normale). */
+function ltShotsForEq(sigma, delta, alpha) {
+  if (!(sigma > 0 && delta > 0)) return null;
+  const z = p => Calc.tinv(p, 1e6);
+  return Math.ceil(2 * sigma * sigma * (z(1 - alpha) + z(0.9)) ** 2 / (delta * delta));
+}
+const ltVerdictTxt = { shift: () => _t("↕ spostamento"), eq: () => _t("≈ costante"), unsure: () => _t("? non si può dire") };
+function drawLoadTest() {
+  const box = $("ltBody"); if (!box || !anaOpen() || anaPage() !== "load") return;
+  const Dd = ltData(), { v, unit, lvl, T, all, levels } = Dd, U = uL(unit), lv = fmt(lvl * 100, 0), al = fmt((1 - lvl) * 100, 0);
+  $("ltTolU").textContent = U;
+  const show = (id, on) => { $(id).style.display = on ? "" : "none"; };
+  if (!Dd.nRows) {
+    box.innerHTML = _T`<div class="muted">Servono gruppi con ${v === "charge" ? _t("la carica (gr) nei dati di ricarica o la carica per foro") : _T`${ltVarName(v)} nei dati di ricarica`}, scala, distanza e punto di mira, in questa sessione o nello storico. La munizione deve essere la stessa (${v === "charge" ? _t("palla e polvere") : _t("palla, polvere e carica")}).</div>`;
+    ["ltPoiWrap", "ltMapWrap", "chgChartWrap"].forEach(id => show(id, false)); return;
   }
-  const best = levels.reduce((a, b) => b.pool.val < a.pool.val ? b : a);
+  const out = [], nm = ltVarName(v);
+  if (T && T.k) {
+    out.push(_T`<b>${T.k}</b> livelli di ${ltVarLow(v)} · <b>${Dd.shots.length}</b> colpi a ${fmt(distIn(Dd.D, Dd.du), 0)} ${uL(Dd.du)}`);
+    if (T.sp) out.push(_T`Dispersione tra colpi dello stesso livello (rumore): σ verticale ${fmtA(T.sp.v)} ${U}, orizzontale ${fmtA(T.sp.h)} ${U} (ν = ${T.df}).`);
+    else out.push(_t("Con un colpo per livello (o quasi) la dispersione non si può stimare: niente spostamenti né tratti costanti. Servono almeno 2 colpi in qualche livello, meglio 3–5 per livello."));
+    if (Dd.reg) {
+      const S = ltSlope(Dd.reg, v), sig = Dd.reg.lo > 0 || Dd.reg.hi < 0;
+      out.push(_T`Andamento: il punto d'impatto verticale cambia di <b>${sgn(S.b, 2)} ${U} per ${S.per}</b> (IC ${lv}% ${sgn(S.lo, 2)} … ${sgn(S.hi, 2)})` + (sig ? _t(": la pendenza è rilevabile.") : _t(": con questi dati la pendenza non è distinguibile da zero.")));
+    }
+    if (T.sp && T.k >= 2) {
+      const sh = T.pairs.filter(P => P.verdict === "shift");
+      out.push(sh.length ? _T`Spostamenti rilevabili (Holm, α ${al}%): ` + sh.map(P => `<b>${precNum(T.levels[P.i].x, v)} → ${precLabel(T.levels[P.j].x, v)}</b> (${[P.shiftV ? _T`${sgn(P.dv, 2)} ${U} in verticale` : "", P.shiftH ? _T`${sgn(P.dh, 2)} ${U} in orizzontale` : ""].filter(Boolean).join(", ")})`).join("; ") + "."
+        : _t("Nessuno spostamento rilevabile tra livelli adiacenti."));
+      if (!Dd.tol) out.push(_t("Imposta una tolleranza per cercare i tratti in cui il punto d'impatto resta costante."));
+      else if (T.runs.length) out.push(T.runs.map(R => _T`<span class="lt-v eq">Tratto costante dimostrato</span>: <b>${precNum(R.x0, v)}–${precLabel(R.x1, v)}</b> (${R.j - R.i + 1} livelli, ${R.n} colpi): tutte le differenze verticali stanno entro ±${fmtA(Dd.tol)} ${U} (TOST, α ${al}%).`).join("<br>"));
+      else { const n = ltShotsForEq(T.sp.v, Dd.tol, 1 - lvl);
+        out.push(_T`Nessun tratto costante dimostrato entro ±${fmtA(Dd.tol)} ${U}` + (n ? _T`: con σ verticale ${fmtA(T.sp.v)} ${U} servono circa <b>${n}</b> colpi per livello per dimostrarlo (se la differenza vera è zero, potenza 80%).` : ".")); }
+    }
+    if (Dd.skipped.clicks || Dd.skipped.poa) out.push(`<span class="muted">${_T`Esclusi: ${Dd.skipped.poa} gruppi senza punto di mira o scala, ${Dd.skipped.clicks} con click per foro diversi o senza valore click.`}</span>`);
+  } else if (all) out.push(_t("Distanze diverse: si confronta solo la precisione (metrica angolare). Scegli una distanza per il punto d'impatto."));
+  // precisione: verdetto prudente della 1.7.0
+  const metric = Dd.metric, mName = metric === "mr" ? _t("raggio medio atteso") : "CEP";
+  const best = levels.length ? levels.reduce((a, b) => b.pool.val < a.pool.val ? b : a) : null;
   const distinct = levels.length > 1 && levels.every(L => L === best || best.pool.hi < L.pool.lo);
-  const trs = levels.map(L => `<tr class="${L === best && levels.length > 1 ? "active" : ""}"><td class="x"><b>${precLabel(L.x, v)}</b></td><td class="x">${L.groups.length}</td><td class="x">${L.shots}</td>
-      <td class="x"><b>${fmtA(L.pool.val)}</b></td><td class="x">${fmtA(L.pool.lo)}–${fmtA(L.pool.hi)}</td></tr>`).join("");
-  const verdict = levels.length < 2 ? (v === "jump" ? _t("Serve almeno un secondo salto dalle righe per un confronto.") : _t("Serve almeno una seconda carica per un confronto."))
-    : distinct ? _T`<b>${precLabel(best.x, v)}</b> ha il ${mName} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).`
-    : _T`Gli intervalli si sovrappongono: con questi colpi <b>non si può dire</b> quale livello sia più preciso. Servono più colpi per livello (meglio 2–3 gruppi da 5–10 colpi ciascuno).`;
-  box.innerHTML = _T`<div class="cmpsum">${verdict}</div><div class="tscroll"><table class="cmp"><thead><tr><th class="x">${v === "jump" ? _t("Salto dalle righe") : _t("Carica")}</th><th class="x">Gruppi</th><th class="x">Colpi</th>
-      <th class="x" title="Dalla σ combinata dei gruppi dello stesso livello">${metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${uL(unit)})</th><th class="x">IC ${fmt(lvl * 100, 0)}%</th></tr></thead><tbody>${trs}</tbody></table></div>
-    <div class="muted" style="font-size:11.5px;margin-top:4px">Metrica angolare (gruppi a distanze diverse confrontabili), gruppi dello stesso livello combinati. Non è la ricerca di un «nodo» di carica o di seduta: è la precisione misurata con la sua incertezza; con 3–5 colpi per livello le differenze sono quasi sempre casuali.${mixed ? _t(" ⚠ Sono mescolate munizioni diverse: scegline una.") : ""}</div>`;
-  $("chgChartWrap").style.display = "";
-  drawChargeChart($("chCharge"), Math.max(220, Math.floor($("chgChartWrap").clientWidth)), 240, levels, unit, best, distinct, metric, v);
+  if (levels.length > 1) out.push(distinct ? _T`Precisione: <b>${precLabel(best.x, v)}</b> ha il ${mName} più piccolo e il suo intervallo non si sovrappone a quello degli altri livelli: la differenza è probabilmente reale (criterio prudente).`
+    : _T`Precisione: gli intervalli del ${mName} si sovrappongono, con questi colpi <b>non si può dire</b> quale livello sia più preciso (meglio 2–3 gruppi da 5–10 colpi per livello).`);
+  else if (levels.length === 1) out.push(_t("Precisione: serve almeno un secondo livello con un gruppo da 3 colpi o più."));
+  // tabella: livelli in ordine con POI, esito rispetto al precedente e precisione
+  const xs = [...new Set([...(T ? T.levels.map(L => +L.x.toFixed(4)) : []), ...levels.map(L => +L.x.toFixed(4))])].sort((a, b) => a - b);
+  const inRun = i => T && T.runs.some(R => i >= R.i && i <= R.j);
+  const trs = xs.map(x => {
+    const ti = T ? T.levels.findIndex(L => +L.x.toFixed(4) === x) : -1, L = ti >= 0 ? T.levels[ti] : null, P = ti > 0 ? T.pairs[ti - 1] : null;
+    const pl = levels.find(q => +q.x.toFixed(4) === x);
+    const ci = (m, c) => c != null ? `${sgn(m, 2)} <span class="muted">±${fmtA(c)}</span>` : sgn(m, 2);
+    return `<tr class="${L && inRun(ti) ? "lt-run" : ""}${pl === best && distinct ? " active" : ""}"><td class="x"><b>${precLabel(x, v)}</b></td><td class="x">${L ? L.n : pl ? pl.shots : "–"}</td>
+      <td class="x">${L ? ci(L.mv, L.ciV) : "–"}</td><td class="x">${L ? ci(L.mh, L.ciH) : "–"}</td>
+      <td class="x">${P ? sgn(P.dv, 2) : ""}</td><td class="x">${P && T.sp ? `<span class="lt-v ${P.verdict}" title="${esc(_T`differenza verticale ${sgn(P.dv, 3)} ± ${fmtA(P.ci90)} ${U} (IC ${fmt((1 - 2 * (1 - lvl)) * 100, 0)}%) · p verticale ${fmt(P.pv, 3)}, orizzontale ${fmt(P.ph, 3)}`)}">${ltVerdictTxt[P.verdict]()}</span>` : ""}</td>
+      <td class="x">${pl ? `${fmtA(pl.pool.val)} <span class="muted">(${fmtA(pl.pool.lo)}–${fmtA(pl.pool.hi)})</span>` : "–"}</td></tr>`;
+  }).join("");
+  box.innerHTML = `<div class="cmpsum">${out.join("<br>")}</div>` + (xs.length ? _T`<div class="tscroll"><table class="cmp lt-tab"><thead><tr><th class="x">${nm}</th><th class="x">Colpi</th>
+      <th class="x" title="Punto d'impatto medio rispetto alla mira con la regolazione di partenza (+ = in alto), con IC">POI vert. (${U})</th><th class="x" title="+ = a destra">POI orizz. (${U})</th>
+      <th class="x" title="Differenza del POI verticale dal livello precedente">Δ vert.</th><th class="x">Rispetto al precedente</th>
+      <th class="x" title="Dalla σ combinata dei gruppi dello stesso livello, con IC">${metric === "mr" ? _t("Raggio medio atteso") : "CEP"} (${U})</th></tr></thead><tbody>${trs}</tbody></table></div>` : "")
+    + _T`<div class="muted" style="font-size:11.5px;margin-top:4px">POI = punto d'impatto rispetto alla mira con la regolazione di partenza (i click impostati sono tolti), IC ${lv}% dalla dispersione comune. «↕ spostamento»: differenza dal livello precedente rilevabile (test t, correzione di Holm su tutti i confronti). «≈ costante»: l'IC al ${fmt((1 - 2 * (1 - lvl)) * 100, 0)}% della differenza verticale sta dentro ±tolleranza (TOST). «? non si può dire»: né l'uno né l'altro. Non è la ricerca di «nodi»: un tratto costante dice solo che lì, con questi colpi, il punto d'impatto non è cambiato più della tolleranza (help «Test di ricarica»).</div>`;
+  const wOf = id => Math.max(220, Math.floor($(id).clientWidth));
+  show("ltPoiWrap", !!(T && T.k)); show("ltMapWrap", !!(T && T.k)); show("chgChartWrap", levels.length > 0);
+  if (T && T.k) { drawLtPoi($("chLtPoi"), wOf("ltPoiWrap"), 260, Dd); drawLtMap($("chLtMap"), wOf("ltMapWrap"), 260, Dd); }
+  if (levels.length) drawChargeChart($("chCharge"), wOf("chgChartWrap"), 260, levels, unit, best, distinct, metric, v);
+}
+/** Colore del livello i su k (dal chiaro allo scuro, ordine leggibile anche senza colore grazie alle etichette). */
+const ltCol = (i, k) => { const t = k > 1 ? i / (k - 1) : 1, c0 = [96, 165, 250], c1 = [30, 58, 138]; return `rgb(${c0.map((a, j) => Math.round(a + (c1[j] - a) * t)).join(",")})`; };
+function drawLtPoi(cv, W, H, Dd) {
+  const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), acc = cssVar("--accent"), surf = cssVar("--panel"), ok = cssVar("--ok-ink") || "#15803d";
+  const hits = CH.hits.ltPoi = [], T = Dd.T, L = T.levels, v = Dd.v, U = uL(Dd.unit);
+  const x0 = L[0].x, x1 = L[L.length - 1].x, dx = (x1 - x0) || 1, xa = x0 - dx * 0.1, xb = x1 + dx * 0.1;
+  const ys = Dd.shots.map(p => p.v).concat(L.flatMap(q => q.ciV != null ? [q.mv - q.ciV, q.mv + q.ciV] : [q.mv]), T.runs.flatMap(R => [R.mv - Dd.tol, R.mv + Dd.tol]), [0]);
+  let ya = Math.min(...ys), yb = Math.max(...ys); if (yb - ya < 1e-9) { ya -= 0.5; yb += 0.5; } const yp = (yb - ya) * 0.08; ya -= yp; yb += yp;
+  const padL = 46, padR = 10, padT = 10, padB = 34, pw = W - padL - padR, ph = H - padT - padB;
+  const X = q => padL + (q - xa) / (xb - xa) * pw, Y = q => padT + (1 - (q - ya) / (yb - ya)) * ph;
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  const st = niceStep((yb - ya) / 4);
+  for (let q = Math.ceil(ya / st) * st; q <= yb + 1e-9; q += st) { g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(q)); g.lineTo(W - padR, Y(q)); g.stroke();
+    g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(q, 2), padL - 5, Y(q)); }
+  g.strokeStyle = muted; g.setLineDash([4, 4]); g.beginPath(); g.moveTo(padL, Y(0)); g.lineTo(W - padR, Y(0)); g.stroke(); g.setLineDash([]);
+  g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "top";
+  const lab = Math.max(1, Math.ceil(L.length / Math.max(1, Math.floor(pw / 44))));
+  L.forEach((q, i) => { if (i % lab === 0 || i === L.length - 1) g.fillText(precNum(q.x, v), X(q.x), padT + ph + 6); });
+  g.fillText(uL(ltXUnit(v)), W - padR - 8, padT + ph + 20);
+  g.save(); g.translate(10, padT + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = "top"; g.fillText(_T`POI verticale (${U})`, 0, 0); g.restore();
+  // tratti costanti dimostrati: fascia ±tolleranza attorno alla loro media
+  const half = Math.min(pw / L.length / 3, 14);
+  for (const R of T.runs) { const a = X(R.x0) - half, b = X(R.x1) + half;
+    g.fillStyle = "rgba(22,163,74,.12)"; g.fillRect(a, Y(R.mv + Dd.tol), b - a, Y(R.mv - Dd.tol) - Y(R.mv + Dd.tol));
+    g.strokeStyle = ok; g.lineWidth = 1; g.setLineDash([5, 3]); g.strokeRect(a, Y(R.mv + Dd.tol), b - a, Y(R.mv - Dd.tol) - Y(R.mv + Dd.tol)); g.setLineDash([]); }
+  // fori (scostati un poco per non sovrapporsi)
+  const cnt = new Map();
+  for (const p of Dd.shots) { const k = +p.x.toFixed(4), j = cnt.get(k) || 0; cnt.set(k, j + 1);
+    const px = X(p.x) + ((j % 5) - 2) * 2.2 + 9, py = Y(p.v);
+    g.fillStyle = muted; g.globalAlpha = 0.55; g.beginPath(); g.arc(px, py, 2.4, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
+    hits.push({ x: px, y: py, r: 5, tip: `${p.label} · ${precLabel(p.x, v)} · POI ${sgn(p.v, 2)} ${U}` }); }
+  // medie collegate: tratto arancio = spostamento rilevabile
+  for (const P of T.pairs) { const A = L[P.i], B = L[P.j];
+    const hi = P.verdict === "shift" && T.sp; g.strokeStyle = hi ? COL_HI : muted; g.lineWidth = hi ? 3 : 1.5;
+    g.beginPath(); g.moveTo(X(A.x), Y(A.mv)); g.lineTo(X(B.x), Y(B.mv)); g.stroke(); }
+  L.forEach((q, i) => { const x = X(q.x);
+    if (q.ciV != null) { g.strokeStyle = acc; g.lineWidth = 2; g.beginPath(); g.moveTo(x, Y(q.mv - q.ciV)); g.lineTo(x, Y(q.mv + q.ciV)); g.moveTo(x - 4, Y(q.mv - q.ciV)); g.lineTo(x + 4, Y(q.mv - q.ciV)); g.moveTo(x - 4, Y(q.mv + q.ciV)); g.lineTo(x + 4, Y(q.mv + q.ciV)); g.stroke(); }
+    g.fillStyle = ltCol(i, L.length); g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(x, Y(q.mv), 5, 0, Math.PI * 2); g.fill(); g.stroke();
+    hits.push({ x, y: Y(q.mv), r: 9, tip: _T`${precLabel(q.x, v)} · ${q.n} colpi · POI verticale ${sgn(q.mv, 2)} ${U}${q.ciV != null ? ` ±${fmtA(q.ciV)}` : ""} · orizzontale ${sgn(q.mh, 2)}` }); });
+  $("ltPoiNote").textContent = _T`● media del livello con IC ${fmt(Dd.lvl * 100, 0)}% · punti piccoli = fori · linea tratteggiata = mira · arancio = spostamento rilevabile · fascia verde = tratto costante dimostrato (±${fmtA(Dd.tol)} ${U}).`;
+}
+function drawLtMap(cv, W, H, Dd) {
+  const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), surf = cssVar("--panel");
+  const hits = CH.hits.ltMap = [], T = Dd.T, L = T.levels, v = Dd.v, U = uL(Dd.unit);
+  const ext = Math.max(1e-6, ...Dd.shots.map(p => Math.max(Math.abs(p.h), Math.abs(p.v))), ...L.map(q => Math.max(Math.abs(q.mh) + (q.ciH || 0), Math.abs(q.mv) + (q.ciV || 0)))) * 1.1;
+  const pad = 30, S = Math.min(W - 2 * pad, H - 2 * pad), cx = W / 2, cy = H / 2 - 4, k = S / 2 / ext;
+  const X = h => cx + h * k, Y = y => cy - y * k;
+  g.font = "11px 'Segoe UI', system-ui, sans-serif"; g.lineWidth = 1;
+  const st = niceStep(ext / 2);
+  for (let q = -Math.floor(ext / st) * st; q <= ext + 1e-9; q += st) { g.strokeStyle = grid; g.beginPath(); g.moveTo(X(q), Y(-ext)); g.lineTo(X(q), Y(ext)); g.moveTo(X(-ext), Y(q)); g.lineTo(X(ext), Y(q)); g.stroke(); }
+  g.fillStyle = muted; g.textAlign = "left"; g.textBaseline = "top"; g.fillText(_T`griglia ${nfmt(st, 2)} ${U} · + = a destra / in alto`, X(-ext), Y(-ext) + 4);
+  g.strokeStyle = muted; g.lineWidth = 1.5; g.beginPath(); g.moveTo(cx - 8, cy); g.lineTo(cx + 8, cy); g.moveTo(cx, cy - 8); g.lineTo(cx, cy + 8); g.stroke();
+  const idx = new Map(L.map((q, i) => [+q.x.toFixed(4), i]));
+  for (const p of Dd.shots) { const i = idx.get(+p.x.toFixed(4)); g.fillStyle = ltCol(i, L.length); g.globalAlpha = 0.35; g.beginPath(); g.arc(X(p.h), Y(p.v), 2.6, 0, Math.PI * 2); g.fill(); g.globalAlpha = 1;
+    hits.push({ x: X(p.h), y: Y(p.v), r: 5, tip: `${p.label} · ${precLabel(p.x, v)} · ${sgn(p.h, 2)} ; ${sgn(p.v, 2)} ${U}` }); }
+  g.strokeStyle = muted; g.lineWidth = 1.2; g.beginPath(); L.forEach((q, i) => i ? g.lineTo(X(q.mh), Y(q.mv)) : g.moveTo(X(q.mh), Y(q.mv))); g.stroke();
+  for (const P of T.pairs) if (P.verdict === "shift" && T.sp) { const A = L[P.i], B = L[P.j]; g.strokeStyle = COL_HI; g.lineWidth = 3; g.beginPath(); g.moveTo(X(A.mh), Y(A.mv)); g.lineTo(X(B.mh), Y(B.mv)); g.stroke(); }
+  L.forEach((q, i) => { const x = X(q.mh), y = Y(q.mv), c = ltCol(i, L.length);
+    if (q.ciV != null) { g.strokeStyle = c; g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(q.mh - q.ciH), y); g.lineTo(X(q.mh + q.ciH), y); g.moveTo(x, Y(q.mv - q.ciV)); g.lineTo(x, Y(q.mv + q.ciV)); g.stroke(); }
+    g.fillStyle = c; g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(x, y, 5.5, 0, Math.PI * 2); g.fill(); g.stroke();
+    hits.push({ x, y, r: 9, tip: _T`${precLabel(q.x, v)} · ${q.n} colpi · baricentro ${sgn(q.mh, 2)} ; ${sgn(q.mv, 2)} ${U}` }); });
+  // etichette dei livelli: prima posizione libera tra alcune attorno al punto (i baricentri vicini non si coprono)
+  const placed = [], ink = cssVar("--ink"); g.textAlign = "left"; g.textBaseline = "middle";
+  L.forEach(q => { const x = X(q.mh), y = Y(q.mv), t = precNum(q.x, v), w = g.measureText(t).width + 4, h = 13;
+    const cand = [[8, -8], [8, 8], [-w - 8, -8], [-w - 8, 8], [8, -21], [8, 21], [-w - 8, -21], [-w - 8, 21], [8, -34], [-w - 8, 34]];
+    let pick = cand[0];
+    for (const [dx, dy] of cand) { const r = { x0: x + dx, y0: y + dy - h / 2, x1: x + dx + w, y1: y + dy + h / 2 };
+      if (!placed.some(o => r.x0 < o.x1 && r.x1 > o.x0 && r.y0 < o.y1 && r.y1 > o.y0) && r.x0 > 0 && r.x1 < W) { pick = [dx, dy]; break; } }
+    const r = { x0: x + pick[0], y0: y + pick[1] - h / 2, x1: x + pick[0] + w, y1: y + pick[1] + h / 2 }; placed.push(r);
+    g.fillStyle = surf; g.globalAlpha = 0.8; g.fillRect(r.x0 - 1, r.y0, w, h); g.globalAlpha = 1;
+    g.fillStyle = ink; g.fillText(t, r.x0 + 1, y + pick[1]); });
+  $("ltMapNote").textContent = _T`Baricentri in ordine di ${ltVarLow(v)} (dal chiaro allo scuro, con l'etichetta del livello) e croci = IC ${fmt(Dd.lvl * 100, 0)}% in orizzontale e verticale; punti chiari = fori; + al centro = mira.`;
 }
 function drawChargeChart(cv, W, H, levels, unit, best, distinct, metric = "cep", v = "charge") {
   const g = setupCanvas(cv, W, H), muted = cssVar("--muted"), grid = cssVar("--line"), acc = cssVar("--accent"), surf = cssVar("--panel"), good = cssVar("--ok-ink") || acc;
@@ -15072,15 +15640,15 @@ function drawChargeChart(cv, W, H, levels, unit, best, distinct, metric = "cep",
   for (let q = 0; q <= yMax + 1e-9; q += ys) { g.strokeStyle = grid; g.beginPath(); g.moveTo(padL, Y(q)); g.lineTo(W - padR, Y(q)); g.stroke();
     g.fillStyle = muted; g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(nfmt(q, 2), padL - 5, Y(q)); }
   g.textAlign = "center"; g.textBaseline = "top"; g.fillStyle = muted;
-  levels.forEach(L => g.fillText(precLabel(L.x, v).replace(/ (gr|in|mm)$/, ""), X(L.x), padT + ph + 6));
-  g.fillText(v === "jump" ? jumpUnitShown() : "gr", W - padR - 8, padT + ph + 20);
+  levels.forEach(L => g.fillText(precNum(L.x, v), X(L.x), padT + ph + 6));
+  g.fillText(v === "charge" ? "gr" : uL(ltXUnit(v)), W - padR - 8, padT + ph + 20);
   g.save(); g.translate(10, padT + ph / 2); g.rotate(-Math.PI / 2); g.textBaseline = "top"; g.fillText(`${mLbl} (${uL(unit)})`, 0, 0); g.restore();
   g.strokeStyle = acc; g.lineWidth = 1.5; g.beginPath(); levels.forEach((L, i) => i ? g.lineTo(X(L.x), Y(L.pool.val)) : g.moveTo(X(L.x), Y(L.pool.val))); g.stroke();
   for (const L of levels) {
     const x = X(L.x);
     L.groups.forEach((e, j) => { if (!e.own) return; const gx = x + (j - (L.groups.length - 1) / 2) * 7 + 12;
       g.strokeStyle = muted; g.lineWidth = 1; g.beginPath(); g.arc(gx, Y(e.own.val), 3, 0, Math.PI * 2); g.stroke();
-      hits.push({ x: gx, y: Y(e.own.val), r: 6, tip: `${e.r.name} · ${precLabel(L.x, v)} · n=${e.r.n} · ${mLbl} ${fmtA(e.own.val)} ${uL(unit)}${e.r.hist ? ` · ${e.r.source}` : ""}` }); });
+      hits.push({ x: gx, y: Y(e.own.val), r: 6, tip: `${e.r.name} · ${precLabel(L.x, v)} · n=${e.n} · ${mLbl} ${fmtA(e.own.val)} ${uL(unit)}${e.r.hist ? ` · ${e.r.source}` : ""}` }); });
     g.strokeStyle = L === best && distinct ? good : muted; g.lineWidth = 2;
     g.beginPath(); g.moveTo(x, Y(L.pool.lo)); g.lineTo(x, Y(L.pool.hi)); g.moveTo(x - 5, Y(L.pool.lo)); g.lineTo(x + 5, Y(L.pool.lo)); g.moveTo(x - 5, Y(L.pool.hi)); g.lineTo(x + 5, Y(L.pool.hi)); g.stroke();
     g.fillStyle = L === best && distinct ? good : acc; g.strokeStyle = surf; g.lineWidth = 2; g.beginPath(); g.arc(x, Y(L.pool.val), 5, 0, Math.PI * 2); g.fill(); g.stroke();
@@ -16009,19 +16577,22 @@ function drawAnaPage() {
   if (anaPage() === "group") { drawCharts(); drawSens(); drawDiag(); drawHold(); }
   else drawCompare();
 }
+const ANA_PAGES = ["group", "cmp", "load"];
+const anaPg = pg => ANA_PAGES.includes(pg) ? pg : "group";
 function setAnaPage(pg) {
-  const v = $("anaView"); v.dataset.page = pg === "cmp" ? "cmp" : "group";
-  const grp = v.dataset.page === "group";
-  $("anaTitle").textContent = grp ? _t("Grafici del gruppo") : _t("Confronto tra gruppi");
-  $("bAnaSwitch").textContent = grp ? _t("📈 Confronto tra gruppi →") : _t("📊 Grafici del gruppo →");
+  const v = $("anaView"); v.dataset.page = anaPg(pg);
+  const P = v.dataset.page;
+  $("anaTitle").textContent = P === "group" ? _t("Grafici del gruppo") : P === "cmp" ? _t("Confronto tra gruppi") : _t("Test di ricarica");
+  document.querySelectorAll(".ana-tabs [data-pg]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.pg === P)));   // 1.29.0: tre pagine
   $("chTip").style.display = "none";
   v.scrollTop = 0;
   applySecDensity();   // 1.28.0: densità della pagina
 }
 function openAnalysis(pg = "group") {
-  if (uiBasic() && pg === "cmp") { toast(_t("Il confronto tra gruppi è disponibile in Modalità Esperto.")); return; }
+  pg = anaPg(pg);
+  if (uiBasic() && pg !== "group") { toast(pg === "cmp" ? _t("Il confronto tra gruppi è disponibile in Modalità Esperto.") : _t("Il test di ricarica è disponibile in Modalità Esperto.")); return; }
   const was = anaOpen();
-  if (was && anaPage() === (pg === "cmp" ? "cmp" : "group")) return;
+  if (was && anaPage() === pg) return;
   setAnaPage(pg);
   $("anaView").hidden = false;
   refreshAnaHeader(); drawAnaPage();
@@ -16032,7 +16603,7 @@ function closeAnalysis() {
   if (!anaOpen()) return;
   const pg = anaPage();
   $("anaView").hidden = true; $("chTip").style.display = "none";
-  $(pg === "cmp" ? "bCompare" : "bAnalysis").focus();
+  $(pg === "cmp" ? "bCompare" : pg === "load" ? "bLoadTest" : "bAnalysis").focus();
   requestDraw();
 }
 
@@ -17153,7 +17724,8 @@ $("rotDeg").addEventListener("keydown", e => { if (e.key === "Enter") $("rotDeg"
 // vista grafici e confronto
 $("bAnalysis").onclick = () => openAnalysis("group");
 $("bCompare").onclick = openCompare;
-$("bAnaSwitch").onclick = () => openAnalysis(anaPage() === "group" ? "cmp" : "group");
+document.querySelectorAll(".ana-tabs [data-pg]").forEach(b => { b.onclick = () => openAnalysis(b.dataset.pg); });   // 1.29.0: tre pagine
+$("bLoadTest").onclick = () => openAnalysis("load");
 $("bAnaClose").onclick = closeAnalysis;
 $("anaGroup").addEventListener("change", () => { const id = +$("anaGroup").value; if (id !== state.activeGroupId) { state.activeGroupId = id; commit(); } });
 $("bGrid").onclick = toggleGrid;
@@ -17257,6 +17829,7 @@ document.querySelectorAll("#helpView .help-toc a").forEach(a => a.addEventListen
 }));
 // correzione prospettica
 $("bPersp").onclick = () => setMode(state.mode === "persp" ? state.prevMode : "persp");
+$("bPerspApply").onclick = () => applyPerspPts();
 $("bPerspOff").onclick = () => removePersp();
 $("perspPreset").addEventListener("change", () => {
   const v = $("perspPreset").value;
@@ -17313,18 +17886,28 @@ $("bHistAdd").onclick = () => $("fHist").click();
 $("fHist").onchange = async e => { const fs = [...e.target.files]; if (fs.length) await importHistory(fs); e.target.value = ""; };
 $("bHistClear").onclick = () => { if (cmpState.history.length && confirm(_t("Svuotare lo storico del confronto?"))) { cmpState.history = []; drawCompare(); scheduleAutosave(); } };
 chartHover("trend", $("chTrend"));
-chartHover("dope", $("chDope")); chartHover("charge", $("chCharge"));
-$("dopeHist").onchange = $("chgHist").onchange = () => drawCompare();
+chartHover("dope", $("chDope")); chartHover("charge", $("chCharge")); chartHover("ltPoi", $("chLtPoi")); chartHover("ltMap", $("chLtMap"));
+$("dopeHist").onchange = () => drawCompare();
 // scelta dell'utente da mantenere (capture: prima del ricalcolo generico registrato sullo stesso menu)
-for (const id of ["dopeLoad", "chgLoad"]) for (const ev of ["input", "change"]) $(id).addEventListener(ev, e => { e.target.dataset.user = "1"; }, { capture: true });
+for (const id of ["dopeLoad", "ltLoad", "ltDist"]) for (const ev of ["input", "change"]) $(id).addEventListener(ev, e => { e.target.dataset.user = "1"; }, { capture: true });
+// 1.29.0: test di ricarica
+$("ltVar").addEventListener("input", () => { delete $("ltLoad").dataset.user; delete $("ltDist").dataset.user; }, { capture: true });
+$("ltUnit").dataset.prev = $("ltUnit").value;
+$("ltUnit").addEventListener("change", () => {   // la tolleranza segue l'unità (MOA ↔ MIL)
+  const a = $("ltUnit").dataset.prev, b = $("ltUnit").value, t = parseFloat(String($("ltTol").value).replace(",", "."));
+  if (a && a !== b && t > 0) $("ltTol").value = +Calc.fromRad(Calc.toRad(t, a), b).toFixed(b === "MIL" ? 3 : 2);
+  $("ltUnit").dataset.prev = b; drawLoadTest(); scheduleAutosave();
+}, { capture: true });
+for (const id of ["ltVar", "ltLoad", "ltDist", "ltMetric", "ltHist"]) $(id).addEventListener("change", () => { drawLoadTest(); scheduleAutosave(); });
+$("ltTol").addEventListener("input", () => drawLoadTest());
+{ let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawLoadTest(); } }).observe($("ltBox")); }
 $("bDopeCsv").onclick = () => exportDopeCsv();
 $("bPdf").onclick = () => exportReportPdf($("cardScope").value);
 // termini dei risultati → glossario dell'help tecnico
 $("results").addEventListener("click", e => { const a = e.target.closest("[data-gl]"); if (!a) return; e.preventDefault(); openHelpAt(a.dataset.gl); });
-// cambiando variabile (carica / seduta) cambia anche lo schema della munizione: si riparte dal gruppo attivo
-$("chgVar").addEventListener("input", () => { delete $("chgLoad").dataset.user; }, { capture: true });
+
 $("bDopePng").onclick = () => exportDopePng();
-{ let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawDope(); drawCharge(); } }).observe($("dopeBox")); }
+{ let w0 = 0; new ResizeObserver(en => { const w = Math.round(en[0].contentRect.width); if (w !== w0) { w0 = w; drawDope(); } }).observe($("dopeBox")); }
 $("clockRef").addEventListener("change", drawCharts);
 chartHover("photo", $("chPhoto")); chartHover("pow", $("chPow")); chartHover("scatter", $("chScatter")); chartHover("hist", $("chHist")); chartHover("clock", $("chClock")); chartHover("polar", $("chPolar")); chartHover("qq", $("chQQ")); chartHover("stab", $("chStab")); chartHover("stabc", $("chStabC"));
 /* ======================= 1.11.0: VERIFICA DELLA SCALA, INCERTEZZA DI MISURA, FLYER, DIAGNOSTICA ======================= */
@@ -18620,7 +19203,6 @@ const COR_PAIRS = {
   hwind: { x: "wind", y: "h", kx: true },
   vscharge: { x: "charge", y: "vs", kx: false },
   vstemp: { x: "temp", y: "vs", kx: true },
-  ladder: { x: "charge", y: "shot", kx: false },
 };
 const corX = (x, L) => x === "charge" ? chargeNum(L.charge) : x === "temp" ? (L.temp !== "" && L.temp != null && isFinite(+L.temp) ? +L.temp : null) : Calc.crossWind(L.wind, L.windUnit, L.windDir);
 const corXLabel = x => x === "charge" ? _t("Carica (gr)") : x === "temp" ? _t("Temperatura (°C)") : _t("Vento trasversale (m/s, + = da destra)");
@@ -18638,33 +19220,11 @@ function corData() {
   sel.innerHTML = dists.map(d => `<option value="${d}">${fmt(distIn(d, u), 0)} ${uL(u)}</option>`).join("");
   sel.value = sel.dataset.user && dists.includes(+cur) ? cur : dists.includes(gd) ? String(gd) : dists.length ? String(dists[0]) : "";
   const D = +sel.value, rows = rows1.filter(r => Math.abs(r.distM - D) < 0.05);
-  if (pair.y === "shot") {
-    // ladder: un punto per foro dei gruppi della sessione (lo storico non conserva i click per foro)
-    for (const r of rows) {
-      if (r.hist) continue;
-      const g = state.groups.find(x => x.id === r.gid), gcc = ccG(cc, g);
-      if (!g || !g.poa || !gcc.pxPerMm || !(gcc.clickValue > 0)) continue;
-      inc(g).forEach(sh => {
-        const x = sh.ch != null && isFinite(sh.ch) ? +sh.ch : chargeNum(g.load && g.load.charge);
-        const d = Calc.dope([sh], g.poa, gcc);
-        if (x != null && d) pts.push({ x, y: d.v.mil, name: `${g.name} · ${_T`foro ${g.shots.indexOf(sh) + 1}`}`, color: g.color });
-      });
-    }
-  } else {
-    for (const r of rows) {
-      const x = corX(pair.x, r.load || {}), y = pair.y === "v" ? r.dope && r.dope.vMil : pair.y === "h" ? r.dope && r.dope.hMil : r.vsMil;
-      if (x != null && isFinite(x) && y != null && isFinite(y)) pts.push({ x, y, name: r.name, n: r.n, hist: r.hist, color: r.color || "#6b7280" });
-    }
+  for (const r of rows) {
+    const x = corX(pair.x, r.load || {}), y = pair.y === "v" ? r.dope && r.dope.vMil : pair.y === "h" ? r.dope && r.dope.hMil : r.vsMil;
+    if (x != null && isFinite(x) && y != null && isFinite(y)) pts.push({ x, y, name: r.name, n: r.n, hist: r.hist, color: r.color || "#6b7280" });
   }
   return { pair, pts, D, lk, reg: Calc.linReg(pts.map(p => p.x), pts.map(p => p.y), cc.ciLevel || 0.95) };
-}
-/** Media e IC t per livello di x (ladder/OCW con più colpi per carica). */
-function corLevels(pts) {
-  const m = new Map(); pts.forEach(p => { const k = Math.round(p.x * 1000) / 1000; if (!m.has(k)) m.set(k, []); m.get(k).push(p.y); });
-  return [...m.entries()].sort((a, b) => a[0] - b[0]).map(([x, ys]) => {
-    const n = ys.length, mean = ys.reduce((a, b) => a + b, 0) / n, sd = n >= 2 ? Calc.sampleSD(ys) : null;
-    return { x, n, mean, ci: n >= 2 ? Calc.tinv(1 - (1 - (calcContext().ciLevel || 0.95)) / 2, n - 1) * sd / Math.sqrt(n) : null };
-  });
 }
 function drawCorr() {
   const box = $("corBody"); if (!box || !anaOpen()) return;
@@ -18672,9 +19232,7 @@ function drawCorr() {
   $("corChartWrap").style.display = C.pts.length ? "" : "none";
   if (C.pts.length) drawCorChart($("chCor"), Math.max(220, Math.floor($("corChartWrap").clientWidth)), 260, C);
   if (!C.pts.length) {
-    box.innerHTML = C.pair.y === "shot"
-      ? _T`<div class="muted">Nessun foro utilizzabile: servono punto di mira, scala, distanza, valore click e la carica (del gruppo o del singolo foro: attiva «Carica per foro» nella tabella dei punti).</div>`
-      : _T`<div class="muted">Nessun gruppo con i dati richiesti a questa distanza: servono ${C.pair.y === "vs" ? _t("almeno 2 fori e scala") : _t("punto di mira, scala e valore click (dope)")} e, nei dati di ricarica, ${C.pair.x === "charge" ? _t("la carica") : C.pair.x === "temp" ? _t("la temperatura") : _t("velocità e direzione del vento")}.</div>`;
+    box.innerHTML = _T`<div class="muted">Nessun gruppo con i dati richiesti a questa distanza: servono ${C.pair.y === "vs" ? _t("almeno 2 fori e scala") : _t("punto di mira, scala e valore click (dope)")} e, nei dati di ricarica, ${C.pair.x === "charge" ? _t("la carica") : C.pair.x === "temp" ? _t("la temperatura") : _t("velocità e direzione del vento")}.</div>`;
     return;
   }
   const xu = C.pair.x === "charge" ? "gr" : C.pair.x === "temp" ? "°C" : "m/s", D = C.D * 1000;
@@ -18688,12 +19246,7 @@ function drawCorr() {
         : _T`<div class="tt-msg">L'intervallo della pendenza comprende lo zero: con questi dati non si può dire che y cambi con x.</div>`);
     if (R.n < 5) html += _T`<div class="hitnote">⚠ Con meno di 5 punti la pendenza è molto incerta.</div>`;
   }
-  if (C.pair.y === "shot") {
-    const L = corLevels(C.pts);
-    html += _T`<div class="tscroll"><table class="cmp"><thead><tr><th class="x">Carica (gr)</th><th class="x">Fori</th><th class="x">Alzo medio (MIL)</th><th class="x">IC ${lv}%</th></tr></thead><tbody>`
-      + L.map(l => `<tr><td class="x">${fmt(l.x, 2)}</td><td class="x">${l.n}</td><td class="x">${sgn(l.mean, 3)}</td><td class="x">${l.ci != null ? `±${fmt(l.ci, 3)}` : "–"}</td></tr>`).join("") + "</tbody></table></div>";
-    html += _T`<div class="hitnote">Ladder/OCW: ogni punto è un foro (alzo necessario per portarlo sulla mira, click del foro compresi). L'app non indica «nodi» o «piatti»: con pochi colpi per carica le differenze tra cariche vicine sono dominate dal caso (vedi help tecnico).</div>`;
-  }
+
   html += _T`<div class="hitnote">${C.pair.x === "wind" ? _t("Vento trasversale = velocità × seno della direzione a ore (da dove soffia; ore 3 = da destra). ") : ""}Solo gruppi della stessa munizione alla stessa distanza; correlazione non è causalità: altri fattori (luce, tiratore, canna) cambiano insieme a quelli registrati.</div>`;
   box.innerHTML = html;
 }
@@ -18711,10 +19264,7 @@ function drawCorChart(cv, W, H, C) {
   g.fillStyle = muted; g.textAlign = "center"; g.textBaseline = "bottom"; g.fillText(corXLabel(C.pair.x), (padL + W - padR) / 2, H - 1);
   g.save(); g.translate(11, (padT + H - padB) / 2); g.rotate(-Math.PI / 2); g.textBaseline = "middle"; g.fillText(corYLabel(C.pair.y), 0, 0); g.restore();
   if (R) { g.strokeStyle = acc; g.lineWidth = 2; g.beginPath(); g.moveTo(X(x0), Y(R.a + R.b * x0)); g.lineTo(X(x1), Y(R.a + R.b * x1)); g.stroke(); }
-  if (C.pair.y === "shot") for (const l of corLevels(P)) if (l.ci != null) {
-    g.strokeStyle = muted; g.lineWidth = 1.5; g.beginPath(); g.moveTo(X(l.x) + 8, Y(l.mean - l.ci)); g.lineTo(X(l.x) + 8, Y(l.mean + l.ci)); g.stroke();
-    g.fillStyle = muted; g.beginPath(); g.arc(X(l.x) + 8, Y(l.mean), 3, 0, Math.PI * 2); g.fill();
-  }
+
   for (const p of P) {
     g.fillStyle = p.hist ? surf : p.color; g.strokeStyle = p.color; g.lineWidth = 2;
     g.beginPath(); g.arc(X(p.x), Y(p.y), 4.5, 0, Math.PI * 2); g.fill(); g.stroke();
@@ -19328,7 +19878,8 @@ function useTrainingCode() {
   if (!state.image) return warn(_t("Carica prima la foto del bersaglio."));
   $("trCode").value = d.code;
   $("perspW").value = Calc.TR_RECT.w; $("perspH").value = Calc.TR_RECT.h; $("perspPreset").value = `${Calc.TR_RECT.w}x${Calc.TR_RECT.h}`;
-  setMode("persp"); TR.pending = d; updateHint(); refreshTrUI();
+  if (state.mode === "persp") setMode(state.prevMode);
+  TR.pending = d; setMode("persp"); state.perspPts = []; state.perspEdit = null; updateHint(); refreshTrUI();   // marcatori da cliccare: niente angoli proposti
   info.innerHTML = `<div class="tt-msg">${_T`Clicca sulla foto il centro dei 4 marcatori a scacchi (dove si toccano i quadrati neri), in qualsiasi ordine: poi l'app imposta prospettiva, scala, distanza e mire di ${d.code}. Esc annulla.`}</div>`;
 }
 /** Dopo la prospettiva sui marcatori: distanza, un gruppo con il punto di mira per ogni mira, griglia o click dal codice. */
@@ -19637,7 +20188,7 @@ if (typeof indexedDB === "undefined") dbFailed(new Error("IndexedDB assente")); 
 window.__SA = { trSpecUI, trCheckSpec, exportTrainingTarget, useTrainingCode, trApply, checkDiamond, refreshTrUI, HOV, PTC, setHover, ptcSet, ptcReset, drawGroupPhoto, exportRecipePdf, buildRecipe, recipeQuotesText, recipeWarnings, loadLines, balInputs, mcData, wheelData, drawBallistic, drawMC, drawDiag, toggleAllSections, refreshSecFold, setUiMode, uiBasic, openBcWiz, bwRun, bwFromDope, fileName, groupProfileName, find, findRun, findStep, findClear, findCollect, pdfEmbFonts, grpOpen, setGroupOpen, toggleAllGroups, syncGroupItems, GI, openSec, showGroupBlock, stepInfo, goStep, refreshStepper, setMoreMenu, migrateLayout, refreshLockUI, refreshQiTop, noteHitDist, NOTE_H, baselineState: () => ({ baseline, baseFile }), toggleHard, flyerMap, setBaseline, makeBaseline, baselineCompare, reviewItems, reviewAction, reviewStep, focusReview, rvVisible, originInfo, toggleOrigin, setRange, rangeCompare, periodStats, drawParamHi, sigmaFTest, cmpState, importHistory, compareRows, movingAverage, state, Calc, commit, undo, redo, setImage, loadSessionText, buildSession, resultText, toImage, toScreen, undoStack, hitInfo, doAutosave, checkAutosave, exportArchiveZip, makeZip, crc32, archiveCurrent, scoreHere, targetSpec, idb, DB, helpExamples, openHelp, closeHelp, helpOpen, csvShots, csvGroups, perspR, applyPersp, removePersp, ensureBase,
   I18N, setLang, STATIC_I18N, caliberCursorR, setSnap, setDial, dopeRows, chargeLevels, snapShot, rotateBy, setRotation, alignFromLine, imgToWorld, worldToImg, setLoupeZoom, openAnalysis, openCompare, setAnaPage, anaPage, closeAnalysis, anaOpen, exportCard, fitView, calcContext,
   CH, VIEW3D, params, heatImage, visData, holdRows, testTargetCanvas, TT_C,
-  corData, corLevels, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
+  corData, tgtOf, toShapeFrame, hitShapeInfo, scoreInfo,
   applyLens, worldToRaw, rawToWorld, fitLensFromLines, lensParams, setMode,
   flyerTest, holeScaleCheck, refScaleCheck, measInfo, diagInfo, diagMemo, RT_VIEW, calibQuality,
   correctedCenter, toggleVirtCorr, liveInfo, refreshLive, holeTipInfo, updateHoleTip, focusPointRow, calibLevel, setDensity, LabelLayout, getProfiles, saveProfile, applyProfile, stabInfo, moveShot, setParams, deleteProfile, importProfilesText, profileAutoName, setWindDir, refreshWindDial, exportReportPdf, applyCrop, undoCrop, cropRectNorm, cropOutside, readZip, sessionsFromZip, buildSessionZip, saveSessionZip, openSessionFile, CARD_OPEN, getLayout, applyLayout, moveSection, setSectionHidden, resetLayout, toggleLayoutPop, influenceMap ,
@@ -19646,7 +20197,8 @@ window.__SA = { trSpecUI, trCheckSpec, exportTrainingTarget, useTrainingCode, tr
   velStats, useVelAsV0, calAttn, provGet, provSet, provInfo, photoSha, pngWithMeta, exportPng, storageScan, storageCheck, storageDelete, storageDeleteOlder, storageRepair, storageOptimize, STO,
   startTour, endTour, tourStep, tourOpen, tourSteps, TOUR, initTour,
   sensInfo, sensEval, sensMemo, drawSens, sensCardHTML, hierData, hierVerdict, hierRows, drawHier, HIER, hierShot,
-  DENS, applySecDensity, cycleSecDensity, setAnaDensity, densEff, drawPower, powerAuto, sgOf, vSplitInfo, vertPositions, rangeErrSpec, vitalHalf, hitKN, weaponOf, ciBar };
+  DENS, applySecDensity, cycleSecDensity, setAnaDensity, densEff, drawPower, powerAuto, sgOf, vSplitInfo, vertPositions, rangeErrSpec, vitalHalf, hitKN, weaponOf, ciBar,
+  ltData, drawLoadTest, perspHit, perspStartEdit, applyPerspPts, cropHit, cropDrag, cropSizeText, worldToOrig, ltVar, precLabel, refreshCrop };
 </script>
 </body>
 </html>

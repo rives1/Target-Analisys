@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.29.0] - 2026-11-26
+### Aggiunto
+- **Test di ricarica** (terza pagina della vista a schermo intero, tasto `P` o «🧪 Test di ricarica», Modalità
+  Esperto): livelli di carica (anche la carica per foro) o di seduta (salto dalle righe, CBTO, COAL) in ordine, alla
+  stessa distanza, con la stessa munizione. Per ogni livello il punto d'impatto medio rispetto alla mira con la
+  regolazione di partenza (click impostati tolti) e il suo IC, la precisione (CEP o raggio medio atteso dalla σ
+  combinata, come «Precisione e ricarica»). Rumore = dispersione entro i livelli combinata (ANOVA a una via).
+  **Spostamenti** tra livelli adiacenti solo se rilevabili (test t a varianza comune, correzione di Holm su tutti i
+  confronti); **tratti costanti** solo se dimostrati con un test di equivalenza (TOST) entro la tolleranza scelta
+  (±δ, predefinita 0,3 MOA): ogni coppia del tratto deve avere l'IC al (1 − 2α) dentro ±δ. Esiti per coppia
+  «↕ spostamento / ≈ costante / ? non si può dire», andamento (MOA o MIL per gr / mm / 0,01 in), colpi per livello
+  necessari per dimostrare un tratto costante, grafici del punto d'impatto, dei baricentri sul bersaglio e della
+  precisione; anche nel report PDF (Result Card «tutti i gruppi»). Lo storico entra con i fori salvati e la dope.
+  Nessun «nodo»: l'help spiega perché (help «Test di ricarica»).
+- Linguette «📊 Gruppo · 📈 Confronto · 🧪 Test di ricarica» in testa alla vista, pulsante «🧪 Test di ricarica» in
+  fondo al pannello; voci del glossario «Test di equivalenza (TOST)» e «Correzione di Holm».
+### Modificato
+- **Ritaglio**: il rettangolo si ritocca prima di applicarlo — maniglie sui 4 vertici e a metà dei lati (i lati si
+  prendono in tutta la loro lunghezza), trascinando l'interno lo si sposta dentro la foto, trascinando fuori se ne
+  disegna uno nuovo; cursori di ridimensionamento. Dimensioni in px e, con la scala impostata, in mm accanto al
+  rettangolo e nello stato.
+- **Prospettiva**: la correzione non parte più al quarto clic. Gli angoli si trascinano per metterli a punto e si
+  applica con «✓ Applica correzione» o Invio (anche per i bersagli da allenamento con «Usa il codice»); un quinto clic
+  non aggiunge punti. Con una correzione attiva «⬚ Ritocca i 4 angoli» ripropone gli angoli del rettangolo sulla foto:
+  spostarli e riapplicare ricalcola la correzione da capo (i punti seguono; senza spostamenti «invariata», nessuna voce
+  nella storia; Esc lascia com'è). Con angoli non validi i punti restano da correggere invece di sparire.
+- «Precisione e ricarica» e «Correlazioni ricarica e condizioni» passano dalla pagina del confronto a quella del test
+  di ricarica; la precisione ora va anche per CBTO e COAL e filtra per distanza («tutte» = solo precisione). La
+  relazione «Ladder / OCW» delle correlazioni è sostituita dal nuovo pannello (le sessioni che la usavano tornano alla
+  prima relazione).
+
 ## [1.28.0] - 2026-11-25
 ### Aggiunto
 - **Quanti colpi servono** (pagina «Confronto tra gruppi», pannello «Quanti colpi servono · potenza del confronto»):

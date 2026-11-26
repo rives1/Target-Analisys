@@ -7,7 +7,7 @@ correzione in click del mirino, confronto tra gruppi e sessioni.
 **Un unico file HTML**: nessuna installazione, nessuna dipendenza, funziona su Windows, macOS e Linux.
 **100% offline**: la pagina non effettua connessioni di rete; immagini e dati restano sul tuo dispositivo.
 
-**Versione 1.28.0** · **Online: https://rives1.github.io/Target-Analisys/**
+**Versione 1.29.0** · **Online: https://rives1.github.io/Target-Analisys/**
 
 ## Come usarla
 
@@ -85,6 +85,8 @@ Più rosate sulla stessa foto: **＋ Nuovo gruppo** (copia distanza e tutti i da
 - **Distorsione dell'obiettivo**: correzione radiale k1/k2 calibrata cliccando linee dritte; coefficienti salvabili per fotocamera.
 - **Bersaglio di autoverifica**: PDF A4 a 300 dpi con fori a posizioni note (codice SA-xxxx) da stampare, fotografare e misurare; la verifica riporta scala, errore per foro, mira e rotazione.
 - **Bersagli da allenamento** (1.27): PDF A4 vettoriali a scala reale — sight-in con 1–9 mire, griglia a passo scelto, diamond test per verificare i click — con righello, codice e 4 marcatori; «Usa il codice» + 4 clic sui marcatori impostano prospettiva, scala, distanza e mire; la verifica del diamond test riporta il click reale di alzo e brandeggio, l'inclinazione della torretta e il ritorno a zero.
+- **Test di ricarica** (1.29, tasto `P`): ladder, OCW e seduta (carica, salto dalle righe, CBTO, COAL) con i livelli in ordine — punto d'impatto medio con IC, spostamenti rilevabili tra livelli adiacenti (test t + Holm), tratti costanti solo se dimostrati con un test di equivalenza (TOST) entro la tolleranza scelta, precisione per livello, baricentri sul bersaglio e correlazioni; nessun «nodo» a vista.
+- **Ritaglio e prospettiva ritoccabili** (1.29): rettangolo del ritaglio con maniglie su vertici e lati, spostabile, con le dimensioni in mm; angoli della prospettiva trascinabili prima di «✓ Applica correzione» e ritocco di una correzione già applicata.
 - **Scheda arma, stabilità e verticale** (1.28): passo e verso della rigatura, canna, scatto, peso e lunghezza della palla; card «Stabilità giroscopica» (Sg di Miller con giudizio, passo per Sg = 1,5, deriva giroscopica) e deriva di Litz nel calcolatore balistico; card «Verticale: carica o tiratore?» (quota della varianza verticale dovuta alla SD della velocità, con IC e retta altezza–velocità sui fori col cronografo); card «Errore di distanza» (spostamento del punto d'impatto per ±m o ±% di distanza e distanza massima entro la zona); probabilità di almeno k centri su n e colpi per il 95% di almeno uno; confronto filtrato e riassunto per arma.
 - **Quanti colpi servono** (1.28, pagina del confronto): colpi per configurazione per riconoscere una differenza di raggio medio con la potenza scelta (test F del confronto, gruppo unico o rosate), con tabella e curva della potenza.
 - **Numeri e densità** (1.28): nelle card valore in evidenza, unità più piccola e IC come barra da zero (si vede l'asimmetria degli intervalli χ²); densità Compatta/Standard/Dettagliata anche per singola sezione e per pagina dei grafici, applicata a tabelle, riquadri e grafici.
@@ -133,6 +135,7 @@ rotella = zoom · `Shift`+rotella = ingrandimento della lente · trascina lo sfo
 - Ruota degli errori: euristica per pistola, le tabelle diffuse non concordano tutte.
 - Con meno di 5 colpi le statistiche (CEP, ellisse, rapporto d'aspetto, flyer) sono indicative; gli intervalli di confidenza lo mostrano.
 - Il group size (ES) non ha un intervallo di confidenza esatto e non viene stimato.
+- Test di ricarica: i colpi di uno stesso livello contano come indipendenti (in un OCW a giro le differenze tra gruppi entrano nel rumore); con un colpo per livello e nessun livello ripetuto il rumore non si stima. Un tratto «costante» è un fatto misurato entro la tolleranza scelta, non la prova di un «nodo»; per dimostrarlo con σ ≈ tolleranza servono circa 18 colpi per livello.
 - Stabilità di Miller: formula empirica per palle convenzionali (con la punta di plastica la lunghezza totale dà un valore prudente); la decomposizione della verticale prende la SD del cronografo come esatta e con pochi colpi resta incerta (servono 10–20 colpi); il calcolo dei colpi necessari presuppone la dispersione normale circolare (un flyer pesa molto sul test F).
 - Freccia e correzione virtuale valgono alla distanza del gruppo e mostrano solo lo spostamento del centro: il gruppo successivo avrà comunque un centro casuale. La colonna «Effetto ES / RM» descrive il gruppo, non è un criterio di esclusione.
 - Densità, layout del pannello e profili di ricarica sono salvati nel browser (localStorage), non nella sessione.
